@@ -2112,11 +2112,11 @@ const ROOT_HTML = `<!doctype html>
 
 const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#7a3d3d"/><text x="16" y="21" text-anchor="middle" font-size="16" font-family="Arial" fill="#fff">S</text></svg>`;
 
-const server = http.createServer((req, res) => {
+function handleRequest(req, res) {
   if (req.method === "GET" && req.url === "/") {
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     res.end(ROOT_HTML);
-    return;
+    return true;
   }
 
   if (req.method === "GET" && req.url === "/health") {
@@ -2126,19 +2126,22 @@ const server = http.createServer((req, res) => {
       status: "online",
       time: new Date().toISOString()
     }));
-    return;
+    return true;
   }
 
   if (req.method === "GET" && req.url === "/favicon.ico") {
     res.writeHead(200, { "Content-Type": "image/svg+xml; charset=utf-8" });
     res.end(FAVICON_SVG);
-    return;
+    return true;
   }
 
   app(req, res);
-});
+  return true;
+}
 
-server.listen(PORT, HOST, () => {
+function startServer() {
+  const server = http.createServer(handleRequest);
+  server.listen(PORT, HOST, () => {
   const localUrl = `http://${HOST}:${PORT}`;
   const publicUrl = PUBLIC_BASE_URL
     ? (PUBLIC_BASE_URL.startsWith("http") ? PUBLIC_BASE_URL : `https://${PUBLIC_BASE_URL}`)
@@ -2155,10 +2158,23 @@ server.listen(PORT, HOST, () => {
       addLog(`Public URL available at ${publicUrl}`, "success");
     }
   }
-});
+  });
 
-server.on("error", (error) => {
-  console.error("[server error]", error);
-});
+  server.on("error", (error) => {
+    console.error("[server error]", error);
+  });
+
+  return server;
+}
+
+module.exports = {
+  app,
+  handleRequest,
+  startServer
+};
+
+if (require.main === module) {
+  startServer();
+}
 
 
