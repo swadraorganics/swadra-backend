@@ -1,6 +1,7 @@
 ﻿const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
+const http = require("http");
 const path = require("path");
 const crypto = require("crypto");
 const https = require("https");
@@ -37,11 +38,6 @@ process.on("uncaughtException", (error) => {
 app.use(cors());
 app.use(express.json({ limit: "80mb" }));
 app.use(express.urlencoded({ extended: true, limit: "80mb" }));
-app.get("/favicon.ico", (req, res) => {
-  res.type("image/svg+xml").send(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#7a3d3d"/><text x="16" y="21" text-anchor="middle" font-size="16" font-family="Arial" fill="#fff">S</text></svg>`
-  );
-});
 app.use(express.static(__dirname));
 
 function getDefaultDB() {
@@ -1118,14 +1114,6 @@ function normalizeProduct(input, existingProduct = null) {
   return product;
 }
 
-app.get("/health", async (req, res) => {
-  res.status(200).type("application/json").send(JSON.stringify({
-    ok: true,
-    status: "online",
-    time: new Date().toISOString()
-  }));
-});
-
 app.get("/api/products", async (req, res) => {
   try {
     const db = await readDB();
@@ -2078,68 +2066,79 @@ app.post("/api/shiprocket/webhook", async (req, res) => {
   }
 });
 
-app.get("/", async (req, res) => {
-  res.status(200).type("text/html").send(`
-    <html>
-      <head>
-        <title>Swadra Backend</title>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            background: #f8f5f2;
-            color: #222;
-            padding: 40px;
-          }
-          .box {
-            max-width: 800px;
-            margin: auto;
-            background: #fff;
-            padding: 24px;
-            border-radius: 18px;
-            box-shadow: 0 10px 28px rgba(0,0,0,0.08);
-          }
-          h1 { color: #7a3d3d; margin-top: 0; }
-          code {
-            background: #f1ece8;
-            padding: 3px 6px;
-            border-radius: 6px;
-          }
-          ul { line-height: 1.8; }
-        </style>
-      </head>
-      <body>
-        <div class="box">
-          <h1>Swadra AI Pricing Backend Running</h1>
-          <p>Available endpoints:</p>
-          <ul>
-            <li><code>GET /health</code></li>
-            <li><code>GET /api/products</code></li>
-            <li><code>POST /api/products</code></li>
-            <li><code>PUT /api/products/:id</code></li>
-            <li><code>DELETE /api/products/:id</code></li>
-            <li><code>GET /api/logs</code></li>
-            <li><code>POST /api/payments/create-order</code></li>
-            <li><code>POST /api/payments/verify</code></li>
-            <li><code>POST /api/payments/attempts</code></li>
-            <li><code>GET /api/payments/attempts</code></li>
-            <li><code>POST /api/pricing/run</code></li>
-            <li><code>POST /api/products/:id/recalculate</code></li>
-            <li><code>POST /api/pricing/fetch-competitor-prices</code></li>
-            <li><code>POST /api/pricing/search-by-product-name</code></li>
-            <li><code>POST /api/pricing/fetch-all-competitor-prices</code></li>
-          </ul>
-        </div>
-      </body>
-    </html>
-  `);
-});
-
 app.use((error, req, res, next) => {
   console.error("[express error]", req.method, req.originalUrl, error);
   res.status(500).json({ ok: false, error: "Internal server error" });
 });
 
-const server = app.listen(PORT, HOST, () => {
+const ROOT_HTML = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Swadra Backend</title>
+    <style>
+      body { font-family: Arial, sans-serif; background: #f8f5f2; color: #222; padding: 40px; }
+      .box { max-width: 800px; margin: auto; background: #fff; padding: 24px; border-radius: 18px; box-shadow: 0 10px 28px rgba(0,0,0,0.08); }
+      h1 { color: #7a3d3d; margin-top: 0; }
+      code { background: #f1ece8; padding: 3px 6px; border-radius: 6px; }
+      ul { line-height: 1.8; }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h1>Swadra AI Pricing Backend Running</h1>
+      <p>Available endpoints:</p>
+      <ul>
+        <li><code>GET /health</code></li>
+        <li><code>GET /api/products</code></li>
+        <li><code>POST /api/products</code></li>
+        <li><code>PUT /api/products/:id</code></li>
+        <li><code>DELETE /api/products/:id</code></li>
+        <li><code>GET /api/logs</code></li>
+        <li><code>POST /api/payments/create-order</code></li>
+        <li><code>POST /api/payments/verify</code></li>
+        <li><code>POST /api/payments/attempts</code></li>
+        <li><code>GET /api/payments/attempts</code></li>
+        <li><code>POST /api/pricing/run</code></li>
+        <li><code>POST /api/products/:id/recalculate</code></li>
+        <li><code>POST /api/pricing/fetch-competitor-prices</code></li>
+        <li><code>POST /api/pricing/search-by-product-name</code></li>
+        <li><code>POST /api/pricing/fetch-all-competitor-prices</code></li>
+      </ul>
+    </div>
+  </body>
+</html>`;
+
+const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#7a3d3d"/><text x="16" y="21" text-anchor="middle" font-size="16" font-family="Arial" fill="#fff">S</text></svg>`;
+
+const server = http.createServer((req, res) => {
+  if (req.method === "GET" && req.url === "/") {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(ROOT_HTML);
+    return;
+  }
+
+  if (req.method === "GET" && req.url === "/health") {
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      ok: true,
+      status: "online",
+      time: new Date().toISOString()
+    }));
+    return;
+  }
+
+  if (req.method === "GET" && req.url === "/favicon.ico") {
+    res.writeHead(200, { "Content-Type": "image/svg+xml; charset=utf-8" });
+    res.end(FAVICON_SVG);
+    return;
+  }
+
+  app(req, res);
+});
+
+server.listen(PORT, HOST, () => {
   const localUrl = `http://${HOST}:${PORT}`;
   const publicUrl = PUBLIC_BASE_URL
     ? (PUBLIC_BASE_URL.startsWith("http") ? PUBLIC_BASE_URL : `https://${PUBLIC_BASE_URL}`)
