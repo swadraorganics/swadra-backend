@@ -4,8 +4,8 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const https = require("https");
-const puppeteer = require("puppeteer");
 let admin = null;
+let puppeteer = null;
 try {
   admin = require("firebase-admin");
 } catch (error) {
@@ -774,6 +774,9 @@ function parseCurrencyCandidates(text) {
 }
 
 async function createBrowser() {
+  if (!puppeteer) {
+    puppeteer = require("puppeteer");
+  }
   return puppeteer.launch({
     headless: true,
     args: [
@@ -1115,11 +1118,11 @@ function normalizeProduct(input, existingProduct = null) {
 ensureDB();
 
 app.get("/health", async (req, res) => {
-  res.json({
+  res.status(200).type("application/json").send(JSON.stringify({
     ok: true,
     status: "online",
     time: new Date().toISOString()
-  });
+  }));
 });
 
 app.get("/api/products", async (req, res) => {
@@ -2075,7 +2078,7 @@ app.post("/api/shiprocket/webhook", async (req, res) => {
 });
 
 app.get("/", async (req, res) => {
-  res.send(`
+  res.status(200).type("text/html").send(`
     <html>
       <head>
         <title>Swadra Backend</title>
