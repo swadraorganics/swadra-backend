@@ -1,4 +1,6 @@
 (function(){
+  var DEFAULT_REMOTE_BASE = "https://swadra-backend-production.up.railway.app";
+
   function readConfiguredBackendBase(){
     try{
       var saved = JSON.parse(localStorage.getItem("swadra_backend_panel_settings_v2") || "{}");
@@ -15,7 +17,7 @@
     base = readConfiguredBackendBase();
   }
   if(!base){
-    base = isLocal ? "http://127.0.0.1:3000" : window.location.origin;
+    base = isLocal ? "http://127.0.0.1:3000" : DEFAULT_REMOTE_BASE;
   }
 
   base = String(base || "").replace(/\/$/, "");

@@ -531,7 +531,12 @@
   </div>
 
   <script>
-    const PRODUCT_API_URLS = ["http://127.0.0.1:3000/api/products","http://localhost:3000/api/products"];
+    const DEFAULT_REMOTE_BASE = "https://swadra-backend-production.up.railway.app";
+    const PRODUCT_API_URLS = [
+      DEFAULT_REMOTE_BASE + "/api/products",
+      "http://127.0.0.1:3000/api/products",
+      "http://localhost:3000/api/products"
+    ];
     const BACKEND_PRODUCTS_CACHE_KEY = "swadraBackendProductsCache";
     const PRODUCTS_DB_NAME = "swadraProductsDB";
     const PRODUCTS_STORE_NAME = "products";

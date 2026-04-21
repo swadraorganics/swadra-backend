@@ -381,7 +381,7 @@
       <h2>Admin Login</h2>
       <p>Secure admin access for Swadra Organics control hub.</p>
 
-      <input id="adminBackendUrl" placeholder="Backend URL (e.g. https://your-backend.onrender.com)">
+      <input id="adminBackendUrl" placeholder="Backend URL (e.g. https://swadra-backend-production.up.railway.app)">
       <input id="adminUser" placeholder="Username (admin)">
       <input id="adminPass" type="password" placeholder="Password">
       <button type="button" onclick="saveAdminBackendUrl()" style="background:#8f6b5b;">Save Backend URL</button>
@@ -545,6 +545,7 @@
   <script>
     emailjs.init("uqdnXG18txM1DBF6j");
 
+    const DEFAULT_REMOTE_BASE = "https://swadra-backend-production.up.railway.app";
     const ADMIN_SESSION_KEY = "swadraAdminLoggedIn";
     const ADMIN_CREDENTIALS_CACHE_KEY = "swadraAdminCredentials";
     const ADMIN_BACKEND_STORAGE_KEY = "swadra_backend_panel_settings_v2";
@@ -580,7 +581,7 @@
     }
 
     function getApiBase(){
-      return normalizeBackendUrl(window.SWADRA_API_BASE || getSavedBackendUrl() || window.location.origin);
+      return normalizeBackendUrl(window.SWADRA_API_BASE || getSavedBackendUrl() || DEFAULT_REMOTE_BASE);
     }
 
     function getAdminLoginUrl(){ return getApiBase() + "/api/admin/login"; }

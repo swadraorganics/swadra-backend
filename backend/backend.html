@@ -349,7 +349,7 @@
 
         <div class="field">
           <label>Render / Local Backend Base URL</label>
-          <input id="backendUrl" type="text" placeholder="https://your-app.onrender.com or http://127.0.0.1:3000">
+          <input id="backendUrl" type="text" placeholder="https://swadra-backend-production.up.railway.app or http://127.0.0.1:3000">
         </div>
 
         <div class="field">
@@ -440,6 +440,7 @@
   </div>
 
   <script>
+    const DEFAULT_REMOTE_BASE = "https://swadra-backend-production.up.railway.app";
     const STORAGE_KEY = "swadra_backend_panel_settings_v2";
 
     let state = {
@@ -465,13 +466,13 @@
     function loadLocalState() {
       try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-        state.backendUrl = saved.backendUrl || "http://127.0.0.1:3000";
+        state.backendUrl = saved.backendUrl || DEFAULT_REMOTE_BASE;
         state.schedulerMode = saved.schedulerMode || "manual";
         state.searchMode = saved.searchMode || "product_name";
         state.searchTarget = saved.searchTarget || "all";
         state.notes = saved.notes || "";
       } catch (e) {
-        state.backendUrl = "http://127.0.0.1:3000";
+        state.backendUrl = DEFAULT_REMOTE_BASE;
       }
 
       document.getElementById("backendUrl").value = state.backendUrl;

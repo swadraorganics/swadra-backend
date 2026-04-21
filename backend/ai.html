@@ -628,9 +628,14 @@
   </div>
 
   <script>
+    const DEFAULT_REMOTE_BASE = "https://swadra-backend-production.up.railway.app";
     const PRODUCTS_DB_NAME = "swadraProductsDB";
     const PRODUCTS_STORE_NAME = "products";
-    const PRODUCT_API_URLS = ["http://127.0.0.1:3000/api/products","http://localhost:3000/api/products"];
+    const PRODUCT_API_URLS = [
+      DEFAULT_REMOTE_BASE + "/api/products",
+      "http://127.0.0.1:3000/api/products",
+      "http://localhost:3000/api/products"
+    ];
     const BACKEND_PRODUCTS_CACHE_KEY = "swadraBackendProductsCache";
     let editId = null;
 
@@ -1100,7 +1105,7 @@ special: []
       }
 
       try {
-        const response = await fetch("http://127.0.0.1:3000/api/pricing/fetch-competitor-prices", {
+        const response = await fetch(DEFAULT_REMOTE_BASE + "/api/pricing/fetch-competitor-prices", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
