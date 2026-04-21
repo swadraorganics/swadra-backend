@@ -14,17 +14,29 @@ try {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DB_PATH = path.join(__dirname, "db.json");
+const HOST = process.env.HOST || "0.0.0.0";
+const PUBLIC_BASE_URL = String(
+  process.env.PUBLIC_BASE_URL ||
+  process.env.RAILWAY_STATIC_URL ||
+  process.env.RAILWAY_PUBLIC_DOMAIN ||
+  ""
+).trim().replace(/\/+$/, "");
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, "db.json");
 const USE_FIRESTORE = String(process.env.USE_FIRESTORE || "").toLowerCase() === "true";
 const FIRESTORE_COLLECTION = process.env.FIRESTORE_COLLECTION || "appData";
 const FIRESTORE_DOCUMENT = process.env.FIRESTORE_DOCUMENT || "swadra";
 const FIRESTORE_LISTS = ["products", "orders", "paymentAttempts", "logs"];
 let firestoreDb = null;
+let fileStorageAvailable = !USE_FIRESTORE;
+let memoryDb = null;
 
 app.use(cors());
 app.use(express.json({ limit: "80mb" }));
 app.use(express.urlencoded({ extended: true, limit: "80mb" }));
 app.use(express.static(__dirname));
+app.get("/favicon.ico", (req, res) => {
+  res.status(204).end();
+});
 
 function getDefaultDB() {
   return {
@@ -43,6 +55,10 @@ function getDefaultDB() {
       updatedAt: new Date().toISOString()
     }
   };
+}
+
+function cloneDB(data) {
+  return JSON.parse(JSON.stringify(normalizeDB(data || getDefaultDB())));
 }
 
 function normalizeDB(data) {
@@ -147,9 +163,16 @@ async function replaceFirestoreCollection(rootRef, name, items) {
 
 function ensureDB() {
   if (USE_FIRESTORE) return;
-  if (!fs.existsSync(DB_PATH)) {
-    const initialData = getDefaultDB();
-    fs.writeFileSync(DB_PATH, JSON.stringify(initialData, null, 2), "utf8");
+  if (!fileStorageAvailable) return;
+  try {
+    if (!fs.existsSync(DB_PATH)) {
+      const initialData = getDefaultDB();
+      fs.writeFileSync(DB_PATH, JSON.stringify(initialData, null, 2), "utf8");
+    }
+  } catch (error) {
+    fileStorageAvailable = false;
+    memoryDb = cloneDB(memoryDb);
+    console.error("[db fallback] file storage unavailable:", error.message);
   }
 }
 
@@ -166,17 +189,30 @@ async function readDB() {
     return normalizeDB(data);
   }
   ensureDB();
-  const raw = fs.readFileSync(DB_PATH, "utf8");
-  return normalizeDB(JSON.parse(raw || '{"products":[],"logs":[],"meta":{}}'));
+  if (!fileStorageAvailable) {
+    memoryDb = cloneDB(memoryDb);
+    return cloneDB(memoryDb);
+  }
+  try {
+    const raw = fs.readFileSync(DB_PATH, "utf8");
+    const parsed = normalizeDB(JSON.parse(raw || '{"products":[],"logs":[],"meta":{}}'));
+    memoryDb = cloneDB(parsed);
+    return parsed;
+  } catch (error) {
+    fileStorageAvailable = false;
+    memoryDb = cloneDB(memoryDb);
+    console.error("[db fallback] read failed:", error.message);
+    return cloneDB(memoryDb);
+  }
 }
 
 async function writeDB(data) {
   data.meta = data.meta || {};
   data.meta.updatedAt = new Date().toISOString();
+  const normalized = normalizeDB(data);
   if (USE_FIRESTORE) {
     const firestore = getFirestore();
     const rootRef = firestore.collection(FIRESTORE_COLLECTION).doc(FIRESTORE_DOCUMENT);
-    const normalized = normalizeDB(data);
     await rootRef.set({
       meta: normalized.meta,
       admin: normalized.admin,
@@ -188,7 +224,14 @@ async function writeDB(data) {
     }
     return;
   }
-  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), "utf8");
+  memoryDb = cloneDB(normalized);
+  if (!fileStorageAvailable) return;
+  try {
+    fs.writeFileSync(DB_PATH, JSON.stringify(normalized, null, 2), "utf8");
+  } catch (error) {
+    fileStorageAvailable = false;
+    console.error("[db fallback] write failed:", error.message);
+  }
 }
 
 async function addLog(message, level = "info") {
@@ -2077,9 +2120,21 @@ app.get("/", async (req, res) => {
   `);
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  addLog(`Backend server started on port ${PORT}`, "success");
+app.listen(PORT, HOST, () => {
+  const localUrl = `http://${HOST}:${PORT}`;
+  const publicUrl = PUBLIC_BASE_URL
+    ? (PUBLIC_BASE_URL.startsWith("http") ? PUBLIC_BASE_URL : `https://${PUBLIC_BASE_URL}`)
+    : "";
+
+  console.log(`Server running on ${localUrl}`);
+  if(publicUrl){
+    console.log(`Public URL: ${publicUrl}`);
+  }
+
+  addLog(`Backend server started on ${HOST}:${PORT}`, "success");
+  if(publicUrl){
+    addLog(`Public URL available at ${publicUrl}`, "success");
+  }
 });
 
 
