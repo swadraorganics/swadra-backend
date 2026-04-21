@@ -4,6 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spices - Swadra Organics</title>
+<script src="page-storage-sync.js"></script>
+<script>
+window.installSwadraPageStorageSync({
+  pageName: "spices page",
+  persistedKeys: [
+    "currentUser",
+    "users",
+    "cart",
+    "redirectAfterLogin",
+    "homeContent",
+    "offers",
+    "swadraHeaderSearch"
+  ]
+});
+</script>
 <style>
 body{margin:0;font-family:Arial;background:#f1e3e3;}
 :root{--top-bar-height:43px;--navbar-height:62px;}
@@ -137,7 +152,7 @@ body{margin:0;font-family:Arial;background:#f1e3e3;}
 <a href="aboutus.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">About Us</a>
 <span id="accountNavSlot"><span class="account-menu-wrap"><a href="account.html" aria-label="Account" title="Account" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;"><span class="account-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></span></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">Welcome</div><div class="account-hover-copy">Access your account, orders and saved details from one place.</div><a class="account-hover-cta" href="account.html">LOGIN / SIGNUP</a></div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span></span>
 </div>
-</header><div class="sale-bar"><div class="sale-bar-track"><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span></div></div>
+</header><div class="sale-bar"><div class="sale-bar-track" id="saleBarTrack"><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span></div></div>
 
 <h2 class="page-title">Spices</h2>
 <div class="product-grid" id="productsContainer"></div>
@@ -218,22 +233,7 @@ localStorage.setItem("cart",JSON.stringify(safeCart));
 updateCartUI();
 }
 
-function openProductsDb(){
-return new Promise((resolve,reject)=>{
-const request = indexedDB.open("swadraProductsDB",1);
-request.onupgradeneeded = e=>{
-const db = e.target.result;
-if(!db.objectStoreNames.contains("products")){
-db.createObjectStore("products",{keyPath:"id"});
-}
-};
-request.onsuccess = ()=>resolve(request.result);
-request.onerror = ()=>reject(request.error);
-});
-}
-
 const PRODUCT_API_URLS = window.SWADRA_PRODUCTS_API_URLS || ["/api/products"];
-const BACKEND_PRODUCTS_CACHE_KEY = "swadraBackendProductsCache";
 const RUPEE = "\u20b9";
 
 function normalizeBackendProduct(product){
@@ -306,25 +306,35 @@ function closeProductSummary(){
 document.getElementById("productSummaryModal").classList.remove("show");
 }
 
-function applyOfflineFallbackPricing(products){
-return (Array.isArray(products) ? products : []).map(product=>{
-const offlinePrice = Number(product.offlinePrice || 0) || 0;
-return offlinePrice > 0 ? {...product, price: offlinePrice} : product;
-});
+function getHomeContent(){
+try{
+return JSON.parse(localStorage.getItem("homeContent")) || {};
+}catch(e){
+return {};
+}
 }
 
-function cacheBackendProducts(products){
-try{
-localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(products));
-}catch(e){}
+function getHomeArray(key){
+const content = getHomeContent();
+if(Array.isArray(content[key])){
+return content[key];
 }
-
-function getCachedBackendProducts(){
 try{
-return applyOfflineFallbackPricing(JSON.parse(localStorage.getItem(BACKEND_PRODUCTS_CACHE_KEY)) || []);
+return JSON.parse(localStorage.getItem(key)) || [];
 }catch(e){
 return [];
 }
+}
+
+function renderOfferBar(){
+const track = document.getElementById("saleBarTrack");
+if(!track) return;
+const offers = getHomeArray("offers")
+  .map(item=>String(item || "").trim())
+  .filter(Boolean);
+const finalOffers = offers.length ? offers : ["Free Delivery on orders above ₹699"];
+const repeated = [...finalOffers, ...finalOffers, ...finalOffers];
+track.innerHTML = repeated.map(item=>`<span class="sale-bar-item">${item}</span>`).join("");
 }
 
 async function getProducts(){
@@ -334,28 +344,14 @@ const response = await fetch(url,{cache:"no-store"});
 if(response.ok){
 const data = await response.json();
 if(Array.isArray(data?.products)){
-const products = data.products.map(normalizeBackendProduct);
-cacheBackendProducts(products);
-return products;
+return data.products.map(normalizeBackendProduct);
 }
 }
-}catch(error){}
+}catch(error){
+console.error("spices products fetch failed", url, error);
 }
-const cachedProducts = getCachedBackendProducts();
-if(cachedProducts.length){
-return cachedProducts;
 }
-try{
-const db = await openProductsDb();
-return applyOfflineFallbackPricing(await new Promise((resolve,reject)=>{
-const tx = db.transaction("products","readonly");
-const request = tx.objectStore("products").getAll();
-request.onsuccess = ()=>resolve(request.result || []);
-request.onerror = ()=>reject(request.error);
-}));
-}catch(e){
 return [];
-}
 }
 
 function getProductPricing(product){
@@ -579,8 +575,14 @@ e.preventDefault();
 }
 });
 
-window.onload=()=>{ loadProducts(); updateCartUI(); updateAccountNavigation(); };
-window.addEventListener("storage", e=>{ if(e.key==="adminProductsUpdatedAt" || e.key==="adminProducts"){ loadProducts(); } });
+window.onload=()=>{ renderOfferBar(); loadProducts(); updateCartUI(); updateAccountNavigation(); };
+window.addEventListener("focus", ()=>{ renderOfferBar(); loadProducts(); });
+window.addEventListener("pageshow", ()=>{ renderOfferBar(); loadProducts(); });
+window.addEventListener("storage", e=>{
+if(e.key==="homeContent" || e.key==="offers"){
+renderOfferBar();
+}
+});
 </script>
 </body>
 </html>

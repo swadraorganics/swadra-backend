@@ -5,77 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Invoice</title>
 
+<script src="page-storage-sync.js"></script>
 <script>
-(function(){
-  const memoryStore = Object.create(null);
-
-  function createMemoryStorage(){
-    return {
-      getItem(key){
-        const name = String(key);
-        return Object.prototype.hasOwnProperty.call(memoryStore, name) ? memoryStore[name] : null;
-      },
-      setItem(key, value){
-        memoryStore[String(key)] = String(value);
-      },
-      removeItem(key){
-        delete memoryStore[String(key)];
-      },
-      clear(){
-        Object.keys(memoryStore).forEach(key=>delete memoryStore[key]);
-      },
-      key(index){
-        const keys = Object.keys(memoryStore);
-        return Number.isInteger(index) && index >= 0 && index < keys.length ? keys[index] : null;
-      },
-      get length(){
-        return Object.keys(memoryStore).length;
-      }
-    };
-  }
-
-  const memoryStorage = createMemoryStorage();
-  const disabledIndexedDb = {
-    open(){
-      const request = { result:null, error:new Error("indexedDB disabled on invoice page") };
-      setTimeout(()=>{
-        if(typeof request.onerror === "function"){
-          request.onerror({ target: request });
-        }
-      }, 0);
-      return request;
-    },
-    deleteDatabase(){
-      const request = { result:null, error:new Error("indexedDB disabled on invoice page") };
-      setTimeout(()=>{
-        if(typeof request.onerror === "function"){
-          request.onerror({ target: request });
-        }
-      }, 0);
-      return request;
-    }
-  };
-
-  try{
-    Object.defineProperty(window, "localStorage", { value: memoryStorage, configurable: true });
-  }catch(error){
-    window.localStorage = memoryStorage;
-  }
-
-  try{
-    Object.defineProperty(window, "sessionStorage", { value: memoryStorage, configurable: true });
-  }catch(error){
-    window.sessionStorage = memoryStorage;
-  }
-
-  try{
-    Object.defineProperty(window, "indexedDB", { value: disabledIndexedDb, configurable: true });
-  }catch(error){
-    window.indexedDB = disabledIndexedDb;
-  }
-
-  window.__swadraInvoiceMemoryStorage = memoryStorage;
-})();
+window.installSwadraPageStorageSync({
+  pageName: "invoice page",
+  persistedKeys: [
+    "currentUser",
+    "users",
+    "currentOrderId"
+  ]
+});
 </script>
 <link rel="stylesheet" href="invoice.css">
 
@@ -162,66 +101,106 @@ Choose Healthy â€¢ Be Swadra Family
 </div>
 
 <script>
+const API_BASE = window.SWADRA_API_BASE || "";
 
-function loadInvoice(){
+function escapeHtml(value){
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#039;"
+  }[char]));
+}
 
-let cart = JSON.parse(localStorage.getItem("cart")) || [];
+function formatMoney(value){
+  return Math.round(Number(value) || 0).toLocaleString("en-IN");
+}
 
-let subtotal = Number(localStorage.getItem("subtotal")) || 0;
-let discount = Number(localStorage.getItem("discount")) || 0;
-let delivery = Number(localStorage.getItem("delivery")) || 0;
+function getCurrentOrderId(){
+  return String(localStorage.getItem("currentOrderId") || "").trim();
+}
 
-// âœ… GST CALCULATION (5%)
-let gstTotal = Number(localStorage.getItem("gstTotal")) || 0;
+async function fetchOrder(orderId){
+  const response = await fetch(`${API_BASE}/api/orders/${encodeURIComponent(orderId)}`, { cache:"no-store" });
+  const data = await response.json().catch(()=>({}));
+  if(!response.ok || !data?.order){
+    throw new Error(data?.error || "Order not found");
+  }
+  return data.order;
+}
 
-let cgst = gstTotal / 2;
-let sgst = gstTotal / 2;
+function buildAddress(order){
+  const shipping = order?.shipping || {};
+  return shipping.address || [
+    shipping.house,
+    shipping.area,
+    shipping.postoffice,
+    shipping.city,
+    shipping.district,
+    shipping.state,
+    shipping.pincode
+  ].filter(Boolean).join(", ");
+}
 
-let total = subtotal + delivery - discount;
+function getItemLineTotal(item){
+  const qty = Number(item?.qty) || 1;
+  const originalLineTotal = Math.round((Number(item?.price) || 0) * qty);
+  return Math.round(Number(item?.discountedLineTotal || item?.displayLineTotal || originalLineTotal));
+}
 
-// ORDER ID
-let orderId = "SWO-" + Math.floor(100000 + Math.random() * 900000);
-document.getElementById("orderId").innerText = orderId;
+function renderInvoice(order){
+  const items = Array.isArray(order?.items) ? order.items : [];
+  const subtotal = Math.round(Number(order?.couponAdjustedSellingTotal || order?.sellingTotal || order?.total || 0));
+  const discount = Math.round(Number(order?.couponDiscount || 0));
+  const delivery = Math.round(Number(order?.delivery || 0));
+  const total = Math.round(Number(order?.total || (subtotal + delivery)));
+  const gstTotal = Math.round(Number(order?.gstTotal || 0));
+  const cgst = gstTotal / 2;
+  const sgst = gstTotal / 2;
+  const shippingName = order?.shipping?.name || order?.userId || "Customer";
+  const shippingPhone = order?.shipping?.phone || "Phone not provided";
+  const shippingEmail = order?.shipping?.email || order?.userId || "Email not provided";
+  const shippingAddress = buildAddress(order) || "Address not provided";
 
-// DATE
-document.getElementById("date").innerText = new Date().toLocaleDateString();
+  document.getElementById("orderId").innerText = order?.id || "";
+  document.getElementById("date").innerText = new Date(order?.date || order?.createdAt || Date.now()).toLocaleDateString("en-IN");
+  document.getElementById("billingName").innerText = `${shippingName} (${shippingEmail})`;
+  document.getElementById("billingAddress").innerText = shippingAddress;
+  document.getElementById("billingPhone").innerText = shippingPhone;
+  document.getElementById("deliveryName").innerText = shippingName;
+  document.getElementById("deliveryAddress").innerText = shippingAddress;
+  document.getElementById("deliveryPhone").innerText = shippingPhone;
 
-
-// ADDRESS
-let name = localStorage.getItem("name") || "Customer Name";
-let email = localStorage.getItem("email") || "Email not provided";
-let phone = localStorage.getItem("phone") || "Phone not provided";
-let address = localStorage.getItem("address") || "Address not provided";
-
-document.getElementById("billingName").innerText = name + " (" + email + ")";
-document.getElementById("billingAddress").innerText = address;
-document.getElementById("billingPhone").innerText = phone;
-
-document.getElementById("deliveryName").innerText = name;
-document.getElementById("deliveryAddress").innerText = address;
-document.getElementById("deliveryPhone").innerText = phone;
-
-// ITEMS
-let itemsDiv = document.getElementById("items");
-itemsDiv.innerHTML = "";
-
-cart.forEach(item=>{
-itemsDiv.innerHTML += `
+  const itemsDiv = document.getElementById("items");
+  itemsDiv.innerHTML = items.map(item=>`
 <div class="item">
-<span>${item.name}</span>
-<span>â‚¹${item.price} Ã— ${item.qty}</span>
+<span>${escapeHtml(item?.name || "Swadra Product")}</span>
+<span>₹${formatMoney(getItemLineTotal(item))} × ${Math.max(1, Number(item?.qty) || 1)}</span>
 </div>
-`;
-});
+`).join("");
 
-// UPDATE
-document.getElementById("subtotal").innerText = subtotal.toFixed(0);
-document.getElementById("cgst").innerText = cgst.toFixed(0);
-document.getElementById("sgst").innerText = sgst.toFixed(0);
-document.getElementById("delivery").innerText = delivery;
-document.getElementById("discount").innerText = discount;
-document.getElementById("total").innerText = total.toFixed(0);
+  document.getElementById("subtotal").innerText = formatMoney(subtotal);
+  document.getElementById("cgst").innerText = formatMoney(cgst);
+  document.getElementById("sgst").innerText = formatMoney(sgst);
+  document.getElementById("delivery").innerText = formatMoney(delivery);
+  document.getElementById("discount").innerText = formatMoney(discount);
+  document.getElementById("total").innerText = formatMoney(total);
+}
 
+async function loadInvoice(){
+  const orderId = getCurrentOrderId();
+  if(!orderId){
+    document.getElementById("items").innerHTML = `<div class="item"><span>No order selected</span><span>Please open invoice from My Orders.</span></div>`;
+    return;
+  }
+
+  try{
+    const order = await fetchOrder(orderId);
+    renderInvoice(order);
+  }catch(error){
+    document.getElementById("items").innerHTML = `<div class="item"><span>Invoice load failed</span><span>${escapeHtml(error.message || "Unable to fetch order")}</span></div>`;
+  }
 }
 
 // PDF
@@ -230,10 +209,8 @@ html2pdf().from(document.getElementById("invoice")).save("invoice.pdf");
 }
 
 function shareWhatsApp(){
-
-let phone = localStorage.getItem("phone") || "";
-let name = localStorage.getItem("name") || "Customer";
-
+let phone = document.getElementById("deliveryPhone").innerText || "";
+let name = (document.getElementById("deliveryName").innerText || "Customer").trim();
 let total = document.getElementById("total").innerText;
 
 // format number (India)

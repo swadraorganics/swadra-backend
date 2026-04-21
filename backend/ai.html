@@ -636,7 +636,6 @@
       "http://127.0.0.1:3000/api/products",
       "http://localhost:3000/api/products"
     ];
-    const BACKEND_PRODUCTS_CACHE_KEY = "swadraBackendProductsCache";
     let editId = null;
 
     function normalizeFrontendProduct(product){
@@ -765,10 +764,6 @@
         }
       }
       throw lastError || new Error("Backend delete failed");
-    }
-
-    function signalProductsUpdated(){
-      localStorage.setItem("adminProductsUpdatedAt", String(Date.now()));
     }
 
 function normalizeCategoryKey(value){
@@ -1100,7 +1095,6 @@ return "spices";
 
         try{
           await putProduct(product);
-          signalProductsUpdated();
           await renderProducts();
           loadProductIntoForm(product.id);
           alert("Product saved successfully.");
@@ -1353,7 +1347,6 @@ return "spices";
 
       try{
         await putProduct(updated);
-        signalProductsUpdated();
         await renderProducts();
         if (String(editId) === String(id)) {
           await loadProductIntoForm(id);
@@ -1368,7 +1361,6 @@ return "spices";
       if (!confirm("Delete this product?")) return;
       try{
         await deleteProductRecord(id);
-        signalProductsUpdated();
         await renderProducts();
         if (String(editId) === String(id)) clearForm();
       }catch(e){
@@ -1392,7 +1384,6 @@ return "spices";
 
       try{
         await putProduct(updated);
-        signalProductsUpdated();
         await renderProducts();
         if (String(editId) === String(id)) {
           await loadProductIntoForm(id);

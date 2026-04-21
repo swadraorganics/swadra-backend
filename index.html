@@ -7,77 +7,23 @@
 <title>Swadra Organics</title>
 <style>html,body{background:#f1e3e3 !important;}</style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<script src="page-storage-sync.js"></script>
 <script>
-(function(){
-  const memoryStore = Object.create(null);
-
-  function createMemoryStorage(){
-    return {
-      getItem(key){
-        const name = String(key);
-        return Object.prototype.hasOwnProperty.call(memoryStore, name) ? memoryStore[name] : null;
-      },
-      setItem(key, value){
-        memoryStore[String(key)] = String(value);
-      },
-      removeItem(key){
-        delete memoryStore[String(key)];
-      },
-      clear(){
-        Object.keys(memoryStore).forEach(key=>delete memoryStore[key]);
-      },
-      key(index){
-        const keys = Object.keys(memoryStore);
-        return Number.isInteger(index) && index >= 0 && index < keys.length ? keys[index] : null;
-      },
-      get length(){
-        return Object.keys(memoryStore).length;
-      }
-    };
-  }
-
-  const memoryStorage = createMemoryStorage();
-  const disabledIndexedDb = {
-    open(){
-      const request = { result:null, error:new Error("indexedDB disabled on index page") };
-      setTimeout(()=>{
-        if(typeof request.onerror === "function"){
-          request.onerror({ target: request });
-        }
-      }, 0);
-      return request;
-    },
-    deleteDatabase(){
-      const request = { result:null, error:new Error("indexedDB disabled on index page") };
-      setTimeout(()=>{
-        if(typeof request.onerror === "function"){
-          request.onerror({ target: request });
-        }
-      }, 0);
-      return request;
-    }
-  };
-
-  try{
-    Object.defineProperty(window, "localStorage", { value: memoryStorage, configurable: true });
-  }catch(error){
-    window.localStorage = memoryStorage;
-  }
-
-  try{
-    Object.defineProperty(window, "sessionStorage", { value: memoryStorage, configurable: true });
-  }catch(error){
-    window.sessionStorage = memoryStorage;
-  }
-
-  try{
-    Object.defineProperty(window, "indexedDB", { value: disabledIndexedDb, configurable: true });
-  }catch(error){
-    window.indexedDB = disabledIndexedDb;
-  }
-
-  window.__swadraIndexMemoryStorage = memoryStorage;
-})();
+window.installSwadraPageStorageSync({
+  pageName: "index page",
+  persistedKeys: [
+    "currentUser",
+    "users",
+    "cart",
+    "redirectAfterLogin",
+    "homeContent",
+    "heroImagesUpdatedAt",
+    "customersUpdatedAt",
+    "heroVideoUpdatedAt",
+    "offers",
+    "swadra_home_family_story_v1"
+  ]
+});
 </script>
 <script src="api-config.js"></script></head>
 
@@ -4359,7 +4305,7 @@ margin:0 !important;
   display:grid !important;
   grid-template-columns:48.5% 51.5% !important;
   align-items:stretch !important;
-  background:#ffe7ad !important;
+  background:#fff !important;
   box-shadow:none !important;
   color:#19110d !important;
 }
@@ -4368,10 +4314,7 @@ margin:0 !important;
   content:"" !important;
   position:absolute !important;
   inset:0 !important;
-  background:
-    linear-gradient(90deg,rgba(255,231,173,.08) 0%,rgba(255,231,173,.32) 38%,rgba(255,231,173,.86) 54%,#ffe7ad 100%),
-    radial-gradient(circle at 94% 47%,rgba(255,255,255,.72) 0 1px,transparent 2px),
-    radial-gradient(circle at 84% 75%,rgba(161,100,30,.18) 0 2px,transparent 3px) !important;
+  background:none !important;
   z-index:1 !important;
   pointer-events:none !important;
 }
@@ -4404,7 +4347,7 @@ margin:0 !important;
   content:"" !important;
   position:absolute !important;
   inset:0 !important;
-  background:linear-gradient(90deg,rgba(255,231,173,.02),rgba(255,231,173,.18) 45%,#ffe7ad 80%) !important;
+  background:none !important;
 }
 
 #familyCounterBanner .family-counter-content{
@@ -4497,7 +4440,7 @@ margin:0 !important;
 <div id="stickyCart" style="position:fixed;bottom:20px;right:20px;display:none;align-items:center;gap:15px;padding:12px 18px;background:linear-gradient(135deg,#7a3d3d,#b76e79);color:#fff;border-radius:50px;z-index:9999;font-family:Arial,sans-serif;box-shadow:none;border:none;"><span id="cartCount" style="color:#fff;font-size:18px;font-weight:500;line-height:1;">0</span><a href="cart.html" class="cta-cart-btn" data-cta-size="small" style="display:inline-block;text-decoration:none;font-family:Arial,sans-serif;padding:8px 16px;border-radius:30px;font-size:15px;font-weight:600;line-height:1;text-align:center;background:#fff;color:#7a3d3d;border:none;cursor:pointer;transition:all 0.35s ease;position:relative;overflow:hidden;box-shadow:none;" onmouseenter="window.setCtaCartHover && window.setCtaCartHover(this, true)" onmouseleave="window.setCtaCartHover && window.setCtaCartHover(this, false)" onfocus="window.setCtaCartHover && window.setCtaCartHover(this, true)" onblur="window.setCtaCartHover && window.setCtaCartHover(this, false)">View Cart &rarr;</a></div>
 <div class="top-bar" style="text-align:center;padding:12px;font-weight:600;font-size:16px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;">Eat Healthy &bull; Be Swadra Family</div>
 <header class="navbar" style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:#7a3d3d;">
-<div class="logo" style="color:#fff;font-size:26px;font-weight:900;font-family:Arial,sans-serif;">Swadra Organics</div>
+<div class="logo" style="color:#fff;font-size:26px;font-weight:900;font-family:Arial,sans-serif;"><a href="index.html" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);color:#fff;text-decoration:none;font:inherit;line-height:1;">Swadra Organics</a></div>
 <div class="nav-search">
 <input id="searchInput" type="search" placeholder="Search for products, categories and more">
 <div id="searchResults" class="nav-search-results"></div>
@@ -4615,9 +4558,8 @@ Pure Quality. Honest Food. Swadra Promise.
 <div class="product-grid" id="comboContainer"></div>
 </section>
 
-<section class="family-counter-banner" id="familyCounterBanner" style="width:100%;max-width:none;min-height:498px;margin:44px 0 86px;border-radius:0;overflow:hidden;position:relative;display:grid;grid-template-columns:48.5% 51.5%;align-items:stretch;background:#ffe7ad;color:#19110d;box-shadow:none;">
+<section class="family-counter-banner" id="familyCounterBanner" style="width:100%;max-width:none;min-height:498px;margin:44px 0 86px;border-radius:0;overflow:hidden;position:relative;display:grid;grid-template-columns:48.5% 51.5%;align-items:stretch;background:#fff;color:#19110d;box-shadow:none;">
 <div class="family-counter-image" id="familyCounterImage" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;background:url('images/background.jpg') left center/cover no-repeat;filter:saturate(.92) sepia(.06) contrast(.95);"></div>
-<div style="position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(255,231,173,.08) 0%,rgba(255,231,173,.32) 38%,rgba(255,231,173,.86) 54%,#ffe7ad 100%);"></div>
 <div class="family-counter-content" style="position:relative;z-index:2;grid-column:2;width:100%;padding:48px 44px 38px 14px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;">
 <h2 class="family-counter-title" id="familyCounterTitle" style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:40px;line-height:1.04;font-weight:500;color:#17100c;letter-spacing:.01em;">More Than a Brand, A Family</h2>
 <p class="family-counter-subtitle" id="familyCounterSubtitle" style="margin:0 0 58px;color:#17100c;font-size:38px;line-height:1.08;font-weight:900;">जड़ों से जुड़े लोग, असली बदलाव</p>
@@ -5798,26 +5740,7 @@ function getHomeArray(key){
   }
 }
 
-function openProductsDb(){
-  return new Promise((resolve,reject)=>{
-    const request = indexedDB.open("swadraProductsDB",1);
-    request.onupgradeneeded = e=>{
-      const db = e.target.result;
-      if(!db.objectStoreNames.contains("products")){
-        db.createObjectStore("products",{keyPath:"id"});
-      }
-    };
-    request.onsuccess = ()=>resolve(request.result);
-    request.onerror = ()=>reject(request.error);
-  });
-}
-
 async function getAdminProducts(){
-  const BACKEND_PRODUCTS_CACHE_KEY = "swadraBackendProductsCache";
-  const applyOfflineFallbackPricing = (products)=>(Array.isArray(products) ? products : []).map(product=>{
-    const offlinePrice = Number(product.offlinePrice || 0) || 0;
-    return offlinePrice > 0 ? {...product, price: offlinePrice} : product;
-  });
   const backendProductUrls = window.SWADRA_PRODUCTS_API_URLS || ["/api/products"];
   for(const url of backendProductUrls){
     try{
@@ -5836,31 +5759,14 @@ async function getAdminProducts(){
             category: String(product.category || "").trim(),
             image: product.image || ""
           }));
-          try{ localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(products)); }catch(e){}
           return products;
         }
       }
-    }catch(error){}
-  }
-  try{
-    const db = await openProductsDb();
-    return await new Promise((resolve,reject)=>{
-      const tx = db.transaction("products","readonly");
-      const request = tx.objectStore("products").getAll();
-      request.onsuccess = ()=>resolve(request.result || []);
-      request.onerror = ()=>reject(request.error);
-    });
-  }catch(e){
-    console.error("adminProducts read failed", e);
-    try{
-      const cachedProducts = JSON.parse(localStorage.getItem(BACKEND_PRODUCTS_CACHE_KEY)) || [];
-      if(cachedProducts.length) return applyOfflineFallbackPricing(cachedProducts);
-      return applyOfflineFallbackPricing(JSON.parse(localStorage.getItem("adminProducts")) || []);
-    }catch(parseError){
-      console.error("adminProducts parse failed", parseError);
-      return [];
+    }catch(error){
+      console.error("adminProducts fetch failed", url, error);
     }
   }
+  return [];
 }
 
 async function renderComboProducts(){
@@ -6165,9 +6071,10 @@ function lockHeroTextLayout(){
 }
 
 const catalogCategoryConfig = [
-  { key:"spices", label:"Spices", aliases:["spices"], fallbackPage:"spices.html" },
-  { key:"dryfruits", label:"Dry Fruits", aliases:["dry fruits","dryfruits"], fallbackPage:"dryfruits.html" },
-  { key:"oilghee", label:"Oil, Ghee & More", aliases:["oil, ghee & more","oil ghee & more","oil ghee"], fallbackPage:"oilghee.html" },
+  { key:"spices", label:"Spices", aliases:["spices"] },
+  { key:"dryfruits", label:"Dry Fruits", aliases:["dry fruits","dryfruits"] },
+  { key:"achar", label:"Achar / Pickle", aliases:["achar / pickle","achar","pickle","pickles"], fallbackProducts: [] },
+  { key:"oilghee", label:"Oil, Ghee & More", aliases:["oil, ghee & more","oil ghee & more","oil ghee"] },
   { key:"bestseller", label:"Bestseller", aliases:["bestseller","bestsellers","best seller","best sellers"], fallbackProducts: defaultSectionProducts.bestseller },
   { key:"combos", label:"Combos", aliases:["combos","combo","gift combo","gift combos"], fallbackProducts: defaultSectionProducts.combos },
   { key:"special", label:"Special Products", aliases:["special products","special product","special","featured products"], fallbackProducts: defaultSectionProducts.special }
@@ -6176,7 +6083,14 @@ const catalogCategoryConfig = [
 let catalogProductsCache = [];
 
 function normalizeCategoryName(value){
-  return String(value || "").toLowerCase().replace(/&/g,"and").replace(/,/g," ").replace(/\s+/g," ").trim();
+  const normalized = String(value || "").toLowerCase().replace(/&/g,"and").replace(/,/g," ").replace(/\s+/g," ").trim();
+  if(normalized.includes("achar") || normalized.includes("pickle")) return "achar";
+  if(normalized.includes("best seller") || normalized.includes("bestseller")) return "bestseller";
+  if(normalized.includes("combo")) return "combos";
+  if(normalized.includes("special")) return "special";
+  if(normalized.includes("dry fruits") || normalized.includes("dryfruits")) return "dryfruits";
+  if(normalized.includes("oil") || normalized.includes("ghee")) return "oilghee";
+  return normalized;
 }
 
 function productMatchesCategory(product, config){
@@ -6193,42 +6107,6 @@ function productMatchesCategory(product, config){
       || normalized.includes(normalizedAlias)
       || normalizedAlias.includes(normalized);
   });
-}
-
-async function scrapeProductsFromPage(pagePath, categoryLabel){
-  try{
-    const response = await fetch(pagePath, { cache: "no-store" });
-    if(!response.ok) return [];
-
-    const html = await response.text();
-    const doc = new DOMParser().parseFromString(html, "text/html");
-    const cards = Array.from(doc.querySelectorAll("#productsContainer .product-card"));
-
-    return cards.map((card, index)=>{
-      const name = card.querySelector("h3")?.innerText?.trim();
-      if(!name) return null;
-
-      const image = card.querySelector("img")?.getAttribute("src") || "https://via.placeholder.com/300";
-      const size = card.querySelector(".size")?.innerText?.trim() || "100gm";
-      const priceText = card.querySelector(".price")?.innerText || "";
-      const price = parseInt(priceText.replace(/[^\d]/g,""),10) || 0;
-      const isOut = !!card.querySelector(".out-stock-text");
-
-      return {
-        id: `catalog-${categoryLabel.toLowerCase().replace(/\s+/g,"-")}-${index + 1}`,
-        name,
-        price,
-        image,
-        size,
-        category: categoryLabel,
-        availability: isOut ? "Out of Stock" : "Available",
-        stockQty: isOut ? 0 : 100
-      };
-    }).filter(Boolean);
-  }catch(error){
-    console.error("catalog page scrape failed", pagePath, error);
-    return [];
-  }
 }
 
 function buildHomeClonePriceMarkup(product){
@@ -6546,10 +6424,6 @@ async function getAllCatalogProducts(){
 
     if(items.length === 0 && config.fallbackProducts){
       items = config.fallbackProducts.map(product=>({ ...product }));
-    }
-
-    if(items.length === 0 && config.fallbackPage){
-      items = await scrapeProductsFromPage(config.fallbackPage, config.label);
     }
 
     combined.push(...items.map((product, index)=>({
@@ -7269,14 +7143,6 @@ window.addEventListener("storage", function(e){
     syncVideo();
   }
 
-  if(e.key === "adminProducts" || e.key === "adminProductsUpdatedAt"){
-    renderComboProducts();
-    renderBestsellerProducts();
-    renderSpecialProducts();
-    if(document.getElementById("allProductsSection")?.style.display !== "none"){
-      renderAllProductsCatalog();
-    }
-  }
 });
 
 window.addEventListener("resize", function(){
@@ -7312,7 +7178,6 @@ if(window.location.hash === "#allProductsSection"){
 
   const INDEX_HOME_DB = "swadraHomeAssetsDB";
   const INDEX_HOME_VERSION = 1;
-  const INDEX_PRODUCTS_DB = "swadraProductsDB";
   const homeSectionConfig = {
     combos: { containerId:"comboContainer", aliases:["combos","combo","gift combo","gift combos"] },
     bestseller: { containerId:"bestsellersGrid", aliases:["bestseller","bestsellers","best seller","best sellers"] },
@@ -7331,12 +7196,7 @@ if(window.location.hash === "#allProductsSection"){
   }
 
   function getAdminProductsByCategorySafe(){
-    try{
-      return JSON.parse(localStorage.getItem("adminProductsByCategory")) || {};
-    }catch(error){
-      console.error("index recovery: adminProductsByCategory parse failed", error);
-      return {};
-    }
+    return {};
   }
 
   function getSafeHomeContent(){
@@ -7394,46 +7254,14 @@ if(window.location.hash === "#allProductsSection"){
               category: String(product.category || "").trim(),
               image: product.image || ""
             }));
-            try{
-              localStorage.setItem("adminProducts", JSON.stringify(products));
-            }catch(storageError){}
             return products;
           }
         }
-      }catch(error){}
-    }
-    try{
-      const db = await openIndexDb(INDEX_PRODUCTS_DB, 1, database=>{
-        if(!database.objectStoreNames.contains("products")){
-          database.createObjectStore("products",{ keyPath:"id" });
-        }
-      });
-
-      const products = await new Promise((resolve,reject)=>{
-        const tx = db.transaction("products","readonly");
-        const request = tx.objectStore("products").getAll();
-        request.onsuccess = ()=>resolve(request.result || []);
-        request.onerror = ()=>reject(request.error);
-      });
-
-      try{
-        localStorage.setItem("adminProducts", JSON.stringify(products));
-      }catch(storageError){
-        console.warn("index recovery: skipped adminProducts cache", storageError);
-        try{
-          localStorage.removeItem("adminProducts");
-        }catch(removeError){}
-      }
-      return products;
-    }catch(error){
-      console.error("index recovery: products read failed", error);
-      try{
-        return JSON.parse(localStorage.getItem("adminProducts")) || [];
-      }catch(parseError){
-        console.error("index recovery: adminProducts parse failed", parseError);
-        return [];
+      }catch(error){
+        console.error("index recovery: backend products fetch failed", url, error);
       }
     }
+    return [];
   }
 
   async function getHomeStoreItems(storeName){
@@ -7638,10 +7466,6 @@ window.changeHomeQty = function(sectionKey, id, delta){
   window.__swadraGetAdminProducts = getAllProductsSafe;
 
   getSectionProducts = window.getSectionProducts = async function(categoryName, sectionKey){
-    const grouped = getAdminProductsByCategorySafe();
-    if(Array.isArray(grouped[sectionKey]) && grouped[sectionKey].length){
-      return grouped[sectionKey];
-    }
     const products = await getAllProductsSafe();
     const filtered = filterProductsBySection(products, sectionKey);
     if(filtered.length){
@@ -7691,9 +7515,7 @@ window.changeHomeQty = function(sectionKey, id, delta){
   toggleSectionCart = window.toggleSectionCart = async function(sectionKey, id){
     let cart = getSafeCartState();
     let products = await getAllProductsSafe();
-    const grouped = getAdminProductsByCategorySafe();
-    let groupedProducts = Array.isArray(grouped[sectionKey]) ? grouped[sectionKey] : [];
-    let pool = [...groupedProducts, ...products, ...getFallbackProducts(sectionKey)];
+    let pool = [...products, ...getFallbackProducts(sectionKey)];
     let index = cart.findIndex(item => String(item.id) === String(id));
 
     if(index > -1){
@@ -7851,7 +7673,7 @@ window.changeHomeQty = function(sectionKey, id, delta){
   window.addEventListener("focus", refreshIndexFromAdmin);
   window.addEventListener("pageshow", refreshIndexFromAdmin);
   window.addEventListener("storage", event=>{
-    if(["adminProducts","adminProductsUpdatedAt","heroImagesUpdatedAt","customersUpdatedAt","heroVideoUpdatedAt","offers","homeContent"].includes(event.key)){
+    if(["heroImagesUpdatedAt","customersUpdatedAt","heroVideoUpdatedAt","offers","homeContent"].includes(event.key)){
       refreshIndexFromAdmin();
       if(typeof renderFooterStandardBlock === "function") renderFooterStandardBlock();
       if(typeof renderHeroTextBlock === "function") renderHeroTextBlock();
@@ -7972,32 +7794,12 @@ setInterval(swadraHeaderUpdateStickyCart, 1000);
   }
 
   async function getSectionItems(sectionKey, label, container){
-    const aliases = getSectionAliases(sectionKey);
     if(typeof window.getSectionProducts === "function"){
       try{
         const items = await window.getSectionProducts(label, sectionKey);
         if(Array.isArray(items) && items.length) return items;
       }catch(e){}
     }
-    try{
-      const grouped = JSON.parse(localStorage.getItem("adminProductsByCategory")) || {};
-      for(const key of Object.keys(grouped)){
-        const normalized = String(key || "").toLowerCase().trim();
-        if(aliases.some(alias=>normalized === alias || normalized.includes(alias))){
-          if(Array.isArray(grouped[key]) && grouped[key].length){
-            return grouped[key];
-          }
-        }
-      }
-    }catch(e){}
-    try{
-      const products = JSON.parse(localStorage.getItem("adminProducts")) || [];
-      const filtered = products.filter(p =>{
-        const cat = String(p.category || "").toLowerCase();
-        return aliases.some(alias=>cat === alias || cat.includes(alias));
-      });
-      if(filtered.length) return filtered;
-    }catch(e){}
     return [];
   }
 

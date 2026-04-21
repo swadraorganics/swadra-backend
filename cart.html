@@ -4,77 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Swadra Cart</title>
+<script src="page-storage-sync.js"></script>
 <script>
-(function(){
-  const memoryStore = Object.create(null);
-
-  function createMemoryStorage(){
-    return {
-      getItem(key){
-        const name = String(key);
-        return Object.prototype.hasOwnProperty.call(memoryStore, name) ? memoryStore[name] : null;
-      },
-      setItem(key, value){
-        memoryStore[String(key)] = String(value);
-      },
-      removeItem(key){
-        delete memoryStore[String(key)];
-      },
-      clear(){
-        Object.keys(memoryStore).forEach(key=>delete memoryStore[key]);
-      },
-      key(index){
-        const keys = Object.keys(memoryStore);
-        return Number.isInteger(index) && index >= 0 && index < keys.length ? keys[index] : null;
-      },
-      get length(){
-        return Object.keys(memoryStore).length;
-      }
-    };
-  }
-
-  const memoryStorage = createMemoryStorage();
-  const disabledIndexedDb = {
-    open(){
-      const request = { result:null, error:new Error("indexedDB disabled on cart page") };
-      setTimeout(()=>{
-        if(typeof request.onerror === "function"){
-          request.onerror({ target: request });
-        }
-      }, 0);
-      return request;
-    },
-    deleteDatabase(){
-      const request = { result:null, error:new Error("indexedDB disabled on cart page") };
-      setTimeout(()=>{
-        if(typeof request.onerror === "function"){
-          request.onerror({ target: request });
-        }
-      }, 0);
-      return request;
-    }
-  };
-
-  try{
-    Object.defineProperty(window, "localStorage", { value: memoryStorage, configurable: true });
-  }catch(error){
-    window.localStorage = memoryStorage;
-  }
-
-  try{
-    Object.defineProperty(window, "sessionStorage", { value: memoryStorage, configurable: true });
-  }catch(error){
-    window.sessionStorage = memoryStorage;
-  }
-
-  try{
-    Object.defineProperty(window, "indexedDB", { value: disabledIndexedDb, configurable: true });
-  }catch(error){
-    window.indexedDB = disabledIndexedDb;
-  }
-
-  window.__swadraCartMemoryStorage = memoryStorage;
-})();
+window.installSwadraPageStorageSync({
+  pageName: "cart page",
+  persistedKeys: [
+    "currentUser",
+    "users",
+    "cart",
+    "redirectAfterLogin",
+    "homeContent",
+    "offers",
+    "swadraHeaderSearch",
+    "cartSummary",
+    "subtotal",
+    "delivery",
+    "discount",
+    "couponDiscount",
+    "mrpTotal",
+    "gstTotal",
+    "finalTotal",
+    "couponAdjustedCart"
+  ]
+});
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -249,7 +201,7 @@ margin:0 !important;
 <a href="aboutus.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">About Us</a>
 <span id="accountNavSlot"><a class="account-link" href="account.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a></span>
 </div>
-</header><div class="sale-bar"><div class="sale-bar-track"><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span></div></div><div class="page">
+</header><div class="sale-bar"><div class="sale-bar-track" id="saleBarTrack"><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span></div></div><div class="page">
 <div class="page-title">
 <h1>Your Shopping Bag</h1>
 <span class="free-badge">Free Delivery Above ₹399</span>
@@ -318,22 +270,7 @@ image:getSafeCartImage(item.image)
 }));
 }
 
-function openProductsDb(){
-return new Promise((resolve,reject)=>{
-const request = indexedDB.open("swadraProductsDB",1);
-request.onupgradeneeded = e=>{
-const db = e.target.result;
-if(!db.objectStoreNames.contains("products")){
-db.createObjectStore("products",{keyPath:"id"});
-}
-};
-request.onsuccess = ()=>resolve(request.result);
-request.onerror = ()=>reject(request.error);
-});
-}
-
 const PRODUCT_API_URLS = window.SWADRA_PRODUCTS_API_URLS || ["/api/products"];
-const BACKEND_PRODUCTS_CACHE_KEY = "swadraBackendProductsCache";
 const COUPONS_API_URL = window.SWADRA_COUPONS_API_URL || "/api/coupons";
 let availableCoupons = [];
 
@@ -353,25 +290,31 @@ image: normalizedImage
 };
 }
 
-function applyOfflineFallbackPricing(products){
-return (Array.isArray(products) ? products : []).map(product=>{
-const offlinePrice = Number(product.offlinePrice || 0) || 0;
-return offlinePrice > 0 ? {...product, price: offlinePrice} : product;
-});
+function getHomeContent(){
+try{
+return JSON.parse(localStorage.getItem("homeContent")) || {};
+}catch(e){
+return {};
+}
 }
 
-function cacheBackendProducts(products){
+function getHomeArray(key){
+const content = getHomeContent();
+if(Array.isArray(content[key])) return content[key];
 try{
-localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(products));
-}catch(e){}
-}
-
-function getCachedBackendProducts(){
-try{
-return applyOfflineFallbackPricing(JSON.parse(localStorage.getItem(BACKEND_PRODUCTS_CACHE_KEY)) || []);
+return JSON.parse(localStorage.getItem(key)) || [];
 }catch(e){
 return [];
 }
+}
+
+function renderOfferBar(){
+const track = document.getElementById("saleBarTrack");
+if(!track) return;
+const offers = getHomeArray("offers").map(item=>String(item || "").trim()).filter(Boolean);
+const finalOffers = offers.length ? offers : ["Free Delivery on orders above ₹699"];
+const repeated = [...finalOffers, ...finalOffers, ...finalOffers];
+track.innerHTML = repeated.map(item=>`<span class="sale-bar-item">${item}</span>`).join("");
 }
 
 async function getProducts(){
@@ -381,28 +324,14 @@ const response = await fetch(url,{cache:"no-store"});
 if(response.ok){
 const data = await response.json();
 if(Array.isArray(data?.products)){
-const products = data.products.map(normalizeBackendProduct);
-cacheBackendProducts(products);
-return products;
+return data.products.map(normalizeBackendProduct);
 }
 }
-}catch(error){}
+}catch(error){
+console.error("cart products fetch failed", url, error);
 }
-const cachedProducts = getCachedBackendProducts();
-if(cachedProducts.length){
-return cachedProducts;
 }
-try{
-const db = await openProductsDb();
-return applyOfflineFallbackPricing(await new Promise((resolve,reject)=>{
-const tx = db.transaction("products","readonly");
-const request = tx.objectStore("products").getAll();
-request.onsuccess = ()=>resolve(request.result || []);
-request.onerror = ()=>reject(request.error);
-}));
-}catch(e){
 return [];
-}
 }
 
 function syncUserCart(){
@@ -744,6 +673,7 @@ window.location.href = "checkout.html";
 }
 
 window.onload = async ()=>{
+renderOfferBar();
 await fetchAvailableCoupons();
 loadCart();
 };
@@ -832,7 +762,12 @@ window.addEventListener("storage", function(event){
   if(["cart","users","currentUser"].includes(event.key)){
     swadraHeaderUpdateAccountNav();
   }
+  if(event.key === "homeContent" || event.key === "offers"){
+    renderOfferBar();
+  }
 });
+window.addEventListener("focus", function(){ renderOfferBar(); loadCart(); });
+window.addEventListener("pageshow", function(){ renderOfferBar(); loadCart(); });
 </script>
 </body>
 </html>

@@ -381,10 +381,8 @@
       <h2>Admin Login</h2>
       <p>Secure admin access for Swadra Organics control hub.</p>
 
-      <input id="adminBackendUrl" placeholder="Backend URL (e.g. https://swadra-backend-production.up.railway.app)">
       <input id="adminUser" placeholder="Username (admin)">
       <input id="adminPass" type="password" placeholder="Password">
-      <button type="button" onclick="saveAdminBackendUrl()" style="background:#8f6b5b;">Save Backend URL</button>
       <button onclick="loginAdmin()">Login</button>
     </div>
   </div>
@@ -545,10 +543,8 @@
   <script>
     emailjs.init("uqdnXG18txM1DBF6j");
 
-    const DEFAULT_REMOTE_BASE = "https://swadra-backend-production.up.railway.app";
 let adminCouponCache = [];
 let currentAdminSession = false;
-let currentAdminBackendUrl = "";
 
     function normalizeBackendUrl(url){
       return String(url || "").trim().replace(/\/+$/, "");
@@ -568,27 +564,11 @@ let currentAdminBackendUrl = "";
       return normalized === normalizeBackendUrl(window.location.origin);
     }
 
-function saveAdminBackendUrl(){
-  const backendUrl = normalizeBackendUrl((document.getElementById("adminBackendUrl") || {}).value || "");
-  if(!backendUrl){
-        alert("Backend URL enter karo");
-        return;
-      }
-  if(isUnsafeProductionBackendUrl(backendUrl)){
-    alert("Website domain mat save karo. Backend Railway URL save karo.");
-    return;
-  }
-  currentAdminBackendUrl = backendUrl;
-  window.SWADRA_API_BASE = backendUrl;
-  alert("Backend URL is set for this tab only: " + backendUrl);
-}
-
 function getApiBase(){
-  const preferred = normalizeBackendUrl(
-    isProductionSiteOrigin(window.SWADRA_API_BASE) ? "" : (currentAdminBackendUrl || window.SWADRA_API_BASE)
-  );
-  const resolved = normalizeBackendUrl(preferred || DEFAULT_REMOTE_BASE);
-  return isUnsafeProductionBackendUrl(resolved) ? DEFAULT_REMOTE_BASE : resolved;
+  const resolved = normalizeBackendUrl(window.SWADRA_API_BASE);
+  return resolved && !isUnsafeProductionBackendUrl(resolved)
+    ? resolved
+    : "https://swadra-backend-production.up.railway.app";
 }
 
     function getAdminLoginUrl(){ return getApiBase() + "/api/admin/login"; }

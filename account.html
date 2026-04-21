@@ -5,78 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Account - Swadra Organics</title>
 
-  <script>
-    (function(){
-      const memoryStore = Object.create(null);
-
-      function createMemoryStorage(){
-        return {
-          getItem(key){
-            const name = String(key);
-            return Object.prototype.hasOwnProperty.call(memoryStore, name) ? memoryStore[name] : null;
-          },
-          setItem(key, value){
-            memoryStore[String(key)] = String(value);
-          },
-          removeItem(key){
-            delete memoryStore[String(key)];
-          },
-          clear(){
-            Object.keys(memoryStore).forEach(key=>delete memoryStore[key]);
-          },
-          key(index){
-            const keys = Object.keys(memoryStore);
-            return Number.isInteger(index) && index >= 0 && index < keys.length ? keys[index] : null;
-          },
-          get length(){
-            return Object.keys(memoryStore).length;
-          }
-        };
-      }
-
-      const memoryStorage = createMemoryStorage();
-      const disabledIndexedDb = {
-        open(){
-          const request = { result:null, error:new Error("indexedDB disabled on account page") };
-          setTimeout(()=>{
-            if(typeof request.onerror === "function"){
-              request.onerror({ target: request });
-            }
-          }, 0);
-          return request;
-        },
-        deleteDatabase(){
-          const request = { result:null, error:new Error("indexedDB disabled on account page") };
-          setTimeout(()=>{
-            if(typeof request.onerror === "function"){
-              request.onerror({ target: request });
-            }
-          }, 0);
-          return request;
-        }
-      };
-
-      try{
-        Object.defineProperty(window, "localStorage", { value: memoryStorage, configurable: true });
-      }catch(error){
-        window.localStorage = memoryStorage;
-      }
-
-      try{
-        Object.defineProperty(window, "sessionStorage", { value: memoryStorage, configurable: true });
-      }catch(error){
-        window.sessionStorage = memoryStorage;
-      }
-
-      try{
-        Object.defineProperty(window, "indexedDB", { value: disabledIndexedDb, configurable: true });
-      }catch(error){
-        window.indexedDB = disabledIndexedDb;
-      }
-
-      window.__swadraAccountMemoryStorage = memoryStorage;
-    })();
-  </script>
+<script src="page-storage-sync.js"></script>
+<script>
+window.installSwadraPageStorageSync({
+  pageName: "account page",
+  persistedKeys: [
+    "currentUser",
+    "users",
+    "cart",
+    "redirectAfterLogin",
+    "tempUser",
+    "otp",
+    "dashboardPasswordOtp",
+    "userPhone"
+  ]
+});
+</script>
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

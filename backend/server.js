@@ -2217,7 +2217,25 @@ const ROOT_HTML = `<!doctype html>
 
 const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#7a3d3d"/><text x="16" y="21" text-anchor="middle" font-size="16" font-family="Arial" fill="#fff">S</text></svg>`;
 
+function buildCorsHeaders(req, extraHeaders = {}) {
+  const origin = String(req.headers.origin || "").trim();
+  const allowOrigin = origin || "*";
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    Vary: "Origin",
+    ...extraHeaders
+  };
+}
+
 function handleRequest(req, res) {
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, buildCorsHeaders(req));
+    res.end();
+    return true;
+  }
+
   if (req.method === "GET" && req.url === "/") {
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     res.end(ROOT_HTML);
@@ -2225,7 +2243,9 @@ function handleRequest(req, res) {
   }
 
   if (req.method === "GET" && req.url === "/health") {
-    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.writeHead(200, buildCorsHeaders(req, {
+      "Content-Type": "application/json; charset=utf-8"
+    }));
     res.end(JSON.stringify({
       ok: true,
       status: "online",
