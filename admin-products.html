@@ -312,10 +312,7 @@ input:focus,select:focus{border-color:#7a3d3d;box-shadow:0 0 0 4px rgba(122,61,6
 </div>
 
 <script>
-const PRODUCTS_DB_NAME = "swadraProductsDB";
-const PRODUCTS_STORE_NAME = "products";
 const PRODUCT_API_URLS = window.SWADRA_PRODUCTS_API_URLS || ["/api/products"];
-const BACKEND_PRODUCTS_CACHE_KEY = "swadraBackendProductsCache";
 
 function normalizeFrontendProduct(product){
 const images = Array.isArray(product.images) ? product.images.filter(Boolean).slice(0,4) : [];
@@ -340,19 +337,19 @@ async function fetchBackendProducts(){
 for(const url of PRODUCT_API_URLS){
 try{
 const response = await fetch(url,{cache:"no-store"});
-if(!response.ok) continue;
-const data = await response.json();
+const data = await response.json().catch(()=>({}));
+if(!response.ok) throw new Error(data?.error || data?.message || ("HTTP " + response.status));
 const products = Array.isArray(data?.products) ? data.products.map(normalizeFrontendProduct) : [];
 if(products.length || data?.ok){
-try{ localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(products)); }catch(e){}
 return products;
 }
 }catch(error){}
 }
-return null;
+throw new Error("Backend products fetch failed");
 }
 
 async function saveBackendProduct(product){
+let lastError = null;
 for(const baseUrl of PRODUCT_API_URLS){
 try{
 const response = await fetch(baseUrl,{
@@ -360,36 +357,33 @@ method:"POST",
 headers:{"Content-Type":"application/json"},
 body: JSON.stringify(product)
 });
-if(!response.ok) continue;
-const data = await response.json();
-if(data?.product) return normalizeFrontendProduct(data.product);
-}catch(error){}
+const data = await response.json().catch(()=>({}));
+if(!response.ok){
+lastError = new Error(data?.error || data?.message || `Backend save failed (${response.status})`);
+continue;
 }
-throw new Error("Backend save failed");
+if(data?.product) return normalizeFrontendProduct(data.product);
+lastError = new Error("Backend save response missing product");
+}catch(error){
+lastError = error;
+}
+}
+throw lastError || new Error("Backend save failed");
 }
 
 async function deleteBackendProduct(id){
+let lastError = null;
 for(const baseUrl of PRODUCT_API_URLS){
 try{
 const response = await fetch(`${baseUrl}/${encodeURIComponent(id)}`,{method:"DELETE"});
+const data = await response.json().catch(()=>({}));
 if(response.ok) return true;
-}catch(error){}
+lastError = new Error(data?.error || data?.message || `Backend delete failed (${response.status})`);
+}catch(error){
+lastError = error;
 }
-throw new Error("Backend delete failed");
 }
-
-function openProductsDb(){
-return new Promise((resolve,reject)=>{
-const request = indexedDB.open(PRODUCTS_DB_NAME,1);
-request.onupgradeneeded = e=>{
-const db = e.target.result;
-if(!db.objectStoreNames.contains(PRODUCTS_STORE_NAME)){
-db.createObjectStore(PRODUCTS_STORE_NAME,{keyPath:"id"});
-}
-};
-request.onsuccess = ()=>resolve(request.result);
-request.onerror = ()=>reject(request.error);
-});
+throw lastError || new Error("Backend delete failed");
 }
 
 function signalProductsUpdated(){
@@ -407,79 +401,17 @@ if(normalized.includes("oil") || normalized.includes("ghee")) return "oilghee";
 return "spices";
 }
 
-async function syncProductsFallbackStore(){
-try{
-const products = await getProducts();
-localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(products));
-localStorage.setItem("adminProducts", JSON.stringify(products));
-const grouped = {
-spices: [],
-dryfruits: [],
-oilghee: [],
-achar: [],
-combos: [],
-bestseller: [],
-special: []
-};
-products.forEach(product=>{
-const key = normalizeCategoryKey(product.category);
-if(!grouped[key]) grouped[key] = [];
-grouped[key].push(product);
-});
-localStorage.setItem("adminProductsByCategory", JSON.stringify(grouped));
-}catch(e){
-console.error("adminProducts fallback sync failed", e);
-}
-}
-
 async function getProducts(){
-const backendProducts = await fetchBackendProducts();
-if(backendProducts){
-return backendProducts;
-}
-try{
-const db = await openProductsDb();
-return await new Promise((resolve,reject)=>{
-const tx = db.transaction(PRODUCTS_STORE_NAME,"readonly");
-const store = tx.objectStore(PRODUCTS_STORE_NAME);
-const request = store.getAll();
-request.onsuccess = ()=>resolve(request.result || []);
-request.onerror = ()=>reject(request.error);
-});
-}catch(e){
-console.error("IndexedDB products read failed", e);
-try{
-const cachedProducts = JSON.parse(localStorage.getItem(BACKEND_PRODUCTS_CACHE_KEY)) || [];
-if(cachedProducts.length) return cachedProducts;
-return JSON.parse(localStorage.getItem("adminProducts")) || [];
-}catch(parseError){
-console.error("adminProducts parse failed", parseError);
-return [];
-}
-}
+return await fetchBackendProducts();
 }
 
 async function putProduct(product){
-const payload = normalizeFrontendProduct(product);
-const saved = await saveBackendProduct(payload);
-const db = await openProductsDb();
-return await new Promise((resolve,reject)=>{
-const tx = db.transaction(PRODUCTS_STORE_NAME,"readwrite");
-tx.objectStore(PRODUCTS_STORE_NAME).put(saved);
-tx.oncomplete = ()=>resolve(true);
-tx.onerror = ()=>reject(tx.error);
-});
+return await saveBackendProduct(normalizeFrontendProduct(product));
 }
 
 async function deleteProductRecord(id){
 await deleteBackendProduct(id);
-const db = await openProductsDb();
-return await new Promise((resolve,reject)=>{
-const tx = db.transaction(PRODUCTS_STORE_NAME,"readwrite");
-tx.objectStore(PRODUCTS_STORE_NAME).delete(id);
-tx.oncomplete = ()=>resolve(true);
-tx.onerror = ()=>reject(tx.error);
-});
+return true;
 }
 
 function normalizeProductName(value){
@@ -541,29 +473,7 @@ return `<div class="price">â‚¹${price}</div>`;
 }
 
 async function migrateLegacyProductsIfNeeded(){
-let legacyProducts = [];
-try{
-legacyProducts = JSON.parse(localStorage.getItem("adminProducts")) || [];
-}catch(e){
-legacyProducts = [];
-}
-
-if(!legacyProducts.length){
-return;
-}
-
-const currentProducts = await getProducts();
-
-if(currentProducts.length === 0){
-for(const product of legacyProducts){
-await putProduct(buildProductRecord(product));
-}
-await syncProductsFallbackStore();
-signalProductsUpdated();
-return;
-}
-
-await syncProductsFallbackStore();
+return true;
 }
 
 function openModal(){
@@ -688,15 +598,14 @@ images: uploadedImages
 
 try{
 await putProduct(product);
-await syncProductsFallbackStore();
 signalProductsUpdated();
 await renderProducts();
 closeModal();
 clearForm();
 alert("Product saved successfully");
 }catch(saveError){
-alert("Products save failed. Storage may be full.");
-console.error("IndexedDB product save failed", saveError);
+alert(saveError.message || "Product save failed");
+console.error("Product save failed", saveError);
 }
 }).catch(error=>{
 alert("Image upload failed");
@@ -707,11 +616,10 @@ console.error(error);
 async function deleteProduct(id){
 try{
 await deleteProductRecord(id);
-await syncProductsFallbackStore();
 signalProductsUpdated();
 await renderProducts();
 }catch(e){
-alert("Delete failed");
+alert(e.message || "Delete failed");
 console.error("Delete failed", e);
 }
 }
@@ -756,11 +664,10 @@ return;
 
 try{
 await putProduct(products[index]);
-await syncProductsFallbackStore();
 signalProductsUpdated();
 await renderProducts();
 }catch(e){
-alert("Update failed");
+alert(e.message || "Update failed");
 console.error("Update failed", e);
 }
 }
@@ -978,7 +885,6 @@ ${stockStatus==="Out of Stock"
 }
 
 migrateLegacyProductsIfNeeded().then(async ()=>{
-await syncProductsFallbackStore();
 await renderProducts();
 });
 </script>

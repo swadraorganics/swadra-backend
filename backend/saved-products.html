@@ -537,9 +537,6 @@
       "http://127.0.0.1:3000/api/products",
       "http://localhost:3000/api/products"
     ];
-    const BACKEND_PRODUCTS_CACHE_KEY = "swadraBackendProductsCache";
-    const PRODUCTS_DB_NAME = "swadraProductsDB";
-    const PRODUCTS_STORE_NAME = "products";
     let state = { products: [], editingId: null };
     const IMAGE_SLOT_LABELS = ["Hero Image","2nd Image","3rd Image","4th Image"];
 
@@ -690,98 +687,15 @@ if(normalized.includes("oil") || normalized.includes("ghee")) return "oilghee";
 return "spices";
 }
 
-    function openProductsDb(){
-      return new Promise((resolve,reject)=>{
-        const request = indexedDB.open(PRODUCTS_DB_NAME,1);
-        request.onupgradeneeded = e=>{
-          const db = e.target.result;
-          if(!db.objectStoreNames.contains(PRODUCTS_STORE_NAME)){
-            db.createObjectStore(PRODUCTS_STORE_NAME,{keyPath:"id"});
-          }
-        };
-        request.onsuccess = ()=>resolve(request.result);
-        request.onerror = ()=>reject(request.error);
-      });
-    }
-
-    function getCachedBackendProducts(){
-      try{
-        return applyOfflineFallbackPricing(JSON.parse(localStorage.getItem(BACKEND_PRODUCTS_CACHE_KEY)) || []);
-      }catch(error){
-        return [];
-      }
-    }
-
-    async function getIndexedDbProducts(){
-      try{
-        const db = await openProductsDb();
-        const products = await new Promise((resolve,reject)=>{
-          const tx = db.transaction(PRODUCTS_STORE_NAME,"readonly");
-          const request = tx.objectStore(PRODUCTS_STORE_NAME).getAll();
-          request.onsuccess = ()=>resolve(request.result || []);
-          request.onerror = ()=>reject(request.error);
-        });
-        return applyOfflineFallbackPricing(products);
-      }catch(error){
-        return [];
-      }
-    }
-
-    async function writeIndexedDbProducts(products){
-      try{
-        const db = await openProductsDb();
-        await new Promise((resolve,reject)=>{
-          const tx = db.transaction(PRODUCTS_STORE_NAME,"readwrite");
-          const store = tx.objectStore(PRODUCTS_STORE_NAME);
-          store.clear();
-          (Array.isArray(products) ? products : []).forEach(product=>store.put(normalizeProduct(product)));
-          tx.oncomplete = ()=>resolve(true);
-          tx.onerror = ()=>reject(tx.error);
-        });
-      }catch(error){}
-    }
-
     function signalProductsUpdated(){
       try{
         localStorage.setItem("adminProductsUpdatedAt", String(Date.now()));
       }catch(error){}
     }
 
-    async function persistProductsLocally(products){
-      const normalizedProducts = applyOfflineFallbackPricing(products);
-const grouped = {
-spices: [],
-dryfruits: [],
-oilghee: [],
-achar: [],
-combos: [],
-bestseller: [],
-special: []
-};
-
-      normalizedProducts.forEach(product=>{
-        const key = normalizeCategoryKey(product.category);
-        if(!grouped[key]) grouped[key] = [];
-        grouped[key].push(product);
-        if(product.isBestseller && key !== "bestseller"){
-          grouped.bestseller.push(product);
-        }
-        if(product.isSpecialProduct && key !== "special"){
-          grouped.special.push(product);
-        }
-      });
-
-      try{ localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(normalizedProducts)); }catch(error){}
-      try{ localStorage.setItem("adminProducts", JSON.stringify(normalizedProducts)); }catch(error){}
-      try{ localStorage.setItem("adminProductsByCategory", JSON.stringify(grouped)); }catch(error){}
-      await writeIndexedDbProducts(normalizedProducts);
-      signalProductsUpdated();
-      return normalizedProducts;
-    }
-
     async function replaceLocalProduct(updatedProduct){
       const currentProducts = (state.products || []).map(normalizeProduct);
-      const nextProducts = currentProducts.map(product => {
+      state.products = currentProducts.map(product => {
         if(String(product.id) !== String(updatedProduct.id)){
           return normalizeProduct(product);
         }
@@ -791,35 +705,11 @@ special: []
           image: updatedProduct?.image || product.image || ""
         });
       });
-      state.products = await persistProductsLocally(nextProducts);
     }
 
     async function removeLocalProduct(id){
       const currentProducts = (state.products || []).map(normalizeProduct);
-      const nextProducts = currentProducts.filter(product => String(product.id) !== String(id));
-      state.products = await persistProductsLocally(nextProducts);
-    }
-
-    function getLegacyFallbackProducts(){
-      const deduped = new Map();
-
-      try{
-        const grouped = JSON.parse(localStorage.getItem("adminProductsByCategory")) || {};
-        Object.values(grouped).forEach(items=>{
-          (Array.isArray(items) ? items : []).forEach(product=>{
-            const normalized = normalizeProduct(product);
-            deduped.set(String(normalized.id), normalized);
-          });
-        });
-      }catch(error){}
-
-      try{
-        applyOfflineFallbackPricing(JSON.parse(localStorage.getItem("adminProducts")) || []).forEach(product=>{
-          deduped.set(String(product.id), product);
-        });
-      }catch(error){}
-
-      return Array.from(deduped.values());
+      state.products = currentProducts.filter(product => String(product.id) !== String(id));
     }
 
     async function apiGetProducts(){
@@ -827,8 +717,9 @@ special: []
       for(const url of PRODUCT_API_URLS){
         try{
           const response = await fetch(url,{ cache:"no-store" });
-          if(!response.ok) throw new Error("HTTP " + response.status);
-          return await response.json();
+          const data = await response.json().catch(()=>({}));
+          if(!response.ok) throw new Error(data?.error || data?.message || ("HTTP " + response.status));
+          return data;
         }catch(error){
           lastError = error;
         }
@@ -967,26 +858,15 @@ special: []
     }
 
     async function loadProducts(){
-      const cachedProducts = getCachedBackendProducts();
-      if(cachedProducts.length && !(state.products || []).length){
-        state.products = cachedProducts;
-        renderProducts();
-      }
       try{
         const data = await apiGetProducts();
-        const apiProducts = Array.isArray(data?.products) ? data.products.map(normalizeProduct) : [];
-        if(apiProducts.length){
-          state.products = await persistProductsLocally(apiProducts);
-        }
+        state.products = Array.isArray(data?.products) ? data.products.map(normalizeProduct) : [];
+        renderProducts();
       }catch(error){
-        if(cachedProducts.length){
-          state.products = cachedProducts;
-        }else{
-          const indexedDbProducts = await getIndexedDbProducts();
-          state.products = indexedDbProducts.length ? indexedDbProducts : getLegacyFallbackProducts();
-        }
+        state.products = [];
+        renderProducts();
+        alert(error.message || "Backend products load failed");
       }
-      renderProducts();
     }
 
     async function toggleProductAvailability(id){
@@ -1019,8 +899,7 @@ special: []
         await replaceLocalProduct(payload);
         renderProducts();
       }catch(error){
-        await replaceLocalProduct(payload);
-        renderProducts();
+        alert(error.message || "Stock update failed");
       }
     }
 
@@ -1055,8 +934,7 @@ special: []
         await replaceLocalProduct(payload);
         renderProducts();
       }catch(error){
-        await replaceLocalProduct(payload);
-        renderProducts();
+        alert(error.message || "Badge update failed");
       }
     }
 
@@ -1072,8 +950,7 @@ special: []
         await removeLocalProduct(id);
         renderProducts();
       }catch(error){
-        await removeLocalProduct(id);
-        renderProducts();
+        alert(error.message || "Delete failed");
       }
     }
 
@@ -1160,15 +1037,7 @@ special: []
           closeEditModal();
           renderProducts();
         }catch(error){
-          await replaceLocalProduct({
-            ...product,
-            ...payload,
-            images: safeImages.length ? safeImages : (product.images || []),
-            image: (safeImages[0] || product.image || ""),
-            updatedAt: new Date().toISOString()
-          });
-          closeEditModal();
-          renderProducts();
+          alert(error.message || "Save changes failed");
         }
       };
 

@@ -23,9 +23,12 @@ const FIRESTORE_COLLECTION = process.env.FIRESTORE_COLLECTION || "appData";
 const FIRESTORE_DOCUMENT = process.env.FIRESTORE_DOCUMENT || "swadra";
 const FIRESTORE_LISTS = ["products", "orders", "paymentAttempts", "logs"];
 const ENABLE_STARTUP_DB_LOG = String(process.env.ENABLE_STARTUP_DB_LOG || "").toLowerCase() === "true";
+const ENABLE_PERSISTENT_LOGS = String(process.env.ENABLE_PERSISTENT_LOGS || "").toLowerCase() === "true";
 let firestoreDb = null;
 let fileStorageAvailable = !USE_FIRESTORE;
 let memoryDb = null;
+let dbCache = null;
+let dbCacheLoaded = false;
 
 process.on("unhandledRejection", (reason) => {
   console.error("[unhandledRejection]", reason);
@@ -36,8 +39,8 @@ process.on("uncaughtException", (error) => {
 });
 
 app.use(cors());
-app.use(express.json({ limit: "80mb" }));
-app.use(express.urlencoded({ extended: true, limit: "80mb" }));
+app.use(express.json({ limit: "12mb" }));
+app.use(express.urlencoded({ extended: true, limit: "12mb" }));
 app.use(express.static(__dirname));
 
 function getDefaultDB() {
@@ -197,21 +200,34 @@ async function readDB() {
     }
     return normalizeDB(data);
   }
+  if (dbCacheLoaded && dbCache) {
+    return dbCache;
+  }
   ensureDB();
   if (!fileStorageAvailable) {
-    memoryDb = cloneDB(memoryDb);
-    return cloneDB(memoryDb);
+    if (!memoryDb) {
+      memoryDb = getDefaultDB();
+    }
+    dbCache = normalizeDB(memoryDb);
+    dbCacheLoaded = true;
+    return dbCache;
   }
   try {
     const raw = fs.readFileSync(DB_PATH, "utf8");
     const parsed = normalizeDB(JSON.parse(raw || '{"products":[],"logs":[],"meta":{}}'));
-    memoryDb = cloneDB(parsed);
-    return parsed;
+    memoryDb = parsed;
+    dbCache = parsed;
+    dbCacheLoaded = true;
+    return dbCache;
   } catch (error) {
     fileStorageAvailable = false;
-    memoryDb = cloneDB(memoryDb);
+    if (!memoryDb) {
+      memoryDb = getDefaultDB();
+    }
+    dbCache = normalizeDB(memoryDb);
+    dbCacheLoaded = true;
     console.error("[db fallback] read failed:", error.message);
-    return cloneDB(memoryDb);
+    return dbCache;
   }
 }
 
@@ -219,6 +235,8 @@ async function writeDB(data) {
   data.meta = data.meta || {};
   data.meta.updatedAt = new Date().toISOString();
   const normalized = normalizeDB(data);
+  dbCache = normalized;
+  dbCacheLoaded = true;
   if (USE_FIRESTORE) {
     const firestore = getFirestore();
     const rootRef = firestore.collection(FIRESTORE_COLLECTION).doc(FIRESTORE_DOCUMENT);
@@ -233,7 +251,7 @@ async function writeDB(data) {
     }
     return;
   }
-  memoryDb = cloneDB(normalized);
+  memoryDb = normalized;
   if (!fileStorageAvailable) return;
   try {
     fs.writeFileSync(DB_PATH, JSON.stringify(normalized, null, 2), "utf8");
@@ -244,6 +262,10 @@ async function writeDB(data) {
 }
 
 async function addLog(message, level = "info") {
+  console[level === "error" ? "error" : level === "warn" ? "warn" : "log"](`[${level}] ${message}`);
+  if (!ENABLE_PERSISTENT_LOGS) {
+    return;
+  }
   try {
     const db = await readDB();
     db.logs.unshift({

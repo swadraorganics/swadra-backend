@@ -690,13 +690,11 @@
           if(!response.ok) continue;
           const data = await response.json();
           if(Array.isArray(data?.products)){
-            const products = data.products.map(normalizeFrontendProduct);
-            try{ localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(products)); }catch(e){}
-            return products;
+            return data.products.map(normalizeFrontendProduct);
           }
         }catch(error){}
       }
-      return null;
+      throw new Error("Backend products fetch failed");
     }
 
     window.checkServerStatus = async function(){
@@ -732,6 +730,7 @@
     }
 
     async function saveBackendProduct(product){
+      let lastError = null;
       for(const baseUrl of PRODUCT_API_URLS){
         try{
           const response = await fetch(baseUrl,{
@@ -739,38 +738,33 @@
             headers:{"Content-Type":"application/json"},
             body: JSON.stringify(product)
           });
-          if(!response.ok) continue;
-          const data = await response.json();
+          const data = await response.json().catch(()=>({}));
+          if(!response.ok){
+            lastError = new Error(data?.error || data?.message || `Backend save failed (${response.status})`);
+            continue;
+          }
           if(data?.product){
             return normalizeFrontendProduct(data.product);
           }
+          lastError = new Error("Backend save response missing product");
         }catch(error){}
       }
-      throw new Error("Backend save failed");
+      throw lastError || new Error("Backend save failed");
     }
 
     async function deleteBackendProduct(id){
+      let lastError = null;
       for(const baseUrl of PRODUCT_API_URLS){
         try{
           const response = await fetch(`${baseUrl}/${encodeURIComponent(id)}`,{ method:"DELETE" });
           if(response.ok) return true;
-        }catch(error){}
+          const data = await response.json().catch(()=>({}));
+          lastError = new Error(data?.error || data?.message || `Backend delete failed (${response.status})`);
+        }catch(error){
+          lastError = error;
+        }
       }
-      throw new Error("Backend delete failed");
-    }
-
-    function openProductsDb(){
-      return new Promise((resolve,reject)=>{
-        const request = indexedDB.open(PRODUCTS_DB_NAME,1);
-        request.onupgradeneeded = e=>{
-          const db = e.target.result;
-          if(!db.objectStoreNames.contains(PRODUCTS_STORE_NAME)){
-            db.createObjectStore(PRODUCTS_STORE_NAME,{keyPath:"id"});
-          }
-        };
-        request.onsuccess = ()=>resolve(request.result);
-        request.onerror = ()=>reject(request.error);
-      });
+      throw lastError || new Error("Backend delete failed");
     }
 
     function signalProductsUpdated(){
@@ -788,84 +782,17 @@ if(normalized.includes("oil") || normalized.includes("ghee")) return "oilghee";
 return "spices";
 }
 
-    async function syncProductsFallbackStore(){
-      try{
-        const products = await getProducts();
-        localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(products));
-        localStorage.setItem("adminProducts", JSON.stringify(products));
-const grouped = {
-spices: [],
-dryfruits: [],
-oilghee: [],
-achar: [],
-combos: [],
-bestseller: [],
-special: []
-};
-        products.forEach(product=>{
-          const key = normalizeCategoryKey(product.category);
-          if(!grouped[key]) grouped[key] = [];
-          grouped[key].push(product);
-          if(product.isBestseller && key !== "bestseller"){
-            grouped.bestseller.push(product);
-          }
-          if(product.isSpecialProduct && key !== "special"){
-            grouped.special.push(product);
-          }
-        });
-        localStorage.setItem("adminProductsByCategory", JSON.stringify(grouped));
-      }catch(e){
-        console.error("adminProducts fallback sync failed", e);
-      }
-    }
-
     async function getProducts(){
-      const backendProducts = await fetchBackendProducts();
-      if(backendProducts){
-        return backendProducts;
-      }
-      try{
-        const db = await openProductsDb();
-        return await new Promise((resolve,reject)=>{
-          const tx = db.transaction(PRODUCTS_STORE_NAME,"readonly");
-          const store = tx.objectStore(PRODUCTS_STORE_NAME);
-          const request = store.getAll();
-          request.onsuccess = ()=>resolve(request.result || []);
-          request.onerror = ()=>reject(request.error);
-        });
-      }catch(e){
-        console.error("IndexedDB products read failed", e);
-        try{
-          const cachedProducts = JSON.parse(localStorage.getItem(BACKEND_PRODUCTS_CACHE_KEY)) || [];
-          if(cachedProducts.length) return cachedProducts;
-          return JSON.parse(localStorage.getItem("adminProducts")) || [];
-        }catch(parseError){
-          console.error("adminProducts parse failed", parseError);
-          return [];
-        }
-      }
+      return await fetchBackendProducts();
     }
 
     async function putProduct(product){
-      const saved = await saveBackendProduct(normalizeFrontendProduct(product));
-      const db = await openProductsDb();
-      return await new Promise((resolve,reject)=>{
-        const tx = db.transaction(PRODUCTS_STORE_NAME,"readwrite");
-        tx.objectStore(PRODUCTS_STORE_NAME).put(saved);
-        tx.oncomplete = ()=>resolve(true);
-        tx.onerror = ()=>reject(tx.error);
-      });
+      return await saveBackendProduct(normalizeFrontendProduct(product));
     }
 
     async function deleteProductRecord(id){
       await deleteBackendProduct(id);
-      const db = await openProductsDb();
-      return await new Promise((resolve,reject)=>{
-        const tx = db.transaction(PRODUCTS_STORE_NAME,"readwrite");
-        tx.objectStore(PRODUCTS_STORE_NAME).delete(id);
-        tx.oncomplete = ()=>resolve(true);
-        tx.onerror = ()=>reject(tx.error);
-      });
+      return true;
     }
 
     function normalizeProductName(value){
@@ -1173,13 +1100,12 @@ special: []
 
         try{
           await putProduct(product);
-          await syncProductsFallbackStore();
           signalProductsUpdated();
           await renderProducts();
           loadProductIntoForm(product.id);
           alert("Product saved successfully.");
         }catch(e){
-          alert("Save failed");
+          alert(e.message || "Save failed");
           console.error("Save failed", e);
         }
       };
@@ -1427,7 +1353,6 @@ special: []
 
       try{
         await putProduct(updated);
-        await syncProductsFallbackStore();
         signalProductsUpdated();
         await renderProducts();
         if (String(editId) === String(id)) {
@@ -1443,7 +1368,6 @@ special: []
       if (!confirm("Delete this product?")) return;
       try{
         await deleteProductRecord(id);
-        await syncProductsFallbackStore();
         signalProductsUpdated();
         await renderProducts();
         if (String(editId) === String(id)) clearForm();
@@ -1468,7 +1392,6 @@ special: []
 
       try{
         await putProduct(updated);
-        await syncProductsFallbackStore();
         signalProductsUpdated();
         await renderProducts();
         if (String(editId) === String(id)) {
@@ -1486,32 +1409,7 @@ special: []
       panel.classList.toggle("open");
     }
 
-    async function migrateLegacyProductsIfNeeded(){
-      let legacyProducts = [];
-      try{
-        legacyProducts = JSON.parse(localStorage.getItem("adminProducts")) || [];
-      }catch(e){
-        legacyProducts = [];
-      }
-
-      if(!legacyProducts.length) return;
-
-      const currentProducts = await getProducts();
-      if(currentProducts.length === 0){
-        for(const product of legacyProducts){
-          await putProduct(buildProductRecord(product));
-        }
-        await syncProductsFallbackStore();
-        signalProductsUpdated();
-        return;
-      }
-
-      await syncProductsFallbackStore();
-    }
-
-    migrateLegacyProductsIfNeeded().then(async ()=>{
-      await syncProductsFallbackStore();
-      await renderProducts();
+    renderProducts().then(()=>{
       clearForm();
     });
   </script>
