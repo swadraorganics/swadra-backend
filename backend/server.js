@@ -30,13 +30,23 @@ let firestoreDb = null;
 let fileStorageAvailable = !USE_FIRESTORE;
 let memoryDb = null;
 
+process.on("unhandledRejection", (reason) => {
+  console.error("[unhandledRejection]", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("[uncaughtException]", error);
+});
+
 app.use(cors());
 app.use(express.json({ limit: "80mb" }));
 app.use(express.urlencoded({ extended: true, limit: "80mb" }));
-app.use(express.static(__dirname));
 app.get("/favicon.ico", (req, res) => {
-  res.status(204).end();
+  res.type("image/svg+xml").send(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#7a3d3d"/><text x="16" y="21" text-anchor="middle" font-size="16" font-family="Arial" fill="#fff">S</text></svg>`
+  );
 });
+app.use(express.static(__dirname));
 
 function getDefaultDB() {
   return {
@@ -2120,7 +2130,12 @@ app.get("/", async (req, res) => {
   `);
 });
 
-app.listen(PORT, HOST, () => {
+app.use((error, req, res, next) => {
+  console.error("[express error]", req.method, req.originalUrl, error);
+  res.status(500).json({ ok: false, error: "Internal server error" });
+});
+
+const server = app.listen(PORT, HOST, () => {
   const localUrl = `http://${HOST}:${PORT}`;
   const publicUrl = PUBLIC_BASE_URL
     ? (PUBLIC_BASE_URL.startsWith("http") ? PUBLIC_BASE_URL : `https://${PUBLIC_BASE_URL}`)
@@ -2135,6 +2150,10 @@ app.listen(PORT, HOST, () => {
   if(publicUrl){
     addLog(`Public URL available at ${publicUrl}`, "success");
   }
+});
+
+server.on("error", (error) => {
+  console.error("[server error]", error);
 });
 
 
