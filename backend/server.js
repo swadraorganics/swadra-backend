@@ -4,13 +4,8 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const https = require("https");
-let admin = null;
 let puppeteer = null;
-try {
-  admin = require("firebase-admin");
-} catch (error) {
-  admin = null;
-}
+let admin = undefined;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -101,6 +96,13 @@ function normalizeCoupon(input = {}) {
 
 function getFirestore() {
   if (!USE_FIRESTORE) return null;
+  if (admin === undefined) {
+    try {
+      admin = require("firebase-admin");
+    } catch (error) {
+      admin = null;
+    }
+  }
   if (!admin) {
     throw new Error("firebase-admin package is required when USE_FIRESTORE=true");
   }
@@ -1115,8 +1117,6 @@ function normalizeProduct(input, existingProduct = null) {
 
   return product;
 }
-
-ensureDB();
 
 app.get("/health", async (req, res) => {
   res.status(200).type("application/json").send(JSON.stringify({
