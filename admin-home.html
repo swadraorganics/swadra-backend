@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter','Nirmala UI','Mangal','Noto Sans Devanagari',sans-serif}
 
 :root{
   --primary:#7a3d3d;
@@ -568,69 +568,177 @@ const saveStatus = document.getElementById("saveStatus");
 const STORY_COUNTER_KEY = "swadra_home_family_story_v1";
 const STORY_DEFAULT_IMAGE = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560"><rect width="900" height="560" fill="#ffe6a8"/><circle cx="720" cy="112" r="62" fill="#fff5bf"/><path d="M0 400 C160 350 290 378 440 338 C620 290 750 330 900 286 L900 560 L0 560 Z" fill="#719444"/><g fill="#5b3822"><circle cx="135" cy="190" r="29"/><rect x="100" y="228" width="70" height="160" rx="28"/><circle cx="245" cy="170" r="34"/><rect x="205" y="215" width="80" height="184" rx="32"/><circle cx="368" cy="182" r="31"/><rect x="331" y="224" width="74" height="170" rx="30"/></g><text x="590" y="470" text-anchor="middle" font-family="Georgia" font-size="34" fill="#7a3d3d">Swadra Family</text></svg>`);
 
+function repairMojibake(value){
+let text = String(value || "");
+if(!text) return text;
+if(!/[ÃÂâà¤à¥]/.test(text)) return text;
+try{
+return decodeURIComponent(escape(text));
+}catch(e){
+return text
+.replaceAll("â˜…", "★")
+.replaceAll("âœ“", "✓")
+.replaceAll("â†’", "→");
+}
+}
+
+function cleanUiText(value,fallback){
+let raw = String(value || "").trim();
+let base = raw || String(fallback || "");
+return repairMojibake(base).trim() || String(fallback || "");
+}
+
 function setStatus(message,isError){
 saveStatus.textContent = message;
 saveStatus.style.background = isError ? "#fee2e2" : "#ecfdf3";
 saveStatus.style.color = isError ? "#991b1b" : "#166534";
 }
 
-// SAFE STORAGE
-function safeSet(key,data){
+const APP_STATE_ENDPOINT = (window.SWADRA_APP_STATE_URL || "/api/app-state");
+const remoteState = {
+users: {},
+homeContent: {},
+offers: [],
+heroImages: [],
+customers: []
+};
+
+function getAppStateUrl(keys){
+let url = APP_STATE_ENDPOINT;
+if(Array.isArray(keys) && keys.length){
+url += `?keys=${encodeURIComponent(keys.join(","))}`;
+}
+return url;
+}
+
+async function fetchAppState(keys){
+const response = await fetch(getAppStateUrl(keys), { cache:"no-store" });
+if(!response.ok){
+throw new Error(`Request failed with ${response.status}`);
+}
+const data = await response.json();
+if(!data || !data.ok){
+throw new Error(data?.error || "Failed to fetch app state");
+}
+return data.state || {};
+}
+
+async function persistAppState(state, removeKeys){
+const response = await fetch(APP_STATE_ENDPOINT,{
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body: JSON.stringify({
+state: state && typeof state === "object" ? state : {},
+removeKeys: Array.isArray(removeKeys) ? removeKeys : []
+})
+});
+const data = await response.json().catch(()=>({}));
+if(!response.ok || !data?.ok){
+throw new Error(data?.error || `Save failed with ${response.status}`);
+}
+return data.state || {};
+}
+
+function syncRemoteCollectionsFromHomeContent(){
+const content = remoteState.homeContent && typeof remoteState.homeContent === "object" ? remoteState.homeContent : {};
+remoteState.offers = Array.isArray(content.offers) ? content.offers.slice() : [];
+remoteState.heroImages = Array.isArray(content.heroImages) ? content.heroImages.slice() : [];
+remoteState.customers = Array.isArray(content.customers) ? content.customers.slice() : [];
+}
+
+async function reloadRemoteState(){
+const state = await fetchAppState([
+"users",
+"homeContent",
+"offers",
+"heroImages",
+"customers",
+STORY_COUNTER_KEY
+]);
+remoteState.users = state.users && typeof state.users === "object" ? state.users : {};
+remoteState.homeContent = state.homeContent && typeof state.homeContent === "object" ? state.homeContent : {};
+remoteState.storyCounter = state[STORY_COUNTER_KEY] && typeof state[STORY_COUNTER_KEY] === "object" ? state[STORY_COUNTER_KEY] : {};
+syncRemoteCollectionsFromHomeContent();
+
+if(remoteState.offers.length === 0 && Array.isArray(state.offers)){
+remoteState.offers = state.offers.slice();
+remoteState.homeContent.offers = remoteState.offers.slice();
+}
+if(remoteState.heroImages.length === 0 && Array.isArray(state.heroImages)){
+remoteState.heroImages = state.heroImages.slice();
+remoteState.homeContent.heroImages = remoteState.heroImages.slice();
+}
+if(remoteState.customers.length === 0 && Array.isArray(state.customers)){
+remoteState.customers = state.customers.slice();
+remoteState.homeContent.customers = remoteState.customers.slice();
+}
+}
+
+async function safeSet(key,data){
 try{
-localStorage.setItem(key,JSON.stringify(data));
-console.log("Saved:", key);
+if(key === "offers"){
+remoteState.offers = Array.isArray(data) ? data.slice() : [];
+await saveHomeContent({ offers: remoteState.offers.slice() });
+return true;
+}
+if(key === "heroImages"){
+remoteState.heroImages = Array.isArray(data) ? data.slice() : [];
+await saveHomeContent({
+heroImages: remoteState.heroImages.slice(),
+heroImagesUpdatedAt: Date.now()
+});
+return true;
+}
+if(key === "customers"){
+remoteState.customers = Array.isArray(data) ? data.slice() : [];
+await saveHomeContent({
+customers: remoteState.customers.slice(),
+customersUpdatedAt: Date.now()
+});
+return true;
+}
+if(key === STORY_COUNTER_KEY){
+remoteState.storyCounter = data && typeof data === "object" ? { ...data } : {};
+await persistAppState({ [STORY_COUNTER_KEY]: data }, []);
+setStatus(`${key} saved successfully`, false);
+return true;
+}
+await persistAppState({ [key]: data }, []);
 setStatus(`${key} saved successfully`, false);
 return true;
 }catch(e){
 setStatus(`${key} save failed: ${e.message}`, true);
-alert("Storage full or blocked. Delete old images/videos and try again.");
 console.error(e);
 return false;
 }
 }
 
 function safeParse(key){
-try{
-return JSON.parse(localStorage.getItem(key)) || [];
-}catch(e){
-console.error("Parse failed:", key, e);
+if(key === "offers") return remoteState.offers.slice();
+if(key === "heroImages") return remoteState.heroImages.slice();
+if(key === "customers") return remoteState.customers.slice();
+if(key === STORY_COUNTER_KEY){
+return remoteState.storyCounter ? { ...remoteState.storyCounter } : {};
+}
 return [];
 }
-}
 
-function saveHomeContent(partial){
-let current = {};
-try{
-current = JSON.parse(localStorage.getItem("homeContent")) || {};
-}catch(e){
-console.error("homeContent parse failed", e);
-}
-
+async function saveHomeContent(partial){
 let next = {
-offers: safeParse("offers"),
-updatedAt: Date.now(),
-...current,
-...partial
+...remoteState.homeContent,
+...partial,
+updatedAt: Date.now()
 };
-
-try{
-localStorage.setItem("homeContent", JSON.stringify(next));
-}catch(e){
-setStatus(`homeContent save failed: ${e.message}`, true);
-console.error("homeContent save failed", e);
+if(!Array.isArray(next.offers)){
+next.offers = remoteState.offers.slice();
 }
+remoteState.homeContent = next;
+syncRemoteCollectionsFromHomeContent();
+await persistAppState({ homeContent: next }, []);
 }
 
 function canUseStorage(){
-try{
-localStorage.setItem("__storage_test__", "ok");
-localStorage.removeItem("__storage_test__");
 return true;
-}catch(e){
-setStatus(`Storage unavailable: ${e.message}`, true);
-console.error("Storage unavailable", e);
-return false;
-}
 }
 
 // FILE READ
@@ -643,16 +751,15 @@ r.readAsDataURL(file);
 }
 
 function safeObjectParse(key){
-try{
-return JSON.parse(localStorage.getItem(key)) || {};
-}catch(e){
-return {};
+if(key === STORY_COUNTER_KEY){
+return remoteState.storyCounter ? { ...remoteState.storyCounter } : {};
 }
+return {};
 }
 
 function getRegisteredCustomerCount(){
 try{
-let users = JSON.parse(localStorage.getItem("users") || "{}") || {};
+let users = remoteState.users || {};
 return Object.keys(users).filter(Boolean).length;
 }catch(e){
 return 0;
@@ -661,7 +768,7 @@ return 0;
 
 function getPaidOrderCount(){
 try{
-let users = JSON.parse(localStorage.getItem("users") || "{}") || {};
+let users = remoteState.users || {};
 return Object.values(users).reduce((sum,user)=>{
 let orders = Array.isArray(user && user.orders) ? user.orders : [];
 return sum + orders.filter(order => String(order.payment || order.status || "").toLowerCase().includes("paid") || String(order.status || "").toLowerCase().includes("confirmed")).length;
@@ -682,31 +789,26 @@ return Math.max(0, Number(data.baseCount || 5978)) + getRegisteredCustomerCount(
 
 function renderStoryCounterAdmin(){
 let data = safeObjectParse(STORY_COUNTER_KEY);
-storyTitleInput.value = data.title || "More Than a Brand, A Family";
-storySubtitleInput.value = data.subtitle || "à¤œà¤¡à¤¼à¥‹à¤‚ à¤¸à¥‡ à¤œà¥à¤¡à¤¼à¥‡ à¤²à¥‹à¤—, à¤…à¤¸à¤²à¥€ à¤¬à¤¦à¤²à¤¾à¤µ";
+storyTitleInput.value = cleanUiText(data.title, "More Than a Brand, A Family");
+storySubtitleInput.value = cleanUiText(data.subtitle, "जड़ों से जुड़े लोग, असली बदलाव");
 storyBaseCountInput.value = Number(data.baseCount || 5978);
-storyCaptionInput.value = data.caption || "Every Number Tells a Story";
+storyCaptionInput.value = cleanUiText(data.caption, "Every Number Tells a Story");
 storyPreviewImage.src = data.image || STORY_DEFAULT_IMAGE;
-storyPreviewTitle.textContent = data.title || "More Than a Brand, A Family";
+storyPreviewTitle.textContent = cleanUiText(data.title, "More Than a Brand, A Family");
 storyPreviewMeta.textContent = `Live count: ${getStoryCurrentCount(data).toLocaleString("en-IN")} = base + orders + customers. Image full background me show hogi.`;
 }
 
 function getHeroTextSettings(){
-let content = {};
-try{
-content = JSON.parse(localStorage.getItem("homeContent")) || {};
-}catch(e){
-content = {};
-}
+let content = remoteState.homeContent || {};
 return {
-titleLine1: content.heroTitleLine1 || "Crafted For Global",
-titleLine2: content.heroTitleLine2 || "Standards",
-subline: content.heroSubline || "Pure Quality. Honest Food. Swadra Promise.",
-trust: content.heroTrust || "â˜… Packed Fresh When You Order",
-badge1: content.heroBadge1 || "âœ“ 100% Natural",
-badge2: content.heroBadge2 || "âœ“ Expertly Selected",
-badge3: content.heroBadge3 || "âœ“ Farm Direct",
-button: content.heroButton || "Explore Products â†’"
+titleLine1: cleanUiText(content.heroTitleLine1, "Crafted For Global"),
+titleLine2: cleanUiText(content.heroTitleLine2, "Standards"),
+subline: cleanUiText(content.heroSubline, "Pure Quality. Honest Food. Swadra Promise."),
+trust: cleanUiText(content.heroTrust, "★ Packed Fresh When You Order"),
+badge1: cleanUiText(content.heroBadge1, "✓ 100% Natural"),
+badge2: cleanUiText(content.heroBadge2, "✓ Expertly Selected"),
+badge3: cleanUiText(content.heroBadge3, "✓ Farm Direct"),
+button: cleanUiText(content.heroButton, "Explore Products →")
 };
 }
 
@@ -720,26 +822,21 @@ heroBadge1Input.value = data.badge1;
 heroBadge2Input.value = data.badge2;
 heroBadge3Input.value = data.badge3;
 heroButtonInput.value = data.button;
-let content = {};
-try{
-content = JSON.parse(localStorage.getItem("homeContent")) || {};
-}catch(e){
-content = {};
-}
+let content = remoteState.homeContent || {};
 heroTextEnabledInput.checked = content.heroTextEnabled !== false;
 heroTextPositionInput.value = content.heroTextPosition === "left" ? "left" : "right";
 }
 
-function saveHeroTextSettings(){
-saveHomeContent({
-heroTitleLine1: heroTitleLine1Input.value.trim() || "Crafted For Global",
-heroTitleLine2: heroTitleLine2Input.value.trim() || "Standards",
-heroSubline: heroSublineInput.value.trim() || "Pure Quality. Honest Food. Swadra Promise.",
-heroTrust: heroTrustInput.value.trim() || "â˜… Packed Fresh When You Order",
-heroBadge1: heroBadge1Input.value.trim() || "âœ“ 100% Natural",
-heroBadge2: heroBadge2Input.value.trim() || "âœ“ Expertly Selected",
-heroBadge3: heroBadge3Input.value.trim() || "âœ“ Farm Direct",
-heroButton: heroButtonInput.value.trim() || "Explore Products â†’",
+async function saveHeroTextSettings(){
+await saveHomeContent({
+heroTitleLine1: cleanUiText(heroTitleLine1Input.value, "Crafted For Global"),
+heroTitleLine2: cleanUiText(heroTitleLine2Input.value, "Standards"),
+heroSubline: cleanUiText(heroSublineInput.value, "Pure Quality. Honest Food. Swadra Promise."),
+heroTrust: cleanUiText(heroTrustInput.value, "★ Packed Fresh When You Order"),
+heroBadge1: cleanUiText(heroBadge1Input.value, "✓ 100% Natural"),
+heroBadge2: cleanUiText(heroBadge2Input.value, "✓ Expertly Selected"),
+heroBadge3: cleanUiText(heroBadge3Input.value, "✓ Farm Direct"),
+heroButton: cleanUiText(heroButtonInput.value, "Explore Products →"),
 heroTextEnabled: heroTextEnabledInput.checked,
 heroTextPosition: heroTextPositionInput.value === "left" ? "left" : "right",
 heroTextUpdatedAt: Date.now()
@@ -772,10 +869,10 @@ image = await readFile(file);
 }
 let settings = {
 image,
-title: storyTitleInput.value.trim() || "More Than a Brand, A Family",
-subtitle: storySubtitleInput.value.trim() || "à¤œà¤¡à¤¼à¥‹à¤‚ à¤¸à¥‡ à¤œà¥à¤¡à¤¼à¥‡ à¤²à¥‹à¤—, à¤…à¤¸à¤²à¥€ à¤¬à¤¦à¤²à¤¾à¤µ",
+title: cleanUiText(storyTitleInput.value, "More Than a Brand, A Family"),
+subtitle: cleanUiText(storySubtitleInput.value, "जड़ों से जुड़े लोग, असली बदलाव"),
 baseCount: Math.max(0, Number(storyBaseCountInput.value) || 5978),
-caption: storyCaptionInput.value.trim() || "Every Number Tells a Story",
+caption: cleanUiText(storyCaptionInput.value, "Every Number Tells a Story"),
 updatedAt: Date.now()
 };
 if(safeSet(STORY_COUNTER_KEY, settings)){
@@ -787,11 +884,6 @@ setStatus("Family counter banner saved successfully", false);
 }
 
 // HOME ASSETS (IndexedDB)
-let homeDb;
-const HOME_DB_NAME = "swadraHomeAssetsDB";
-const HOME_DB_VERSION = 1;
-const HERO_STORE = "heroImages";
-const CUSTOMER_STORE = "customers";
 let activePreviewUrls = [];
 
 function revokePreviewUrls(){
@@ -805,70 +897,6 @@ activePreviewUrls.push(url);
 return url;
 }
 
-function openHomeDb(){
-return new Promise((resolve,reject)=>{
-let request = indexedDB.open(HOME_DB_NAME, HOME_DB_VERSION);
-
-request.onupgradeneeded = e=>{
-let database = e.target.result;
-if(!database.objectStoreNames.contains(HERO_STORE)){
-database.createObjectStore(HERO_STORE,{keyPath:"id"});
-}
-if(!database.objectStoreNames.contains(CUSTOMER_STORE)){
-database.createObjectStore(CUSTOMER_STORE,{keyPath:"id"});
-}
-};
-
-request.onsuccess = e=>{
-homeDb = e.target.result;
-resolve(homeDb);
-};
-
-request.onerror = ()=>reject(request.error);
-});
-}
-
-async function ensureHomeDb(){
-if(homeDb) return homeDb;
-return openHomeDb();
-}
-
-async function getDbItems(storeName){
-let database = await ensureHomeDb();
-return new Promise((resolve,reject)=>{
-let tx = database.transaction(storeName,"readonly");
-let request = tx.objectStore(storeName).getAll();
-request.onsuccess = ()=>resolve(request.result || []);
-request.onerror = ()=>reject(request.error);
-});
-}
-
-async function addDbItem(storeName, value){
-let database = await ensureHomeDb();
-return new Promise((resolve,reject)=>{
-let tx = database.transaction(storeName,"readwrite");
-tx.objectStore(storeName).put(value);
-tx.oncomplete = ()=>resolve();
-tx.onerror = ()=>reject(tx.error);
-});
-}
-
-async function deleteDbItem(storeName, id){
-let database = await ensureHomeDb();
-return new Promise((resolve,reject)=>{
-let tx = database.transaction(storeName,"readwrite");
-tx.objectStore(storeName).delete(id);
-tx.oncomplete = ()=>resolve();
-tx.onerror = ()=>reject(tx.error);
-});
-}
-
-function updateAssetTimestamp(key, partial){
-let stamp = Date.now();
-localStorage.setItem(key, String(stamp));
-saveHomeContent({updatedAt: stamp, ...partial});
-}
-
 function makeAssetId(prefix){
 return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -876,25 +904,16 @@ return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 // HERO
 heroInput.onchange=async function(){
 try{
-await ensureHomeDb();
-
+let nextHero = remoteState.heroImages.slice();
 for(let f of this.files){
-
 if(!f.type.startsWith("image/")) continue;
-
 if(f.size > 5*1024*1024){
 alert("Max 5MB allowed");
 continue;
 }
-
-await addDbItem(HERO_STORE,{
-id: makeAssetId("hero"),
-data: f,
-createdAt: Date.now()
-});
+nextHero.push(await readFile(f));
 }
-
-updateAssetTimestamp("heroImagesUpdatedAt",{heroImagesUpdatedAt: Date.now()});
+await safeSet("heroImages", nextHero);
 setStatus("Hero images saved successfully", false);
 }catch(e){
 setStatus(`Hero images save failed: ${e.message}`, true);
@@ -906,56 +925,27 @@ await renderAll();
 };
 
 // VIDEO (IndexedDB)
-let db;
-let videoDbRequest = indexedDB.open("swadraVideoDB",2);
-
-videoDbRequest.onupgradeneeded = e=>{
-db = e.target.result;
-if(!db.objectStoreNames.contains("videos")){
-db.createObjectStore("videos",{keyPath:"id"});
-}
-};
-
-videoDbRequest.onsuccess = e=>{
-db = e.target.result;
-loadVideo();
-};
-
-videoDbRequest.onerror = e=>{
-console.error("Video DB error", e.target.error);
-};
-
-function saveVideo(file){
-if(!db) return;
-let tx=db.transaction("videos","readwrite");
-tx.objectStore("videos").put({id:"heroVideo",data:file});
-tx.oncomplete=()=>{
-localStorage.setItem("heroVideoUpdatedAt", String(Date.now()));
-saveHomeContent({heroVideoUpdatedAt: Date.now()});
+async function saveVideo(file){
+const dataUrl = await readFile(file);
+const stamp = Date.now();
+await saveHomeContent({
+heroVideoSrc: dataUrl,
+heroVideoUpdatedAt: stamp
+});
 setStatus("Video saved successfully", false);
 loadVideo();
-};
-tx.onerror=()=>{
-setStatus("Video save failed", true);
-};
 }
 
 function loadVideo(){
-if(!db) return;
-let tx=db.transaction("videos","readonly");
-let r=tx.objectStore("videos").get("heroVideo");
-
-r.onsuccess=()=>{
-if(r.result){
-let url=URL.createObjectURL(r.result.data);
-let markup=`<video src="${url}" width="250" controls></video>`;
+const src = String((remoteState.homeContent || {}).heroVideoSrc || "").trim();
+if(src){
+let markup=`<video src="${src}" width="250" controls></video>`;
 videoPreview.innerHTML=markup;
 videoAssets.innerHTML=markup;
 }else{
 videoPreview.innerHTML="";
 videoAssets.innerHTML="<p class='empty-note'>No video uploaded.</p>";
 }
-};
 }
 
 videoInput.onchange=function(){
@@ -969,7 +959,7 @@ saveVideo(file);
 };
 
 // OFFER
-function addOffer(){
+async function addOffer(){
 if(!canUseStorage()) return;
 let val=offerText.value.trim();
 if(!val) return alert("Enter offer");
@@ -977,11 +967,9 @@ if(!val) return alert("Enter offer");
 let o=safeParse("offers");
 o.push(val);
 
-if(safeSet("offers",o)){
-saveHomeContent({offers:o});
-}
+await safeSet("offers",o);
 offerText.value="";
-renderAll();
+await renderAll();
 }
 
 // CUSTOMER
@@ -1000,18 +988,17 @@ return;
 }
 
 try{
-await ensureHomeDb();
-await addDbItem(CUSTOMER_STORE,{
+let customers = remoteState.customers.slice();
+customers.push({
 id: makeAssetId("customer"),
 name:cName.value,
 product:cProduct.value,
 review:cReview.value,
-customerImg:cImg.files[0],
-productImg:pImg.files[0],
+customerImg: await readFile(cImg.files[0]),
+productImg: await readFile(pImg.files[0]),
 createdAt: Date.now()
 });
-
-updateAssetTimestamp("customersUpdatedAt",{customersUpdatedAt: Date.now()});
+await safeSet("customers", customers);
 setStatus("Customer review saved successfully", false);
 }catch(e){
 setStatus(`Customer review save failed: ${e.message}`, true);
@@ -1032,18 +1019,8 @@ await renderAll();
 // DELETE
 async function delHero(id){
 try{
-if(String(id).startsWith("legacy-hero-")){
-let index = Number(String(id).split("-").pop());
-let d=safeParse("heroImages");
-d.splice(index,1);
-if(safeSet("heroImages",d)){
-saveHomeContent({heroImagesUpdatedAt: Date.now()});
-}
-await renderAll();
-return;
-}
-await deleteDbItem(HERO_STORE,id);
-updateAssetTimestamp("heroImagesUpdatedAt",{heroImagesUpdatedAt: Date.now()});
+let hero = remoteState.heroImages.slice().filter((img,index)=>String(index) !== String(id) && String(img.id || "") !== String(id));
+await safeSet("heroImages", hero);
 setStatus("Hero image deleted", false);
 await renderAll();
 }catch(e){
@@ -1052,29 +1029,17 @@ console.error(e);
 }
 }
 
-function delOffer(i){
+async function delOffer(i){
 let o=safeParse("offers");
 o.splice(i,1);
-if(safeSet("offers",o)){
-saveHomeContent({offers:o});
-}
-renderAll();
+await safeSet("offers",o);
+await renderAll();
 }
 
 async function delCustomer(id){
 try{
-if(String(id).startsWith("legacy-customer-")){
-let index = Number(String(id).split("-").pop());
-let d=safeParse("customers");
-d.splice(index,1);
-if(safeSet("customers",d)){
-saveHomeContent({customersUpdatedAt: Date.now()});
-}
-await renderAll();
-return;
-}
-await deleteDbItem(CUSTOMER_STORE,id);
-updateAssetTimestamp("customersUpdatedAt",{customersUpdatedAt: Date.now()});
+let customers = remoteState.customers.slice().filter((item,index)=>String(index) !== String(id) && String(item.id || "") !== String(id));
+await safeSet("customers", customers);
 setStatus("Customer review deleted", false);
 await renderAll();
 }catch(e){
@@ -1088,41 +1053,19 @@ async function renderAll(){
 revokePreviewUrls();
 renderStoryCounterAdmin();
 renderHeroTextAdmin();
-
-let hero = [];
-let customers = [];
-
-try{
-await ensureHomeDb();
-hero = await getDbItems(HERO_STORE);
-customers = await getDbItems(CUSTOMER_STORE);
-}catch(e){
-console.error("Home assets DB read failed", e);
-}
-
-if(hero.length === 0){
-hero = safeParse("heroImages").map((img,index)=>({id:`legacy-hero-${index}`, legacySrc:img}));
-}
-
-if(customers.length === 0){
-customers = safeParse("customers").map((item,index)=>({
-id:`legacy-customer-${index}`,
-...item,
-legacy:true
-}));
-}
+let hero = remoteState.heroImages.slice();
+let customers = remoteState.customers.slice();
 
 heroCount.innerText=hero.length;
 
-heroPreview.innerHTML=hero.map((img)=>{
-let src = img.legacySrc || trackObjectUrl(img.data);
+heroPreview.innerHTML=hero.map((src)=>{
 return `<img src="${src}" width="100">`;
 }).join("") || "<p class='empty-note'>No hero images uploaded.</p>";
 
 heroAssets.innerHTML=hero.map((img,i)=>`
 <div class="asset-row">
 <span>Hero Image ${i+1}</span>
-<button class="asset-delete" onclick="delHero('${img.id}')">Delete</button>
+<button class="asset-delete" onclick="delHero('${i}')">Delete</button>
 </div>
 `).join("") || "<p class='empty-note'>No hero images uploaded.</p>";
 
@@ -1143,8 +1086,7 @@ offerAssets.innerHTML=offers.map((offer,i)=>`
 customerCount.innerText=customers.length;
 
 customerList.innerHTML=customers.map(x=>{
-let src = x.legacy ? x.customerImg : trackObjectUrl(x.customerImg);
-return `<img src="${src}" width="80">`;
+return `<img src="${x.customerImg}" width="80">`;
 }).join("") || "<p class='empty-note'>No customer reviews added.</p>";
 
 customerAssets.innerHTML=customers.map((x)=>`
@@ -1158,15 +1100,19 @@ videoAssets.innerHTML=videoPreview.innerHTML || "<p class='empty-note'>No video 
 
 }
 
-openHomeDb()
-.then(()=>renderAll())
+reloadRemoteState()
+.then(()=>{
+loadVideo();
+return renderAll();
+})
+.then(()=>{
+setStatus("Panel ready. Data backend se load ho gaya.", false);
+})
 .catch(e=>{
-setStatus(`Asset database unavailable: ${e.message}`, true);
+setStatus(`Backend sync unavailable: ${e.message}`, true);
 console.error(e);
 renderAll();
 });
-saveHomeContent({});
-setStatus("Panel ready. Add data to save it.", false);
 </script>
 
 </body>

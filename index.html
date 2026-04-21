@@ -7,6 +7,78 @@
 <title>Swadra Organics</title>
 <style>html,body{background:#f1e3e3 !important;}</style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<script>
+(function(){
+  const memoryStore = Object.create(null);
+
+  function createMemoryStorage(){
+    return {
+      getItem(key){
+        const name = String(key);
+        return Object.prototype.hasOwnProperty.call(memoryStore, name) ? memoryStore[name] : null;
+      },
+      setItem(key, value){
+        memoryStore[String(key)] = String(value);
+      },
+      removeItem(key){
+        delete memoryStore[String(key)];
+      },
+      clear(){
+        Object.keys(memoryStore).forEach(key=>delete memoryStore[key]);
+      },
+      key(index){
+        const keys = Object.keys(memoryStore);
+        return Number.isInteger(index) && index >= 0 && index < keys.length ? keys[index] : null;
+      },
+      get length(){
+        return Object.keys(memoryStore).length;
+      }
+    };
+  }
+
+  const memoryStorage = createMemoryStorage();
+  const disabledIndexedDb = {
+    open(){
+      const request = { result:null, error:new Error("indexedDB disabled on index page") };
+      setTimeout(()=>{
+        if(typeof request.onerror === "function"){
+          request.onerror({ target: request });
+        }
+      }, 0);
+      return request;
+    },
+    deleteDatabase(){
+      const request = { result:null, error:new Error("indexedDB disabled on index page") };
+      setTimeout(()=>{
+        if(typeof request.onerror === "function"){
+          request.onerror({ target: request });
+        }
+      }, 0);
+      return request;
+    }
+  };
+
+  try{
+    Object.defineProperty(window, "localStorage", { value: memoryStorage, configurable: true });
+  }catch(error){
+    window.localStorage = memoryStorage;
+  }
+
+  try{
+    Object.defineProperty(window, "sessionStorage", { value: memoryStorage, configurable: true });
+  }catch(error){
+    window.sessionStorage = memoryStorage;
+  }
+
+  try{
+    Object.defineProperty(window, "indexedDB", { value: disabledIndexedDb, configurable: true });
+  }catch(error){
+    window.indexedDB = disabledIndexedDb;
+  }
+
+  window.__swadraIndexMemoryStorage = memoryStorage;
+})();
+</script>
 <script src="api-config.js"></script></head>
 
 <body>
@@ -31,6 +103,14 @@ body{
 font-family:Arial;
 margin:0;
 background:#ffffff;
+}
+
+body,
+input,
+textarea,
+select,
+button{
+font-family:Arial,"Nirmala UI","Mangal","Noto Sans Devanagari",sans-serif;
 }
 
 /* ===== PREMIUM UPGRADE SYSTEM ===== */
@@ -5025,6 +5105,12 @@ async function getHomeDbItems(storeName){
 }
 
 async function loadHeroAssets(){
+  const remoteHero = getHomeArray("heroImages");
+  if(remoteHero.length > 0){
+    revokeUrls(heroObjectUrls);
+    return remoteHero;
+  }
+
   let dbItems = await getHomeDbItems(HERO_STORE);
   if(dbItems.length > 0){
     revokeUrls(heroObjectUrls);
@@ -5039,6 +5125,12 @@ async function loadHeroAssets(){
 }
 
 async function loadCustomerAssets(){
+  const storedCustomers = getHomeArray("customers");
+  if(storedCustomers.length){
+    revokeUrls(customerObjectUrls);
+    return storedCustomers;
+  }
+
   let dbItems = await getHomeDbItems(CUSTOMER_STORE);
   if(dbItems.length > 0){
     revokeUrls(customerObjectUrls);
@@ -5048,11 +5140,6 @@ async function loadCustomerAssets(){
       customerObjectUrls.push(customerImg, productImg);
       return {...item, customerImg, productImg};
     });
-  }
-
-  const storedCustomers = getHomeArray("customers");
-  if(storedCustomers.length){
-    return storedCustomers;
   }
 
   return [
@@ -5104,6 +5191,17 @@ vreq.onerror = e=>{
 };
 
 function loadVideo(){
+  let homeContent = getHomeContent();
+  let remoteSrc = String(homeContent.heroVideoSrc || "").trim();
+  if(remoteSrc){
+    let video = document.getElementById("heroVideo");
+    if(video){
+      video.src = remoteSrc;
+      video.load();
+    }
+    return;
+  }
+
   if(!vdb) return;
 
   let tx = vdb.transaction("videos","readonly");
@@ -5935,6 +6033,26 @@ function getFamilyCounterTotal(settings){
   return Math.max(0, Number(data.baseCount || 5978)) + getRegisteredCustomerCount() + getFamilyReviewCustomerCount() + getPaidOrderCount();
 }
 
+function repairMojibake(value){
+  const text = String(value || "");
+  if(!text) return text;
+  if(!/[ÃÂâà¤à¥]/.test(text)) return text;
+  try{
+    return decodeURIComponent(escape(text));
+  }catch(e){
+    return text
+      .replaceAll("â˜…", "★")
+      .replaceAll("âœ“", "✓")
+      .replaceAll("â†’", "→");
+  }
+}
+
+function cleanUiText(value, fallback){
+  const raw = String(value || "").trim();
+  const base = raw || String(fallback || "");
+  return repairMojibake(base).trim() || String(fallback || "");
+}
+
 function renderFamilyCounterBanner(){
   const banner = document.getElementById("familyCounterBanner");
   if(!banner) return;
@@ -5944,9 +6062,9 @@ function renderFamilyCounterBanner(){
   const subtitleEl = document.getElementById("familyCounterSubtitle");
   const numberEl = document.getElementById("familyCounterNumber");
   const captionEl = document.getElementById("familyCounterCaption");
-  if(titleEl) titleEl.innerText = data.title || "More Than a Brand, A Family";
-  if(subtitleEl) subtitleEl.innerText = data.subtitle || "जड़ों से जुड़े लोग, असली बदलाव";
-  if(captionEl) captionEl.innerText = data.caption || "Every Number Tells a Story";
+  if(titleEl) titleEl.innerText = cleanUiText(data.title, "More Than a Brand, A Family");
+  if(subtitleEl) subtitleEl.innerText = cleanUiText(data.subtitle, "जड़ों से जुड़े लोग, असली बदलाव");
+  if(captionEl) captionEl.innerText = cleanUiText(data.caption, "Every Number Tells a Story");
   if(numberEl){
     const digits = String(getFamilyCounterTotal(data)).padStart(5,"0").split("");
     numberEl.innerHTML = digits.map(digit=>`<span class="family-counter-digit" style="display:inline-flex;align-items:center;justify-content:center;width:54px;height:70px;border-radius:10px;background:#a56413;color:#fff;font-size:48px;line-height:1;font-weight:500;">${digit}</span>`).join("");
@@ -5961,8 +6079,8 @@ function renderFooterStandardBlock(){
   const subtitleEl = document.getElementById("footerStandardSubtitle");
   if(!titleEl || !subtitleEl) return;
   const content = getHomeContent();
-  titleEl.textContent = content.footerStandardTitle || "Swadra Organics - Crafted for Global Standards";
-  subtitleEl.textContent = content.footerStandardSubtitle || "Experience the Difference - Order Today";
+  titleEl.textContent = cleanUiText(content.footerStandardTitle, "Swadra Organics - Crafted for Global Standards");
+  subtitleEl.textContent = cleanUiText(content.footerStandardSubtitle, "Experience the Difference - Order Today");
 }
 
 function renderHeroTextBlock(){
@@ -5975,14 +6093,14 @@ function renderHeroTextBlock(){
     hero.classList.toggle("hero-text-right", position !== "left");
   }
   const pairs = [
-    ["heroTitleLine1", content.heroTitleLine1 || "Crafted For Global"],
-    ["heroTitleLine2", content.heroTitleLine2 || "Standards"],
-    ["heroSubline", content.heroSubline || "Pure Quality. Honest Food. Swadra Promise."],
-    ["heroTrustLine", content.heroTrust || "★ Packed Fresh When You Order"],
-    ["heroBadge1", content.heroBadge1 || "✓ 100% Natural"],
-    ["heroBadge2", content.heroBadge2 || "✓ Expertly Selected"],
-    ["heroBadge3", content.heroBadge3 || "✓ Farm Direct"],
-    ["heroButtonText", content.heroButton || "Explore Products →"]
+    ["heroTitleLine1", cleanUiText(content.heroTitleLine1, "Crafted For Global")],
+    ["heroTitleLine2", cleanUiText(content.heroTitleLine2, "Standards")],
+    ["heroSubline", cleanUiText(content.heroSubline, "Pure Quality. Honest Food. Swadra Promise.")],
+    ["heroTrustLine", cleanUiText(content.heroTrust, "★ Packed Fresh When You Order")],
+    ["heroBadge1", cleanUiText(content.heroBadge1, "✓ 100% Natural")],
+    ["heroBadge2", cleanUiText(content.heroBadge2, "✓ Expertly Selected")],
+    ["heroBadge3", cleanUiText(content.heroBadge3, "✓ Farm Direct")],
+    ["heroButtonText", cleanUiText(content.heroButton, "Explore Products →")]
   ];
   pairs.forEach(([id,value])=>{
     const el = document.getElementById(id);
@@ -7342,6 +7460,13 @@ if(window.location.hash === "#allProductsSection"){
   }
 
   async function getHeroAssetsSafe(){
+    const storedHero = getSafeHomeArray("heroImages");
+    if(storedHero.length){
+      safeHeroCacheKey = "";
+      revokeUrls(safeHeroCacheUrls);
+      return storedHero;
+    }
+
     const dbItems = await getHomeStoreItems("heroImages");
     if(dbItems.length){
       const cacheKey = dbItems.map(item=>{
@@ -7360,10 +7485,15 @@ if(window.location.hash === "#allProductsSection"){
     }
     safeHeroCacheKey = "";
     revokeUrls(safeHeroCacheUrls);
-    return getSafeHomeArray("heroImages");
+    return [];
   }
 
   async function getCustomersSafe(){
+    const storedCustomers = getSafeHomeArray("customers");
+    if(storedCustomers.length){
+      return storedCustomers;
+    }
+
     const dbItems = await getHomeStoreItems("customers");
     if(dbItems.length){
       return dbItems.map(item=>({
@@ -7371,10 +7501,6 @@ if(window.location.hash === "#allProductsSection"){
         customerImg: URL.createObjectURL(item.customerImg),
         productImg: URL.createObjectURL(item.productImg)
       }));
-    }
-    const storedCustomers = getSafeHomeArray("customers");
-    if(storedCustomers.length){
-      return storedCustomers;
     }
     return [
       {

@@ -441,7 +441,8 @@
 
   <script>
     const DEFAULT_REMOTE_BASE = "https://swadra-backend-production.up.railway.app";
-    const STORAGE_KEY = "swadra_backend_panel_settings_v2";
+    const SETTINGS_STATE_KEY = "backendPanelSettings";
+    const APP_STATE_URL = DEFAULT_REMOTE_BASE + "/api/app-state";
 
     let state = {
       backendUrl: "",
@@ -453,19 +454,32 @@
       products: []
     };
 
-    function saveLocalState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    async function saveRemoteState() {
+      const payload = {
         backendUrl: state.backendUrl,
         schedulerMode: state.schedulerMode,
         searchMode: state.searchMode,
         searchTarget: state.searchTarget,
         notes: state.notes
-      }));
+      };
+      const response = await fetch(APP_STATE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: { [SETTINGS_STATE_KEY]: payload } })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Failed to save settings");
+      }
     }
 
-    function loadLocalState() {
+    async function loadRemoteState() {
       try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        const response = await fetch(APP_STATE_URL + "?keys=" + encodeURIComponent(SETTINGS_STATE_KEY), { cache: "no-store" });
+        const data = await response.json().catch(() => ({}));
+        const saved = data?.ok && data.state && typeof data.state[SETTINGS_STATE_KEY] === "object"
+          ? data.state[SETTINGS_STATE_KEY]
+          : {};
         state.backendUrl = saved.backendUrl || DEFAULT_REMOTE_BASE;
         state.schedulerMode = saved.schedulerMode || "manual";
         state.searchMode = saved.searchMode || "product_name";
@@ -473,6 +487,10 @@
         state.notes = saved.notes || "";
       } catch (e) {
         state.backendUrl = DEFAULT_REMOTE_BASE;
+        state.schedulerMode = "manual";
+        state.searchMode = "product_name";
+        state.searchTarget = "all";
+        state.notes = "";
       }
 
       document.getElementById("backendUrl").value = state.backendUrl;
@@ -505,21 +523,27 @@
       }
     }
 
-    function saveSettings() {
+    async function saveSettings() {
       state.backendUrl = normalizeUrl(document.getElementById("backendUrl").value);
       state.schedulerMode = document.getElementById("schedulerMode").value;
       state.searchMode = document.getElementById("searchMode").value;
       state.searchTarget = document.getElementById("searchTarget").value;
       state.notes = document.getElementById("notes").value.trim();
 
-      saveLocalState();
-      document.getElementById("schedulerText").textContent =
-        state.schedulerMode === "2hours" ? "2 Hours" : "Manual";
+      try {
+        await saveRemoteState();
+        document.getElementById("schedulerText").textContent =
+          state.schedulerMode === "2hours" ? "2 Hours" : "Manual";
 
-      setServerStatusButton("checking", "Server Status: Checking...");
-      addLocalLog("Settings saved locally.", "success");
-      renderLogs();
-      alert("Settings saved.");
+        setServerStatusButton("checking", "Server Status: Checking...");
+        addLocalLog("Settings saved to backend.", "success");
+        renderLogs();
+        alert("Settings saved.");
+      } catch (error) {
+        addLocalLog("Settings save failed: " + error.message, "error");
+        renderLogs();
+        alert(error.message || "Settings save failed");
+      }
     }
 
     function addLocalLog(message, level = "info") {
@@ -913,12 +937,13 @@
         .replaceAll("'", "&#039;");
     }
 
-    loadLocalState();
-    renderProducts();
-    renderLogs();
-    checkBackendHealth();
-    loadProducts();
-    loadLogs();
+    loadRemoteState().finally(() => {
+      renderProducts();
+      renderLogs();
+      checkBackendHealth();
+      loadProducts();
+      loadLogs();
+    });
   </script>
 </body>
 </html>

@@ -688,9 +688,7 @@ return "spices";
 }
 
     function signalProductsUpdated(){
-      try{
-        localStorage.setItem("adminProductsUpdatedAt", String(Date.now()));
-      }catch(error){}
+      return true;
     }
 
     async function replaceLocalProduct(updatedProduct){

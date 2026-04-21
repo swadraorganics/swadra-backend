@@ -546,10 +546,9 @@
     emailjs.init("uqdnXG18txM1DBF6j");
 
     const DEFAULT_REMOTE_BASE = "https://swadra-backend-production.up.railway.app";
-    const ADMIN_SESSION_KEY = "swadraAdminLoggedIn";
-    const ADMIN_CREDENTIALS_CACHE_KEY = "swadraAdminCredentials";
-    const ADMIN_BACKEND_STORAGE_KEY = "swadra_backend_panel_settings_v2";
-    let adminCouponCache = [];
+let adminCouponCache = [];
+let currentAdminSession = false;
+let currentAdminBackendUrl = "";
 
     function normalizeBackendUrl(url){
       return String(url || "").trim().replace(/\/+$/, "");
@@ -569,69 +568,37 @@
       return normalized === normalizeBackendUrl(window.location.origin);
     }
 
-    function getSavedBackendUrl(){
-      try{
-        const parsed = JSON.parse(localStorage.getItem(ADMIN_BACKEND_STORAGE_KEY) || "{}");
-        const saved = normalizeBackendUrl(parsed.backendUrl || "");
-        return isUnsafeProductionBackendUrl(saved) ? "" : saved;
-      }catch(error){
-        return "";
-      }
-    }
-
-    function saveAdminBackendUrl(){
-      const backendUrl = normalizeBackendUrl((document.getElementById("adminBackendUrl") || {}).value || "");
-      if(!backendUrl){
+function saveAdminBackendUrl(){
+  const backendUrl = normalizeBackendUrl((document.getElementById("adminBackendUrl") || {}).value || "");
+  if(!backendUrl){
         alert("Backend URL enter karo");
         return;
       }
-      if(isUnsafeProductionBackendUrl(backendUrl)){
-        alert("Website domain mat save karo. Backend Railway URL save karo.");
-        return;
-      }
-      let parsed = {};
-      try{
-        parsed = JSON.parse(localStorage.getItem(ADMIN_BACKEND_STORAGE_KEY) || "{}");
-      }catch(error){}
-      parsed.backendUrl = backendUrl;
-      localStorage.setItem(ADMIN_BACKEND_STORAGE_KEY, JSON.stringify(parsed));
-      window.SWADRA_API_BASE = backendUrl;
-      alert("Backend URL saved: " + backendUrl);
-    }
+  if(isUnsafeProductionBackendUrl(backendUrl)){
+    alert("Website domain mat save karo. Backend Railway URL save karo.");
+    return;
+  }
+  currentAdminBackendUrl = backendUrl;
+  window.SWADRA_API_BASE = backendUrl;
+  alert("Backend URL is set for this tab only: " + backendUrl);
+}
 
-    function getApiBase(){
-      const preferred = isProductionSiteOrigin(window.SWADRA_API_BASE) ? "" : window.SWADRA_API_BASE;
-      const resolved = normalizeBackendUrl(preferred || getSavedBackendUrl() || DEFAULT_REMOTE_BASE);
-      return isUnsafeProductionBackendUrl(resolved) ? DEFAULT_REMOTE_BASE : resolved;
-    }
+function getApiBase(){
+  const preferred = normalizeBackendUrl(
+    isProductionSiteOrigin(window.SWADRA_API_BASE) ? "" : (currentAdminBackendUrl || window.SWADRA_API_BASE)
+  );
+  const resolved = normalizeBackendUrl(preferred || DEFAULT_REMOTE_BASE);
+  return isUnsafeProductionBackendUrl(resolved) ? DEFAULT_REMOTE_BASE : resolved;
+}
 
     function getAdminLoginUrl(){ return getApiBase() + "/api/admin/login"; }
     function getAdminConfigUrl(){ return getApiBase() + "/api/admin/config"; }
     function getAdminCredentialsUrl(){ return getApiBase() + "/api/admin/credentials"; }
     function getCouponsApiUrl(){ return getApiBase() + "/api/coupons"; }
 
-    function getCachedAdminCredentials(){
-      try{
-        const parsed = JSON.parse(localStorage.getItem(ADMIN_CREDENTIALS_CACHE_KEY) || "{}");
-        return {
-          username:String(parsed.username || "admin").trim() || "admin",
-          password:String(parsed.password || "1234")
-        };
-      }catch(error){
-        return { username:"admin", password:"1234" };
-      }
-    }
-
-    function saveCachedAdminCredentials(username, password){
-      localStorage.setItem(ADMIN_CREDENTIALS_CACHE_KEY, JSON.stringify({
-        username:String(username || "admin").trim() || "admin",
-        password:String(password || "1234")
-      }));
-    }
-
-    function showAdminPanel(){
-      const nav = document.getElementById("adminGlobalNav");
-      if(nav) nav.style.display = "flex";
+function showAdminPanel(){
+  const nav = document.getElementById("adminGlobalNav");
+  if(nav) nav.style.display = "flex";
       adminLoginScreen.style.display = "none";
       appShell.style.display = "block";
       sidebar.style.display = "block";
@@ -645,13 +612,13 @@
       appShell.style.display = "none";
       sidebar.style.display = "none";
       mainPanel.style.display = "none";
-    }
+}
 
-    function restoreAdminSession(){
-      if(localStorage.getItem(ADMIN_SESSION_KEY) === "true"){
-        showAdminPanel();
-      }else{
-        showAdminLogin();
+function restoreAdminSession(){
+  if(currentAdminSession){
+    showAdminPanel();
+  }else{
+    showAdminLogin();
       }
     }
 
@@ -667,25 +634,18 @@
             username:enteredUsername,
             password:enteredPassword
           })
-        });
-        const data = await response.json().catch(()=>({ ok:false, message:"Login failed" }));
-        if(response.ok && data.ok){
-          saveCachedAdminCredentials(enteredUsername, enteredPassword);
-          localStorage.setItem(ADMIN_SESSION_KEY, "true");
-          showAdminPanel();
-          return;
-        }
-        alert((data.message || data.error || "Wrong credentials") + " | URL: " + adminLoginUrl + " | Status: " + response.status);
-      }catch(error){
-        const cached = getCachedAdminCredentials();
-        if(enteredUsername === cached.username && enteredPassword === cached.password){
-          localStorage.setItem(ADMIN_SESSION_KEY, "true");
-          showAdminPanel();
-          return;
-        }
-        alert("Admin login failed. Backend connection issue hai aur credentials bhi match nahi hue.");
-      }
+    });
+    const data = await response.json().catch(()=>({ ok:false, message:"Login failed" }));
+    if(response.ok && data.ok){
+      currentAdminSession = true;
+      showAdminPanel();
+      return;
     }
+    alert((data.message || data.error || "Wrong credentials") + " | URL: " + adminLoginUrl + " | Status: " + response.status);
+  }catch(error){
+    alert("Admin login failed. Backend connection issue hai.");
+  }
+}
 
     function goTo(page){
       window.location.href = page;
@@ -695,23 +655,15 @@
       window.location.href = "index.html";
     }
 
-    function logout(){
-      localStorage.removeItem(ADMIN_SESSION_KEY);
-      window.location.href = "index.html";
-    }
+function logout(){
+  currentAdminSession = false;
+  window.location.href = "index.html";
+}
 
-    window.addEventListener("DOMContentLoaded", ()=>{
-      const cachedAdmin = getCachedAdminCredentials();
-      const savedBackendUrl = getSavedBackendUrl();
-      if(adminBackendUrl && savedBackendUrl){
-        adminBackendUrl.value = savedBackendUrl;
-      }
-      if(!adminUser.value){
-        adminUser.value = cachedAdmin.username;
-      }
-      restoreAdminSession();
-    });
-    window.addEventListener("pageshow", restoreAdminSession);
+window.addEventListener("DOMContentLoaded", ()=>{
+  restoreAdminSession();
+});
+window.addEventListener("pageshow", restoreAdminSession);
 
     function showSettings(){
       settingsBox.classList.toggle("hidden");
@@ -748,17 +700,15 @@
             password:String(newPass.value || "")
           })
         });
-        const data = await response.json().catch(()=>({ ok:false }));
-        if(!response.ok || !data.ok){
-          throw new Error(data.error || "Failed to update credentials");
-        }
-        saveCachedAdminCredentials(String(newUser.value || "").trim(), String(newPass.value || ""));
-        alert("Credentials updated successfully");
-      }catch(error){
-        saveCachedAdminCredentials(String(newUser.value || "").trim(), String(newPass.value || ""));
-        alert((error.message || "Failed to update credentials") + ". Local fallback save ho gaya hai.");
-      }
+    const data = await response.json().catch(()=>({ ok:false }));
+    if(!response.ok || !data.ok){
+      throw new Error(data.error || "Failed to update credentials");
     }
+    alert("Credentials updated successfully");
+  }catch(error){
+    alert(error.message || "Failed to update credentials");
+  }
+}
 
     function updateCouponSummary(coupon){
       const codeEl = document.getElementById("currentCouponCode");

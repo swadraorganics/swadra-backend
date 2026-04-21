@@ -4,6 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Payment - Swadra Organics</title>
+<script src="page-storage-sync.js"></script>
+<script>
+window.installSwadraPageStorageSync({
+  pageName: "payment page",
+  persistedKeys: [
+    "currentUser",
+    "users",
+    "cart",
+    "redirectAfterLogin",
+    "checkoutData",
+    "cartSummary",
+    "delivery",
+    "couponDiscount",
+    "finalTotal",
+    "checkoutUpiId",
+    "currentOrderId",
+    "swadraPaymentSession",
+    "swadraPaymentAttempts",
+    "swadraPaymentAnalytics",
+    "orderCounts"
+  ]
+});
+</script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
