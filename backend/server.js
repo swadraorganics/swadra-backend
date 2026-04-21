@@ -18,6 +18,7 @@ const PUBLIC_BASE_URL = String(
   ""
 ).trim().replace(/\/+$/, "");
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, "db.json");
+const PRODUCTS_PATH = process.env.PRODUCTS_PATH || path.join(__dirname, "products.json");
 const USE_FIRESTORE = String(process.env.USE_FIRESTORE || "").toLowerCase() === "true";
 const FIRESTORE_COLLECTION = process.env.FIRESTORE_COLLECTION || "appData";
 const FIRESTORE_DOCUMENT = process.env.FIRESTORE_DOCUMENT || "swadra";
@@ -29,6 +30,8 @@ let fileStorageAvailable = !USE_FIRESTORE;
 let memoryDb = null;
 let dbCache = null;
 let dbCacheLoaded = false;
+let productsCache = null;
+let productsCacheLoaded = false;
 
 process.on("unhandledRejection", (reason) => {
   console.error("[unhandledRejection]", reason);
@@ -188,6 +191,38 @@ function ensureDB() {
   }
 }
 
+function ensureProductsFile() {
+  if (USE_FIRESTORE || !fileStorageAvailable) return;
+  try {
+    if (fs.existsSync(PRODUCTS_PATH)) {
+      return;
+    }
+
+    let migratedProducts = [];
+    if (fs.existsSync(DB_PATH)) {
+      try {
+        const raw = fs.readFileSync(DB_PATH, "utf8");
+        const parsed = normalizeDB(JSON.parse(raw || "{}"));
+        migratedProducts = Array.isArray(parsed.products) ? parsed.products : [];
+        if (migratedProducts.length) {
+          parsed.products = [];
+          fs.writeFileSync(DB_PATH, JSON.stringify(parsed, null, 2), "utf8");
+          dbCache = parsed;
+          memoryDb = parsed;
+          dbCacheLoaded = true;
+        }
+      } catch (error) {
+        console.error("[products migration] failed:", error.message);
+      }
+    }
+
+    fs.writeFileSync(PRODUCTS_PATH, JSON.stringify(migratedProducts, null, 2), "utf8");
+  } catch (error) {
+    fileStorageAvailable = false;
+    console.error("[products fallback] file storage unavailable:", error.message);
+  }
+}
+
 async function readDB() {
   if (USE_FIRESTORE) {
     await ensureFirestoreDB();
@@ -258,6 +293,55 @@ async function writeDB(data) {
   } catch (error) {
     fileStorageAvailable = false;
     console.error("[db fallback] write failed:", error.message);
+  }
+}
+
+async function readProducts() {
+  if (USE_FIRESTORE) {
+    const db = await readDB();
+    return Array.isArray(db.products) ? db.products : [];
+  }
+  if (productsCacheLoaded && Array.isArray(productsCache)) {
+    return productsCache;
+  }
+  ensureDB();
+  ensureProductsFile();
+  if (!fileStorageAvailable) {
+    productsCache = Array.isArray(productsCache) ? productsCache : [];
+    productsCacheLoaded = true;
+    return productsCache;
+  }
+  try {
+    const raw = fs.readFileSync(PRODUCTS_PATH, "utf8");
+    const parsed = JSON.parse(raw || "[]");
+    productsCache = Array.isArray(parsed) ? parsed : [];
+    productsCacheLoaded = true;
+    return productsCache;
+  } catch (error) {
+    console.error("[products fallback] read failed:", error.message);
+    productsCache = Array.isArray(productsCache) ? productsCache : [];
+    productsCacheLoaded = true;
+    return productsCache;
+  }
+}
+
+async function writeProducts(products) {
+  const normalized = Array.isArray(products) ? products : [];
+  productsCache = normalized;
+  productsCacheLoaded = true;
+  if (USE_FIRESTORE) {
+    const db = await readDB();
+    db.products = normalized;
+    await writeDB(db);
+    return;
+  }
+  if (!fileStorageAvailable) return;
+  ensureProductsFile();
+  try {
+    fs.writeFileSync(PRODUCTS_PATH, JSON.stringify(normalized, null, 2), "utf8");
+  } catch (error) {
+    fileStorageAvailable = false;
+    console.error("[products fallback] write failed:", error.message);
   }
 }
 
@@ -1138,11 +1222,11 @@ function normalizeProduct(input, existingProduct = null) {
 
 app.get("/api/products", async (req, res) => {
   try {
-    const db = await readDB();
+    const products = await readProducts();
     res.json({
       ok: true,
-      count: db.products.length,
-      products: db.products
+      count: products.length,
+      products
     });
   } catch (error) {
     addLog("Failed to load products: " + error.message, "error");
@@ -1658,25 +1742,25 @@ app.post("/api/products", async (req, res) => {
       });
     }
 
-    const db = await readDB();
-    const existingIndex = db.products.findIndex(
+    const products = await readProducts();
+    const existingIndex = products.findIndex(
       (p) => String(p.id) === String(input.id)
     );
 
     let savedProduct;
 
     if (existingIndex > -1) {
-      const existing = db.products[existingIndex];
+      const existing = products[existingIndex];
       savedProduct = normalizeProduct(input, existing);
-      db.products[existingIndex] = savedProduct;
+      products[existingIndex] = savedProduct;
       addLog(`Product updated: ${savedProduct.productName} (${savedProduct.productSize})`, "success");
     } else {
       savedProduct = normalizeProduct(input);
-      db.products.unshift(savedProduct);
+      products.unshift(savedProduct);
       addLog(`Product created: ${savedProduct.productName} (${savedProduct.productSize})`, "success");
     }
 
-    await writeDB(db);
+    await writeProducts(products);
 
     res.json({
       ok: true,
@@ -1694,8 +1778,8 @@ app.post("/api/products", async (req, res) => {
 app.put("/api/products/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    const db = await readDB();
-    const index = db.products.findIndex((p) => String(p.id) === String(id));
+    const products = await readProducts();
+    const index = products.findIndex((p) => String(p.id) === String(id));
 
     if (index === -1) {
       return res.status(404).json({
@@ -1704,11 +1788,11 @@ app.put("/api/products/:id", async (req, res) => {
       });
     }
 
-    const existing = db.products[index];
+    const existing = products[index];
     const updated = normalizeProduct({ ...req.body, id }, existing);
 
-    db.products[index] = updated;
-    await writeDB(db);
+    products[index] = updated;
+    await writeProducts(products);
     addLog(`Product updated by ID: ${updated.productName} (${updated.productSize})`, "success");
 
     res.json({
@@ -1727,8 +1811,8 @@ app.put("/api/products/:id", async (req, res) => {
 app.delete("/api/products/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    const db = await readDB();
-    const index = db.products.findIndex((p) => String(p.id) === String(id));
+    const products = await readProducts();
+    const index = products.findIndex((p) => String(p.id) === String(id));
 
     if (index === -1) {
       return res.status(404).json({
@@ -1737,9 +1821,9 @@ app.delete("/api/products/:id", async (req, res) => {
       });
     }
 
-    const deleted = db.products[index];
-    db.products.splice(index, 1);
-    await writeDB(db);
+    const deleted = products[index];
+    products.splice(index, 1);
+    await writeProducts(products);
 
     addLog(`Product deleted: ${deleted.productName} (${deleted.productSize})`, "warn");
 
@@ -1758,15 +1842,15 @@ app.delete("/api/products/:id", async (req, res) => {
 
 app.post("/api/pricing/run", async (req, res) => {
   try {
-    const db = await readDB();
-    db.products = db.products.map((product) => normalizeProduct(product, product));
-    await writeDB(db);
+    const products = await readProducts();
+    const updatedProducts = products.map((product) => normalizeProduct(product, product));
+    await writeProducts(updatedProducts);
     addLog("AI pricing run completed for all products", "success");
 
     res.json({
       ok: true,
-      count: db.products.length,
-      products: db.products
+      count: updatedProducts.length,
+      products: updatedProducts
     });
   } catch (error) {
     addLog("AI pricing run failed: " + error.message, "error");
@@ -1780,8 +1864,8 @@ app.post("/api/pricing/run", async (req, res) => {
 app.post("/api/products/:id/recalculate", async (req, res) => {
   try {
     const id = req.params.id;
-    const db = await readDB();
-    const index = db.products.findIndex((p) => String(p.id) === String(id));
+    const products = await readProducts();
+    const index = products.findIndex((p) => String(p.id) === String(id));
 
     if (index === -1) {
       return res.status(404).json({
@@ -1790,14 +1874,14 @@ app.post("/api/products/:id/recalculate", async (req, res) => {
       });
     }
 
-    db.products[index] = normalizeProduct(db.products[index], db.products[index]);
-    await writeDB(db);
+    products[index] = normalizeProduct(products[index], products[index]);
+    await writeProducts(products);
 
-    addLog(`Single product recalculated: ${db.products[index].productName}`, "success");
+    addLog(`Single product recalculated: ${products[index].productName}`, "success");
 
     res.json({
       ok: true,
-      product: db.products[index]
+      product: products[index]
     });
   } catch (error) {
     addLog("Single product recalculation failed: " + error.message, "error");
@@ -1864,18 +1948,18 @@ app.post("/api/pricing/search-by-product-name", async (req, res) => {
   let browser;
   try {
     const payload = req.body || {};
-    const db = await readDB();
+    const products = await readProducts();
 
     let productsToProcess = [];
     const incomingProducts = Array.isArray(payload.products) ? payload.products : [];
 
     if (incomingProducts.length) {
       productsToProcess = incomingProducts.map((product) => {
-        const existing = db.products.find((p) => String(p.id) === String(product.id));
+        const existing = products.find((p) => String(p.id) === String(product.id));
         return normalizeProduct(product, existing || null);
       });
     } else {
-      productsToProcess = db.products.map((product) => normalizeProduct(product, product));
+      productsToProcess = products.map((product) => normalizeProduct(product, product));
     }
 
     browser = await createBrowser();
@@ -1890,20 +1974,20 @@ app.post("/api/pricing/search-by-product-name", async (req, res) => {
       updatedProducts.push(result.product);
     }
 
-    const updatedMap = new Map(db.products.map((p) => [String(p.id), p]));
+    const updatedMap = new Map(products.map((p) => [String(p.id), p]));
     updatedProducts.forEach((product) => {
       updatedMap.set(String(product.id), product);
     });
 
-    db.products = Array.from(updatedMap.values());
-    await writeDB(db);
+    const nextProducts = Array.from(updatedMap.values());
+    await writeProducts(nextProducts);
 
     addLog(`Product-name auto search completed for ${updatedProducts.length} products`, "success");
 
     res.json({
       ok: true,
       count: updatedProducts.length,
-      products: db.products
+      products: nextProducts
     });
   } catch (error) {
     addLog("Product-name auto search failed: " + error.message, "error");
@@ -1920,12 +2004,12 @@ app.post("/api/pricing/fetch-all-competitor-prices", async (req, res) => {
   let browser;
   try {
     const payload = req.body || {};
-    const db = await readDB();
+    const products = await readProducts();
     const updatedProducts = [];
 
     browser = await createBrowser();
 
-    for (const product of db.products) {
+    for (const product of products) {
       const result = await syncCompetitorPricesForProduct(product, {
         searchMode: payload.searchMode || "product_name_size",
         searchTarget: payload.searchTarget || "all"
@@ -1933,8 +2017,7 @@ app.post("/api/pricing/fetch-all-competitor-prices", async (req, res) => {
       updatedProducts.push(result.product);
     }
 
-    db.products = updatedProducts;
-    await writeDB(db);
+    await writeProducts(updatedProducts);
     addLog(`Bulk competitor price sync completed for ${updatedProducts.length} products`, "success");
 
     res.json({
