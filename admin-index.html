@@ -555,6 +555,13 @@
       return String(url || "").trim().replace(/\/+$/, "");
     }
 
+    function isProductionSiteOrigin(url){
+      const normalized = normalizeBackendUrl(url);
+      if(!normalized) return false;
+      if(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalized)) return false;
+      return normalized === normalizeBackendUrl(window.location.origin);
+    }
+
     function isUnsafeProductionBackendUrl(url){
       const normalized = normalizeBackendUrl(url);
       if(!normalized) return false;
@@ -593,7 +600,8 @@
     }
 
     function getApiBase(){
-      const resolved = normalizeBackendUrl(window.SWADRA_API_BASE || getSavedBackendUrl() || DEFAULT_REMOTE_BASE);
+      const preferred = isProductionSiteOrigin(window.SWADRA_API_BASE) ? "" : window.SWADRA_API_BASE;
+      const resolved = normalizeBackendUrl(preferred || getSavedBackendUrl() || DEFAULT_REMOTE_BASE);
       return isUnsafeProductionBackendUrl(resolved) ? DEFAULT_REMOTE_BASE : resolved;
     }
 
