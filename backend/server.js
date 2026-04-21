@@ -10,7 +10,7 @@ let admin = undefined;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || "0.0.0.0";
+const HOST = process.env.HOST || "::";
 const PUBLIC_BASE_URL = String(
   process.env.PUBLIC_BASE_URL ||
   process.env.RAILWAY_STATIC_URL ||
