@@ -1,0 +1,1151 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swadra Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Inter',sans-serif;
+}
+
+body{
+  background:
+    radial-gradient(circle at top left, rgba(122,61,61,0.08), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(122,61,61,0.08), transparent 20%),
+    linear-gradient(135deg,#f1e3e3,#f7eeee,#f1e3e3);
+  color:#1d1d1f;
+}
+
+:root{--top-bar-height:43px;--navbar-height:62px}
+
+.top-bar{position:sticky;top:0;z-index:7002;margin:0 !important}
+.navbar{position:sticky;top:calc(var(--top-bar-height) - 2px);z-index:7001;background:#7a3d3d !important}
+.nav-search{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);flex:0 0 300px;max-width:300px;width:300px;margin:0;z-index:2}
+.nav-search input{width:100%;height:38px;border:none;outline:none;border-radius:8px;padding:0 14px 0 40px;background:#f5f5f6;color:#282c3f;font-size:13px;font-weight:500;box-sizing:border-box;text-overflow:ellipsis}
+.nav-search input::placeholder{color:#b98f8f;opacity:1}
+.nav-search::before{content:"";position:absolute;left:16px;top:50%;width:14px;height:14px;border:2px solid #696e79;border-radius:50%;transform:translateY(-60%);opacity:.85}
+.nav-search::after{content:"";position:absolute;left:28px;top:21px;width:7px;height:2px;background:#696e79;transform:rotate(45deg);border-radius:2px;opacity:.85}
+.nav-search-results{position:absolute;top:calc(100% + 10px);left:0;width:100%;background:#ffffff;border-radius:14px;box-shadow:0 18px 45px rgba(0,0,0,0.15);border:1px solid #ececec;display:none;max-height:320px;overflow:auto;overflow-x:hidden;z-index:5000;opacity:1;isolation:isolate;backdrop-filter:none;-webkit-backdrop-filter:none}
+.nav-search-results.show{display:block}
+.nav-links{display:flex !important;gap:18px !important;align-items:center !important;justify-content:flex-end;flex-wrap:wrap !important}
+.nav-links a{color:#fff !important;text-decoration:none !important;font-weight:700 !important;font-size:16px !important;font-family:Arial,sans-serif !important}
+.account-link{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;color:#fff;text-decoration:none}
+.account-link svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.account-menu-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.account-hover-menu{position:absolute;top:calc(100% + 14px);right:-8px;width:260px;background:#ffffff;border:1px solid #ece1de;border-radius:18px;box-shadow:0 22px 45px rgba(0,0,0,0.16);padding:16px 0 14px;opacity:0;visibility:hidden;transform:translateY(10px);transition:opacity .22s ease, transform .22s ease, visibility .22s ease;z-index:7000}
+.account-hover-menu::before{content:"";position:absolute;top:-8px;right:18px;width:16px;height:16px;background:#ffffff;border-left:1px solid #ece1de;border-top:1px solid #ece1de;transform:rotate(45deg)}
+.account-menu-wrap:hover .account-hover-menu,.account-menu-wrap:focus-within .account-hover-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.account-hover-head{padding:0 18px 14px;border-bottom:1px solid #f1e7e4}
+.account-hover-title{color:#2f2323;font-size:16px;font-weight:800;margin-bottom:4px}
+.account-hover-copy{color:#7a6b6b;font-size:13px;line-height:1.55}
+.account-hover-cta{display:inline-flex;align-items:center;justify-content:center;margin-top:14px;padding:10px 16px;border-radius:10px;border:1px solid #d7aeb4;color:#fff !important;background:#9a5b5b;font-size:13px;font-weight:800;text-decoration:none !important}
+.account-hover-cta,.account-hover-cta:visited,.account-hover-cta:hover,.account-hover-cta:active{color:#fff !important}
+.account-hover-list{list-style:none;padding:12px 0 0;margin:0}
+.account-hover-list + .account-hover-list{margin-top:10px;padding-top:10px;border-top:1px solid #f4ece9}
+.account-hover-list a{display:flex !important;align-items:center;gap:12px;padding:10px 18px;color:#7a3d3d !important;text-decoration:none !important;font-size:14px;font-weight:700}
+.account-hover-list a span,.account-hover-list a:visited span,.account-hover-list a:hover span,.account-hover-list a:active span{color:#7a3d3d !important}
+.account-hover-menu a:not(.account-hover-cta),.account-hover-menu a:not(.account-hover-cta):visited{color:#7a3d3d !important}
+.account-hover-cta,.account-hover-cta:visited,.account-hover-cta:hover,.account-hover-cta:active{color:#fff !important;background:#7a3d3d !important;border-color:#7a3d3d !important}
+.account-hover-list a:hover{background:#fbf4f2;color:#7a3d3d !important}
+.account-menu-icon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;color:#7a3d3d}
+.account-menu-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.sale-bar{display:block;position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height));z-index:7000;overflow:hidden;white-space:nowrap;padding:10px 0;background:#ffffff;color:#c62828;font-size:18px;font-weight:700;line-height:1;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif}
+.sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;padding-left:0;animation:offerTicker 26s linear infinite;will-change:transform}
+.sale-bar-item{display:inline-flex;align-items:center;flex:0 0 auto;margin-right:84px}
+@keyframes offerTicker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+
+.header{
+  position:sticky;
+  top:0;
+  z-index:1000;
+  background:#ffffffee;
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid #ececec;
+}
+
+.topbar{
+  max-width:1400px;
+  margin:auto;
+  padding:18px 28px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.brand{
+  font-size:24px;
+  font-weight:800;
+  color:#7a3d3d;
+  letter-spacing:-0.5px;
+}
+
+.nav-actions{
+  display:flex;
+  gap:14px;
+  align-items:center;
+}
+
+.nav-btn{
+  border:none;
+  background:#f8efec;
+  padding:12px 18px;
+  border-radius:14px;
+  font-weight:600;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.nav-btn:hover{
+  transform:translateY(-1px);
+}
+
+.logout-btn{
+  background:linear-gradient(135deg,#7A3D3D,#9b5a5a);
+  color:#fff;
+}
+
+.page{
+  max-width:1200px;
+  margin:28px auto 40px;
+  padding:0 28px 40px;
+}
+
+.hero-card{
+  background:#fff;
+  color:#1d1d1f;
+  border:1px solid #eadfdd;
+  border-radius:26px;
+  padding:18px 20px;
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  gap:16px;
+  box-shadow:0 20px 48px rgba(122,61,61,0.08);
+}
+
+.hero-left h1{
+  font-size:24px;
+  line-height:1.08;
+  font-weight:800;
+  color:#7a3d3d;
+}
+
+.hero-left p{
+  margin-top:8px;
+  color:#726767;
+  line-height:1.45;
+  font-size:14px;
+}
+
+.hero-stats{
+  display:flex;
+  gap:16px;
+  margin-top:14px;
+  flex-wrap:wrap;
+}
+
+.stat-box{
+  background:#fcf8f6;
+  border:1px solid #efe2de;
+  padding:12px 14px;
+  border-radius:16px;
+  min-width:118px;
+}
+
+.stat-box h3{
+  font-size:18px;
+  color:#7a3d3d;
+}
+
+.stat-box span{
+  font-size:11px;
+  color:#726767;
+}
+
+.hero-right{
+  background:linear-gradient(180deg,#fffdfc 0%,#faf4f1 100%);
+  border:1px solid #efe2de;
+  border-radius:22px;
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:8px;
+}
+
+.profile-mini{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.avatar{
+  width:48px;
+  height:48px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#7A3D3D,#9b5a5a);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+  font-weight:800;
+}
+
+.profile-meta{
+  flex:1;
+}
+
+.profile-name-row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.profile-email{
+  margin-top:4px;
+  color:#2b2222;
+  font-size:13px;
+}
+
+.profile-secondary-action{
+  margin-top:10px;
+  border:none;
+  background:#f7efed;
+  color:#7a3d3d;
+  padding:8px 12px;
+  border-radius:10px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.grid{
+  margin-top:24px;
+  display:grid;
+  grid-template-columns:1.1fr .9fr;
+  gap:24px;
+}
+
+.card{
+  background:#fff;
+  border:1px solid #eadfdd;
+  border-radius:24px;
+  padding:18px 20px;
+  box-shadow:0 16px 40px rgba(122,61,61,0.08);
+}
+
+.card-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:22px;
+}
+
+.card-title h2{
+  font-size:18px;
+  font-weight:800;
+  color:#7a3d3d;
+}
+
+.edit-btn{
+  border:none;
+  background:linear-gradient(135deg,#7A3D3D,#9b5a5a);
+  color:#fff;
+  padding:10px 16px;
+  border-radius:12px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.profile-details{
+  display:grid;
+  gap:16px;
+}
+
+.info-row{
+  background:#fcf8f6;
+  border:1px solid #efe2de;
+  border-radius:16px;
+  padding:14px;
+}
+
+.label{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:#8f7f7f;
+  margin-bottom:6px;
+}
+
+.value{
+  font-size:14px;
+  font-weight:600;
+  color:#2b2222;
+}
+
+.quick-actions{
+  display:grid;
+  gap:16px;
+}
+
+.action-btn{
+  width:100%;
+  border:none;
+  border-radius:18px;
+  padding:14px 16px;
+  text-align:left;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.action-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:18px;
+  margin-right:10px;
+  font-style:normal;
+}
+
+.action-btn:hover{
+  transform:translateY(-2px);
+}
+
+.orders-btn{ background:#fff1f3; color:#7a3d3d; border:1px solid #f0d8d8; }
+.track-btn{ background:#faf4f1; color:#7a3d3d; border:1px solid #efe2de; }
+.logout-big{ background:linear-gradient(135deg,#7A3D3D,#9b5a5a); color:#fff; }
+
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.55);
+  z-index:5000;
+  justify-content:center;
+  align-items:center;
+  padding:20px;
+}
+
+.modal-box{
+  width:100%;
+  max-width:520px;
+  max-height:92vh;
+  overflow-y:auto;
+  background:#fff;
+  border:1px solid #eadfdd;
+  border-radius:24px;
+  padding:24px;
+}
+
+.modal-box h3{
+  font-size:24px;
+  margin-bottom:18px;
+}
+
+.form-grid{
+  display:grid;
+  gap:14px;
+}
+
+input,select{
+  width:100%;
+  border:1px solid #e3e3e3;
+  background:#fafafa;
+  padding:16px;
+  border-radius:16px;
+  font-size:15px;
+}
+
+.save-btn,
+.cancel-btn{
+  width:100%;
+  border:none;
+  padding:16px;
+  border-radius:18px;
+  font-size:15px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.save-btn{
+  margin-top:18px;
+  background:linear-gradient(135deg,#7A3D3D,#9b5a5a);
+  color:#fff;
+}
+
+.cancel-btn{
+  margin-top:10px;
+  background:#f7efed;
+  color:#7a3d3d;
+}
+
+.otp-note{
+  margin-bottom:14px;
+  color:#726767;
+  line-height:1.6;
+  font-size:14px;
+}
+
+#passwordChangeMessage{
+  min-height:20px;
+  margin-top:12px;
+  text-align:center;
+  color:#7a3d3d;
+  font-size:13px;
+  font-weight:700;
+}
+
+@media(max-width:1000px){
+  .hero-card,
+  .grid{
+    grid-template-columns:1fr;
+  }
+  .navbar{flex-wrap:wrap}
+  .nav-search{position:relative;left:auto;top:auto;transform:none;order:3;flex:1 1 100%;max-width:none;margin:4px 0 0;width:auto}
+  .nav-links{justify-content:center}
+}
+
+@media(max-width:640px){
+  .topbar{
+    padding:16px;
+    flex-direction:column;
+    gap:14px;
+  }
+
+  .page{
+    padding:0 14px 30px;
+  }
+
+  .hero-card,
+  .card{
+    padding:22px;
+    border-radius:22px;
+  }
+
+  .hero-left h1{
+    font-size:28px;
+  }
+}
+.top-bar{text-align:center;padding:12px;font-weight:600;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif}
+.navbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:#7a3d3d}
+.logo{color:#fff;font-size:26px;font-weight:900;font-family:Arial,sans-serif}
+.logo a{color:#fff;text-decoration:none}
+.nav-links{display:flex;gap:18px;flex-wrap:wrap}
+.nav-links a,.nav-links span a{color:#fff;text-decoration:none;font-weight:600;font-family:Arial,sans-serif}
+#stickyCart{position:fixed;bottom:20px;right:20px;display:none;align-items:center;gap:15px;padding:12px 18px;background:linear-gradient(135deg,#7a3d3d,#b76e79);color:white;border-radius:50px;z-index:9999;font-family:Arial,sans-serif}
+#stickyCart a{background:white;color:#7a3d3d;padding:8px 16px;border-radius:30px;text-decoration:none;font-weight:600}
+@media(max-width:900px){.nav-links{gap:14px}}
+.top-bar{
+text-align:center !important;
+padding:12px !important;
+font-weight:600 !important;
+font-size:16px !important;
+background:#fff !important;
+color:#7a3d3d !important;
+font-family:Arial,sans-serif !important;
+position:static !important;
+top:auto !important;
+border:none !important;
+}
+.navbar{
+display:flex !important;
+justify-content:space-between !important;
+align-items:center !important;
+padding:14px 24px !important;
+background:#7a3d3d !important;
+position:static !important;
+top:auto !important;
+z-index:auto !important;
+border:none !important;
+box-shadow:none !important;
+}
+.logo{
+color:#fff !important;
+font-size:26px !important;
+font-weight:900 !important;
+font-family:Arial,sans-serif !important;
+}
+.logo a{
+color:#fff !important;
+text-decoration:none !important;
+font-size:26px !important;
+font-weight:900 !important;
+font-family:Arial,sans-serif !important;
+}
+.nav-links{
+display:flex !important;
+gap:18px !important;
+align-items:center !important;
+flex-wrap:wrap !important;
+}
+.nav-links a,
+.nav-links span a{
+color:#fff !important;
+text-decoration:none !important;
+font-weight:600 !important;
+font-size:16px !important;
+font-family:Arial,sans-serif !important;
+margin:0 !important;
+}
+/* Final header lock: keep search inside the navbar center slot. */
+.navbar{
+position:sticky !important;
+top:calc(var(--top-bar-height) - 2px) !important;
+z-index:7001 !important;
+display:flex !important;
+justify-content:space-between !important;
+align-items:center !important;
+padding:14px 24px !important;
+background:#7a3d3d !important;
+}
+.navbar .nav-search{
+position:absolute !important;
+left:50% !important;
+top:50% !important;
+transform:translate(-50%,-50%) !important;
+flex:0 0 300px !important;
+width:300px !important;
+max-width:300px !important;
+margin:0 !important;
+z-index:2 !important;
+}
+.navbar .nav-search input{
+height:38px !important;
+border-radius:8px !important;
+font-size:13px !important;
+padding-left:40px !important;
+}
+.navbar .nav-search::before{
+left:16px !important;
+width:14px !important;
+height:14px !important;
+border-width:2px !important;
+}
+.navbar .nav-search::after{
+left:28px !important;
+top:21px !important;
+width:7px !important;
+height:2px !important;
+}
+@media(max-width:900px){
+.navbar{
+flex-wrap:wrap !important;
+}
+.navbar .nav-search{
+position:relative !important;
+left:auto !important;
+top:auto !important;
+transform:none !important;
+order:3 !important;
+flex:1 1 100% !important;
+width:auto !important;
+max-width:none !important;
+margin:4px 0 0 !important;
+}
+}
+</style>
+<style>html,body{background:#f1e3e3 !important;}</style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+<body>
+
+<div id="stickyCart" style="position:fixed;bottom:20px;right:20px;display:none;align-items:center;gap:15px;padding:12px 18px;background:linear-gradient(135deg,#7a3d3d,#b76e79);color:#fff;border-radius:50px;z-index:9999;font-family:Arial,sans-serif;box-shadow:0 12px 30px rgba(0,0,0,0.18);"><span id="cartCount">0</span><a href="cart.html" style="background:#fff;color:#7a3d3d;padding:8px 16px;border-radius:30px;text-decoration:none;font-weight:600;font-family:Arial,sans-serif;">View Cart &rarr;</a></div>
+<div class="top-bar" style="text-align:center;padding:12px;font-weight:600;font-size:16px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;">Eat Healthy &bull; Be Swadra Family</div>
+<header class="navbar" style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:#7a3d3d;">
+<div class="logo" style="color:#fff;font-size:26px;font-weight:900;font-family:Arial,sans-serif;"><a href="index.html" style="color:#fff;text-decoration:none;font:inherit;">Swadra Organics</a></div>
+<div class="nav-search">
+<input id="searchInput" type="search" class="header-search-input" placeholder="Search for products, categories and ...">
+<div id="searchResults" class="nav-search-results"></div>
+</div>
+
+<div class="nav-links" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;">
+<a href="index.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Home</a>
+<a href="spices.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Spices</a>
+<a href="dryfruits.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Dry Fruits</a>
+<a href="oilghee.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Oil Ghee &amp; More</a>
+<a href="aboutus.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">About Us</a>
+<span id="accountNavSlot"><a class="account-link" href="account.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a></span>
+</div>
+</header><div class="sale-bar"><div class="sale-bar-track"><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span></div></div><div class="page">
+
+  <section class="hero-card">
+    <div class="hero-left">
+      <h1 id="welcomeText">Welcome Back</h1>
+      <p>
+        Manage your profile, delivery address, active purchases and order history from one premium customer dashboard.
+      </p>
+
+      <div class="hero-stats">
+        <div class="stat-box">
+          <h3 id="totalOrders">0</h3>
+          <span>Total Orders</span>
+        </div>
+        <div class="stat-box">
+          <h3 id="savedAddress">No</h3>
+          <span>Address Saved</span>
+        </div>
+        <div class="stat-box">
+          <h3>VIP</h3>
+          <span>Customer Status</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="profile-mini">
+        <div class="avatar" id="avatarText">S</div>
+        <div class="profile-meta">
+          <div class="profile-name-row">
+            <h3 id="profileName">User</h3>
+            <button 
+              onclick="editProfileName()"
+              style="border:none;background:#fff;color:#8a2d4a;padding:8px 14px;border-radius:12px;font-weight:700;cursor:pointer;">
+              Edit Name
+            </button>
+          </div>
+          <p id="profileEmail" class="profile-email"></p>
+          <button class="profile-secondary-action" onclick="openPasswordModal()">Change Password</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid">
+
+    <div class="card">
+      <div class="card-title">
+        <h2>Saved Delivery Address</h2>
+        <button class="edit-btn" onclick="openModal()">Edit</button>
+      </div>
+      <div id="addressDisplay" class="profile-details"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <h2>Quick Actions</h2>
+      </div>
+      <div class="quick-actions">
+        <button class="action-btn orders-btn" onclick="goOrders()"><span class="action-icon" aria-hidden="true">[]</span>View My Orders</button>
+        <button class="action-btn track-btn" onclick="trackOrder()"><span class="action-icon" aria-hidden="true">></span>Track Current Order</button>
+        <button class="action-btn logout-big" onclick="logout()"><span class="action-icon" aria-hidden="true"><</span>Logout Securely</button>
+      </div>
+    </div>
+
+  </section>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3>Edit Address</h3>
+
+    <div class="form-grid">
+      <input id="house" placeholder="House No">
+      <input id="area" placeholder="Sector / Mohalla">
+      <input id="city" placeholder="City / Village">
+      <input id="pincode" placeholder="Pincode" oninput="fetchPincode()">
+
+      <select id="postoffice">
+        <option value="">Select Post Office</option>
+      </select>
+
+      <input id="district" placeholder="District">
+      <input id="state" placeholder="State">
+    </div>
+
+    <button class="save-btn" onclick="saveAddress()">Save Address</button>
+    <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+<div class="modal" id="passwordModal">
+  <div class="modal-box">
+    <h3>Change Password</h3>
+    <p class="otp-note">Password change ke liye OTP verification mandatory hai. Continue karne par OTP aapke registered email par jayega.</p>
+
+    <div class="form-grid">
+      <input id="passwordOtp" placeholder="Enter OTP" inputmode="numeric" maxlength="6">
+      <input id="newPassword" type="password" placeholder="Enter New Password">
+      <input id="confirmPassword" type="password" placeholder="Confirm New Password">
+    </div>
+
+    <button class="save-btn" onclick="sendPasswordOtp()">Send OTP</button>
+    <button class="save-btn" style="margin-top:10px;" onclick="verifyPasswordOtpAndSave()">Verify OTP & Change Password</button>
+    <button class="cancel-btn" onclick="closePasswordModal()">Cancel</button>
+    <div id="passwordChangeMessage"></div>
+  </div>
+</div>
+
+<script>
+emailjs.init("uqdnXG18txM1DBF6j");
+
+function getCurrentUser(){
+  return localStorage.getItem("currentUser");
+}
+
+function getUsers(){
+  return JSON.parse(localStorage.getItem("users")) || {};
+}
+
+function saveUsers(users){
+  localStorage.setItem("users", JSON.stringify(users));
+}
+
+function safe(val){
+  return val ? val : "";
+}
+
+const house = document.getElementById("house");
+const area = document.getElementById("area");
+const city = document.getElementById("city");
+const pincode = document.getElementById("pincode");
+const postoffice = document.getElementById("postoffice");
+const district = document.getElementById("district");
+const state = document.getElementById("state");
+
+window.onload = function(){
+  let currentUser = getCurrentUser();
+
+  if(!currentUser){
+    window.location.href = "account.html";
+    return;
+  }
+
+  loadProfile();
+  loadAddress();
+  loadStats();
+};
+
+function loadProfile(){
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+
+  if(!users[currentUser]) return;
+
+  let user = users[currentUser];
+  let displayName = user.profile?.name || currentUser.split("@")[0];
+
+  document.getElementById("welcomeText").innerText = `Welcome Back, ${displayName}`;
+  document.getElementById("profileName").innerText = displayName;
+  document.getElementById("profileEmail").innerText = user.email || "";
+  document.getElementById("avatarText").innerText = displayName.charAt(0).toUpperCase();
+}
+
+function editProfileName(){
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+
+  if(!users[currentUser]) return;
+
+  let oldName =
+    users[currentUser].profile?.name ||
+    currentUser.split("@")[0];
+
+  let newName = prompt("Enter your full name", oldName);
+
+  if(!newName) return;
+
+  newName = newName.trim();
+
+  if(newName.length < 2) return;
+
+  if(!users[currentUser].profile){
+    users[currentUser].profile = {};
+  }
+
+  users[currentUser].profile.name = newName;
+
+  saveUsers(users);
+  loadProfile();
+}
+
+function loadStats(){
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+  let user = users[currentUser] || {};
+
+  document.getElementById("totalOrders").innerText = (user.orders || []).length;
+  document.getElementById("savedAddress").innerText = user.address?.house ? "Yes" : "No";
+}
+
+function loadAddress(){
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+
+  if(!users[currentUser]) return;
+
+  let address = users[currentUser].address || {};
+  const box = document.getElementById("addressDisplay");
+
+  if(address.house){
+    box.innerHTML = `
+      <div class="info-row"><div class="label">House</div><div class="value">${safe(address.house)}</div></div>
+      <div class="info-row"><div class="label">Area</div><div class="value">${safe(address.area)}</div></div>
+      <div class="info-row"><div class="label">City / Pincode</div><div class="value">${safe(address.city)} ${safe(address.pincode)}</div></div>
+      <div class="info-row"><div class="label">Post Office</div><div class="value">${safe(address.postoffice)}</div></div>
+      <div class="info-row"><div class="label">District / State</div><div class="value">${safe(address.district)}, ${safe(address.state)}</div></div>
+    `;
+  }else{
+    box.innerHTML = `<div class="info-row"><div class="value">No address saved yet.</div></div>`;
+  }
+}
+
+function openModal(){
+  document.getElementById("modal").style.display = "flex";
+
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+  let data = users[currentUser]?.address || {};
+
+  house.value = safe(data.house);
+  area.value = safe(data.area);
+  city.value = safe(data.city);
+  pincode.value = safe(data.pincode);
+  district.value = safe(data.district);
+  state.value = safe(data.state);
+
+  postoffice.innerHTML = `<option value="">Select Post Office</option>`;
+
+  if(data.postoffice){
+    postoffice.innerHTML += `<option value="${data.postoffice}" selected>${data.postoffice}</option>`;
+  }
+}
+
+function closeModal(){
+  document.getElementById("modal").style.display = "none";
+}
+
+function openPasswordModal(){
+  document.getElementById("passwordModal").style.display = "flex";
+  document.getElementById("passwordOtp").value = "";
+  document.getElementById("newPassword").value = "";
+  document.getElementById("confirmPassword").value = "";
+  document.getElementById("passwordChangeMessage").innerText = "";
+}
+
+function closePasswordModal(){
+  document.getElementById("passwordModal").style.display = "none";
+}
+
+function setPasswordMessage(msg, isError){
+  const el = document.getElementById("passwordChangeMessage");
+  el.innerText = msg;
+  el.style.color = isError ? "#b42345" : "#7a3d3d";
+}
+
+function sendPasswordOtp(){
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+  let user = users[currentUser];
+
+  if(!user || !user.email){
+    setPasswordMessage("Registered email nahi mili.", true);
+    return;
+  }
+
+  const otp = String(Math.floor(1000 + Math.random()*9000));
+  localStorage.setItem("dashboardPasswordOtp", otp);
+
+  emailjs.send(
+    "service_12k6w9q",
+    "template_qvyodce",
+    {
+      to_email: user.email,
+      otp: otp
+    }
+  )
+  .then(()=>{
+    setPasswordMessage("OTP email par send ho gaya.");
+  })
+  .catch(()=>{
+    setPasswordMessage("OTP send nahi ho paya.", true);
+  });
+}
+
+function verifyPasswordOtpAndSave(){
+  const enteredOtp = document.getElementById("passwordOtp").value.trim();
+  const newPassword = document.getElementById("newPassword").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+  const savedOtp = localStorage.getItem("dashboardPasswordOtp");
+
+  if(!savedOtp){
+    setPasswordMessage("Pehle OTP send karo.", true);
+    return;
+  }
+
+  if(enteredOtp !== savedOtp){
+    setPasswordMessage("OTP galat hai.", true);
+    return;
+  }
+
+  if(newPassword.length < 6){
+    setPasswordMessage("Password minimum 6 characters ka hona chahiye.", true);
+    return;
+  }
+
+  if(newPassword !== confirmPassword){
+    setPasswordMessage("Confirm password match nahi kar raha.", true);
+    return;
+  }
+
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+
+  if(!users[currentUser]) return;
+
+  users[currentUser].password = newPassword;
+  saveUsers(users);
+  localStorage.removeItem("dashboardPasswordOtp");
+  setPasswordMessage("Password successfully change ho gaya.");
+
+  setTimeout(()=>{
+    closePasswordModal();
+  }, 900);
+}
+
+function saveAddress(){
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+
+  if(!users[currentUser]) return;
+
+  users[currentUser].address = {
+    house: house.value.trim(),
+    area: area.value.trim(),
+    city: city.value.trim(),
+    pincode: pincode.value.trim(),
+    postoffice: postoffice.value.trim(),
+    district: district.value.trim(),
+    state: state.value.trim()
+  };
+
+  saveUsers(users);
+  closeModal();
+  loadAddress();
+  loadStats();
+}
+
+async function fetchPincode(){
+  const pin = pincode.value;
+
+  if(pin.length === 6){
+    try{
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+      const data = await res.json();
+
+      if(data[0].Status === "Success"){
+        const po = data[0].PostOffice;
+        postoffice.innerHTML = "";
+
+        po.forEach(p => {
+          let opt = document.createElement("option");
+          opt.value = p.Name;
+          opt.text = p.Name;
+          postoffice.appendChild(opt);
+        });
+
+        district.value = po[0].District || "";
+        state.value = po[0].State || "";
+        city.value = po[0].Block || po[0].Region || "";
+      }
+    }catch(error){
+      console.log("Pincode fetch failed");
+    }
+  }
+}
+
+function goOrders(){
+  window.location.href = "order.html";
+}
+
+function trackOrder(){
+  window.location.href = "trackorder.html";
+}
+
+function logout(){
+  localStorage.removeItem("currentUser");
+  localStorage.removeItem("cart");
+  localStorage.removeItem("userPhone");
+  window.location.href = "index.html";
+}
+
+document.getElementById("modal").addEventListener("click", function(e){
+  if(e.target.id === "modal"){
+    closeModal();
+  }
+});
+
+document.getElementById("passwordModal").addEventListener("click", function(e){
+  if(e.target.id === "passwordModal"){
+    closePasswordModal();
+  }
+});
+</script>
+
+<script>
+function swadraHeaderGetCart(){
+  try{return JSON.parse(localStorage.getItem("cart")) || [];}catch(e){return [];}
+}
+function swadraHeaderUpdateStickyCart(){
+  let bar=document.getElementById("stickyCart");
+  let count=document.getElementById("cartCount");
+  if(!bar || !count) return;
+  let cart=swadraHeaderGetCart();
+  let totalItems=0,totalPrice=0;
+  cart.forEach(item=>{ totalItems+=Number(item.qty||0); totalPrice+=Number(item.qty||0)*Number(item.price||0); });
+  if(totalItems>0){
+    bar.style.display="flex";
+    count.innerText=totalItems+" item ₹"+totalPrice;
+  }else{
+    bar.style.display="none";
+  }
+}
+function swadraHeaderUpdateAccountNav(){
+  let slot=document.getElementById("accountNavSlot");
+  if(!slot) return;
+  let currentUser=localStorage.getItem("currentUser");
+  let users={};
+  try{ users=JSON.parse(localStorage.getItem("users")) || {}; }catch(e){}
+  if(currentUser && users[currentUser]){
+    slot.innerHTML='<span class="account-menu-wrap"><a class="account-link" href="dashboard.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">'+((((users[currentUser]||{}).profile||{}).name) || currentUser.split("@")[0])+'</div><div class="account-hover-copy">'+currentUser+'</div><a class="account-hover-cta" href="dashboard.html">MY ACCOUNT</a></div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="dashboard.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V5"></path><path d="M17 16v-3"></path></svg></span><span>Product Summary</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span>';
+  }else{
+    slot.innerHTML='<span class="account-menu-wrap"><a class="account-link" href="account.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">Welcome</div><div class="account-hover-copy">Access your account, orders and saved details from one place.</div><a class="account-hover-cta" href="account.html">LOGIN / SIGNUP</a></div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="dashboard.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V5"></path><path d="M17 16v-3"></path></svg></span><span>Product Summary</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span>';
+  }
+}
+const headerSearchInput = document.getElementById("searchInput");
+const headerSearchResults = document.getElementById("searchResults");
+let headerSearchCache = [];
+
+function normalizeHeaderSearchText(value){
+  return String(value || "").toLowerCase().trim();
+}
+
+async function getDashboardSearchProducts(){
+  const lists = [];
+  try{ lists.push(...(JSON.parse(localStorage.getItem("adminProducts")) || [])); }catch(e){}
+  try{ lists.push(...(JSON.parse(localStorage.getItem("swadraBackendProductsCache")) || [])); }catch(e){}
+  try{
+    const grouped = JSON.parse(localStorage.getItem("adminProductsByCategory")) || {};
+    Object.values(grouped).forEach(items=>{
+      if(Array.isArray(items)) lists.push(...items);
+    });
+  }catch(e){}
+  try{
+    const response = await fetch((window.SWADRA_API_BASE || "") + "/api/products", { cache:"no-store" });
+    const data = await response.json();
+    if(data && Array.isArray(data.products)) lists.push(...data.products);
+  }catch(e){}
+
+  const seen = new Set();
+  return lists.filter(item=>{
+    const key = String(item.id || item.name || "").toLowerCase();
+    if(!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function ensureHeaderSearchCache(){
+  if(headerSearchCache.length) return headerSearchCache;
+  headerSearchCache = await getDashboardSearchProducts();
+  return headerSearchCache;
+}
+
+function getProductImage(item){
+  if(Array.isArray(item.images) && item.images.filter(Boolean)[0]) return item.images.filter(Boolean)[0];
+  return item.image || item.productImage || "https://via.placeholder.com/80";
+}
+
+function renderHeaderSearchResults(items){
+  if(!headerSearchResults) return;
+  if(!items.length){
+    headerSearchResults.innerHTML = '<div class="nav-search-item"><div class="nav-search-copy"><strong>No product found</strong><span>Try another keyword</span></div></div>';
+    headerSearchResults.classList.add("show");
+    return;
+  }
+  headerSearchResults.innerHTML = items.slice(0,8).map(item=>{
+    const name = item.name || item.productName || "Swadra Product";
+    const category = item.category || "Product";
+    const size = item.size || item.productSize || "";
+    return `<div class="nav-search-item" data-search-query="${String(name).replace(/"/g,"&quot;")}"><div class="nav-search-item-media"><img src="${getProductImage(item)}" alt="${name}"><div class="nav-search-copy"><strong>${name}</strong><span>${category}${size ? " • " + size : ""}</span></div></div><button type="button">View</button></div>`;
+  }).join("");
+  headerSearchResults.classList.add("show");
+  headerSearchResults.querySelectorAll(".nav-search-item[data-search-query]").forEach(row=>{
+    row.addEventListener("click", function(){
+      const query = this.getAttribute("data-search-query") || "";
+      if(!query) return;
+      localStorage.setItem("swadraHeaderSearch", query);
+      window.location.href = "index.html";
+    });
+  });
+}
+
+if(headerSearchInput && headerSearchResults){
+  headerSearchInput.addEventListener("input", async function(){
+    const query = normalizeHeaderSearchText(this.value);
+    if(!query){
+      headerSearchResults.classList.remove("show");
+      headerSearchResults.innerHTML = "";
+      return;
+    }
+    const products = await ensureHeaderSearchCache();
+    const filtered = products.filter(item=>normalizeHeaderSearchText(`${item.name || item.productName} ${item.category} ${item.size || item.productSize}`).includes(query));
+    renderHeaderSearchResults(filtered);
+  });
+
+  headerSearchInput.addEventListener("focus", async function(){
+    const query = normalizeHeaderSearchText(this.value);
+    if(!query) return;
+    const products = await ensureHeaderSearchCache();
+    renderHeaderSearchResults(products.filter(item=>normalizeHeaderSearchText(`${item.name || item.productName} ${item.category} ${item.size || item.productSize}`).includes(query)));
+  });
+
+  headerSearchInput.addEventListener("keydown", function(e){
+    if(e.key !== "Enter") return;
+    const query = headerSearchInput.value.trim();
+    if(!query) return;
+    localStorage.setItem("swadraHeaderSearch", query);
+    window.location.href = "index.html";
+  });
+
+  headerSearchInput.addEventListener("search", function(){
+    if(!headerSearchInput.value.trim()){
+      headerSearchResults.classList.remove("show");
+      headerSearchResults.innerHTML = "";
+    }
+  });
+}
+
+document.addEventListener("click", function(e){
+  if(headerSearchResults && !e.target.closest("#searchInput") && !e.target.closest("#searchResults")){
+    headerSearchResults.classList.remove("show");
+  }
+});
+window.addEventListener("load", function(){ swadraHeaderUpdateStickyCart(); swadraHeaderUpdateAccountNav(); });
+window.addEventListener("storage", function(event){
+  if(["cart","users","currentUser"].includes(event.key)){
+    swadraHeaderUpdateStickyCart();
+    swadraHeaderUpdateAccountNav();
+  }
+});
+setInterval(swadraHeaderUpdateStickyCart, 1000);
+</script>
+</body>
+</html>
+
+
+
+
+
+
+

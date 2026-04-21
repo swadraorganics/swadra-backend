@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swadra Organics - Admin Products AI Pricing</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root{
+      --primary:#7a3d3d;
+      --primary-dark:#5f2f2f;
+      --bg:#f8f5f2;
+      --card:#ffffff;
+      --text:#1f1f1f;
+      --muted:#6c6c6c;
+      --line:#e7dfd7;
+      --success:#137a43;
+      --warn:#b36b00;
+      --danger:#c62828;
+      --shadow:0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .admin-index-link{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      margin-bottom:14px;
+      padding:11px 16px;
+      border-radius:14px;
+      background:#7a3d3d;
+      color:#fff;
+      text-decoration:none;
+      font-weight:800;
+      box-shadow:0 10px 24px rgba(122,61,61,.18);
+    }
+
+    .wrap{
+      width:min(100%, 1880px);
+      margin:0 auto;
+      padding:20px 24px 28px;
+    }
+
+    .topbar{
+      background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+      color:#fff;
+      padding:24px 28px;
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      margin-bottom:18px;
+    }
+
+    .topbar h1{
+      margin:0;
+      font-size:30px;
+      line-height:1.2;
+    }
+
+    .topbar p{
+      margin:8px 0 0;
+      opacity:0.92;
+      font-size:15px;
+    }
+
+    .toolbar{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+
+    button{
+      border:none;
+      outline:none;
+      cursor:pointer;
+      border-radius:12px;
+      padding:12px 18px;
+      font-size:14px;
+      font-weight:700;
+      transition:0.2s ease;
+    }
+
+    .btn-primary{ background:var(--primary); color:#fff; }
+    .btn-primary:hover{ background:var(--primary-dark); }
+    .btn-secondary{ background:#1d6d5c; color:#fff; }
+    .btn-dark{ background:#333; color:#fff; }
+    .btn-danger{ background:var(--danger); color:#fff; }
+    .btn-light{ background:#eee7df; color:#3a2b2b; }
+    .btn-live{ background:#eee7df; color:#3a2b2b; }
+    .btn-live.checking{ background:#d8d0c8; color:#3a2b2b; }
+    .btn-live.online{ background:var(--success); color:#fff; }
+    .btn-live.offline{ background:var(--danger); color:#fff; }
+
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:14px;
+      margin-bottom:18px;
+    }
+    .stat-card{
+      background:var(--card);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+    .stat-card .label{ font-size:12px; color:var(--muted); font-weight:700; }
+    .stat-card .value{ font-size:28px; font-weight:800; margin-top:8px; color:var(--primary); }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:18px;
+      align-items:start;
+    }
+
+    .panel{
+      background:var(--card);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:22px 24px;
+      width:100%;
+    }
+
+    .panel h2{
+      margin:0 0 14px;
+      font-size:24px;
+    }
+
+    .muted{ color:var(--muted); }
+
+    .product-form{
+      display:grid;
+      gap:16px;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:14px;
+    }
+
+    .row.three{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .row.two{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .row.one{ grid-template-columns:1fr; }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .field label{
+      font-size:13px;
+      font-weight:700;
+      color:#3b2a2a;
+    }
+
+    .field input, .field select, .field textarea{
+      width:100%;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:12px;
+      padding:12px 13px;
+      font-size:14px;
+      color:var(--text);
+      outline:none;
+    }
+
+    .field textarea{
+      min-height:110px;
+      resize:vertical;
+      line-height:1.5;
+    }
+
+    .field input:focus, .field select:focus, .field textarea:focus{
+      border-color:var(--primary);
+      box-shadow:0 0 0 3px rgba(122,61,61,0.10);
+    }
+
+    .field input[disabled]{
+      background:#f1ece8;
+      color:#666;
+      cursor:not-allowed;
+      font-weight:700;
+    }
+
+    .section-title{
+      font-size:15px;
+      font-weight:800;
+      color:var(--primary);
+      margin-top:4px;
+      margin-bottom:2px;
+    }
+
+    .summary-box{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+      margin-top:4px;
+    }
+
+    .summary-card{
+      background:#fbf8f5;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+    }
+
+    .summary-card .label{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+      font-weight:700;
+    }
+
+    .summary-card .value{
+      font-size:24px;
+      font-weight:800;
+      color:#222;
+    }
+
+    .summary-card.green .value{ color:var(--success); }
+    .summary-card.gold .value{ color:var(--warn); }
+    .summary-card.red .value{ color:var(--danger); }
+
+    .hint{
+      font-size:12px;
+      color:#7d7268;
+      line-height:1.5;
+    }
+
+    .product-list{
+      display:grid;
+      gap:14px;
+      max-height: calc(100vh - 240px);
+      overflow:auto;
+      padding-right:4px;
+    }
+
+    .product-card{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fffdfa;
+      padding:16px;
+      display:grid;
+      gap:12px;
+    }
+
+    .product-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .product-head h3{
+      margin:0;
+      font-size:20px;
+      line-height:1.3;
+    }
+
+    .badge-wrap{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:6px;
+    }
+
+    .badge{
+      padding:7px 11px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      background:#f2ebe4;
+      color:#433;
+    }
+
+    .badge.green{ background:#e7f5ec; color:var(--success); }
+    .badge.red{ background:#fdeceb; color:var(--danger); }
+    .badge.gold{ background:#fff3dc; color:var(--warn); }
+
+    .thumb{
+      width:84px;
+      height:84px;
+      object-fit:contain;
+      border-radius:12px;
+      background:#fff;
+      border:1px solid var(--line);
+      padding:6px;
+    }
+
+    .thumb-wrap{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+    }
+
+    .card-grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+    }
+
+    .mini{
+      background:#faf6f2;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
+
+    .mini .k{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+      margin-bottom:5px;
+    }
+
+    .mini .v{
+      font-size:16px;
+      font-weight:800;
+    }
+
+    .card-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .details-panel{
+      display:none;
+    }
+
+    .details-panel.open{
+      display:grid;
+      gap:14px;
+    }
+
+    .category-group{
+      display:grid;
+      gap:14px;
+      margin-bottom:18px;
+    }
+
+    .category-heading{
+      font-size:18px;
+      font-weight:800;
+      color:var(--primary);
+      padding:0 2px;
+    }
+
+    .title-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .title-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .mini-toggle{
+      border:none;
+      border-radius:999px;
+      padding:8px 12px;
+      font-size:12px;
+      font-weight:700;
+      cursor:pointer;
+    }
+
+    .mini-toggle.active-available{
+      background:#e7f5ec;
+      color:var(--success);
+    }
+
+    .mini-toggle.active-out{
+      background:#fdeceb;
+      color:var(--danger);
+    }
+
+    .mini-toggle.inactive{
+      background:#f1e9e2;
+      color:#5b4a4a;
+    }
+
+    .empty{
+      padding:20px;
+      border:1px dashed #d8cdc2;
+      border-radius:16px;
+      color:var(--muted);
+      text-align:center;
+      background:#fffdfa;
+    }
+
+    @media (max-width:1200px){
+      .stats-grid{ grid-template-columns:repeat(2,1fr); }
+    }
+
+    @media (max-width:900px){
+      .row, .row.three, .summary-box, .card-grid{
+        grid-template-columns:repeat(2,1fr);
+      }
+    }
+
+    @media (max-width:600px){
+      .row, .row.three, .row.two, .summary-box, .card-grid, .stats-grid{
+        grid-template-columns:1fr;
+      }
+      .topbar h1{ font-size:24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="admin-index-link" href="../admin-index.html">Back To Admin Index</a>
+    <div class="topbar">
+      <h1>Swadra Organics Admin Products</h1>
+      <p>Layout same rakha gaya hai. Selling price AI competitor pricing ke hisaab se update hoga, MRP lock rahega, aur website sync ke liye original product storage structure same rakha gaya hai.</p>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-primary" onclick="addNewProduct()">Add New Product</button>
+      <button class="btn-secondary" onclick="saveCurrentProduct()">Save Product</button>
+      <button class="btn-secondary" onclick="fetchCompetitorPrices()">Fetch Competitor Prices</button>
+<button class="btn-dark" onclick="applyAIPrice()">Apply AI Selling Price</button>
+<button class="btn-light" onclick="window.open('saved-products.html','_blank')">Open Saved Products</button>
+<button class="btn-light" onclick="clearForm()">Clear Form</button>
+<button class="btn-light" onclick="window.open('backend.html','_blank')">Open Backend</button>
+<button id="serverStatusBtn" class="btn-live" onclick="checkServerStatus()">Check Server</button>
+<button class="btn-light" onclick="window.location.href='../admin-index.html'">Admin Index</button>
+</div>
+
+    <div class="stats-grid" id="productStats"></div>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>Product Editor</h2>
+
+        <div class="product-form">
+          <div class="row three">
+            <div class="field">
+              <label>Product Name</label>
+              <input type="text" id="productName" placeholder="Enter product name">
+            </div>
+            <div class="field">
+              <label>Product Size</label>
+              <input type="text" id="productSize" placeholder="500ml / 1kg / 250gm">
+            </div>
+            <div class="field">
+              <label>Category</label>
+<select id="productCategory">
+<option>Spices</option>
+<option>Dry Fruits</option>
+<option>Oil, Ghee & More</option>
+<option>Achar / Pickle</option>
+<option>Combos</option>
+<option>Special Products</option>
+<option>Bestseller</option>
+</select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Availability</label>
+              <select id="productAvailability">
+                <option>Available</option>
+                <option>Out of Stock</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Stock Quantity</label>
+              <input type="number" id="productStockQty" min="0" value="0">
+            </div>
+            <div class="field">
+              <label>Product Hero Image</label>
+              <input type="file" id="productImage" accept="image/*">
+            </div>
+            <div class="field">
+              <label>Product 2nd Image</label>
+              <input type="file" id="productImage2" accept="image/*">
+            </div>
+            <div class="field">
+              <label>Product 3rd Image</label>
+              <input type="file" id="productImage3" accept="image/*">
+            </div>
+            <div class="field">
+              <label>Product 4th Image</label>
+              <input type="file" id="productImage4" accept="image/*">
+            </div>
+          </div>
+
+          <div class="row one">
+            <div class="field">
+              <label>Product Summary</label>
+              <textarea id="productSummary" placeholder="Short summary jo product save hone ke saath store ho jaye"></textarea>
+            </div>
+          </div>
+
+          <div class="section-title">Cost Inputs</div>
+          <div class="row">
+            <div class="field">
+              <label>Raw Cost</label>
+              <input type="number" id="rawCost" min="0" value="0" oninput="liveRecalculate()">
+            </div>
+            <div class="field">
+              <label>Shipping Cost</label>
+              <input type="number" id="shippingCost" min="0" value="0" oninput="liveRecalculate()">
+            </div>
+            <div class="field">
+              <label>Packaging Cost</label>
+              <input type="number" id="packagingCost" min="0" value="0" oninput="liveRecalculate()">
+            </div>
+            <div class="field">
+              <label>Extra Cost</label>
+              <input type="number" id="extraCost" min="0" value="0" oninput="liveRecalculate()">
+            </div>
+          </div>
+
+          <div class="section-title">Pricing Rules</div>
+          <div class="row three">
+            <div class="field">
+              <label>Minimum Profit</label>
+              <input type="number" id="minProfit" min="0" value="0" oninput="liveRecalculate()">
+            </div>
+            <div class="field">
+              <label>Beat Competitor By (₹)</label>
+              <input type="number" id="undercutBy" min="0" value="1" oninput="liveRecalculate()">
+            </div>
+            <div class="field">
+              <label>Competitor Amazon Price</label>
+              <input type="number" id="amazonPrice" min="0" value="0" oninput="liveRecalculate()">
+            </div>
+          </div>
+
+          <div class="row three">
+            <div class="field">
+              <label>Competitor Flipkart Price</label>
+              <input type="number" id="flipkartPrice" min="0" value="0" oninput="liveRecalculate()">
+            </div>
+            <div class="field">
+              <label>Other Market Price</label>
+              <input type="number" id="otherPrice" min="0" value="0" oninput="liveRecalculate()">
+            </div>
+            <div class="field">
+              <label>MRP</label>
+              <input type="number" id="mrp" min="0" value="0" oninput="liveRecalculate()">
+            </div>
+          </div>
+
+          <div class="row three">
+            <div class="field">
+              <label>Offline Price</label>
+              <input type="number" id="offlinePrice" min="0" value="0" placeholder="Offline hone par ye price show hoga">
+            </div>
+            <div class="field">
+              <label>Current Selling Price</label>
+              <input type="number" id="sellingPrice" min="0" value="0" disabled>
+            </div>
+            <div class="field">
+              <label>MRP Status</label>
+              <input type="text" id="mrpStatus" value="Not Locked Yet" disabled>
+            </div>
+          </div>
+
+          <div class="section-title">Competitor Product URLs</div>
+          <div class="row three">
+            <div class="field">
+              <label>Amazon URL</label>
+              <input type="url" id="amazonUrl" placeholder="https://www.amazon.in/...">
+            </div>
+            <div class="field">
+              <label>Flipkart URL</label>
+              <input type="url" id="flipkartUrl" placeholder="https://www.flipkart.com/...">
+            </div>
+            <div class="field">
+              <label>Other Marketplace URL</label>
+              <input type="url" id="otherUrl" placeholder="https://...">
+            </div>
+          </div>
+
+          <div class="row one">
+            <div class="field">
+              <label>AI Status</label>
+              <input type="text" id="aiStatus" value="Waiting for calculation" disabled>
+            </div>
+          </div>
+
+          <div class="summary-box">
+            <div class="summary-card">
+              <div class="label">Total Cost</div>
+              <div class="value" id="totalCostView">₹0</div>
+            </div>
+            <div class="summary-card green">
+              <div class="label">Floor Price</div>
+              <div class="value" id="floorPriceView">₹0</div>
+            </div>
+            <div class="summary-card gold">
+              <div class="label">Lowest Competitor</div>
+              <div class="value" id="lowestCompetitorView">₹0</div>
+            </div>
+            <div class="summary-card red">
+              <div class="label">AI Final Selling Price</div>
+              <div class="value" id="aiSellingPriceView">₹0</div>
+            </div>
+          </div>
+
+          <div class="hint">
+            Total Cost = Raw + Shipping + Packaging + Extra.<br>
+            Floor Price = Total Cost + Minimum Profit.<br>
+            AI selling price competitor se sasta rakhne ki koshish karega, lekin floor se neeche nahi jayega.<br>
+            MRP save ke baad lock ho jayega.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PRODUCTS_DB_NAME = "swadraProductsDB";
+    const PRODUCTS_STORE_NAME = "products";
+    const PRODUCT_API_URLS = ["http://127.0.0.1:3000/api/products","http://localhost:3000/api/products"];
+    const BACKEND_PRODUCTS_CACHE_KEY = "swadraBackendProductsCache";
+    let editId = null;
+
+    function normalizeFrontendProduct(product){
+      return {
+        ...product,
+        id: product.id,
+        name: String(product.name || product.productName || "").trim(),
+        productName: String(product.name || product.productName || "").trim(),
+        size: String(product.size || product.productSize || "").trim(),
+        productSize: String(product.size || product.productSize || "").trim(),
+        category: String(product.category || "").trim(),
+        isBestseller: Boolean(product.isBestseller),
+        isSpecialProduct: Boolean(product.isSpecialProduct),
+        availability: String(product.availability || (product.outOfStock ? "Out of Stock" : "Available")),
+        stockQty: Number(product.stockQty ?? 0) || 0,
+        rawCost: Number(product.rawCost ?? 0) || 0,
+        shippingCost: Number(product.shippingCost ?? 0) || 0,
+        packagingCost: Number(product.packagingCost ?? 0) || 0,
+        extraCost: Number(product.extraCost ?? 0) || 0,
+        minProfit: Number(product.minProfit ?? 0) || 0,
+        undercutBy: Number(product.undercutBy ?? 1) || 1,
+        amazonPrice: Number(product.amazonPrice ?? 0) || 0,
+        flipkartPrice: Number(product.flipkartPrice ?? 0) || 0,
+        otherPrice: Number(product.otherPrice ?? 0) || 0,
+        offlinePrice: Number(product.offlinePrice ?? 0) || 0,
+        amazonUrl: String(product.amazonUrl || "").trim(),
+        flipkartUrl: String(product.flipkartUrl || "").trim(),
+        otherUrl: String(product.otherUrl || "").trim(),
+        mrp: Number(product.mrp ?? product.price ?? product.sellingPrice ?? 0) || 0,
+        price: Number(product.price ?? product.sellingPrice ?? 0) || 0,
+        sellingPrice: Number(product.price ?? product.sellingPrice ?? 0) || 0,
+        totalCost: Number(product.totalCost ?? 0) || 0,
+        floorPrice: Number(product.floorPrice ?? 0) || 0,
+        lowestCompetitor: Number(product.lowestCompetitor ?? 0) || 0,
+        aiStatus: String(product.aiStatus || "").trim(),
+        mrpLocked: Boolean(product.mrpLocked),
+        outOfStock: Boolean(product.outOfStock),
+        updatedAt: product.updatedAt || "",
+        createdAt: product.createdAt || "",
+        summary: String(product.summary || product.productSummary || "").trim(),
+        productSummary: String(product.summary || product.productSummary || "").trim(),
+        images: Array.isArray(product.images) ? product.images.filter(Boolean) : (product.image ? [product.image] : []),
+        image: product.image || ""
+      };
+    }
+
+    async function fetchBackendProducts(){
+      for(const url of PRODUCT_API_URLS){
+        try{
+          const response = await fetch(url,{ cache:"no-store" });
+          if(!response.ok) continue;
+          const data = await response.json();
+          if(Array.isArray(data?.products)){
+            const products = data.products.map(normalizeFrontendProduct);
+            try{ localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(products)); }catch(e){}
+            return products;
+          }
+        }catch(error){}
+      }
+      return null;
+    }
+
+    window.checkServerStatus = async function(){
+      const button = document.getElementById("serverStatusBtn");
+      if(button){
+        button.classList.remove("online","offline");
+        button.classList.add("checking");
+        button.textContent = "Checking...";
+      }
+
+      for(const url of PRODUCT_API_URLS){
+        try{
+          const response = await fetch(url,{ cache:"no-store" });
+          if(response.ok){
+            if(button){
+              button.classList.remove("checking","offline");
+              button.classList.add("online");
+              button.textContent = "Server Live";
+              button.title = url;
+            }
+            return true;
+          }
+        }catch(error){}
+      }
+
+      if(button){
+        button.classList.remove("checking","online");
+        button.classList.add("offline");
+        button.textContent = "Server Offline";
+        button.title = "Backend server is not responding";
+      }
+      return false;
+    }
+
+    async function saveBackendProduct(product){
+      for(const baseUrl of PRODUCT_API_URLS){
+        try{
+          const response = await fetch(baseUrl,{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify(product)
+          });
+          if(!response.ok) continue;
+          const data = await response.json();
+          if(data?.product){
+            return normalizeFrontendProduct(data.product);
+          }
+        }catch(error){}
+      }
+      throw new Error("Backend save failed");
+    }
+
+    async function deleteBackendProduct(id){
+      for(const baseUrl of PRODUCT_API_URLS){
+        try{
+          const response = await fetch(`${baseUrl}/${encodeURIComponent(id)}`,{ method:"DELETE" });
+          if(response.ok) return true;
+        }catch(error){}
+      }
+      throw new Error("Backend delete failed");
+    }
+
+    function openProductsDb(){
+      return new Promise((resolve,reject)=>{
+        const request = indexedDB.open(PRODUCTS_DB_NAME,1);
+        request.onupgradeneeded = e=>{
+          const db = e.target.result;
+          if(!db.objectStoreNames.contains(PRODUCTS_STORE_NAME)){
+            db.createObjectStore(PRODUCTS_STORE_NAME,{keyPath:"id"});
+          }
+        };
+        request.onsuccess = ()=>resolve(request.result);
+        request.onerror = ()=>reject(request.error);
+      });
+    }
+
+    function signalProductsUpdated(){
+      localStorage.setItem("adminProductsUpdatedAt", String(Date.now()));
+    }
+
+function normalizeCategoryKey(value){
+const normalized = String(value || "").toLowerCase().replace(/&/g,"and").replace(/,/g," ").replace(/\s+/g," ").trim();
+if(normalized.includes("achar") || normalized.includes("pickle")) return "achar";
+if(normalized.includes("best seller") || normalized.includes("bestseller")) return "bestseller";
+if(normalized.includes("combo")) return "combos";
+if(normalized.includes("special")) return "special";
+if(normalized.includes("dry fruits") || normalized.includes("dryfruits")) return "dryfruits";
+if(normalized.includes("oil") || normalized.includes("ghee")) return "oilghee";
+return "spices";
+}
+
+    async function syncProductsFallbackStore(){
+      try{
+        const products = await getProducts();
+        localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(products));
+        localStorage.setItem("adminProducts", JSON.stringify(products));
+const grouped = {
+spices: [],
+dryfruits: [],
+oilghee: [],
+achar: [],
+combos: [],
+bestseller: [],
+special: []
+};
+        products.forEach(product=>{
+          const key = normalizeCategoryKey(product.category);
+          if(!grouped[key]) grouped[key] = [];
+          grouped[key].push(product);
+          if(product.isBestseller && key !== "bestseller"){
+            grouped.bestseller.push(product);
+          }
+          if(product.isSpecialProduct && key !== "special"){
+            grouped.special.push(product);
+          }
+        });
+        localStorage.setItem("adminProductsByCategory", JSON.stringify(grouped));
+      }catch(e){
+        console.error("adminProducts fallback sync failed", e);
+      }
+    }
+
+    async function getProducts(){
+      const backendProducts = await fetchBackendProducts();
+      if(backendProducts){
+        return backendProducts;
+      }
+      try{
+        const db = await openProductsDb();
+        return await new Promise((resolve,reject)=>{
+          const tx = db.transaction(PRODUCTS_STORE_NAME,"readonly");
+          const store = tx.objectStore(PRODUCTS_STORE_NAME);
+          const request = store.getAll();
+          request.onsuccess = ()=>resolve(request.result || []);
+          request.onerror = ()=>reject(request.error);
+        });
+      }catch(e){
+        console.error("IndexedDB products read failed", e);
+        try{
+          const cachedProducts = JSON.parse(localStorage.getItem(BACKEND_PRODUCTS_CACHE_KEY)) || [];
+          if(cachedProducts.length) return cachedProducts;
+          return JSON.parse(localStorage.getItem("adminProducts")) || [];
+        }catch(parseError){
+          console.error("adminProducts parse failed", parseError);
+          return [];
+        }
+      }
+    }
+
+    async function putProduct(product){
+      const saved = await saveBackendProduct(normalizeFrontendProduct(product));
+      const db = await openProductsDb();
+      return await new Promise((resolve,reject)=>{
+        const tx = db.transaction(PRODUCTS_STORE_NAME,"readwrite");
+        tx.objectStore(PRODUCTS_STORE_NAME).put(saved);
+        tx.oncomplete = ()=>resolve(true);
+        tx.onerror = ()=>reject(tx.error);
+      });
+    }
+
+    async function deleteProductRecord(id){
+      await deleteBackendProduct(id);
+      const db = await openProductsDb();
+      return await new Promise((resolve,reject)=>{
+        const tx = db.transaction(PRODUCTS_STORE_NAME,"readwrite");
+        tx.objectStore(PRODUCTS_STORE_NAME).delete(id);
+        tx.oncomplete = ()=>resolve(true);
+        tx.onerror = ()=>reject(tx.error);
+      });
+    }
+
+    function normalizeProductName(value){
+      return String(value || "").trim().replace(/\s+/g," ").toLowerCase();
+    }
+
+    function buildProductRecord(base){
+      const mrp = Number(base.mrp || base.price || 0);
+      const price = Number(base.price || 0);
+      const offlinePrice = Number(base.offlinePrice || 0);
+      const offPercent = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
+      return {
+        rawCost: 0,
+        shippingCost: 0,
+        packagingCost: 0,
+        extraCost: 0,
+        minProfit: 0,
+        undercutBy: 1,
+        amazonPrice: 0,
+        flipkartPrice: 0,
+        otherPrice: 0,
+        offlinePrice: 0,
+        isBestseller: false,
+        isSpecialProduct: false,
+        mrpLocked: false,
+        summary: "",
+        productSummary: "",
+        images: [],
+        ...base,
+        mrp,
+        price,
+        offlinePrice,
+        sellingPrice: price,
+        offPercent,
+        image: base.image || ((Array.isArray(base.images) && base.images[0]) ? base.images[0] : "")
+      };
+    }
+
+    function getImageInputIds(){
+      return ["productImage","productImage2","productImage3","productImage4"];
+    }
+
+    function readImageFile(file){
+      return new Promise((resolve,reject)=>{
+        const reader = new FileReader();
+        reader.onload = e=>resolve(e.target.result);
+        reader.onerror = ()=>reject(reader.error || new Error("Image read failed"));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function collectProductImages(oldProduct){
+      const inputIds = getImageInputIds();
+      const existingImages = Array.isArray(oldProduct?.images) && oldProduct.images.length
+        ? oldProduct.images.slice(0,4)
+        : (oldProduct?.image ? [oldProduct.image] : []);
+      const nextImages = [];
+
+      for(let index = 0; index < inputIds.length; index += 1){
+        const input = document.getElementById(inputIds[index]);
+        const file = input?.files?.[0];
+        if(file){
+          if(!file.type.startsWith("image/")){
+            throw new Error(`Please upload a valid image file for image ${index + 1}`);
+          }
+          if(file.size > 10 * 1024 * 1024){
+            throw new Error(`Image ${index + 1} size must be 10MB or less`);
+          }
+          nextImages.push(await readImageFile(file));
+        }else if(existingImages[index]){
+          nextImages.push(existingImages[index]);
+        }
+      }
+
+      return nextImages.filter(Boolean).slice(0,4);
+    }
+
+    function rupee(value) {
+      return "₹" + Number(value || 0).toFixed(0);
+    }
+
+    function num(id) {
+      return Number(document.getElementById(id).value) || 0;
+    }
+
+    function text(id) {
+      return document.getElementById(id).value.trim();
+    }
+
+    function setValue(id, value) {
+      document.getElementById(id).value = value;
+    }
+
+    function getLowestCompetitor(prices) {
+      const valid = prices.filter(p => Number(p) > 0);
+      return valid.length ? Math.min(...valid) : 0;
+    }
+
+    function calculateAIPrice(data) {
+      const totalCost = Number(data.rawCost || 0) + Number(data.shippingCost || 0) + Number(data.packagingCost || 0) + Number(data.extraCost || 0);
+      const floorPrice = totalCost + Number(data.minProfit || 0);
+      const offlinePrice = Number(data.offlinePrice || 0);
+      const lowestCompetitor = getLowestCompetitor([
+        Number(data.amazonPrice || 0),
+        Number(data.flipkartPrice || 0),
+        Number(data.otherPrice || 0)
+      ]);
+
+      let finalSellingPrice = floorPrice;
+      let status = "Floor price applied";
+
+      if (lowestCompetitor > 0) {
+        const targetPrice = lowestCompetitor - Number(data.undercutBy || 1);
+        if (targetPrice >= floorPrice) {
+          finalSellingPrice = targetPrice;
+          status = "Competitor beaten safely";
+        } else {
+          finalSellingPrice = floorPrice;
+          status = "Competitor too low, floor protected";
+        }
+      } else {
+        finalSellingPrice = offlinePrice > 0 ? offlinePrice : floorPrice;
+        status = offlinePrice > 0 ? "No competitor price found, offline price used" : "No competitor price found, floor used";
+      }
+
+      if (Number(data.mrp || 0) > 0 && finalSellingPrice > Number(data.mrp)) {
+        finalSellingPrice = Number(data.mrp);
+        status = "Capped by MRP";
+      }
+
+      finalSellingPrice = Math.round(finalSellingPrice);
+
+      return {
+        totalCost: Math.round(totalCost),
+        floorPrice: Math.round(floorPrice),
+        lowestCompetitor: Math.round(lowestCompetitor),
+        finalSellingPrice,
+        status
+      };
+    }
+
+    function collectFormData(withValidation = true) {
+      const data = {
+        id: editId || (Date.now() + Math.floor(Math.random() * 10000)),
+        name: text("productName"),
+        productName: text("productName"),
+        size: text("productSize"),
+        productSize: text("productSize"),
+        summary: text("productSummary"),
+        productSummary: text("productSummary"),
+        category: document.getElementById("productCategory").value,
+        availability: document.getElementById("productAvailability").value,
+        stockQty: num("productStockQty"),
+        rawCost: num("rawCost"),
+        shippingCost: num("shippingCost"),
+        packagingCost: num("packagingCost"),
+        extraCost: num("extraCost"),
+        minProfit: num("minProfit"),
+        undercutBy: num("undercutBy"),
+        amazonPrice: num("amazonPrice"),
+        flipkartPrice: num("flipkartPrice"),
+        otherPrice: num("otherPrice"),
+        offlinePrice: num("offlinePrice"),
+        amazonUrl: text("amazonUrl"),
+        flipkartUrl: text("flipkartUrl"),
+        otherUrl: text("otherUrl"),
+        mrp: num("mrp"),
+        price: num("sellingPrice"),
+        sellingPrice: num("sellingPrice"),
+        mrpLocked: document.getElementById("mrp").disabled
+      };
+
+      if (withValidation) {
+        if (!data.name) {
+          alert("Product name enter karo.");
+          return null;
+        }
+        if (!data.size) {
+          alert("Product size enter karo.");
+          return null;
+        }
+        if (data.mrp <= 0) {
+          alert("MRP enter karo.");
+          return null;
+        }
+      }
+
+      return data;
+    }
+
+    function liveRecalculate() {
+      const data = collectFormData(false);
+      const calc = calculateAIPrice(data);
+
+      document.getElementById("totalCostView").textContent = rupee(calc.totalCost);
+      document.getElementById("floorPriceView").textContent = rupee(calc.floorPrice);
+      document.getElementById("lowestCompetitorView").textContent = rupee(calc.lowestCompetitor);
+      document.getElementById("aiSellingPriceView").textContent = rupee(calc.finalSellingPrice);
+      setValue("sellingPrice", calc.finalSellingPrice);
+      setValue("aiStatus", calc.status);
+
+      if (data.mrpLocked) {
+        setValue("mrpStatus", "Locked");
+        document.getElementById("mrp").disabled = true;
+      } else {
+        setValue("mrpStatus", "Not Locked Yet");
+        document.getElementById("mrp").disabled = false;
+      }
+    }
+
+    function applyAIPrice() {
+      const data = collectFormData(false);
+      const calc = calculateAIPrice(data);
+
+      setValue("sellingPrice", calc.finalSellingPrice);
+      setValue("aiStatus", calc.status);
+      document.getElementById("aiSellingPriceView").textContent = rupee(calc.finalSellingPrice);
+      document.getElementById("floorPriceView").textContent = rupee(calc.floorPrice);
+      document.getElementById("lowestCompetitorView").textContent = rupee(calc.lowestCompetitor);
+      document.getElementById("totalCostView").textContent = rupee(calc.totalCost);
+    }
+
+    async function fetchCompetitorPrices() {
+      const payload = {
+        productName: text("productName"),
+        productSize: text("productSize"),
+        searchMode: "product_name_size",
+        searchTarget: "all",
+        amazonUrl: text("amazonUrl"),
+        flipkartUrl: text("flipkartUrl"),
+        otherUrl: text("otherUrl")
+      };
+
+      if (!payload.productName) {
+        alert("Product name enter karo.");
+        return;
+      }
+
+      try {
+        const response = await fetch("http://127.0.0.1:3000/api/pricing/fetch-competitor-prices", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+
+        const data = await response.json();
+        if (!data?.ok) {
+          throw new Error(data?.error || "Fetch failed");
+        }
+
+        setValue("amazonPrice", Number(data.prices?.amazonPrice || 0));
+        setValue("flipkartPrice", Number(data.prices?.flipkartPrice || 0));
+        setValue("otherPrice", Number(data.prices?.otherPrice || 0));
+
+        if (data.urls?.amazonUrl) setValue("amazonUrl", data.urls.amazonUrl);
+        if (data.urls?.flipkartUrl) setValue("flipkartUrl", data.urls.flipkartUrl);
+        if (data.urls?.otherUrl) setValue("otherUrl", data.urls.otherUrl);
+
+        liveRecalculate();
+
+        alert(
+          "Competitor prices fetch complete.\n\n" +
+          `Amazon: ${data.statuses?.amazon || "N/A"}\n` +
+          `Flipkart: ${data.statuses?.flipkart || "N/A"}\n` +
+          `Other: ${data.statuses?.other || "N/A"}`
+        );
+      } catch (error) {
+        alert("Competitor price fetch failed.");
+        console.error(error);
+      }
+    }
+
+    async function saveCurrentProduct() {
+      const data = collectFormData(true);
+      if (!data) return;
+
+      const calc = calculateAIPrice(data);
+      const existingProducts = await getProducts();
+      const existingIndex = existingProducts.findIndex(p => String(p.id) === String(data.id));
+      const oldProduct = existingIndex > -1 ? buildProductRecord(existingProducts[existingIndex]) : null;
+
+      const finalizeSave = async (imagesData) => {
+        const safeImages = Array.isArray(imagesData) ? imagesData.filter(Boolean).slice(0,4) : [];
+        const product = buildProductRecord({
+          ...(oldProduct || {}),
+          ...data,
+          images: safeImages,
+          image: safeImages[0] || (oldProduct ? oldProduct.image : ""),
+          price: calc.finalSellingPrice,
+          sellingPrice: calc.finalSellingPrice,
+          totalCost: calc.totalCost,
+          floorPrice: calc.floorPrice,
+          lowestCompetitor: calc.lowestCompetitor,
+          aiStatus: calc.status,
+          offlinePrice: data.offlinePrice > 0 ? data.offlinePrice : calc.finalSellingPrice,
+          offPercent: data.mrp > calc.finalSellingPrice && data.mrp > 0 ? Math.round(((data.mrp - calc.finalSellingPrice) / data.mrp) * 100) : 0,
+          updatedAt: new Date().toLocaleString(),
+          mrp: oldProduct && oldProduct.mrpLocked ? oldProduct.mrp : data.mrp,
+          mrpLocked: true
+        });
+
+        try{
+          await putProduct(product);
+          await syncProductsFallbackStore();
+          signalProductsUpdated();
+          await renderProducts();
+          loadProductIntoForm(product.id);
+          alert("Product saved successfully.");
+        }catch(e){
+          alert("Save failed");
+          console.error("Save failed", e);
+        }
+      };
+
+      try{
+        const imagesData = await collectProductImages(oldProduct);
+        if(!imagesData.length){
+          alert("Please upload at least product hero image");
+          return;
+        }
+        await finalizeSave(imagesData);
+      }catch(error){
+        alert(error.message || "Image processing failed");
+        console.error(error);
+      }
+    }
+
+    function addNewProduct() {
+      clearForm();
+    }
+
+    function clearForm() {
+      editId = null;
+      setValue("productName", "");
+      setValue("productSize", "");
+      document.getElementById("productCategory").value = "Spices";
+      document.getElementById("productAvailability").value = "Available";
+      setValue("productStockQty", 0);
+      getImageInputIds().forEach(id=>{ document.getElementById(id).value = ""; });
+      setValue("productSummary", "");
+      setValue("rawCost", 0);
+      setValue("shippingCost", 0);
+      setValue("packagingCost", 0);
+      setValue("extraCost", 0);
+      setValue("minProfit", 0);
+      setValue("undercutBy", 1);
+      setValue("amazonPrice", 0);
+      setValue("flipkartPrice", 0);
+      setValue("otherPrice", 0);
+      setValue("offlinePrice", 0);
+      setValue("amazonUrl", "");
+      setValue("flipkartUrl", "");
+      setValue("otherUrl", "");
+      setValue("mrp", 0);
+      setValue("sellingPrice", 0);
+      setValue("mrpStatus", "Not Locked Yet");
+      setValue("aiStatus", "Waiting for calculation");
+      document.getElementById("mrp").disabled = false;
+
+      document.getElementById("totalCostView").textContent = "₹0";
+      document.getElementById("floorPriceView").textContent = "₹0";
+      document.getElementById("lowestCompetitorView").textContent = "₹0";
+      document.getElementById("aiSellingPriceView").textContent = "₹0";
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    async function renderStats(products){
+      const inStockCount = products.filter(item=>!(item.availability === "Out of Stock" || Number(item.stockQty) <= 0)).length;
+      const outStockCount = products.filter(item=>item.availability === "Out of Stock" || Number(item.stockQty) <= 0).length;
+      const totalStockUnits = products.reduce((sum,item)=>sum + (Number(item.stockQty) || 0), 0);
+
+      document.getElementById("productStats").innerHTML = `
+        <div class="stat-card">
+          <div class="label">Total Products</div>
+          <div class="value">${products.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Available</div>
+          <div class="value">${inStockCount}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Out Of Stock</div>
+          <div class="value">${outStockCount}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Stock Units</div>
+          <div class="value">${totalStockUnits}</div>
+        </div>`;
+    }
+
+    async function renderProducts() {
+      const products = (await getProducts()).map(buildProductRecord);
+      await renderStats(products);
+
+      const list = document.getElementById("productList");
+      if (!list) {
+        return;
+      }
+
+      if (!products.length) {
+        list.innerHTML = `<div class="empty">No products saved yet.</div>`;
+        return;
+      }
+
+      const groupedProducts = products.reduce((groups, product) => {
+        const key = product.category || "Uncategorized";
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(product);
+        return groups;
+      }, {});
+
+      list.innerHTML = Object.entries(groupedProducts).map(([categoryName, categoryProducts]) => `
+        <div class="category-group">
+          <div class="category-heading">${escapeHtml(categoryName)} (${categoryProducts.length})</div>
+          ${categoryProducts.map(product => {
+        const competitorStatus = product.lowestCompetitor > 0
+          ? "Competitor tracked"
+          : "No competitor entered";
+
+        const badgeClass = (product.aiStatus || "").includes("protected")
+          ? "red"
+          : (product.aiStatus || "").includes("safely")
+          ? "green"
+          : "gold";
+
+        const stockStatus = product.availability === "Out of Stock" || Number(product.stockQty) <= 0 ? "Out of Stock" : "Available";
+
+        return `
+          <div class="product-card">
+            <div class="product-head">
+              <div class="thumb-wrap">
+                <img class="thumb" src="${product.image || 'https://via.placeholder.com/120?text=No+Image'}" alt="">
+                <div>
+                  <div class="title-row">
+                    <h3>${escapeHtml(product.name)} - ${escapeHtml(product.size)}</h3>
+                    <div class="title-actions">
+                      <button class="mini-toggle ${stockStatus === "Available" ? "active-available" : "inactive"}" onclick="toggleProductAvailability('${product.id}','Available')">Available</button>
+                      <button class="mini-toggle ${stockStatus === "Out of Stock" ? "active-out" : "inactive"}" onclick="toggleProductAvailability('${product.id}','Out of Stock')">Out Of Stock</button>
+                    </div>
+                  </div>
+                  <div class="badge-wrap">
+                    <span class="badge green">MRP: ${rupee(product.mrp)}</span>
+                    <span class="badge red">Selling: ${rupee(product.price)}</span>
+                    <span class="badge gold">Floor: ${rupee(product.floorPrice)}</span>
+                    <span class="badge">${escapeHtml(product.category || "Spices")}</span>
+                    <span class="badge ${stockStatus === "Available" ? "green" : "red"}">${stockStatus}</span>
+                    <span class="badge">${competitorStatus}</span>
+                  </div>
+                  ${product.summary ? `<div class="hint" style="margin-top:10px;max-width:760px;">${escapeHtml(product.summary)}</div>` : ``}
+                </div>
+              </div>
+              <div class="badge-wrap">
+                <span class="badge ${badgeClass}">${escapeHtml(product.aiStatus || "Manual")}</span>
+                <span class="badge">Updated: ${escapeHtml(product.updatedAt || "")}</span>
+              </div>
+            </div>
+
+            <div class="details-panel" id="details-${product.id}">
+              <div class="card-grid">
+                <div class="mini"><div class="k">Raw Cost</div><div class="v">${rupee(product.rawCost)}</div></div>
+                <div class="mini"><div class="k">Shipping</div><div class="v">${rupee(product.shippingCost)}</div></div>
+                <div class="mini"><div class="k">Packaging</div><div class="v">${rupee(product.packagingCost)}</div></div>
+                <div class="mini"><div class="k">Extra</div><div class="v">${rupee(product.extraCost)}</div></div>
+
+                <div class="mini"><div class="k">Total Cost</div><div class="v">${rupee(product.totalCost)}</div></div>
+                <div class="mini"><div class="k">Min Profit</div><div class="v">${rupee(product.minProfit)}</div></div>
+                <div class="mini"><div class="k">Lowest Competitor</div><div class="v">${rupee(product.lowestCompetitor)}</div></div>
+                <div class="mini"><div class="k">Beat By</div><div class="v">${rupee(product.undercutBy)}</div></div>
+
+                <div class="mini"><div class="k">Amazon</div><div class="v">${rupee(product.amazonPrice)}</div></div>
+                <div class="mini"><div class="k">Flipkart</div><div class="v">${rupee(product.flipkartPrice)}</div></div>
+                <div class="mini"><div class="k">Other Market</div><div class="v">${rupee(product.otherPrice)}</div></div>
+                <div class="mini"><div class="k">Stock Qty</div><div class="v">${Number(product.stockQty || 0)}</div></div>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <button class="btn-light" onclick="toggleProductDetails('${product.id}')">View</button>
+              <button class="btn-primary" onclick="loadProductIntoForm('${product.id}')">Edit</button>
+              <button class="btn-dark" onclick="recalculateSingleProduct('${product.id}')">Recalculate AI Price</button>
+              <button class="btn-danger" onclick="deleteProduct('${product.id}')">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join("")}
+        </div>
+      `).join("");
+    }
+
+    async function loadProductIntoForm(id) {
+      const products = (await getProducts()).map(buildProductRecord);
+      const product = products.find(p => String(p.id) === String(id));
+      if (!product) return;
+
+      editId = product.id;
+      setValue("productName", product.name);
+      setValue("productSize", product.size);
+      document.getElementById("productCategory").value = product.category || "Spices";
+      document.getElementById("productAvailability").value = product.availability || "Available";
+      setValue("productStockQty", product.stockQty || 0);
+      getImageInputIds().forEach(id=>{ document.getElementById(id).value = ""; });
+      setValue("productSummary", product.summary || product.productSummary || "");
+      setValue("rawCost", product.rawCost || 0);
+      setValue("shippingCost", product.shippingCost || 0);
+      setValue("packagingCost", product.packagingCost || 0);
+      setValue("extraCost", product.extraCost || 0);
+      setValue("minProfit", product.minProfit || 0);
+      setValue("undercutBy", product.undercutBy || 1);
+      setValue("amazonPrice", product.amazonPrice || 0);
+      setValue("flipkartPrice", product.flipkartPrice || 0);
+      setValue("otherPrice", product.otherPrice || 0);
+      setValue("offlinePrice", product.offlinePrice || 0);
+      setValue("amazonUrl", product.amazonUrl || "");
+      setValue("flipkartUrl", product.flipkartUrl || "");
+      setValue("otherUrl", product.otherUrl || "");
+      setValue("mrp", product.mrp || 0);
+      setValue("sellingPrice", product.price || 0);
+      setValue("mrpStatus", product.mrpLocked ? "Locked" : "Not Locked Yet");
+      setValue("aiStatus", product.aiStatus || "Waiting for calculation");
+
+      document.getElementById("mrp").disabled = !!product.mrpLocked;
+
+      document.getElementById("totalCostView").textContent = rupee(product.totalCost || 0);
+      document.getElementById("floorPriceView").textContent = rupee(product.floorPrice || 0);
+      document.getElementById("lowestCompetitorView").textContent = rupee(product.lowestCompetitor || 0);
+      document.getElementById("aiSellingPriceView").textContent = rupee(product.price || 0);
+    }
+
+    async function recalculateSingleProduct(id) {
+      const products = (await getProducts()).map(buildProductRecord);
+      const index = products.findIndex(p => String(p.id) === String(id));
+      if (index === -1) return;
+
+      const product = products[index];
+      const calc = calculateAIPrice(product);
+
+      const updated = buildProductRecord({
+        ...product,
+        price: calc.finalSellingPrice,
+        sellingPrice: calc.finalSellingPrice,
+        totalCost: calc.totalCost,
+        floorPrice: calc.floorPrice,
+        lowestCompetitor: calc.lowestCompetitor,
+        aiStatus: calc.status,
+        updatedAt: new Date().toLocaleString()
+      });
+
+      try{
+        await putProduct(updated);
+        await syncProductsFallbackStore();
+        signalProductsUpdated();
+        await renderProducts();
+        if (String(editId) === String(id)) {
+          await loadProductIntoForm(id);
+        }
+      }catch(e){
+        alert("Recalculate failed");
+        console.error(e);
+      }
+    }
+
+    async function deleteProduct(id) {
+      if (!confirm("Delete this product?")) return;
+      try{
+        await deleteProductRecord(id);
+        await syncProductsFallbackStore();
+        signalProductsUpdated();
+        await renderProducts();
+        if (String(editId) === String(id)) clearForm();
+      }catch(e){
+        alert("Delete failed");
+        console.error("Delete failed", e);
+      }
+    }
+
+    async function toggleProductAvailability(id, nextStatus) {
+      const products = (await getProducts()).map(buildProductRecord);
+      const index = products.findIndex(p => String(p.id) === String(id));
+      if (index === -1) return;
+
+      const product = products[index];
+      const updated = buildProductRecord({
+        ...product,
+        availability: nextStatus,
+        outOfStock: nextStatus === "Out of Stock",
+        stockQty: nextStatus === "Out of Stock" ? 0 : Math.max(1, Number(product.stockQty || 1))
+      });
+
+      try{
+        await putProduct(updated);
+        await syncProductsFallbackStore();
+        signalProductsUpdated();
+        await renderProducts();
+        if (String(editId) === String(id)) {
+          await loadProductIntoForm(id);
+        }
+      }catch(error){
+        alert("Availability update failed");
+        console.error(error);
+      }
+    }
+
+    function toggleProductDetails(id) {
+      const panel = document.getElementById(`details-${id}`);
+      if (!panel) return;
+      panel.classList.toggle("open");
+    }
+
+    async function migrateLegacyProductsIfNeeded(){
+      let legacyProducts = [];
+      try{
+        legacyProducts = JSON.parse(localStorage.getItem("adminProducts")) || [];
+      }catch(e){
+        legacyProducts = [];
+      }
+
+      if(!legacyProducts.length) return;
+
+      const currentProducts = await getProducts();
+      if(currentProducts.length === 0){
+        for(const product of legacyProducts){
+          await putProduct(buildProductRecord(product));
+        }
+        await syncProductsFallbackStore();
+        signalProductsUpdated();
+        return;
+      }
+
+      await syncProductsFallbackStore();
+    }
+
+    migrateLegacyProductsIfNeeded().then(async ()=>{
+      await syncProductsFallbackStore();
+      await renderProducts();
+      clearForm();
+    });
+  </script>
+</body>
+</html>

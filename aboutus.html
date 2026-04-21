@@ -1,0 +1,274 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Us - Swadra Organics</title>
+  <link rel="stylesheet" href="aboutus.css">
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+  <style>
+    :root{--top-bar-height:43px;--navbar-height:62px}
+    .top-bar{position:sticky;top:0;z-index:7002;margin:0 !important}
+    .navbar{position:sticky !important;top:calc(var(--top-bar-height) - 2px);z-index:7001 !important;background:#7a3d3d !important}
+    .logo a{color:#fff;font-weight:800;text-decoration:none;font-size:24px;font-family:Arial,sans-serif}
+    .nav-search{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);flex:0 0 300px;max-width:300px;width:300px;margin:0;z-index:2}
+    .nav-search input{width:100%;height:38px;border:none;outline:none;border-radius:8px;padding:0 14px 0 40px;background:#f5f5f6;color:#282c3f;font-size:13px;font-weight:500;box-sizing:border-box;text-overflow:ellipsis}
+    .nav-search input::placeholder{color:#b98f8f;opacity:1}
+    .nav-search::before{content:"";position:absolute;left:16px;top:50%;width:14px;height:14px;border:2px solid #696e79;border-radius:50%;transform:translateY(-60%);opacity:.85}
+    .nav-search::after{content:"";position:absolute;left:28px;top:21px;width:7px;height:2px;background:#696e79;transform:rotate(45deg);border-radius:2px;opacity:.85}
+    .nav-search-results{position:absolute;top:calc(100% + 10px);left:0;width:100%;background:#ffffff;border-radius:14px;box-shadow:0 18px 45px rgba(0,0,0,0.15);border:1px solid #ececec;display:none;max-height:320px;overflow:auto;overflow-x:hidden;z-index:5000;opacity:1;isolation:isolate;backdrop-filter:none;-webkit-backdrop-filter:none}
+    .nav-search-results.show{display:block}
+    .nav-search-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid #f3ece8;cursor:pointer}
+    .nav-search-item:last-child{border-bottom:none}
+    .nav-search-item:hover{background:#fff8f3}
+    .nav-search-item-media{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+    .nav-search-item img{width:48px;height:48px;border-radius:10px;object-fit:cover;background:#faf6f4;border:1px solid #eee1db}
+    .nav-search-copy{min-width:0}
+    .nav-search-copy strong,.nav-search-copy span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .nav-search-copy strong{color:#282c3f;font-size:14px}
+    .nav-search-copy span{color:#7a7f8a;font-size:12px;margin-top:3px}
+    .nav-search-item button{border:none;border-radius:999px;background:#7a3d3d;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0}
+    .nav-buttons{display:flex;gap:18px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+    .nav-buttons a{color:#fff;text-decoration:none;font-size:16px;font-weight:700;font-family:Arial,sans-serif}
+    .account-link{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;color:#fff;text-decoration:none}
+    .account-link svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+    .account-menu-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center}
+    .account-hover-menu{position:absolute;top:calc(100% + 14px);right:-8px;width:260px;background:#ffffff;border:1px solid #ece1de;border-radius:18px;box-shadow:0 22px 45px rgba(0,0,0,0.16);padding:16px 0 14px;opacity:0;visibility:hidden;transform:translateY(10px);transition:opacity .22s ease, transform .22s ease, visibility .22s ease;z-index:7000}
+    .account-hover-menu::before{content:"";position:absolute;top:-8px;right:18px;width:16px;height:16px;background:#ffffff;border-left:1px solid #ece1de;border-top:1px solid #ece1de;transform:rotate(45deg)}
+    .account-menu-wrap:hover .account-hover-menu,.account-menu-wrap:focus-within .account-hover-menu{opacity:1;visibility:visible;transform:translateY(0)}
+    .account-hover-head{padding:0 18px 14px;border-bottom:1px solid #f1e7e4}
+    .account-hover-title{color:#2f2323;font-size:16px;font-weight:800;margin-bottom:4px}
+    .account-hover-copy{color:#7a6b6b;font-size:13px;line-height:1.55}
+    .account-hover-cta{display:inline-flex;align-items:center;justify-content:center;margin-top:14px;padding:10px 16px;border-radius:10px;border:1px solid #7a3d3d;color:#fff !important;background:#7a3d3d;font-size:13px;font-weight:800;text-decoration:none !important}
+    .account-hover-cta,.account-hover-cta:visited,.account-hover-cta:hover,.account-hover-cta:active{color:#fff !important}
+    .account-hover-list{list-style:none;padding:12px 0 0;margin:0}
+    .account-hover-list + .account-hover-list{margin-top:10px;padding-top:10px;border-top:1px solid #f4ece9}
+    .account-hover-list a{display:flex !important;align-items:center;gap:12px;padding:10px 18px;color:#7a3d3d !important;text-decoration:none !important;font-size:14px;font-weight:700}
+    .account-hover-list a span,.account-hover-list a:visited span,.account-hover-list a:hover span,.account-hover-list a:active span{color:#7a3d3d !important}
+    .account-hover-menu a:not(.account-hover-cta),.account-hover-menu a:not(.account-hover-cta):visited{color:#7a3d3d !important}
+    .account-hover-list a:hover{background:#fbf4f2;color:#7a3d3d !important}
+    .account-menu-icon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;color:#7a3d3d}
+    .account-menu-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+    .sale-bar{display:block;position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height));z-index:7000;overflow:hidden;white-space:nowrap;padding:10px 0;background:#ffffff;color:#c62828;font-size:18px;font-weight:700;line-height:1;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif}
+    .sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;padding-left:0;animation:offerTicker 26s linear infinite;will-change:transform}
+    .sale-bar-item{display:inline-flex;align-items:center;flex:0 0 auto;margin-right:84px}
+    @keyframes offerTicker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+    @media(max-width:1180px){.navbar{flex-wrap:wrap;gap:12px}.nav-search{position:relative;left:auto;top:auto;transform:none;order:3;flex:1 1 100%;max-width:none;margin:4px 0 0;width:auto}.account-hover-menu{right:0;width:230px}}
+    @media(max-width:900px){.nav-buttons{justify-content:center}}
+  </style>
+<style>html,body{background:#f1e3e3 !important;}</style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+<body>
+  <div class="top-bar" style="text-align:center;padding:12px;font-weight:600;font-size:16px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;">Eat Healthy &bull; Be Swadra Family</div>
+  <header class="navbar" style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:#7a3d3d;">
+    <div class="logo">
+      <a href="index.html">Swadra Organics</a>
+    </div>
+    <div class="nav-search">
+      <input id="searchInput" type="search" class="header-search-input" placeholder="Search for products, categories and more">
+      <div id="searchResults" class="nav-search-results"></div>
+    </div>
+    <div class="nav-buttons">
+      <a href="index.html">Home</a>
+      <a href="spices.html">Spices</a>
+      <a href="dryfruits.html">Dry Fruits</a>
+      <a href="oilghee.html">Oil Ghee & More</a>
+      <a href="aboutus.html">About Us</a>
+      <span id="accountNavSlot"><a class="account-link" href="account.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a></span>
+    </div>
+  </header>
+  <div class="sale-bar"><div class="sale-bar-track"><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span></div></div>
+
+  <section>
+    <h1 class="main-heading">The Story Behind Swadra</h1>
+  </section>
+
+  <section class="swadra-aboutus-founder">
+    <div class="swadra-aboutus-container">
+      <div class="swadra-aboutus-founder-img">
+        <img src="aboutus-images/founder.jpg" alt="Founder of Swadra Organics">
+      </div>
+      <div class="swadra-aboutus-founder-text">
+        <p class="story-highlight">
+          Swadra is not just a brand, it is a personal realization. My name is Ajay Singh, and I began to notice that in today's India, people are facing serious health issues much earlier in life. By the age of 60-65, many are already battling diseases. When I looked deeper, I realized the truth: the food we eat today is no longer truly pure. Excessive pesticides and chemicals have silently become a part of our daily diet.
+        </p>
+        <p class="story-highlight">
+          That realization led to the birth of Swadra Organics, not to sell products, but to restore trust. I personally ensure sourcing and quality, offering products that are either pesticide-free or contain only minimal, safe levels. This journey is not easy, but when it comes to health, there can be no compromise.
+        </p>
+        <p class="story-gold">If it's not pure, it's not Swadra.</p>
+        <p class="story-sign">Ajay Singh</p>
+      </div>
+    </div>
+    <div class="bottom-tagline">Purity is not Luxury. It's a Responsibility</div>
+  </section>
+
+  <section class="swadra-aboutus-quality">
+    <h2>NO MILAWAT. NO CHEMICALS.</h2>
+    <p>Purity is not a claim, it is a standard we refuse to compromise on. In a world driven by shortcuts and artificial enhancements, Swadra Organics stands for something rare: absolute integrity. Every ingredient is carefully sourced, untouched by chemicals, and preserved in its most natural form. No fillers, no artificial colors, only the richness of real, unaltered ingredients. Because true luxury is not excess, it is authenticity.</p>
+    <p>Because what goes into your food should never be a question. At Swadra, every ingredient is selected with care and handled with honesty, free from unnecessary additives and artificial interference. We believe true quality does not need enhancement, it speaks for itself. When you choose Swadra, you choose clarity, trust, and a standard that respects your expectations.</p>
+  </section>
+
+  <section class="swadra-aboutus-premium">
+    <h2>Made for Premium Kitchens</h2>
+    <p>Swadra is crafted for kitchens where quality is never compromised. Every ingredient is carefully sourced, naturally processed, and held to standards that go beyond the ordinary.</p>
+    <p>We believe true purity does not need enhancement. It speaks through taste, aroma, and trust. From selection to packaging, everything is done with precision and responsibility.</p>
+    <p>This is not everyday food.</p>
+    <p>This is for kitchens that value what truly matters.</p>
+    <p>Used where quality is non-negotiable.</p>
+  </section>
+
+  <script>
+    const PRODUCT_API_URLS = window.SWADRA_PRODUCTS_API_URLS || ["/api/products"];
+    const BACKEND_PRODUCTS_CACHE_KEY="swadraBackendProductsCache";
+    function openProductsDb(){
+      return new Promise((resolve,reject)=>{
+        const request=indexedDB.open("swadraProductsDB",1);
+        request.onupgradeneeded=e=>{
+          const db=e.target.result;
+          if(!db.objectStoreNames.contains("products")){
+            db.createObjectStore("products",{keyPath:"id"});
+          }
+        };
+        request.onsuccess=()=>resolve(request.result);
+        request.onerror=()=>reject(request.error);
+      });
+    }
+    function swadraHeaderAccountMenu(userLabel, userEmail){
+      return `<span class="account-menu-wrap"><a class="account-link" href="${userEmail ? "dashboard.html" : "account.html"}" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">${userLabel}</div><div class="account-hover-copy">${userEmail || "Access your account, orders and saved details from one place."}</div>${userEmail ? `<a class="account-hover-cta" href="#" onclick="return swadraLogout(event)" style="color:#fff !important">LOGOUT</a>` : `<a class="account-hover-cta" href="account.html" style="color:#fff !important">LOGIN / SIGNUP</a>`}</div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="dashboard.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V5"></path><path d="M17 16v-3"></path></svg></span><span>Product Summary</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span>`;
+    }
+    function swadraLogout(event){
+      if(event) event.preventDefault();
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("redirectAfterLogin");
+      updateAboutAccountNavigation();
+      window.location.href = "index.html";
+      return false;
+    }
+    function updateAboutAccountNavigation(){
+      const slot=document.getElementById("accountNavSlot");
+      if(!slot) return;
+      let currentUser=localStorage.getItem("currentUser");
+      let users={};
+      try{ users=JSON.parse(localStorage.getItem("users")) || {}; }catch(e){}
+      if(currentUser && users[currentUser]){
+        slot.innerHTML=swadraHeaderAccountMenu((((users[currentUser]||{}).profile||{}).name || currentUser.split("@")[0]), currentUser);
+      }else{
+        slot.innerHTML=swadraHeaderAccountMenu("Welcome", "");
+      }
+    }
+    function normalizeBackendProduct(product){
+      return {
+        ...product,
+        name:String(product.name || product.productName || "").trim(),
+        size:String(product.size || product.productSize || "").trim(),
+        category:String(product.category || "").trim(),
+        image:String(product.image || product.productImage || "").trim()
+      };
+    }
+    function getCachedBackendProducts(){
+      try{ return JSON.parse(localStorage.getItem(BACKEND_PRODUCTS_CACHE_KEY)) || []; }catch(e){ return []; }
+    }
+    async function getHeaderSearchProducts(){
+      for(const url of PRODUCT_API_URLS){
+        try{
+          const response=await fetch(url,{cache:"no-store"});
+          if(response.ok){
+            const data=await response.json();
+            if(Array.isArray(data?.products)){
+              const products=data.products.map(normalizeBackendProduct);
+              localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(products));
+              return products;
+            }
+          }
+        }catch(error){}
+      }
+      const cached=getCachedBackendProducts();
+      if(cached.length) return cached;
+      try{
+        const db=await openProductsDb();
+        const dbProducts=await new Promise((resolve,reject)=>{
+          const tx=db.transaction("products","readonly");
+          const request=tx.objectStore("products").getAll();
+          request.onsuccess=()=>resolve(request.result || []);
+          request.onerror=()=>reject(request.error);
+        });
+        if(Array.isArray(dbProducts) && dbProducts.length){
+          return dbProducts.map(normalizeBackendProduct);
+        }
+      }catch(e){}
+      try{ return (JSON.parse(localStorage.getItem("adminProducts")) || []).map(normalizeBackendProduct); }catch(e){ return []; }
+    }
+    const headerSearchInput=document.getElementById("searchInput");
+    const headerSearchResults=document.getElementById("searchResults");
+    let headerSearchCache=[];
+    function normalizeHeaderSearchText(value){ return String(value || "").toLowerCase().trim(); }
+    async function ensureHeaderSearchCache(){ if(headerSearchCache.length) return headerSearchCache; headerSearchCache=await getHeaderSearchProducts(); return headerSearchCache; }
+    function renderHeaderSearchResults(items){
+      if(!headerSearchResults) return;
+      if(!items.length){
+        headerSearchResults.innerHTML='<div class="nav-search-item"><div class="nav-search-copy"><strong>No product found</strong><span>Try another keyword</span></div></div>';
+        headerSearchResults.classList.add("show");
+        return;
+      }
+      headerSearchResults.innerHTML=items.slice(0,8).map(item=>`<div class="nav-search-item" data-search-query="${String(item.name || "").replace(/"/g,"&quot;")}"><div class="nav-search-item-media"><img src="${item.image || "https://via.placeholder.com/80"}" alt="${item.name || "Product"}"><div class="nav-search-copy"><strong>${item.name || "Swadra Product"}</strong><span>${item.category || "Product"}${item.size ? " â€¢ " + item.size : ""}</span></div></div><button type="button">View</button></div>`).join("");
+      headerSearchResults.classList.add("show");
+      headerSearchResults.querySelectorAll(".nav-search-item[data-search-query]").forEach(row=>{
+        row.addEventListener("click", function(){
+          const query=this.getAttribute("data-search-query") || "";
+          if(!query) return;
+          localStorage.setItem("swadraHeaderSearch", query);
+          window.location.href="index.html";
+        });
+      });
+    }
+    if(headerSearchInput && headerSearchResults){
+      headerSearchInput.addEventListener("input", async function(){
+        const query=normalizeHeaderSearchText(this.value);
+        if(!query){
+          headerSearchResults.classList.remove("show");
+          headerSearchResults.innerHTML="";
+          return;
+        }
+        const products=await ensureHeaderSearchCache();
+        const filtered=products.filter(item=>normalizeHeaderSearchText(`${item.name} ${item.category} ${item.size}`).includes(query));
+        renderHeaderSearchResults(filtered);
+      });
+      headerSearchInput.addEventListener("focus", async function(){
+        if(!normalizeHeaderSearchText(this.value)) return;
+        const products=await ensureHeaderSearchCache();
+        const filtered=products.filter(item=>normalizeHeaderSearchText(`${item.name} ${item.category} ${item.size}`).includes(normalizeHeaderSearchText(headerSearchInput.value)));
+        renderHeaderSearchResults(filtered);
+      });
+      headerSearchInput.addEventListener("keydown", e=>{
+        if(e.key!=="Enter") return;
+        const query=headerSearchInput.value.trim();
+        if(!query) return;
+        localStorage.setItem("swadraHeaderSearch", query);
+        window.location.href="index.html";
+      });
+      headerSearchInput.addEventListener("search", ()=>{
+        if(!headerSearchInput.value.trim()){
+          headerSearchResults.classList.remove("show");
+          headerSearchResults.innerHTML="";
+        }
+      });
+    }
+    document.addEventListener("click", function(e){
+      if(headerSearchResults && !e.target.closest("#searchInput") && !e.target.closest("#searchResults")){
+        headerSearchResults.classList.remove("show");
+      }
+    });
+    updateAboutAccountNavigation();
+    window.addEventListener("storage", function(event){
+      if(["users","currentUser"].includes(event.key)) updateAboutAccountNavigation();
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+

@@ -1,0 +1,773 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swadra Cart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
+body{background:#f1e3e3;color:#1f1f1f;overflow:auto}
+:root{--top-bar-height:43px;--navbar-height:62px;--sale-bar-height:44px}
+.top-bar{text-align:center;padding:12px;font-size:16px;font-weight:700;color:#8a2d4a;background:#fff;position:sticky;top:0;z-index:1001;border-bottom:1px solid #eee}
+.navbar{display:flex;justify-content:space-between;align-items:center;padding:18px 32px;background:#ffffffee;position:sticky;top:41px;z-index:1000;border-bottom:1px solid #ececec}
+.logo a{color:#8a2d4a;font-size:24px;font-weight:800;text-decoration:none}
+.nav-buttons{display:flex;gap:22px;flex-wrap:wrap}
+.nav-buttons a{color:#333;text-decoration:none;font-size:14px;font-weight:600}
+.page{max-width:1360px;height:auto;margin:18px auto 0;padding:0 18px 30px;display:flex;flex-direction:column;overflow:visible}
+.page-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:16px;flex-shrink:0}
+.page-title h1{font-size:34px;font-weight:800}
+.free-badge{background:#fff;color:#8a2d4a;padding:12px 18px;border-radius:18px;font-size:13px;font-weight:700;border:1px solid #f0d7df}
+.cart-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,360px);gap:18px;align-items:start}
+.cart-items-panel,.summary-panel{background:#fff;border-radius:30px;padding:20px;box-shadow:0 14px 35px rgba(0,0,0,.05)}
+.cart-items-panel{height:auto;overflow:visible}
+.cart-items{display:grid;gap:18px}
+.cart-item{display:grid;grid-template-columns:92px 1fr auto;gap:16px;align-items:center;padding:16px 18px;border:1px solid #f0f0f0;border-radius:22px;background:#fcfcfc}
+.product-image{width:92px;height:92px;border-radius:18px;object-fit:cover;background:#fff;border:1px solid #eee}
+.product-info h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.meta{font-size:12px;color:#777;margin-bottom:8px;line-height:1.45}
+.price-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.old-price{text-decoration:line-through;color:#8a8a8a;font-weight:700}
+.selling-price{font-size:18px;font-weight:800;color:#111}
+.off-badge{font-size:11px;font-weight:800;color:#0c831f}
+.qty-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+.qty-btn{width:32px;height:32px;border:none;border-radius:10px;background:#f3f4f6;font-size:18px;cursor:pointer;font-weight:700}
+.qty-count{font-size:15px;font-weight:700;min-width:24px;text-align:center}
+.item-actions{display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+.item-price{font-size:18px;font-weight:800;color:#111}
+.item-price .before-coupon{display:block;font-size:12px;color:#888;text-decoration:line-through;font-weight:700;text-align:right}
+.item-price .after-coupon{display:block;color:#111}
+.coupon-adjusted-price{font-size:12px;color:#0f8a47;font-weight:800;margin-top:4px}
+.remove-btn{background:#fff1f4;color:#c12752;padding:10px 14px;border-radius:14px;cursor:pointer;font-size:12px;font-weight:700;border:none}
+.summary-panel{position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height) + 18px);padding:16px 18px}
+.summary-panel h2{font-size:22px;font-weight:800;margin-bottom:12px}
+.summary-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:14px;color:#444}
+.summary-row strong{font-size:20px;color:#111}
+.summary-subtext{margin-top:-2px;padding-bottom:6px;font-size:11px;color:#6f6f6f}
+.divider{height:1px;background:#ececec;margin:6px 0 10px}
+.coupon-box{background:#fafafa;border:1px solid #ececec;padding:12px;border-radius:18px;margin:12px 0}
+.coupon-box h3{font-size:15px;margin-bottom:10px}
+.coupon-input-wrap{display:flex;gap:10px}
+.coupon-box input{flex:1;padding:13px 14px;border-radius:14px;border:1px solid #ddd;font-size:13px}
+.coupon-box button{padding:13px 18px;border:none;border-radius:14px;background:#111;color:#fff;font-weight:700;cursor:pointer}
+.coupon-note{font-size:11px;color:#777;margin-top:10px;line-height:1.45}
+.save-text{margin-top:10px;font-size:13px;font-weight:700;color:#0f8a47}
+.gst-note{margin-top:8px;font-size:11px;line-height:1.45;color:#7a3d3d;background:#fbf1f1;border:1px solid #efdede;border-radius:14px;padding:10px 12px}
+.checkout-btn{width:100%;margin-top:12px;padding:15px 16px;border:none;border-radius:18px;background:#7a3d3d;color:#fff;font-size:15px;font-weight:800;cursor:pointer}
+.empty-cart{text-align:center;padding:60px 20px;font-size:18px;color:#666}
+@media(max-width:1100px){.page{padding-bottom:30px}.cart-layout{grid-template-columns:1fr}.summary-panel{position:static}}
+@media(max-width:760px){.navbar{flex-direction:column;gap:16px;padding:18px}.cart-item{grid-template-columns:1fr;text-align:center}.item-actions{align-items:center}.page-title h1{font-size:28px}.coupon-input-wrap{flex-direction:column}}
+.top-bar{text-align:center;padding:12px;font-weight:600;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif}
+.navbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:#7a3d3d}
+.logo{color:#fff;font-size:26px;font-weight:900;font-family:Arial,sans-serif}
+.logo a{color:#fff;text-decoration:none}
+.nav-links{display:flex;gap:18px;flex-wrap:wrap}
+.nav-links a,.nav-links span a{color:#fff;text-decoration:none;font-weight:600;font-family:Arial,sans-serif}
+@media(max-width:900px){.nav-links{gap:14px}}
+.top-bar{
+text-align:center !important;
+padding:12px !important;
+font-weight:600 !important;
+font-size:16px !important;
+background:#fff !important;
+color:#7a3d3d !important;
+font-family:Arial,sans-serif !important;
+position:static !important;
+top:auto !important;
+border:none !important;
+}
+.navbar{
+display:flex !important;
+justify-content:space-between !important;
+align-items:center !important;
+padding:14px 24px !important;
+background:#7a3d3d !important;
+position:static !important;
+top:auto !important;
+z-index:auto !important;
+border:none !important;
+box-shadow:none !important;
+}
+.logo{
+color:#fff !important;
+font-size:26px !important;
+font-weight:900 !important;
+font-family:Arial,sans-serif !important;
+}
+.logo a{
+color:#fff !important;
+text-decoration:none !important;
+font-size:26px !important;
+font-weight:900 !important;
+font-family:Arial,sans-serif !important;
+}
+.nav-links{
+display:flex !important;
+gap:18px !important;
+align-items:center !important;
+flex-wrap:wrap !important;
+}
+.nav-links a,
+.nav-links span a{
+color:#fff !important;
+text-decoration:none !important;
+font-weight:600 !important;
+font-size:16px !important;
+font-family:Arial,sans-serif !important;
+margin:0 !important;
+}
+.top-bar{position:sticky !important;top:0 !important;z-index:7002 !important;border-bottom:1px solid #efe3df !important;margin:0 !important}
+.navbar{position:sticky !important;top:calc(var(--top-bar-height) - 2px) !important;z-index:7001 !important;background:#7a3d3d !important}
+.nav-search{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);flex:0 0 300px;max-width:300px;width:300px;margin:0;z-index:2}
+.nav-search input{width:100%;height:38px;border:none;outline:none;border-radius:8px;padding:0 14px 0 40px;background:#f5f5f6;color:#282c3f;font-size:13px;font-weight:500;box-sizing:border-box;text-overflow:ellipsis}
+.nav-search input::placeholder{color:#b98f8f;opacity:1}
+.nav-search::before{content:"";position:absolute;left:16px;top:50%;width:14px;height:14px;border:2px solid #696e79;border-radius:50%;transform:translateY(-60%);opacity:.85}
+.nav-search::after{content:"";position:absolute;left:28px;top:21px;width:7px;height:2px;background:#696e79;transform:rotate(45deg);border-radius:2px;opacity:.85}
+.nav-search-results{position:absolute;top:calc(100% + 10px);left:0;width:100%;background:#ffffff;border-radius:14px;box-shadow:0 18px 45px rgba(0,0,0,0.15);border:1px solid #ececec;display:none;max-height:320px;overflow:auto;overflow-x:hidden;z-index:5000;opacity:1;isolation:isolate;backdrop-filter:none;-webkit-backdrop-filter:none}
+.nav-search-results.show{display:block}
+.nav-search-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid #f3ece8;cursor:pointer}
+.nav-search-item:last-child{border-bottom:none}
+.nav-search-item:hover{background:#fff8f3}
+.nav-search-item-media{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.nav-search-item img{width:48px;height:48px;border-radius:10px;object-fit:cover;background:#faf6f4;border:1px solid #eee1db}
+.nav-search-copy{min-width:0}
+.nav-search-copy strong,.nav-search-copy span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-search-copy strong{color:#282c3f;font-size:14px}
+.nav-search-copy span{color:#7a7f8a;font-size:12px;margin-top:3px}
+.nav-search-item button{border:none;border-radius:999px;background:#7a3d3d;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0}
+.sale-bar{display:block;position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height));z-index:7000;overflow:hidden;white-space:nowrap;padding:10px 0;background:#ffffff;color:#c62828;font-size:18px;font-weight:700;line-height:1;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif}
+.sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;padding-left:0;animation:offerTicker 26s linear infinite;will-change:transform}
+.sale-bar-item{display:inline-flex;align-items:center;flex:0 0 auto;margin-right:84px}
+@keyframes offerTicker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+.account-link{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;color:#fff;text-decoration:none}
+.account-link svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.account-menu-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.account-hover-menu{position:absolute;top:calc(100% + 14px);right:-8px;width:260px;background:#ffffff;border:1px solid #ece1de;border-radius:18px;box-shadow:0 22px 45px rgba(0,0,0,0.16);padding:16px 0 14px;opacity:0;visibility:hidden;transform:translateY(10px);transition:opacity .22s ease, transform .22s ease, visibility .22s ease;z-index:7000}
+.account-hover-menu::before{content:"";position:absolute;top:-8px;right:18px;width:16px;height:16px;background:#ffffff;border-left:1px solid #ece1de;border-top:1px solid #ece1de;transform:rotate(45deg)}
+.account-menu-wrap:hover .account-hover-menu,.account-menu-wrap:focus-within .account-hover-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.account-hover-head{padding:0 18px 14px;border-bottom:1px solid #f1e7e4}
+.account-hover-title{color:#2f2323;font-size:16px;font-weight:800;margin-bottom:4px}
+.account-hover-copy{color:#7a6b6b;font-size:13px;line-height:1.55}
+.account-hover-cta{display:inline-flex;align-items:center;justify-content:center;margin-top:14px;padding:10px 16px;border-radius:10px;border:1px solid #d7aeb4;color:#fff !important;background:#9a5b5b;font-size:13px;font-weight:800;text-decoration:none !important}
+.account-hover-cta,.account-hover-cta:visited,.account-hover-cta:hover,.account-hover-cta:active{color:#fff !important}
+.account-hover-list{list-style:none;padding:12px 0 0;margin:0}
+.account-hover-list + .account-hover-list{margin-top:10px;padding-top:10px;border-top:1px solid #f4ece9}
+.account-hover-list a{display:flex !important;align-items:center;gap:12px;padding:10px 18px;color:#7a3d3d !important;text-decoration:none !important;font-size:14px;font-weight:700}
+.account-hover-list a span,.account-hover-list a:visited span,.account-hover-list a:hover span,.account-hover-list a:active span{color:#7a3d3d !important}
+.account-hover-menu a,.account-hover-menu a:visited{color:#7a3d3d !important}
+.account-hover-list a:hover{background:#fbf4f2;color:#7a3d3d !important}
+.account-menu-icon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;color:#7a3d3d}
+.account-menu-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<style>html,body{background:#f1e3e3 !important;}</style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+<body>
+<div class="top-bar" style="text-align:center;padding:12px;font-weight:600;font-size:16px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;">Eat Healthy &bull; Be Swadra Family</div>
+<header class="navbar" style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:#7a3d3d;">
+<div class="logo" style="color:#fff;font-size:26px;font-weight:900;font-family:Arial,sans-serif;"><a href="index.html" style="color:#fff;text-decoration:none;font:inherit;">Swadra Organics</a></div>
+<div class="nav-search"><input id="searchInput" type="search" class="header-search-input" placeholder="Search for products, categories and more"><div id="searchResults" class="nav-search-results"></div></div>
+<div class="nav-links" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;">
+<a href="index.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Home</a>
+<a href="spices.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Spices</a>
+<a href="dryfruits.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Dry Fruits</a>
+<a href="oilghee.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Oil Ghee &amp; More</a>
+<a href="aboutus.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">About Us</a>
+<span id="accountNavSlot"><a class="account-link" href="account.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a></span>
+</div>
+</header><div class="sale-bar"><div class="sale-bar-track"><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span></div></div><div class="page">
+<div class="page-title">
+<h1>Your Shopping Bag</h1>
+<span class="free-badge">Free Delivery Above ₹399</span>
+</div>
+<div class="cart-layout">
+<div class="cart-items-panel"><div class="cart-items" id="cartItems"></div><button class="checkout-btn" onclick="goToCheckout()">Proceed to Checkout &rarr;</button></div>
+<div class="summary-panel">
+<h2>Order Summary</h2>
+<div class="summary-row"><p>Total MRP</p><span class="mrp-total">₹0</span></div>
+<div class="summary-row"><p>Selling Price Total</p><span class="selling-total">₹0</span></div>
+<div class="summary-row"><p>Delivery</p><span class="delivery">₹0</span></div>
+<div class="summary-row"><p>Product Discount</p><span class="product-discount">-₹0</span></div>
+<div class="summary-row"><p>Coupon Discount</p><span class="coupon-discount">-₹0</span></div>
+<div class="summary-row"><p>GST Included</p><span class="gst-total">₹0</span></div>
+<p class="summary-subtext" id="gstSummaryText">Included in MRP and selling price.</p>
+<div class="divider"></div>
+<div class="coupon-box">
+<h3>Apply Coupon</h3>
+<div class="coupon-input-wrap">
+<input type="text" id="coupon" placeholder="Enter Coupon Code">
+<button onclick="applyCoupon()">Apply</button>
+</div>
+<p class="coupon-note">Coupon discount is shown separately from product offer savings.</p>
+</div>
+<div class="summary-row"><strong>Total Amount</strong><strong class="total">₹0</strong></div>
+<p class="save-text" id="saveText">Total Save ₹0</p>
+<p class="gst-note" id="gstNote">GST is included in product prices and shown here for clarity.</p>
+</div>
+</div>
+</div>
+<script>
+let appliedCoupon = null;
+let latestCartSummary = {
+mrpTotal:0,
+sellingTotal:0,
+delivery:0,
+productDiscount:0,
+couponDiscount:0,
+gstTotal:0,
+finalTotal:0,
+totalSave:0
+};
+
+function getSafeCartImage(image){
+if(typeof image !== "string") return "";
+let cleanImage = image.trim();
+if(!cleanImage) return "";
+if(cleanImage.startsWith("data:image/")) return cleanImage;
+if(cleanImage.startsWith("blob:")) return cleanImage;
+if(/^https?:\/\//i.test(cleanImage)) return cleanImage;
+cleanImage = cleanImage.replace(/\\/g,"/");
+if(cleanImage.startsWith("./")) return cleanImage.slice(2);
+return cleanImage;
+}
+
+function compactCart(cart){
+return (Array.isArray(cart) ? cart : []).map(item=>({
+id:item && item.id != null ? String(item.id) : "",
+name:item.name || "Swadra Product",
+price:Number(item.price || 0),
+mrp:Number(item.mrp || item.price || 0),
+qty:Number(item.qty || 1),
+gst:Number(item.gst || item.gstRate || 0),
+category:String(item.category || "").trim(),
+image:getSafeCartImage(item.image)
+}));
+}
+
+function openProductsDb(){
+return new Promise((resolve,reject)=>{
+const request = indexedDB.open("swadraProductsDB",1);
+request.onupgradeneeded = e=>{
+const db = e.target.result;
+if(!db.objectStoreNames.contains("products")){
+db.createObjectStore("products",{keyPath:"id"});
+}
+};
+request.onsuccess = ()=>resolve(request.result);
+request.onerror = ()=>reject(request.error);
+});
+}
+
+const PRODUCT_API_URLS = window.SWADRA_PRODUCTS_API_URLS || ["/api/products"];
+const BACKEND_PRODUCTS_CACHE_KEY = "swadraBackendProductsCache";
+const COUPONS_API_URL = window.SWADRA_COUPONS_API_URL || "/api/coupons";
+let availableCoupons = [];
+
+function normalizeBackendProduct(product){
+const normalizedImage = getSafeCartImage(product.image || product.productImage || product.img || "");
+return {
+...product,
+name: String(product.name || product.productName || "").trim(),
+size: String(product.size || product.productSize || "").trim(),
+price: Number(product.price ?? product.sellingPrice ?? 0) || 0,
+mrp: Number(product.mrp ?? product.price ?? product.sellingPrice ?? 0) || 0,
+gst: Number(product.gst ?? product.gstRate ?? product.tax ?? product.taxRate ?? 0) || 0,
+stockQty: Number(product.stockQty ?? 0) || 0,
+availability: String(product.availability || (product.outOfStock ? "Out of Stock" : "Available")),
+category: String(product.category || "").trim(),
+image: normalizedImage
+};
+}
+
+function applyOfflineFallbackPricing(products){
+return (Array.isArray(products) ? products : []).map(product=>{
+const offlinePrice = Number(product.offlinePrice || 0) || 0;
+return offlinePrice > 0 ? {...product, price: offlinePrice} : product;
+});
+}
+
+function cacheBackendProducts(products){
+try{
+localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(products));
+}catch(e){}
+}
+
+function getCachedBackendProducts(){
+try{
+return applyOfflineFallbackPricing(JSON.parse(localStorage.getItem(BACKEND_PRODUCTS_CACHE_KEY)) || []);
+}catch(e){
+return [];
+}
+}
+
+async function getProducts(){
+for(const url of PRODUCT_API_URLS){
+try{
+const response = await fetch(url,{cache:"no-store"});
+if(response.ok){
+const data = await response.json();
+if(Array.isArray(data?.products)){
+const products = data.products.map(normalizeBackendProduct);
+cacheBackendProducts(products);
+return products;
+}
+}
+}catch(error){}
+}
+const cachedProducts = getCachedBackendProducts();
+if(cachedProducts.length){
+return cachedProducts;
+}
+try{
+const db = await openProductsDb();
+return applyOfflineFallbackPricing(await new Promise((resolve,reject)=>{
+const tx = db.transaction("products","readonly");
+const request = tx.objectStore("products").getAll();
+request.onsuccess = ()=>resolve(request.result || []);
+request.onerror = ()=>reject(request.error);
+}));
+}catch(e){
+return [];
+}
+}
+
+function syncUserCart(){
+let currentUser = localStorage.getItem("currentUser");
+if(!currentUser) return;
+let users = JSON.parse(localStorage.getItem("users")) || {};
+let localCart = compactCart(JSON.parse(localStorage.getItem("cart")) || []);
+if(!users[currentUser]) users[currentUser] = {cart:[],orders:[]};
+let userCart = compactCart(users[currentUser].cart || []);
+localCart.forEach(item=>{
+let existing = userCart.find(userItem=>String(userItem.id)===String(item.id));
+if(existing){
+Object.assign(existing,item);
+}else{
+userCart.push(item);
+}
+});
+let merged = compactCart(userCart);
+try{
+users[currentUser].cart = merged;
+localStorage.setItem("users", JSON.stringify(users));
+}catch(e){}
+if(merged){
+localStorage.setItem("cart", JSON.stringify(merged));
+}
+}
+
+function saveUserCart(cart){
+let safeCart = compactCart(cart);
+localStorage.setItem("cart", JSON.stringify(safeCart));
+let currentUser = localStorage.getItem("currentUser");
+if(!currentUser) return;
+let users = JSON.parse(localStorage.getItem("users")) || {};
+if(!users[currentUser]) users[currentUser] = {cart:[],orders:[]};
+try{
+users[currentUser].cart = safeCart;
+localStorage.setItem("users", JSON.stringify(users));
+}catch(e){}
+}
+
+function getCart(){
+return compactCart(JSON.parse(localStorage.getItem("cart")) || []);
+}
+
+function getCategoryGstRate(category, name){
+let text = `${category || ""} ${name || ""}`.toLowerCase();
+if(text.includes("dry fruit") || text.includes("dryfruit")) return 12;
+if(text.includes("ghee") || text.includes("oil")) return 12;
+if(text.includes("spice") || text.includes("masala")) return 5;
+return 5;
+}
+
+function getItemGstRate(item){
+let directRate = Number(item.gst || item.gstRate || 0) || 0;
+return directRate > 0 ? directRate : getCategoryGstRate(item.category, item.name);
+}
+
+function getIncludedGstAmount(amount, rate){
+let numericAmount = Number(amount || 0);
+let numericRate = Number(rate || 0);
+if(numericAmount <= 0 || numericRate <= 0) return 0;
+return numericAmount - (numericAmount / (1 + numericRate / 100));
+}
+
+function distributeCouponAcrossItems(cart, couponDiscount){
+let totalSelling = cart.reduce((sum,item)=>sum + (Number(item.price || 0) * Number(item.qty || 0)),0);
+let productCouponDiscount = Math.min(Math.max(0, Number(couponDiscount || 0)), totalSelling);
+let runningDiscount = 0;
+return cart.map((item,index)=>{
+let qty = Number(item.qty || 1);
+let lineSelling = Math.round(Number(item.price || 0) * qty);
+let lineDiscount = 0;
+if(productCouponDiscount > 0 && totalSelling > 0){
+lineDiscount = index === cart.length - 1
+? Math.round(productCouponDiscount - runningDiscount)
+: Math.round((lineSelling / totalSelling) * productCouponDiscount);
+runningDiscount += lineDiscount;
+}
+lineDiscount = Math.max(0, Math.min(lineDiscount, lineSelling));
+let discountedLineTotal = Math.max(0, lineSelling - lineDiscount);
+let discountedUnitPrice = qty > 0 ? Math.round(discountedLineTotal / qty) : discountedLineTotal;
+return {
+...item,
+couponLineDiscount: lineDiscount,
+discountedLineTotal,
+discountedUnitPrice,
+displayPrice: discountedUnitPrice,
+displayLineTotal: discountedLineTotal
+};
+});
+}
+
+async function hydrateCartItems(cart){
+let products = await getProducts();
+let productMap = new Map(products.map(product=>[String(product.id), product]));
+let productNameMap = new Map(products.map(product=>[String(product.name || "").trim().toLowerCase(), product]));
+return cart.map(item=>{
+let itemNameKey = String(item.name || "").trim().toLowerCase();
+let product = (item.id ? productMap.get(String(item.id)) : null) || productNameMap.get(itemNameKey) || {};
+return {
+...item,
+id: item.id || (product.id != null ? String(product.id) : ""),
+name: item.name || product.name || "Swadra Product",
+image: getSafeCartImage(item.image) || getSafeCartImage(product.image) || "https://via.placeholder.com/300",
+price: Number(item.price || product.price || 0),
+mrp: Number(item.mrp || product.mrp || item.price || product.price || 0),
+gst: Number(item.gst || item.gstRate || product.gst || product.gstRate || product.tax || product.taxRate || 0) || 0,
+category: String(item.category || product.category || "").trim(),
+qty: Number(item.qty || 1)
+};
+});
+}
+
+function getCartBreakdown(cart){
+let mrpTotal = 0;
+let sellingTotal = 0;
+let gstTotal = 0;
+
+cart.forEach(item=>{
+let qty = Number(item.qty || 0);
+let lineMrp = Number(item.mrp || item.price || 0) * qty;
+let lineSelling = Number(item.price || 0) * qty;
+mrpTotal += lineMrp;
+sellingTotal += lineSelling;
+gstTotal += getIncludedGstAmount(lineSelling, getItemGstRate(item));
+});
+
+let delivery = sellingTotal >= 399 || sellingTotal === 0 ? 0 : 199;
+let productDiscount = Math.max(0, mrpTotal - sellingTotal);
+let couponDiscount = 0;
+if(appliedCoupon?.discount){
+couponDiscount = Math.min(Number(appliedCoupon.discount || 0), sellingTotal + delivery);
+}
+let finalTotal = Math.max(0, sellingTotal + delivery - couponDiscount);
+let discountedItems = distributeCouponAcrossItems(cart, couponDiscount);
+let adjustedGstTotal = discountedItems.reduce((sum,item)=>sum + getIncludedGstAmount(Number(item.discountedLineTotal || 0), getItemGstRate(item)),0);
+
+return {
+mrpTotal: Math.round(mrpTotal),
+sellingTotal: Math.round(sellingTotal),
+couponAdjustedSellingTotal: Math.round(discountedItems.reduce((sum,item)=>sum + Number(item.discountedLineTotal || 0),0)),
+delivery: Math.round(delivery),
+productDiscount: Math.round(productDiscount),
+couponDiscount: Math.round(couponDiscount),
+gstTotal: Math.round(adjustedGstTotal || gstTotal),
+finalTotal: Math.round(finalTotal),
+totalSave: Math.round(productDiscount + couponDiscount),
+discountedItems
+};
+}
+
+function saveCheckoutSummary(summary){
+localStorage.setItem("cartSummary", JSON.stringify(summary));
+localStorage.setItem("subtotal", summary.sellingTotal);
+localStorage.setItem("delivery", summary.delivery);
+localStorage.setItem("discount", summary.productDiscount);
+localStorage.setItem("couponDiscount", summary.couponDiscount);
+localStorage.setItem("mrpTotal", summary.mrpTotal);
+localStorage.setItem("gstTotal", summary.gstTotal);
+localStorage.setItem("finalTotal", summary.finalTotal);
+localStorage.setItem("couponAdjustedCart", JSON.stringify(summary.discountedItems || []));
+}
+
+async function loadCart(){
+syncUserCart();
+let cart = await hydrateCartItems(getCart());
+let container = document.getElementById("cartItems");
+container.innerHTML = "";
+
+if(cart.length === 0){
+container.innerHTML = `<div class="empty-cart">Your cart is empty</div>`;
+let emptySummary = getCartBreakdown([]);
+updateSummary(emptySummary);
+return;
+}
+
+let summaryForItems = getCartBreakdown(cart);
+let displayItems = summaryForItems.discountedItems || cart;
+
+cart.forEach((item,index)=>{
+let displayItem = displayItems[index] || item;
+let offPercent = item.mrp > item.price && item.mrp > 0 ? Math.round(((item.mrp - item.price) / item.mrp) * 100) : 0;
+let hasCouponLineDiscount = Number(displayItem.couponLineDiscount || 0) > 0;
+
+const safeImage = getSafeCartImage(item.image) || "https://via.placeholder.com/300";
+container.innerHTML += `
+<div class="cart-item">
+<img class="product-image" src="${safeImage}" alt="${item.name}" onerror="this.onerror=null;this.src='https://via.placeholder.com/300';">
+<div class="product-info">
+<h3>${item.name}</h3>
+<div class="meta">Premium Swadra quality product</div>
+<div class="price-line">
+${item.mrp > item.price ? `<span class="old-price">₹${item.mrp}</span>` : ``}
+<span class="selling-price">₹${hasCouponLineDiscount ? displayItem.discountedUnitPrice : item.price}</span>
+${offPercent > 0 ? `<span class="off-badge">${offPercent}% OFF</span>` : ``}
+</div>
+${hasCouponLineDiscount ? `<div class="coupon-adjusted-price">Coupon applied: -₹${displayItem.couponLineDiscount} on this item</div>` : ``}
+<div class="meta">GST ${getItemGstRate(item)}% included • ₹${Math.round(getIncludedGstAmount((hasCouponLineDiscount ? displayItem.discountedLineTotal : item.price * item.qty), getItemGstRate(item)))} on this item total</div>
+<div class="qty-row">
+<button class="qty-btn" onclick="changeQty(${index},-1)">-</button>
+<span class="qty-count">${item.qty}</span>
+<button class="qty-btn" onclick="changeQty(${index},1)">+</button>
+</div>
+</div>
+<div class="item-actions">
+<div class="item-price">${hasCouponLineDiscount ? `<span class="before-coupon">₹${item.price * item.qty}</span><span class="after-coupon">₹${displayItem.discountedLineTotal}</span>` : `₹${item.price * item.qty}`}</div>
+<button class="remove-btn" onclick="removeItem(${index})">Remove</button>
+</div>
+</div>`;
+});
+
+updateSummary(summaryForItems);
+}
+
+function updateSummary(summary){
+latestCartSummary = { ...summary };
+document.querySelector(".mrp-total").innerText = "₹" + summary.mrpTotal;
+document.querySelector(".selling-total").innerHTML = Number(summary.couponDiscount || 0) > 0
+? `<span style="display:block;font-size:12px;color:#888;text-decoration:line-through;">₹${summary.sellingTotal}</span>₹${summary.couponAdjustedSellingTotal}`
+: "₹" + summary.sellingTotal;
+document.querySelector(".delivery").innerText = "₹" + summary.delivery;
+document.querySelector(".product-discount").innerText = "-₹" + summary.productDiscount;
+document.querySelector(".coupon-discount").innerText = "-₹" + summary.couponDiscount;
+document.querySelector(".gst-total").innerText = "₹" + summary.gstTotal;
+document.querySelector(".total").innerText = "₹" + summary.finalTotal;
+document.getElementById("saveText").innerText = "Total Save ₹" + summary.totalSave;
+document.getElementById("gstSummaryText").innerText = "GST is included in MRP. Total included GST: ₹" + summary.gstTotal;
+document.getElementById("gstNote").innerText = "GST is already included in product prices. Current cart includes ₹" + summary.gstTotal + " GST.";
+saveCheckoutSummary(summary);
+}
+
+function changeQty(i,val){
+let cart = getCart();
+cart[i].qty += val;
+if(cart[i].qty < 1) cart[i].qty = 1;
+saveUserCart(cart);
+loadCart();
+}
+
+function removeItem(i){
+let cart = getCart();
+cart.splice(i,1);
+saveUserCart(cart);
+loadCart();
+}
+
+function resolveCouponDiscount(code, sellingTotal, delivery){
+let discount = 0;
+
+function checkMinimumAmount(coupon){
+let minimumAmount = Math.max(0, Number(coupon.minimumAmount || coupon.minAmount || 0));
+if(minimumAmount > 0 && sellingTotal < minimumAmount){
+return {
+valid:false,
+message:"Minimum ₹" + Math.round(minimumAmount).toLocaleString("en-IN") + " required for this coupon"
+};
+}
+return null;
+}
+
+if(Array.isArray(availableCoupons) && availableCoupons.length){
+let matchedCoupon = availableCoupons.find(function(coupon){
+return coupon && coupon.status !== "inactive" && coupon.code && code === String(coupon.code).trim().toUpperCase();
+});
+
+if(matchedCoupon){
+let minimumError = checkMinimumAmount(matchedCoupon);
+if(minimumError) return minimumError;
+discount = sellingTotal * (Number(matchedCoupon.discount || 0) / 100);
+return { valid:true, discount };
+}
+}
+
+if(code === "SWADRA2529"){
+if(sellingTotal < 999) return { valid:false, message:"Minimum ₹999 required" };
+discount = sellingTotal * 0.10;
+return { valid:true, discount };
+}
+
+if(code === "SWADRA0920"){
+if(sellingTotal < 1500) return { valid:false, message:"Minimum ₹1500 required" };
+discount = sellingTotal * 0.10;
+return { valid:true, discount };
+}
+
+if(code === "S123456R"){
+discount = Math.max(0, sellingTotal + delivery - 1);
+return { valid:true, discount };
+}
+
+if(code === "SWADRA1311"){
+if(sellingTotal < 4000) return { valid:false, message:"Minimum ₹4000 required" };
+discount = sellingTotal * 0.12;
+return { valid:true, discount };
+}
+
+return { valid:false, message:"Invalid Coupon" };
+}
+
+async function fetchAvailableCoupons(){
+try{
+let response = await fetch(COUPONS_API_URL,{ cache:"no-store" });
+let data = await response.json().catch(()=>({ ok:false }));
+availableCoupons = Array.isArray(data.coupons) ? data.coupons : [];
+}catch(error){
+availableCoupons = [];
+}
+}
+
+async function applyCoupon(){
+let code = document.getElementById("coupon").value.trim().toUpperCase();
+let cart = getCart();
+let summary = getCartBreakdown(cart);
+
+if(!code){
+appliedCoupon = null;
+updateSummary(summary);
+return alert("Enter coupon code");
+}
+
+if(!availableCoupons.length){
+await fetchAvailableCoupons();
+}
+let result = resolveCouponDiscount(code, summary.sellingTotal, summary.delivery);
+if(!result.valid){
+appliedCoupon = null;
+updateSummary(summary);
+return alert(result.message);
+}
+
+appliedCoupon = { code, discount: result.discount };
+updateSummary(getCartBreakdown(cart));
+alert("Coupon Applied Successfully");
+}
+
+function goToCheckout(){
+if(getCart().length === 0) return alert("Cart empty");
+window.location.href = "checkout.html";
+}
+
+window.onload = async ()=>{
+await fetchAvailableCoupons();
+loadCart();
+};
+</script>
+<script>
+function swadraHeaderUpdateAccountNav(){
+  let slot=document.getElementById("accountNavSlot");
+  if(!slot) return;
+  let currentUser=localStorage.getItem("currentUser");
+  let users={};
+  try{ users=JSON.parse(localStorage.getItem("users")) || {}; }catch(e){}
+  if(currentUser && users[currentUser]){
+    slot.innerHTML='<span class="account-menu-wrap"><a class="account-link" href="dashboard.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">'+((((users[currentUser]||{}).profile||{}).name) || currentUser.split("@")[0])+'</div><div class="account-hover-copy">'+currentUser+'</div><a class="account-hover-cta" href="dashboard.html">MY ACCOUNT</a></div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="dashboard.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V5"></path><path d="M17 16v-3"></path></svg></span><span>Product Summary</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span>';
+  }else{
+    slot.innerHTML='<span class="account-menu-wrap"><a class="account-link" href="account.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">Welcome</div><div class="account-hover-copy">Access your account, orders and saved details from one place.</div><a class="account-hover-cta" href="account.html">LOGIN / SIGNUP</a></div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="dashboard.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V5"></path><path d="M17 16v-3"></path></svg></span><span>Product Summary</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span>';
+  }
+}
+const headerSearchInput=document.getElementById("searchInput");
+const headerSearchResults=document.getElementById("searchResults");
+let headerSearchCache=[];
+function normalizeHeaderSearchText(value){
+  return String(value || "").toLowerCase().trim();
+}
+async function ensureHeaderSearchCache(){
+  if(headerSearchCache.length) return headerSearchCache;
+  headerSearchCache=await getProducts();
+  return headerSearchCache;
+}
+function renderHeaderSearchResults(items){
+  if(!headerSearchResults) return;
+  if(!items.length){
+    headerSearchResults.innerHTML='<div class="nav-search-item"><div class="nav-search-copy"><strong>No product found</strong><span>Try another keyword</span></div></div>';
+    headerSearchResults.classList.add("show");
+    return;
+  }
+  headerSearchResults.innerHTML=items.slice(0,8).map(item=>`<div class="nav-search-item" data-search-query="${String(item.name || "").replace(/"/g,"&quot;")}"><div class="nav-search-item-media"><img src="${item.image || "https://via.placeholder.com/80"}" alt="${item.name || "Product"}"><div class="nav-search-copy"><strong>${item.name || "Swadra Product"}</strong><span>${item.category || "Product"}${item.size ? " • " + item.size : ""}</span></div></div><button type="button">View</button></div>`).join("");
+  headerSearchResults.classList.add("show");
+  headerSearchResults.querySelectorAll(".nav-search-item[data-search-query]").forEach(row=>{
+    row.addEventListener("click", function(){
+      const query=this.getAttribute("data-search-query") || "";
+      if(!query) return;
+      localStorage.setItem("swadraHeaderSearch", query);
+      window.location.href="index.html";
+    });
+  });
+}
+if(headerSearchInput && headerSearchResults){
+  headerSearchInput.addEventListener("input", async function(){
+    const query=normalizeHeaderSearchText(this.value);
+    if(!query){
+      headerSearchResults.classList.remove("show");
+      headerSearchResults.innerHTML="";
+      return;
+    }
+    const products=await ensureHeaderSearchCache();
+    const filtered=products.filter(item=>normalizeHeaderSearchText(`${item.name} ${item.category} ${item.size}`).includes(query));
+    renderHeaderSearchResults(filtered);
+  });
+  headerSearchInput.addEventListener("focus", async function(){
+    if(!normalizeHeaderSearchText(this.value)) return;
+    const products=await ensureHeaderSearchCache();
+    const filtered=products.filter(item=>normalizeHeaderSearchText(`${item.name} ${item.category} ${item.size}`).includes(normalizeHeaderSearchText(headerSearchInput.value)));
+    renderHeaderSearchResults(filtered);
+  });
+  headerSearchInput.addEventListener("keydown", function(e){
+    if(e.key!=="Enter") return;
+    const query=headerSearchInput.value.trim();
+    if(!query) return;
+    localStorage.setItem("swadraHeaderSearch", query);
+    window.location.href="index.html";
+  });
+  headerSearchInput.addEventListener("search", function(){
+    if(!headerSearchInput.value.trim()){
+      headerSearchResults.classList.remove("show");
+      headerSearchResults.innerHTML="";
+    }
+  });
+}
+document.addEventListener("click", function(e){
+  if(headerSearchResults && !e.target.closest("#searchInput") && !e.target.closest("#searchResults")){
+    headerSearchResults.classList.remove("show");
+  }
+});
+window.addEventListener("load", function(){ swadraHeaderUpdateAccountNav(); });
+window.addEventListener("storage", function(event){
+  if(["cart","users","currentUser"].includes(event.key)){
+    swadraHeaderUpdateAccountNav();
+  }
+});
+</script>
+</body>
+</html>
+
+
+
+
+
+
+

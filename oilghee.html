@@ -1,0 +1,172 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oil Ghee & More - Swadra Organics</title>
+<style>
+body{margin:0;font-family:Arial;background:#f1e3e3;}
+:root{--top-bar-height:43px;--navbar-height:62px;}
+.top-bar{position:sticky;top:0;z-index:7002;margin:0 !important;}
+.navbar{position:sticky !important;top:calc(var(--top-bar-height) - 2px);z-index:7001 !important;background:#7a3d3d !important;}
+.logo{color:#fff;font-size:26px;font-weight:900;white-space:nowrap;}
+.nav-search{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);flex:0 0 300px;max-width:300px;width:300px;margin:0;z-index:2;}
+.nav-search input{width:100%;height:38px;border:none;outline:none;border-radius:8px;padding:0 14px 0 40px;background:#f5f5f6;color:#282c3f;font-size:13px;font-weight:500;box-sizing:border-box;text-overflow:ellipsis;}
+.nav-search input::placeholder{color:#b98f8f;opacity:1;}
+.nav-search::before{content:"";position:absolute;left:16px;top:50%;width:14px;height:14px;border:2px solid #696e79;border-radius:50%;transform:translateY(-60%);opacity:.85;}
+.nav-search::after{content:"";position:absolute;left:28px;top:21px;width:7px;height:2px;background:#696e79;transform:rotate(45deg);border-radius:2px;opacity:.85;}
+.nav-search-results{position:absolute;top:calc(100% + 10px);left:0;width:100%;background:#ffffff;border-radius:14px;box-shadow:0 18px 45px rgba(0,0,0,0.15);border:1px solid #ececec;display:none;max-height:320px;overflow:auto;overflow-x:hidden;z-index:5000;opacity:1;isolation:isolate;backdrop-filter:none;-webkit-backdrop-filter:none;}
+.nav-search-results.show{display:block;}
+.nav-search-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid #f3ece8;cursor:pointer;}
+.nav-search-item:last-child{border-bottom:none;}
+.nav-search-item:hover{background:#fff8f3;}
+.nav-search-item-media{display:flex;align-items:center;gap:12px;min-width:0;flex:1;}
+.nav-search-item img{width:48px;height:48px;border-radius:10px;object-fit:cover;background:#faf6f4;border:1px solid #eee1db;}
+.nav-search-copy{min-width:0;}
+.nav-search-copy strong,.nav-search-copy span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nav-search-copy strong{color:#282c3f;font-size:14px;}
+.nav-search-copy span{color:#7a7f8a;font-size:12px;margin-top:3px;}
+.nav-search-item button{border:none;border-radius:999px;background:#7a3d3d;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;}
+.nav-links{display:flex;gap:18px;align-items:center;justify-content:flex-end;flex-wrap:wrap;}
+.nav-links a{color:#fff;text-decoration:none;font-weight:700;font-size:16px;}
+.account-link{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;color:#fff;text-decoration:none}
+.account-link svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.account-menu-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.account-hover-menu{position:absolute;top:calc(100% + 14px);right:-8px;width:260px;background:#ffffff;border:1px solid #ece1de;border-radius:18px;box-shadow:0 22px 45px rgba(0,0,0,0.16);padding:16px 0 14px;opacity:0;visibility:hidden;transform:translateY(10px);transition:opacity .22s ease, transform .22s ease, visibility .22s ease;z-index:7000}
+.account-hover-menu::before{content:"";position:absolute;top:-8px;right:18px;width:16px;height:16px;background:#ffffff;border-left:1px solid #ece1de;border-top:1px solid #ece1de;transform:rotate(45deg)}
+.account-menu-wrap:hover .account-hover-menu,.account-menu-wrap:focus-within .account-hover-menu{opacity:1;visibility:visible;transform:translateY(0)}
+.account-hover-head{padding:0 18px 14px;border-bottom:1px solid #f1e7e4}
+.account-hover-title{color:#2f2323;font-size:16px;font-weight:800;margin-bottom:4px}
+.account-hover-copy{color:#7a6b6b;font-size:13px;line-height:1.55}
+.account-hover-cta{display:inline-flex;align-items:center;justify-content:center;margin-top:14px;padding:10px 16px;border-radius:10px;border:1px solid #7a3d3d;color:#fff !important;background:#7a3d3d;font-size:13px;font-weight:800;text-decoration:none !important}
+.account-hover-cta,.account-hover-cta:visited,.account-hover-cta:hover,.account-hover-cta:active{color:#fff !important}
+.account-hover-list{list-style:none;padding:12px 0 0;margin:0}
+.account-hover-list + .account-hover-list{margin-top:10px;padding-top:10px;border-top:1px solid #f4ece9}
+.account-hover-list a{display:flex !important;align-items:center;gap:12px;padding:10px 18px;color:#7a3d3d !important;text-decoration:none !important;font-size:14px;font-weight:700}
+.account-hover-list a span,.account-hover-list a:visited span,.account-hover-list a:hover span,.account-hover-list a:active span{color:#7a3d3d !important}
+.account-hover-menu a:not(.account-hover-cta),.account-hover-menu a:not(.account-hover-cta):visited{color:#7a3d3d !important}
+.account-hover-list a:hover{background:#fbf4f2;color:#7a3d3d !important}
+.account-menu-icon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;color:#7a3d3d}
+.account-menu-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.sale-bar{display:block;position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height));z-index:7000;overflow:hidden;white-space:nowrap;padding:10px 0;background:#ffffff;color:#c62828;font-size:18px;font-weight:700;line-height:1;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);}
+.sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;padding-left:0;animation:offerTicker 26s linear infinite;will-change:transform;}
+.sale-bar-item{display:inline-flex;align-items:center;flex:0 0 auto;margin-right:84px;}
+@keyframes offerTicker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+.page-title{text-align:center;font-size:40px;font-weight:900;margin:25px 0 48px;color:#7a3d3d;}
+.product-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;max-width:1400px;margin:10px auto 90px;padding:0 10px;}
+.product-card{background:#fff;height:458px;min-height:458px;padding:1px 1px 0;border:1px solid #7a3d3d;border-radius:15px;display:flex;flex-direction:column;box-shadow:0 8px 25px rgba(0,0,0,0.08);transition:all 0.35s ease;overflow:hidden;}
+.product-card:hover{transform:translateY(-6px) scale(1.03);box-shadow:0 15px 40px rgba(0,0,0,0.15);}
+.product-img{height:338px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:28px 1px 0;position:relative;width:100%;border-radius:14px 14px 8px 8px;}
+.product-img img{width:122%;height:100%;object-fit:contain;transition:transform 0.4s ease;border-radius:12px;display:block;}
+.product-card:hover .product-img img{transform:scale(1.08);}
+.gallery-nav{position:absolute;top:50%;transform:translateY(-50%);width:22px;height:22px;border:none;border-radius:50%;background:rgba(122,61,61,.86);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:4}
+.gallery-prev{left:12px}.gallery-next{right:12px}.gallery-dots{display:none}.gallery-dot{display:none}.gallery-dot.active{display:none}
+.product-info{margin-top:14px;padding-top:0;background:#fff;}
+.product-title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:0 14px 0;min-height:28px;}
+.product-card h3{margin:0;font-size:17px;font-weight:700;line-height:1.2;flex:1 1 auto;min-width:0;padding-top:6px;}
+.size{font-size:15px;color:#7a3d3d;margin:0;line-height:1.2;white-space:nowrap;text-align:right;flex:0 0 auto;transform:translateY(-4px);}
+.product-bottom{display:flex;justify-content:space-between;align-items:center;margin:-4px 14px 0;}
+.left{display:flex;align-items:center;gap:8px;}
+.price{font-size:20px;color:#7a3d3d;font-weight:900;}
+.price-stack{display:flex;flex-direction:column;gap:4px;}
+.price-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.old-price{font-size:13px;color:#8f7f74;text-decoration:line-through;font-weight:700;}
+.discount-badge{font-size:11px;color:#0c831f;font-weight:800;margin-top:-5px;margin-bottom:4px;}
+.out-stock-text{font-size:14px;color:#c62828;font-weight:700;white-space:nowrap;}
+.qty-box{display:flex;align-items:center;gap:2px;font-size:14px;}
+.qty-btn{background:#eee;border:none;width:16px;height:16px;border-radius:50%;cursor:pointer;font-size:10px;line-height:16px;padding:0;}
+.cart-btn{background:linear-gradient(135deg,#7a3d3d,#b76e79,#d4af37);color:#fff;border:none;padding:10px 18px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:700;transition:all 0.35s ease;position:relative;overflow:hidden;transform:translateY(-3px);}
+.cart-btn:hover{background:linear-gradient(135deg,#d4af37,#f7e7a9,#ffd700);color:#000;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 4px 15px rgba(212,175,55,0.6),inset 0 0 10px rgba(255,255,255,0.4);transform:translateY(-3px) scale(1.05);}
+.cart-btn::before{content:"";position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.6),transparent);transition:0.6s;}
+.cart-btn:hover::before{left:100%;}
+.cart-btn.added{background:#0c831f;}
+.cart-btn.disabled{background:#c62828;cursor:not-allowed;}
+#stickyCart{position:fixed;bottom:20px;right:20px;display:none;align-items:center;gap:15px;padding:12px 18px;background:linear-gradient(135deg,#7a3d3d,#b76e79);color:white;border-radius:50px;z-index:9999;}
+#stickyCart a{background:white;color:#7a3d3d;padding:8px 16px;border-radius:30px;text-decoration:none;font-weight:600;}
+.swadra-category-footer{margin:40px 0 0;padding:34px 20px 38px;background:#7a3d3d;color:#fff;text-align:center;font-family:Arial,sans-serif;}
+.swadra-category-footer h2{margin:0 0 10px;font-size:28px;line-height:1.2;font-weight:900;letter-spacing:.2px;}
+.swadra-category-footer p{margin:0;font-size:18px;line-height:1.5;font-weight:700;color:#f7e7a9;}
+.product-summary-modal{position:fixed;inset:0;background:rgba(28,18,18,.58);display:none;align-items:center;justify-content:center;padding:20px;z-index:12000}
+.product-summary-modal.show{display:flex}
+.product-summary-card{width:min(100%,560px);background:#fff;border-radius:22px;box-shadow:0 22px 60px rgba(0,0,0,.22);padding:22px;display:grid;gap:14px}
+.product-summary-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.product-summary-head h3{margin:0;color:#7a3d3d;font-size:24px;line-height:1.2}
+.product-summary-close{border:none;background:#7a3d3d;color:#fff;border-radius:999px;padding:10px 14px;font-size:12px;font-weight:800;cursor:pointer}
+.product-summary-meta{color:#7a6b6b;font-size:14px;font-weight:700}
+.product-summary-body{color:#382d2d;font-size:15px;line-height:1.7;white-space:pre-wrap}
+.product-summary-trigger{cursor:pointer}
+@media(max-width:1180px){.navbar{flex-wrap:wrap;gap:12px;}.nav-search{position:relative;left:auto;top:auto;transform:none;order:3;flex:1 1 100%;max-width:none;margin:4px 0 0;width:auto;}.account-hover-menu{right:0;width:230px;}}
+@media(max-width:900px){.product-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
+<style>html,body{background:#f1e3e3 !important;}</style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+<body>
+<div id="productSummaryModal" class="product-summary-modal" onclick="closeProductSummary(event)"><div class="product-summary-card" onclick="event.stopPropagation()"><div class="product-summary-head"><div><h3 id="productSummaryTitle">Product Summary</h3><div id="productSummaryMeta" class="product-summary-meta"></div></div><button type="button" class="product-summary-close" onclick="closeProductSummary()">Close</button></div><div id="productSummaryBody" class="product-summary-body"></div></div></div>
+<div id="stickyCart"><span id="cartCount">0</span><a href="cart.html">View Cart &rarr;</a></div>
+<div class="top-bar" style="text-align:center;padding:12px;font-weight:600;font-size:16px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;">Eat Healthy &bull; Be Swadra Family</div>
+<header class="navbar" style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:#7a3d3d;">
+<div class="logo"><a href="index.html" style="color:#fff;text-decoration:none;font:inherit;">Swadra Organics</a></div>
+<div class="nav-search"><input id="searchInput" type="search" class="header-search-input" placeholder="Search for products, categories and more"><div id="searchResults" class="nav-search-results"></div></div>
+<div class="nav-links">
+<a href="index.html">Home</a><a href="spices.html">Spices</a><a href="dryfruits.html">Dry Fruits</a><a href="oilghee.html">Oil Ghee & More</a><a href="aboutus.html">About Us</a><span id="accountNavSlot"><a class="account-link" href="account.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a></span>
+</div>
+</header>
+<div class="sale-bar"><div class="sale-bar-track"><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span></div></div>
+<h2 class="page-title">Oil Ghee & More</h2>
+<div class="product-grid" id="productsContainer"></div>
+<footer class="swadra-category-footer"><h2>Swadra Organics - Crafted for Global Standards</h2><p>Experience the Difference - Order Today</p></footer>
+<script>
+function getCurrentUser(){ return localStorage.getItem("currentUser"); }
+function getUsers(){ return JSON.parse(localStorage.getItem("users")) || {}; }
+function getSafeCartImage(image){ if(typeof image!=="string") return ""; if(image.startsWith("data:")) return ""; if(image.length>500) return ""; return image; }
+function getSafeCartImages(images){ return (Array.isArray(images)?images:[]).map(getSafeCartImage).filter(Boolean).slice(0,4); }
+function getRenderableImages(images){ return (Array.isArray(images)?images:[]).filter(image=>typeof image==="string" && image.trim()).slice(0,4); }
+function compactCart(cart){ return (Array.isArray(cart)?cart:[]).map(item=>({id:String(item.id),name:item.name||"Swadra Product",price:Number(item.price||0),mrp:Number(item.mrp||item.price||0),qty:Number(item.qty||1),image:getSafeCartImage(item.image),images:getSafeCartImages(item.images)})); }
+function getCart(){ let user=getCurrentUser(); let users=getUsers(); let localCart=compactCart(JSON.parse(localStorage.getItem("cart"))||[]); if(user && users[user]){ let userCart=compactCart(users[user].cart||[]); localCart.forEach(l=>{ let existing=userCart.find(u=>String(u.id)===String(l.id)); if(existing){ Object.assign(existing,l); }else{ userCart.push(l); } }); let merged=compactCart(userCart); try{ users[user].cart=merged; localStorage.setItem("users",JSON.stringify(users)); }catch(e){} try{ localStorage.setItem("cart",JSON.stringify(merged)); }catch(e){} return merged; } return localCart; }
+function saveCart(cart){ let safeCart=compactCart(cart); let user=getCurrentUser(); let users=getUsers(); if(user && users[user]){ try{ users[user].cart=safeCart; localStorage.setItem("users",JSON.stringify(users)); }catch(e){} } localStorage.setItem("cart",JSON.stringify(safeCart)); updateCartUI(); }
+function openProductsDb(){ return new Promise((resolve,reject)=>{ const request=indexedDB.open("swadraProductsDB",1); request.onupgradeneeded=e=>{ const db=e.target.result; if(!db.objectStoreNames.contains("products")){ db.createObjectStore("products",{keyPath:"id"}); } }; request.onsuccess=()=>resolve(request.result); request.onerror=()=>reject(request.error); }); }
+const PRODUCT_API_URLS = window.SWADRA_PRODUCTS_API_URLS || ["/api/products"];
+const BACKEND_PRODUCTS_CACHE_KEY = "swadraBackendProductsCache";
+function normalizeBackendProduct(product){ return {...product,name:String(product.name || product.productName || "").trim(),size:String(product.size || product.productSize || "").trim(),price:Number(product.price ?? product.sellingPrice ?? 0) || 0,mrp:Number(product.mrp ?? product.price ?? product.sellingPrice ?? 0) || 0,stockQty:Number(product.stockQty ?? 0) || 0,availability:String(product.availability || (product.outOfStock ? "Out of Stock" : "Available")),category:String(product.category || "").trim(),image:product.image || "",images:Array.isArray(product.images)?product.images.filter(Boolean).slice(0,4):(product.image?[product.image]:[])}; }
+function getProductImages(product){ const renderableImages=getRenderableImages(product?.images); if(renderableImages.length) return renderableImages; const primaryImage=typeof product?.image==="string" ? product.image.trim() : ""; return primaryImage ? [primaryImage] : []; }
+function getProductSummary(product){ return String(product?.summary || product?.productSummary || "").trim(); }
+function escapeAttr(value){ return String(value ?? "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function buildGalleryMarkup(product,id){ const images=getProductImages(product); const primary=images[0] || 'https://via.placeholder.com/300'; if(images.length<=1){ return `<img id="product-img-${id}" class="product-summary-trigger" src="${primary}" onclick="openProductSummary('${id}')">`; } return `<button type="button" class="gallery-nav gallery-prev" onclick="changeProductImage('${id}',-1)">&#10094;</button><img id="product-img-${id}" class="product-summary-trigger" src="${primary}" onclick="openProductSummary('${id}')"><button type="button" class="gallery-nav gallery-next" onclick="changeProductImage('${id}',1)">&#10095;</button><div class="gallery-dots">${images.map((img,index)=>`<span class="gallery-dot ${index===0?'active':''}" onclick="setProductImage('${id}',${index})"></span>`).join("")}</div>`; }
+function setProductImage(id,index){ const card=document.querySelector(`[data-gallery-id="${id}"]`); if(!card) return; const images=JSON.parse(card.dataset.images || "[]"); const img=document.getElementById(`product-img-${id}`); if(!img || !images[index]) return; img.src=images[index]; card.dataset.currentImage=index; card.querySelectorAll(".gallery-dot").forEach((dot,dotIndex)=>dot.classList.toggle("active", dotIndex===index)); }
+function changeProductImage(id,step){ const card=document.querySelector(`[data-gallery-id="${id}"]`); if(!card) return; const images=JSON.parse(card.dataset.images || "[]"); if(images.length<2) return; const current=Number(card.dataset.currentImage || 0); const next=(current + step + images.length) % images.length; setProductImage(id,next); }
+function openProductSummary(id){ const card=document.querySelector(`[data-gallery-id="${id}"]`); const modal=document.getElementById("productSummaryModal"); if(!card || !modal) return; document.getElementById("productSummaryTitle").textContent=card.dataset.productName || "Product Summary"; document.getElementById("productSummaryMeta").textContent=card.dataset.productSize || ""; document.getElementById("productSummaryBody").textContent=(card.dataset.productSummary || "").trim() || "Summary not available for this product yet."; modal.classList.add("show"); document.body.style.overflow="hidden"; }
+function closeProductSummary(event){ if(event && event.target && event.target.id!=="productSummaryModal") return; const modal=document.getElementById("productSummaryModal"); if(!modal) return; modal.classList.remove("show"); document.body.style.overflow=""; }
+function applyOfflineFallbackPricing(products){ return (Array.isArray(products)?products:[]).map(product=>{ const offlinePrice=Number(product.offlinePrice || 0) || 0; return offlinePrice>0 ? {...product,price:offlinePrice} : product; }); }
+function cacheBackendProducts(products){ try{ localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(products)); }catch(e){} }
+function getCachedBackendProducts(){ try{ return applyOfflineFallbackPricing(JSON.parse(localStorage.getItem(BACKEND_PRODUCTS_CACHE_KEY)) || []); }catch(e){ return []; } }
+async function getProducts(){ for(const url of PRODUCT_API_URLS){ try{ const response=await fetch(url,{cache:"no-store"}); if(response.ok){ const data=await response.json(); if(Array.isArray(data?.products)){ const products=data.products.map(normalizeBackendProduct); cacheBackendProducts(products); return products; } } }catch(error){} } const cachedProducts=getCachedBackendProducts(); if(cachedProducts.length){ return cachedProducts; } try{ const db=await openProductsDb(); return applyOfflineFallbackPricing(await new Promise((resolve,reject)=>{ const tx=db.transaction("products","readonly"); const request=tx.objectStore("products").getAll(); request.onsuccess=()=>resolve(request.result||[]); request.onerror=()=>reject(request.error); })); }catch(e){ try{return applyOfflineFallbackPricing(JSON.parse(localStorage.getItem("adminProducts"))||[]);}catch{return [];} } }
+function getProductPricing(product){ let mrp=Number(product.mrp || product.price || 0); let price=Number(product.price || 0); let offPercent=mrp>price && mrp>0 ? Math.round(((mrp-price)/mrp)*100) : 0; return {mrp,price,offPercent}; }
+function buildPriceMarkup(product){ let pricing=getProductPricing(product); if(pricing.offPercent>0){ return `<div class="price-stack"><div class="price-line"><span class="old-price">&#8377;${pricing.mrp}</span><div class="price">&#8377;${pricing.price}</div></div><div class="discount-badge">${pricing.offPercent}% OFF</div></div>`; } return `<div class="price">&#8377;${pricing.price}</div>`; }
+async function loadProducts(){ let products=await getProducts(); let cart=getCart(); let filtered=products.filter(p=>(p.category||"").toLowerCase()==="oil, ghee & more"); let html=""; filtered.forEach(p=>{ let id=String(p.id); let existing=cart.find(i=>String(i.id)===id); let qty=existing?existing.qty:1; let isOut=p.availability==="Out of Stock" || Number(p.stockQty||0)<=0; html+=`<div class="product-card" data-gallery-id="${id}" data-current-image="0" data-images='${JSON.stringify(getProductImages(p))}' data-product-name="${escapeAttr(p.name)}" data-product-size="${escapeAttr(p.size || "100gm")}" data-product-summary="${escapeAttr(getProductSummary(p))}"><div class="product-img">${buildGalleryMarkup(p,id)}</div><div class="product-info"><div class="product-title-row"><h3>${p.name}</h3><div class="size">${p.size || "100gm"}</div></div><div class="product-bottom"><div class="left">${isOut ? `<div class="out-stock-text">Out Of Stock</div>` : `${buildPriceMarkup(p)}<div class="qty-box"><button class="qty-btn" onclick="changeQty('${id}',-1)">-</button><span id="qty-${id}">${qty}</span><button class="qty-btn" onclick="changeQty('${id}',1)">+</button></div>`}</div><button class="cart-btn ${existing?'added':''} ${isOut?'disabled':''}" onclick="${isOut?'':'toggleCart(\''+id+'\')'}" ${isOut?"disabled":""}>${existing?"ADDED ✓":"ADD TO CART"}</button></div></div></div>`; }); document.getElementById("productsContainer").innerHTML=html; }
+async function toggleCart(id){ let cart=getCart(); let products=await getProducts(); let item=products.find(p=>String(p.id)===String(id)); if(!item) return; let qtyEl=document.getElementById(`qty-${id}`); let qty=qtyEl?Number(qtyEl.innerText):1; if(qty<1) qty=1; let existingIndex=cart.findIndex(i=>String(i.id)===String(id)); if(existingIndex>-1){ cart.splice(existingIndex,1); }else{ cart.push({id:String(item.id),name:item.name,price:Number(item.price)||0,mrp:Number(item.mrp || item.price)||0,image:getSafeCartImage(item.image),images:getProductImages(item),qty:qty}); } saveCart(cart); loadProducts(); }
+function changeQty(id,val){ let qtyEl=document.getElementById(`qty-${id}`); if(!qtyEl) return; let qty=Number(qtyEl.innerText); qty+=val; if(qty<1) qty=1; qtyEl.innerText=qty; let cart=getCart(); let item=cart.find(i=>String(i.id)===String(id)); if(item){ item.qty=qty; saveCart(cart); } }
+function updateCartUI(){ let cart=getCart(); let totalItems=0,totalPrice=0; cart.forEach(i=>{ totalItems+=i.qty; totalPrice+=i.qty*i.price; }); let bar=document.getElementById("stickyCart"); if(totalItems>0){ bar.style.display="flex"; document.getElementById("cartCount").innerText=totalItems+" item ₹"+totalPrice; }else{ bar.style.display="none"; } }
+function swadraHeaderAccountMenu(userLabel, userEmail){ return `<span class="account-menu-wrap"><a class="account-link" href="${userEmail ? "dashboard.html" : "account.html"}" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">${userLabel}</div><div class="account-hover-copy">${userEmail || "Access your account, orders and saved details from one place."}</div>${userEmail ? `<a class="account-hover-cta" href="#" onclick="return swadraLogout(event)" style="color:#fff !important">LOGOUT</a>` : `<a class="account-hover-cta" href="account.html" style="color:#fff !important">LOGIN / SIGNUP</a>`}</div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="dashboard.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V5"></path><path d="M17 16v-3"></path></svg></span><span>Product Summary</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span>`; }
+function swadraLogout(event){ if(event) event.preventDefault(); localStorage.removeItem("currentUser"); localStorage.removeItem("redirectAfterLogin"); updateAccountNavigation(); window.location.href="index.html"; return false; }
+function updateAccountNavigation(){ const slot=document.getElementById("accountNavSlot"); if(!slot) return; const user=getCurrentUser(); const users=getUsers(); if(user && users[user]){ slot.innerHTML=swadraHeaderAccountMenu((((users[user]||{}).profile||{}).name || user.split("@")[0]), user); }else{ slot.innerHTML=swadraHeaderAccountMenu("Welcome", ""); } }
+const headerSearchInput=document.getElementById("searchInput");
+const headerSearchResults=document.getElementById("searchResults");
+let headerSearchCache=[];
+function normalizeHeaderSearchText(value){ return String(value || "").toLowerCase().trim(); }
+async function ensureHeaderSearchCache(){ if(headerSearchCache.length) return headerSearchCache; headerSearchCache=await getProducts(); return headerSearchCache; }
+function renderHeaderSearchResults(items){ if(!headerSearchResults) return; if(!items.length){ headerSearchResults.innerHTML='<div class="nav-search-item"><div class="nav-search-copy"><strong>No product found</strong><span>Try another keyword</span></div></div>'; headerSearchResults.classList.add("show"); return; } headerSearchResults.innerHTML=items.slice(0,8).map(item=>`<div class="nav-search-item" data-search-query="${String(item.name || "").replace(/"/g,"&quot;")}"><div class="nav-search-item-media"><img src="${item.image || "https://via.placeholder.com/80"}" alt="${item.name || "Product"}"><div class="nav-search-copy"><strong>${item.name || "Swadra Product"}</strong><span>${item.category || "Product"}${item.size ? " • " + item.size : ""}</span></div></div><button type="button">View</button></div>`).join(""); headerSearchResults.classList.add("show"); headerSearchResults.querySelectorAll(".nav-search-item[data-search-query]").forEach(row=>{ row.addEventListener("click", function(){ const query=this.getAttribute("data-search-query") || ""; if(!query) return; localStorage.setItem("swadraHeaderSearch", query); window.location.href="index.html"; }); }); }
+if(headerSearchInput && headerSearchResults){ headerSearchInput.addEventListener("input", async function(){ const query=normalizeHeaderSearchText(this.value); if(!query){ headerSearchResults.classList.remove("show"); headerSearchResults.innerHTML=""; return; } const products=await ensureHeaderSearchCache(); const filtered=products.filter(item=>normalizeHeaderSearchText(`${item.name} ${item.category} ${item.size}`).includes(query)); renderHeaderSearchResults(filtered); }); headerSearchInput.addEventListener("focus", async function(){ if(!normalizeHeaderSearchText(this.value)) return; const products=await ensureHeaderSearchCache(); const filtered=products.filter(item=>normalizeHeaderSearchText(`${item.name} ${item.category} ${item.size}`).includes(normalizeHeaderSearchText(headerSearchInput.value))); renderHeaderSearchResults(filtered); }); headerSearchInput.addEventListener("keydown", e=>{ if(e.key!=="Enter") return; const query=headerSearchInput.value.trim(); if(!query) return; localStorage.setItem("swadraHeaderSearch", query); window.location.href="index.html"; }); headerSearchInput.addEventListener("search", ()=>{ if(!headerSearchInput.value.trim()){ headerSearchResults.classList.remove("show"); headerSearchResults.innerHTML=""; } }); }
+document.addEventListener("click", e=>{ if(headerSearchResults && !e.target.closest("#searchInput") && !e.target.closest("#searchResults")){ headerSearchResults.classList.remove("show"); } });
+window.onload=()=>{ loadProducts(); updateCartUI(); updateAccountNavigation(); };
+window.addEventListener("storage", e=>{ if(e.key==="adminProductsUpdatedAt" || e.key==="adminProducts"){ loadProducts(); } });
+</script>
+</body>
+</html>
+
+
+
+
+
+
+

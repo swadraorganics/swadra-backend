@@ -1,0 +1,826 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payment - Swadra Organics</title>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --wine:#7a3d3d;
+  --wine-dark:#512626;
+  --wine-soft:#ead6d6;
+  --page:#ead9d9;
+  --rose:#b76e79;
+  --gold:#d4af37;
+  --ink:#201717;
+  --muted:#766565;
+  --line:#d9bcbc;
+  --card:#fffdfc;
+  --green:#0f8a3b;
+  --red:#b3261e;
+  --shadow:0 24px 70px rgba(122,61,61,.17);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  min-height:100vh;
+  font-family:Inter,Arial,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 10% 7%, rgba(122,61,61,.22), transparent 26%),
+    radial-gradient(circle at 88% 10%, rgba(212,175,55,.19), transparent 22%),
+    linear-gradient(135deg,var(--page) 0%,#f2e5e5 46%,#e5cfcf 100%);
+}
+.nav{
+  position:sticky;top:0;z-index:20;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding:16px 28px;color:#fff;
+  background:linear-gradient(135deg,var(--wine),var(--wine-dark));
+  box-shadow:0 10px 28px rgba(40,16,16,.18);
+}
+.brand{font-size:26px;font-weight:900;letter-spacing:.2px}
+.nav-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.secure-pill,.ghost-link{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;font-size:13px;font-weight:800;text-decoration:none}
+.secure-pill{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24)}
+.ghost-link{color:#fff;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18)}
+.page{width:min(100%,1440px);margin:0 auto;padding:28px 22px 54px}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:end;padding:34px;border-radius:34px;margin-bottom:22px;background:linear-gradient(135deg,rgba(255,255,255,.88),rgba(255,248,245,.68));border:1px solid rgba(122,61,61,.18);box-shadow:var(--shadow);overflow:hidden;position:relative}
+.hero::after{content:"";position:absolute;right:-80px;top:-90px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(122,61,61,.18),transparent 70%)}
+.eyebrow{color:var(--wine);font-size:13px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;margin-bottom:10px}
+.hero h1{font-family:"Playfair Display",serif;font-size:54px;line-height:1;color:var(--wine);letter-spacing:.2px}
+.hero p{margin-top:14px;color:#5f5151;font-size:17px;line-height:1.7;max-width:720px}
+.hero-badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.badge{padding:10px 13px;border-radius:999px;background:#fff;color:var(--wine);font-size:12px;font-weight:900;border:1px solid var(--line)}
+.checkout-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.step{padding:16px;border-radius:20px;background:#fff;border:1px solid var(--line);box-shadow:0 10px 24px rgba(122,61,61,.08)}
+.step span{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--wine);color:#fff;font-weight:900;margin-bottom:8px}
+.step strong{display:block;font-size:14px}.step small{display:block;color:var(--muted);margin-top:4px;line-height:1.4}
+.checkout-layout{display:grid;grid-template-columns:1.05fr .72fr;gap:22px;align-items:start}
+.panel{background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:28px;box-shadow:0 18px 54px rgba(122,61,61,.12);overflow:hidden}
+.panel-body{padding:26px}
+.section-title{font-size:24px;font-weight:900;margin-bottom:18px;color:var(--wine)}
+.stack{display:grid;gap:16px}
+.box,.state-box{border:1px solid var(--line);border-radius:22px;padding:20px;background:var(--card)}
+.box h3,.state-box h3{font-size:17px;font-weight:900;margin-bottom:9px;color:#2b2020}
+.box p,.state-box p{color:#594d4d;line-height:1.75;font-size:14px}
+.state-box{display:none;border-color:rgba(122,61,61,.22);background:linear-gradient(135deg,#fff,#fff8f4)}
+.state-box.show{display:block}
+.state-box.success{border-color:rgba(15,138,59,.28);background:#f2fff6}
+.state-box.failed{border-color:rgba(179,38,30,.28);background:#fff3f1}
+.payment-methods{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.method-card{min-height:128px;padding:18px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,#fff,#fff8f6);transition:.22s ease;position:relative;overflow:hidden}
+.method-card.active{border:2px solid var(--wine);box-shadow:0 14px 34px rgba(122,61,61,.14)}
+.method-card strong{display:block;font-size:16px;margin-bottom:6px}.method-card span{display:block;color:var(--muted);font-size:12px;line-height:1.5}
+.method-icon{font-size:22px;margin-bottom:10px}
+.upi-entry{display:grid;gap:10px;margin-top:14px;padding:18px;border:1px solid var(--line);border-radius:22px;background:#fff}
+.upi-entry label{font-size:14px;font-weight:900;color:var(--wine)}
+.upi-row{display:flex;gap:10px;flex-wrap:wrap}
+.upi-row input{flex:1 1 260px;border:1px solid var(--line);border-radius:14px;padding:14px 15px;font-size:15px;outline:none;background:#fffaf8}
+.upi-row input:focus{border-color:var(--wine);box-shadow:0 0 0 4px rgba(122,61,61,.1)}
+.upi-row button{border:none;border-radius:14px;padding:14px 18px;background:var(--wine);color:#fff;font-weight:900;cursor:pointer}
+.upi-status{font-size:12px;font-weight:800;color:var(--muted)}.upi-status.valid{color:var(--green)}.upi-status.invalid{color:var(--red)}
+.trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.trust{padding:16px;border-radius:20px;background:#fff;border:1px solid var(--line)}
+.trust strong{display:block;color:var(--wine);font-size:14px;margin-bottom:5px}.trust span{font-size:12px;color:var(--muted);line-height:1.5}
+.summary-panel{position:sticky;top:88px}
+.summary-list{display:grid;gap:13px;margin-bottom:16px}
+.summary-item{display:flex;justify-content:space-between;gap:16px;font-size:14px;color:#504545}
+.summary-item strong{color:#201717}.summary-item.discount strong{color:var(--green)}
+.summary-item.gst span{color:#6c5c5c}.summary-item.gst strong{color:#6c5c5c;font-size:13px}
+.grand-total{margin:16px -26px 0;padding:20px 26px;display:flex;justify-content:space-between;align-items:center;gap:16px;background:linear-gradient(135deg,var(--wine),var(--wine-dark));color:#fff}
+.grand-total span{font-weight:700;opacity:.9}.grand-total strong{font-size:30px}
+.order-items{display:grid;gap:12px;margin-top:18px;max-height:330px;overflow:auto;padding-right:4px}
+.order-row{display:grid;grid-template-columns:54px 1fr auto;gap:12px;align-items:center;padding:12px;border-radius:18px;background:#fff8f6;border:1px solid var(--line)}
+.order-row img{width:54px;height:54px;border-radius:14px;object-fit:cover;background:#fff}.order-row img.placeholder{padding:10px;object-fit:contain;background:#f5e8e8}
+.order-row strong{font-size:14px}.order-row span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.order-price{font-weight:900;color:var(--wine);white-space:nowrap}
+.payment-cta{width:100%;margin-top:18px;padding:18px 20px;border:none;border-radius:18px;background:linear-gradient(135deg,var(--wine),var(--rose),var(--gold));color:#fff;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 16px 36px rgba(122,61,61,.26);transition:.22s ease}
+.payment-cta:hover{transform:translateY(-2px);box-shadow:0 22px 44px rgba(122,61,61,.32)}.payment-cta:disabled{opacity:.72;cursor:not-allowed;transform:none}
+.mini-note{font-size:12px;color:var(--muted);line-height:1.6;margin-top:12px;text-align:center}
+.support-strip{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.support-strip a,.support-strip button{flex:1 1 140px;border:1px solid var(--line);background:#fff;color:var(--wine);border-radius:14px;padding:12px;text-decoration:none;font-weight:900;cursor:pointer;text-align:center}
+.success-shell{display:none}
+.success-hero{background:linear-gradient(135deg,var(--wine),var(--wine-dark));color:#fff;border-radius:34px;padding:34px;margin-bottom:22px;box-shadow:var(--shadow)}
+.success-hero h1{font-family:"Playfair Display",serif;font-size:48px;margin-bottom:10px}
+.success-grid{display:grid;grid-template-columns:1fr .9fr;gap:22px}
+.invoice-card{background:#fff;border:1px solid var(--line);border-radius:28px;padding:24px;box-shadow:0 18px 54px rgba(122,61,61,.12)}
+.invoice-card h2{font-size:24px;color:var(--wine);margin-bottom:16px}.invoice-card p{line-height:1.9;color:#4d4141}
+.success-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}.link-btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 18px;border-radius:14px;text-decoration:none;font-weight:900;border:none;cursor:pointer}
+.link-primary{background:var(--wine);color:#fff}.link-secondary{background:#f1e3e3;color:var(--wine)}
+.timeline{display:grid;gap:12px;margin-top:10px}.timeline-step{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start}
+.timeline-dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--wine);color:#fff;font-weight:900}
+.timeline-step strong{display:block;color:#2a1f1f}.timeline-step span{display:block;color:var(--muted);font-size:13px;margin-top:4px;line-height:1.5}
+@media(max-width:1050px){.hero,.checkout-layout,.success-grid{grid-template-columns:1fr}.summary-panel{position:static}.payment-methods,.trust-grid{grid-template-columns:1fr}}
+@media(max-width:640px){.page{padding:16px 12px 34px}.hero{padding:24px}.hero h1{font-size:38px}.checkout-steps{grid-template-columns:1fr}.panel-body{padding:20px}.grand-total{margin:16px -20px 0;padding:18px 20px}.nav{padding:14px 16px}.brand{font-size:22px}}
+</style>
+<style>html,body{background:#f1e3e3 !important;}</style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+<body>
+<div class="nav">
+  <div class="brand">Swadra Secure Checkout</div>
+  <div class="nav-actions">
+    <a class="ghost-link" href="cart.html">Back to Cart</a>
+    <div class="secure-pill" id="serverPill">Checking server...</div>
+  </div>
+</div>
+
+<div class="page">
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Final Step</div>
+      <h1>Review, Pay, Relax.</h1>
+      <p>Your order snapshot is frozen before payment, so price, items, address and payable amount stay safe while Razorpay checkout is open.</p>
+      <div class="hero-badges">
+        <span class="badge">100% prepaid checkout</span>
+        <span class="badge">Razorpay secure</span>
+        <span class="badge" id="reservedTimer">Cart reserved 10:00</span>
+      </div>
+    </div>
+    <div class="checkout-steps">
+      <div class="step"><span>1</span><strong>Cart frozen</strong><small>Items and amount locked.</small></div>
+      <div class="step"><span>2</span><strong>Payment verified</strong><small>Backend verifies if secret is configured.</small></div>
+      <div class="step"><span>3</span><strong>Order saved</strong><small>Success creates invoice-ready order.</small></div>
+    </div>
+  </section>
+
+  <div id="paymentSection" class="checkout-layout">
+    <section class="panel">
+      <div class="panel-body">
+        <div class="section-title">Delivery and payment details</div>
+        <div class="stack">
+          <div class="state-box show" id="paymentStateBox"><h3>Checkout ready</h3><p>Review the order and pay securely.</p></div>
+          <div class="box" id="userInfoBox"></div>
+          <div>
+            <div class="section-title" style="font-size:20px;margin-bottom:12px">Choose payment mode</div>
+            <div class="payment-methods">
+              <div class="method-card active"><div class="method-icon">UPI</div><strong>UPI Apps</strong><span>Pay with PhonePe, GPay, Paytm or any UPI app.</span></div>
+              <div class="method-card active"><div class="method-icon">CARD</div><strong>Cards</strong><span>Debit and credit cards through secure Razorpay checkout.</span></div>
+              <div class="method-card active"><div class="method-icon">BANK</div><strong>Netbanking</strong><span>Use supported Indian banks through encrypted gateway.</span></div>
+            </div>
+            <div class="upi-entry">
+              <label for="upiId">Enter UPI ID before payment</label>
+              <div class="upi-row">
+                <input id="upiId" type="text" inputmode="email" placeholder="example@upi / mobile@paytm">
+                <button type="button" onclick="validateUpiId()">Verify UPI</button>
+              </div>
+              <div id="upiStatus" class="upi-status">Optional but recommended. Razorpay will confirm the final UPI payment securely.</div>
+            </div>
+          </div>
+          <div class="trust-grid">
+            <div class="trust"><strong>Secure gateway</strong><span>Payment ID, order ID and timestamp are recorded for support.</span></div>
+            <div class="trust"><strong>Estimated delivery</strong><span id="deliveryEstimate">Delivery estimate loading...</span></div>
+            <div class="trust"><strong>Refund support</strong><span>Failed/cancelled attempts are logged separately from paid orders.</span></div>
+          </div>
+          <div class="box">
+            <h3>What happens after payment?</h3>
+            <p>On success, the cart becomes a confirmed order, invoice data is generated, cart is cleared, and order history is updated. If payment fails, you can retry without creating duplicate paid orders.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel summary-panel">
+      <div class="panel-body">
+        <div class="section-title">Order summary</div>
+        <div class="summary-list">
+          <div class="summary-item"><span>MRP total</span><strong id="mrpTotalText">&#8377;0</strong></div>
+          <div class="summary-item"><span>Selling total</span><strong id="itemsTotal">&#8377;0</strong></div>
+          <div class="summary-item discount"><span>Product savings</span><strong id="productSavingsText">-&#8377;0</strong></div>
+          <div class="summary-item discount"><span>Coupon savings</span><strong id="discountText">-&#8377;0</strong></div>
+          <div class="summary-item gst"><span>GST</span><strong id="gstText">Included</strong></div>
+          <div class="summary-item"><span>Delivery</span><strong id="deliveryText">&#8377;0</strong></div>
+          <div class="summary-item"><span>Payment mode</span><strong id="modeText">Online</strong></div>
+        </div>
+        <div class="order-items" id="invoicePreview"></div>
+        <div class="grand-total"><span>Final payable</span><strong id="amountText">&#8377;0</strong></div>
+        <button id="payButton" class="payment-cta" onclick="payOnline()">Pay Securely Now</button>
+        <p class="mini-note" id="gatewayNote">Razorpay checkout opens after this. Please do not refresh while payment is processing.</p>
+        <div class="support-strip">
+          <a href="order.html">My Orders</a>
+          <button type="button" onclick="copyPaymentSummary()">Copy Summary</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="successSection" class="success-shell">
+    <div class="success-hero">
+      <h1>Payment successful</h1>
+      <p>Your Swadra order is confirmed, invoice-ready, and added to your order history.</p>
+    </div>
+    <div class="success-grid">
+      <div class="invoice-card" id="successOrderCard"></div>
+      <div class="invoice-card" id="successItemsCard"></div>
+      <div class="invoice-card" id="successTimelineCard"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const RAZORPAY_KEY = "rzp_live_Sb250hmHjB1vte";
+const API_BASE = window.SWADRA_API_BASE || "";
+const SESSION_KEY = "swadraPaymentSession";
+const ATTEMPTS_KEY = "swadraPaymentAttempts";
+const ANALYTICS_KEY = "swadraPaymentAnalytics";
+
+function getCurrentUser(){ return localStorage.getItem("currentUser"); }
+function getUsers(){ try{ return JSON.parse(localStorage.getItem("users")) || {}; }catch(error){ return {}; } }
+function saveUsers(users){ localStorage.setItem("users", JSON.stringify(users)); }
+function money(value){ return "\u20B9" + Math.round(Number(value || 0)).toLocaleString("en-IN"); }
+function getItemDisplayLineTotal(item){
+  const qty = Number(item.qty) || 1;
+  const originalLineTotal = Math.round((Number(item.price) || 0) * qty);
+  return Math.round(Number(item.discountedLineTotal || item.displayLineTotal || originalLineTotal));
+}
+function escapeHtml(value){ return String(value ?? "").replace(/[&<>"']/g, char => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;" }[char])); }
+function safeJson(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) || fallback; }catch(error){ return fallback; } }
+function nowIso(){ return new Date().toISOString(); }
+
+const placeholderImage = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><rect width="120" height="120" rx="22" fill="#f5e8e8"/><text x="60" y="54" text-anchor="middle" font-family="Arial" font-size="13" font-weight="700" fill="#7a3d3d">Swadra</text><text x="60" y="73" text-anchor="middle" font-family="Arial" font-size="11" fill="#7a3d3d">Product</text></svg>`);
+
+function productCatalog(){
+  return [
+    ...safeJson("adminProducts", []),
+    ...safeJson("swadraBackendProductsCache", []),
+    ...Object.values(safeJson("adminProductsByCategory", {})).flat()
+  ];
+}
+function firstImage(product){
+  if(!product) return "";
+  if(Array.isArray(product.images) && product.images.filter(Boolean)[0]) return product.images.filter(Boolean)[0];
+  return product.image || product.productImage || "";
+}
+function resolveItemImage(item){
+  const direct = firstImage(item);
+  if(direct && !String(direct).includes("[object Object]")) return direct;
+  const id = String(item.id || item.productId || "");
+  const name = String(item.name || item.productName || "").trim().toLowerCase();
+  const match = productCatalog().find(product=>{
+    const productId = String(product.id || product.productId || "");
+    const productName = String(product.name || product.productName || "").trim().toLowerCase();
+    return (id && productId && id === productId) || (name && productName && name === productName);
+  });
+  return firstImage(match) || placeholderImage;
+}
+function imageError(img){ img.onerror = null; img.src = placeholderImage; img.classList.add("placeholder"); }
+
+let currentUser = getCurrentUser();
+if(!currentUser){
+  localStorage.setItem("redirectAfterLogin","payment.html");
+  location.href = "account.html";
+  throw new Error("Redirecting to account");
+}
+
+let users = getUsers();
+if(!users[currentUser]){
+  users[currentUser] = { cart:[], orders:[] };
+  saveUsers(users);
+}
+
+let user = users[currentUser];
+if((!user.cart || user.cart.length === 0)){
+  const localCart = safeJson("cart", []);
+  if(localCart.length){
+    user.cart = localCart;
+    users[currentUser] = user;
+    saveUsers(users);
+  }
+}
+
+let cart = user.cart || [];
+let checkoutData = safeJson("checkoutData", {});
+let cartSummary = safeJson("cartSummary", {});
+let displayCart = Array.isArray(cartSummary.discountedItems) && cartSummary.discountedItems.length ? cartSummary.discountedItems : cart;
+let rawSubtotal = cart.reduce((sum,item)=>sum + ((Number(item.price)||0) * (Number(item.qty)||1)),0);
+let sellingTotal = Math.round(Number(cartSummary.sellingTotal || rawSubtotal) || rawSubtotal);
+let couponAdjustedSellingTotal = Math.round(Number(cartSummary.couponAdjustedSellingTotal || displayCart.reduce((sum,item)=>sum + getItemDisplayLineTotal(item),0)) || sellingTotal);
+let mrpTotal = Math.round(Number(cartSummary.mrpTotal) || cart.reduce((sum,item)=>sum + ((Number(item.mrp || item.originalPrice || item.price)||0) * (Number(item.qty)||1)),0) || sellingTotal);
+let delivery = Math.round(Number(cartSummary.delivery || localStorage.getItem("delivery")) || 0);
+let couponDiscount = Math.round(Number(cartSummary.couponDiscount || localStorage.getItem("couponDiscount")) || 0);
+let finalTotal = Math.round(Number(cartSummary.finalTotal || localStorage.getItem("finalTotal")) || Math.max(0, sellingTotal + delivery - couponDiscount));
+let productSavings = Math.max(0, mrpTotal - sellingTotal);
+let paymentSession = null;
+let lastSuccessOrder = null;
+let paymentGatewayKey = RAZORPAY_KEY;
+
+function getShippingAddress(){
+  return checkoutData.address || [checkoutData.house, checkoutData.area, checkoutData.postoffice, checkoutData.city, checkoutData.state, checkoutData.pincode].filter(Boolean).join(", ") || "Address not available";
+}
+
+function hashSnapshot(snapshot){
+  const str = JSON.stringify(snapshot || {});
+  let hash = 0;
+  for(let i = 0; i < str.length; i++){
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return "h" + Math.abs(hash);
+}
+
+function trackPaymentEvent(type, payload = {}){
+  const events = safeJson(ANALYTICS_KEY, []);
+  events.unshift({
+    type,
+    orderId: paymentSession?.orderId || "",
+    amount: finalTotal,
+    user: currentUser,
+    browser: navigator.userAgent,
+    time: nowIso(),
+    ...payload
+  });
+  localStorage.setItem(ANALYTICS_KEY, JSON.stringify(events.slice(0, 300)));
+}
+
+async function apiPost(path, body){
+  const response = await fetch(API_BASE + path, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify(body || {})
+  });
+  const data = await response.json().catch(()=>({ ok:false }));
+  if(!response.ok && response.status !== 202) throw new Error(data.error || "API request failed");
+  return data;
+}
+
+function saveAttempt(status, detail = {}){
+  const attempts = safeJson(ATTEMPTS_KEY, []);
+  const attempt = {
+    id: paymentSession?.orderId || detail.id || getOrderID(false),
+    status,
+    amount: finalTotal,
+    user: currentUser,
+    items: displayCart,
+    checkoutData,
+    detail,
+    updatedAt: nowIso(),
+    createdAt: detail.createdAt || nowIso()
+  };
+  attempts.unshift(attempt);
+  localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(attempts.slice(0, 120)));
+  apiPost("/api/payments/attempts", attempt).catch(()=>{});
+}
+
+function setPaymentState(state, title, message){
+  const box = document.getElementById("paymentStateBox");
+  if(!box) return;
+  box.className = "state-box show";
+  if(state === "success") box.classList.add("success");
+  if(state === "failed" || state === "cancelled") box.classList.add("failed");
+  box.innerHTML = `<h3>${escapeHtml(title)}</h3><p>${escapeHtml(message)}</p>`;
+  const note = document.getElementById("gatewayNote");
+  if(note) note.textContent = message;
+}
+
+function setPayButtonLoading(isLoading, label){
+  const button = document.getElementById("payButton");
+  if(!button) return;
+  button.disabled = isLoading;
+  button.textContent = label || (isLoading ? "Opening secure checkout..." : "Pay Securely Now");
+}
+
+function getOrderID(increment = true){
+  const d = new Date();
+  const key = d.toISOString().slice(2,10).replace(/-/g,"");
+  const counts = safeJson("orderCounts", {});
+  if(increment){
+    counts[key] = (counts[key] || 0) + 1;
+    localStorage.setItem("orderCounts", JSON.stringify(counts));
+  }
+  return "SWO" + key + String((counts[key] || 0) + (increment ? 0 : 1)).padStart(3,"0");
+}
+
+function buildFrozenSnapshot(){
+  const snapshot = {
+    user: currentUser,
+    cart: JSON.parse(JSON.stringify(displayCart)),
+    checkoutData: JSON.parse(JSON.stringify(checkoutData)),
+    totals: { mrpTotal, sellingTotal, couponAdjustedSellingTotal, productSavings, couponDiscount, delivery, finalTotal, gst: "Included" },
+    upiId: localStorage.getItem("checkoutUpiId") || document.getElementById("upiId")?.value || "",
+    createdAt: nowIso()
+  };
+  return { ...snapshot, hash: hashSnapshot(snapshot) };
+}
+
+function getOrCreatePaymentSession(){
+  const snapshot = buildFrozenSnapshot();
+  const saved = safeJson(SESSION_KEY, null);
+  if(saved && saved.status !== "paid" && saved.amount === finalTotal && saved.snapshotHash === snapshot.hash){
+    paymentSession = saved;
+    return saved;
+  }
+  paymentSession = {
+    orderId: getOrderID(),
+    amount: finalTotal,
+    amountPaise: finalTotal * 100,
+    status: "created",
+    retryCount: saved?.retryCount || 0,
+    snapshot,
+    snapshotHash: snapshot.hash,
+    createdAt: nowIso(),
+    updatedAt: nowIso()
+  };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(paymentSession));
+  return paymentSession;
+}
+
+function updatePaymentSession(patch){
+  paymentSession = { ...(paymentSession || getOrCreatePaymentSession()), ...patch, updatedAt: nowIso() };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(paymentSession));
+}
+
+async function checkBackend(){
+  const pill = document.getElementById("serverPill");
+  try{
+    const response = await fetch(API_BASE + "/health", { cache:"no-store" });
+    if(!response.ok) throw new Error("offline");
+    if(pill) pill.textContent = "Backend live";
+  }catch(error){
+    if(pill) pill.textContent = "Frontend secure mode";
+  }
+}
+
+function renderUserInfo(){
+  const displayName = (user.profile && user.profile.name) || currentUser.split("@")[0];
+  const shippingName = checkoutData.name || displayName;
+  const shippingPhone = checkoutData.phone || user.phone || "No phone";
+  const shippingAddress = getShippingAddress();
+  document.getElementById("userInfoBox").innerHTML = `
+    <h3>Deliver to</h3>
+    <p><strong>${escapeHtml(shippingName)}</strong><br>${escapeHtml(shippingPhone)}<br>${escapeHtml(shippingAddress)}</p>
+  `;
+}
+
+function renderOrderSummary(){
+  document.getElementById("amountText").innerText = money(finalTotal);
+  document.getElementById("mrpTotalText").innerText = money(mrpTotal);
+  document.getElementById("itemsTotal").innerHTML = couponDiscount > 0 ? `<span style="display:block;font-size:12px;color:#888;text-decoration:line-through;">${money(sellingTotal)}</span>${money(couponAdjustedSellingTotal)}` : money(sellingTotal);
+  document.getElementById("productSavingsText").innerText = "-" + money(productSavings);
+  document.getElementById("discountText").innerText = "-" + money(couponDiscount);
+  document.getElementById("deliveryText").innerText = delivery > 0 ? money(delivery) : "Free";
+  document.getElementById("gstText").innerText = "Included";
+
+  const box = document.getElementById("invoicePreview");
+  box.innerHTML = displayCart.length ? "" : `<div class="box"><h3>Cart is empty</h3><p>Please go back to cart and add products.</p></div>`;
+  displayCart.forEach(item=>{
+    const qty = Number(item.qty) || 1;
+    const originalLineTotal = Math.round((Number(item.price)||0) * qty);
+    const lineTotal = Math.round(Number(item.discountedLineTotal || item.displayLineTotal || originalLineTotal));
+    const image = resolveItemImage(item);
+    box.innerHTML += `
+      <div class="order-row">
+        <img src="${escapeHtml(image)}" alt="${escapeHtml(item.name || "Product")}" onerror="imageError(this)">
+        <div><strong>${escapeHtml(item.name || "Swadra Product")}</strong><span>Qty ${qty} Â· ${escapeHtml(item.size || item.productSize || "")}</span></div>
+        <div class="order-price">${lineTotal < originalLineTotal ? `<span style="display:block;font-size:11px;color:#8a7777;text-decoration:line-through;">${money(originalLineTotal)}</span>` : ""}${money(lineTotal)}</div>
+      </div>
+    `;
+  });
+}
+
+function validateUpiId(){
+  const input = document.getElementById("upiId");
+  const status = document.getElementById("upiStatus");
+  const value = String(input?.value || "").trim();
+  const isValid = /^[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}[a-zA-Z0-9.\-_]*$/.test(value);
+  if(!status) return isValid;
+  status.classList.remove("valid","invalid");
+  if(!value){
+    status.classList.add("invalid");
+    status.textContent = "Please enter your UPI ID, for example name@upi.";
+    return false;
+  }
+  if(!isValid){
+    status.classList.add("invalid");
+    status.textContent = "UPI ID format looks incorrect. Example: name@upi, mobile@paytm.";
+    return false;
+  }
+  status.classList.add("valid");
+  status.textContent = "UPI ID saved. Razorpay will verify and collect payment securely.";
+  localStorage.setItem("checkoutUpiId", value);
+  return true;
+}
+
+async function createBackendPaymentOrder(session){
+  try{
+    const data = await apiPost("/api/payments/create-order", {
+      orderId: session.orderId,
+      amount: session.amountPaise,
+      currency: "INR",
+      receipt: session.orderId,
+      snapshot: session.snapshot
+    });
+    if(data.keyId) paymentGatewayKey = data.keyId;
+    updatePaymentSession({ backendOrderCreated: true, verificationConfigured: data.verificationConfigured });
+    return data.razorpayOrder || null;
+  }catch(error){
+    updatePaymentSession({ backendOrderCreated: false, backendError: error.message });
+    return null;
+  }
+}
+
+async function verifyPaymentIfPossible(response){
+  if(!response.razorpay_order_id){
+    return { ok:true, skipped:true, message:"Frontend-only Razorpay success" };
+  }
+  try{
+    const data = await apiPost("/api/payments/verify", {
+      ...response,
+      localOrderId: paymentSession?.orderId || "",
+      snapshotHash: paymentSession?.snapshotHash || ""
+    });
+    if(data.configured && !data.verified) return { ok:false, message:data.message || "Payment verification failed" };
+    return { ...data, ok:true };
+  }catch(error){
+    return { ok:true, skipped:true, message:"Backend verification unavailable, Razorpay success accepted" };
+  }
+}
+
+async function payOnline(){
+  if(finalTotal <= 0 || !displayCart.length){
+    alert("Cart is empty.");
+    return;
+  }
+  const upiValue = String(document.getElementById("upiId")?.value || "").trim();
+  if(upiValue && !validateUpiId()) return;
+  if(typeof Razorpay === "undefined"){
+    setPaymentState("failed","Razorpay not loaded","Internet ya Razorpay script load nahi hua. Page refresh karke retry karo.");
+    return;
+  }
+
+  const session = getOrCreatePaymentSession();
+  session.retryCount = Number(session.retryCount || 0) + 1;
+  updatePaymentSession({ retryCount: session.retryCount, status:"initiated", startedAt: nowIso() });
+  trackPaymentEvent("payment_initiated", { retryCount: session.retryCount });
+  saveAttempt("initiated", { retryCount: session.retryCount });
+  setPaymentState("processing","Opening secure payment","Razorpay checkout open ho raha hai. Payment complete hone tak refresh mat karna.");
+  setPayButtonLoading(true);
+
+  const backendOrder = await createBackendPaymentOrder(session);
+  const options = {
+    key: paymentGatewayKey,
+    amount: session.amountPaise,
+    currency: "INR",
+    name: "Swadra Organics",
+    description: "Order Payment",
+    order_id: String(backendOrder?.id || "").startsWith("order_") ? backendOrder.id : undefined,
+    handler: async function(response){
+      setPaymentState("processing","Verifying payment","Payment receive ho gaya, ab order safely verify aur save ho raha hai.");
+      trackPaymentEvent("payment_handler_success", { paymentId: response.razorpay_payment_id || "" });
+      const verified = await verifyPaymentIfPossible(response);
+      if(!verified.ok){
+        updatePaymentSession({ status:"verification_failed", verifyMessage: verified.message });
+        saveAttempt("verification_failed", { response, verifyMessage: verified.message });
+        trackPaymentEvent("payment_verification_failed", { message: verified.message });
+        setPaymentState("failed","Payment verification blocked", verified.message || "Verification failed. Please contact support.");
+        setPayButtonLoading(false, "Retry Payment");
+        return;
+      }
+      saveOrder(response, verified);
+    },
+    modal: {
+      ondismiss: function(){
+        updatePaymentSession({ status:"cancelled" });
+        saveAttempt("cancelled", { reason:"popup_closed" });
+        trackPaymentEvent("razorpay_popup_closed");
+        setPaymentState("cancelled","Payment cancelled","Payment popup close ho gaya. Same order ko duplicate banaye bina retry kar sakte ho.");
+        setPayButtonLoading(false, "Retry Payment");
+      }
+    },
+    prefill: {
+      name: checkoutData.name || currentUser,
+      email: user.email || currentUser,
+      contact: checkoutData.phone || user.phone || "",
+      vpa: upiValue || localStorage.getItem("checkoutUpiId") || ""
+    },
+    notes: {
+      local_order_id: session.orderId,
+      snapshot_hash: session.snapshotHash,
+      delivery_name: checkoutData.name || currentUser,
+      delivery_phone: checkoutData.phone || user.phone || "",
+      upi_id: upiValue || localStorage.getItem("checkoutUpiId") || "",
+      order_source: "Swadra Website"
+    },
+    theme: { color: "#7A3D3D" }
+  };
+
+  const rzp = new Razorpay(options);
+  rzp.on("payment.failed", function(response){
+    updatePaymentSession({ status:"failed", failure: response.error || {} });
+    saveAttempt("failed", response.error || {});
+    trackPaymentEvent("payment_failed", response.error || {});
+    setPaymentState("failed","Payment failed", response.error?.description || "Payment fail ho gaya. Retry button se same order dobara try kar sakte ho.");
+    setPayButtonLoading(false, "Retry Payment");
+  });
+  trackPaymentEvent("razorpay_popup_opened");
+  setPaymentState("processing","Payment popup opened","Secure Razorpay popup me payment complete karo.");
+  rzp.open();
+}
+
+function saveOrder(paymentResponse, verification){
+  const session = paymentSession || getOrCreatePaymentSession();
+  const paymentId = paymentResponse.razorpay_payment_id || paymentResponse || "";
+  const order = {
+    id: session.orderId,
+    payment: "Paid Successfully",
+    payment_id: paymentId,
+    razorpay_order_id: paymentResponse.razorpay_order_id || session.orderId,
+    razorpay_signature: paymentResponse.razorpay_signature || "",
+    verification,
+    snapshotHash: session.snapshotHash,
+    items: session.snapshot.cart,
+    total: finalTotal,
+    mrpTotal,
+    sellingTotal,
+    couponAdjustedSellingTotal,
+    productSavings,
+    delivery,
+    couponDiscount,
+    gst: "Included",
+    status: "Confirmed",
+    progress: ["Confirmed","Packed","Out for Delivery","Delivered"],
+    refundStatus: "",
+    refundAmount: 0,
+    refundDate: "",
+    refundMessage: "",
+    shipping: checkoutData,
+    upiId: localStorage.getItem("checkoutUpiId") || document.getElementById("upiId")?.value || "",
+    paymentStartedAt: session.startedAt || "",
+    paymentCompletedAt: nowIso(),
+    date: new Date().toLocaleString()
+  };
+
+  users = getUsers();
+  users[currentUser] = users[currentUser] || { cart:[], orders:[] };
+  users[currentUser].orders = users[currentUser].orders || [];
+  const existingIndex = users[currentUser].orders.findIndex(item => String(item.id) === String(order.id));
+  if(existingIndex > -1) users[currentUser].orders[existingIndex] = order;
+  else users[currentUser].orders.push(order);
+  users[currentUser].cart = [];
+  saveUsers(users);
+
+  updatePaymentSession({ status:"paid", paidAt: nowIso(), paymentId });
+  saveAttempt("paid", { paymentId, orderId: order.id });
+  trackPaymentEvent("payment_success", { paymentId, orderId: order.id });
+  apiPost("/api/orders", { ...order, userId: currentUser })
+    .then(data=>{
+      if(!data || !data.ok || !data.order) return;
+      const latestUsers = getUsers();
+      latestUsers[currentUser] = latestUsers[currentUser] || { cart:[], orders:[] };
+      latestUsers[currentUser].orders = latestUsers[currentUser].orders || [];
+      const orderIndex = latestUsers[currentUser].orders.findIndex(item => String(item.id) === String(order.id));
+      if(orderIndex > -1) latestUsers[currentUser].orders[orderIndex] = data.order;
+      else latestUsers[currentUser].orders.push(data.order);
+      saveUsers(latestUsers);
+      lastSuccessOrder = data.order;
+      localStorage.setItem("currentOrderId", data.order.id);
+      trackPaymentEvent("shiprocket_order_synced", {
+        orderId: data.order.id,
+        awb: data.order.awb || data.order.trackingId || "",
+        shipment_id: data.order.shipment_id || ""
+      });
+    })
+    .catch(error=>{
+      trackPaymentEvent("shiprocket_order_sync_failed", { orderId: order.id, message:error.message });
+      console.error("Backend order save failed", error);
+    });
+  localStorage.removeItem("cart");
+  localStorage.removeItem("finalTotal");
+  localStorage.removeItem("checkoutUpiId");
+  localStorage.removeItem(SESSION_KEY);
+  showSuccess(order);
+}
+
+function downloadReceipt(order){
+  const lines = [
+    "Swadra Organics Payment Receipt",
+    "Order ID: " + order.id,
+    "Transaction ID: " + order.payment_id,
+    "Date: " + order.date,
+    "Customer: " + (order.shipping.name || currentUser),
+    "Phone: " + (order.shipping.phone || user.phone || ""),
+    "Address: " + getShippingAddress(),
+    "",
+    "MRP Total: " + money(order.mrpTotal),
+    "Selling Total: " + money(order.couponAdjustedSellingTotal || order.sellingTotal),
+    "Product Savings: -" + money(order.productSavings),
+    "Coupon Savings: -" + money(order.couponDiscount),
+    "Delivery: " + (order.delivery > 0 ? money(order.delivery) : "Free"),
+    "GST: Included",
+    "Final Paid: " + money(order.total),
+    "",
+    "Items:",
+    ...order.items.map(item => "- " + (item.name || "Swadra Product") + " x " + (Number(item.qty)||1) + " = " + money(getItemDisplayLineTotal(item)))
+  ];
+  const blob = new Blob([lines.join("\n")], { type:"text/plain" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = order.id + "-receipt.txt";
+  link.click();
+  setTimeout(()=>URL.revokeObjectURL(link.href), 1000);
+}
+
+function showSuccess(order){
+  lastSuccessOrder = order;
+  document.getElementById("paymentSection").style.display = "none";
+  document.querySelector(".hero").style.display = "none";
+  document.getElementById("successSection").style.display = "block";
+  setPayButtonLoading(false);
+
+  document.getElementById("successOrderCard").innerHTML = `
+    <h2>Invoice details</h2>
+    <p><strong>Order ID:</strong> ${escapeHtml(order.id)}</p>
+    <p><strong>Transaction ID:</strong> ${escapeHtml(order.payment_id)}</p>
+    <p><strong>Status:</strong> ${escapeHtml(order.payment)}</p>
+    <p><strong>Date:</strong> ${escapeHtml(order.date)}</p>
+    <p><strong>Total paid:</strong> ${money(order.total)}</p>
+    <p><strong>Payment mode:</strong> Online ${order.upiId ? "UPI (" + escapeHtml(order.upiId) + ")" : "via Razorpay"}</p>
+    <p><strong>Delivery:</strong> ${escapeHtml(order.shipping.name || "Customer")}, ${escapeHtml(order.shipping.phone || "No phone")}, ${escapeHtml(getShippingAddress())}</p>
+    <div class="success-actions">
+      <a class="link-btn link-primary" href="order.html">Track Order</a>
+      <button class="link-btn link-secondary" onclick="window.print()">Print Invoice</button>
+      <button class="link-btn link-secondary" onclick="downloadReceipt(lastSuccessOrder)">Download Receipt</button>
+      <a class="link-btn link-secondary" href="index.html">Continue Shopping</a>
+    </div>
+  `;
+
+  document.getElementById("successItemsCard").innerHTML = `
+    <h2>Final breakdown</h2>
+    <p><strong>MRP total:</strong> ${money(order.mrpTotal)}</p>
+    <p><strong>Selling total:</strong> ${Number(order.couponDiscount || 0) > 0 ? `<span style="color:#888;text-decoration:line-through;">${money(order.sellingTotal)}</span> ${money(order.couponAdjustedSellingTotal || order.sellingTotal)}` : money(order.sellingTotal)}</p>
+    <p><strong>Product savings:</strong> -${money(order.productSavings)}</p>
+    <p><strong>Coupon savings:</strong> -${money(order.couponDiscount)}</p>
+    <p><strong>GST:</strong> Included</p>
+    <p><strong>Delivery:</strong> ${order.delivery > 0 ? money(order.delivery) : "Free"}</p>
+    <p><strong>Final paid:</strong> ${money(order.total)}</p>
+    <h2 style="margin-top:18px">Items purchased</h2>
+    ${order.items.map(item=>`<p><strong>${escapeHtml(item.name || "Swadra Product")}</strong><br>Qty ${Number(item.qty)||1} - ${money(getItemDisplayLineTotal(item))}${Number(item.couponLineDiscount || 0) > 0 ? ` <span style="color:#0f8a47;font-weight:700;">(coupon -${money(item.couponLineDiscount)})</span>` : ""}</p>`).join("")}
+  `;
+
+  document.getElementById("successTimelineCard").innerHTML = `
+    <h2>What happens next</h2>
+    <div class="timeline">
+      <div class="timeline-step"><div class="timeline-dot">1</div><div><strong>Order confirmed</strong><span>Payment captured and order saved to your account.</span></div></div>
+      <div class="timeline-step"><div class="timeline-dot">2</div><div><strong>Packing starts</strong><span>Swadra team prepares your products fresh and secure.</span></div></div>
+      <div class="timeline-step"><div class="timeline-dot">3</div><div><strong>Delivery update</strong><span>Track from My Orders. Support can use your payment ID for help.</span></div></div>
+    </div>
+    <p style="margin-top:18px">Auto redirect disabled so invoice details stay visible.</p>
+  `;
+}
+
+function copyPaymentSummary(){
+  const text = [
+    "Swadra Organics Payment Summary",
+    "MRP total: " + money(mrpTotal),
+    "Selling total: " + money(couponDiscount > 0 ? couponAdjustedSellingTotal : sellingTotal),
+    "Product savings: -" + money(productSavings),
+    "Coupon savings: -" + money(couponDiscount),
+    "GST: Included",
+    "Delivery: " + (delivery > 0 ? money(delivery) : "Free"),
+    "Final payable: " + money(finalTotal),
+    "Deliver to: " + (checkoutData.name || currentUser) + ", " + (checkoutData.phone || user.phone || "No phone") + ", " + getShippingAddress()
+  ].join("\n");
+  navigator.clipboard?.writeText(text).then(()=>alert("Payment summary copied."), ()=>alert(text));
+}
+
+function renderDeliveryEstimate(){
+  const date = new Date();
+  date.setDate(date.getDate() + 4);
+  const label = date.toLocaleDateString("en-IN", { weekday:"short", day:"numeric", month:"short" });
+  const target = document.getElementById("deliveryEstimate");
+  if(target) target.textContent = "Estimated delivery by " + label + ".";
+}
+
+function startReserveTimer(){
+  const start = Date.now();
+  const target = document.getElementById("reservedTimer");
+  setInterval(()=>{
+    const left = Math.max(0, 10 * 60 * 1000 - (Date.now() - start));
+    const min = Math.floor(left / 60000);
+    const sec = String(Math.floor((left % 60000) / 1000)).padStart(2,"0");
+    if(target) target.textContent = "Cart reserved " + min + ":" + sec;
+  }, 1000);
+}
+
+renderUserInfo();
+renderOrderSummary();
+renderDeliveryEstimate();
+startReserveTimer();
+checkBackend();
+trackPaymentEvent("payment_page_view");
+const savedUpi = localStorage.getItem("checkoutUpiId") || "";
+if(savedUpi){
+  const upiInput = document.getElementById("upiId");
+  if(upiInput) upiInput.value = savedUpi;
+  validateUpiId();
+}
+</script>
+</body>
+</html>
+
+
+
+
+
+

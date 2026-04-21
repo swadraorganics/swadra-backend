@@ -1,0 +1,482 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Order</title>
+
+<style>
+
+/* TOP BAR */
+.top-bar{
+text-align:center;
+padding:12px;
+font-size:18px;
+font-weight:600;
+color:#7a3d3d;
+background:#fff;
+position:sticky;
+top:0;
+z-index:1001;
+}
+
+/* NAVBAR */
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:12px 25px;
+background:#7a3d3d;
+position:sticky;
+top:45px;
+color:#fff;
+}
+
+.navbar a{
+color:#fff;
+text-decoration:none;
+margin-left:15px;
+}
+
+/* MAIN */
+.container{
+max-width:700px;
+margin:40px auto;
+background:#fff;
+padding:25px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+/* INPUT */
+.input-row{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+}
+
+input{
+flex:1;
+padding:10px;
+border:1px solid #ccc;
+border-radius:5px;
+min-width:240px;
+}
+
+button{
+padding:10px 15px;
+background:#7a3d3d;
+color:#fff;
+border:none;
+border-radius:5px;
+cursor:pointer;
+}
+
+/* STATUS BAR */
+.progress{
+display:flex;
+justify-content:space-between;
+margin-top:30px;
+position:relative;
+}
+
+.progress::before{
+content:"";
+position:absolute;
+top:15px;
+left:0;
+width:100%;
+height:4px;
+background:#ddd;
+z-index:0;
+}
+
+.step{
+text-align:center;
+z-index:1;
+width:16%;
+}
+
+.circle{
+width:30px;
+height:30px;
+border-radius:50%;
+background:#ddd;
+margin:auto;
+line-height:30px;
+color:#fff;
+font-size:14px;
+}
+
+.active .circle{
+background:#7a3d3d;
+}
+
+.label{
+font-size:12px;
+margin-top:5px;
+}
+
+.info{
+margin-top:25px;
+background:#fafafa;
+padding:18px;
+border-radius:10px;
+line-height:1.8;
+}
+
+.live-box{
+margin-top:20px;
+background:#f7fbff;
+border:1px solid #dcecff;
+padding:18px;
+border-radius:10px;
+line-height:1.8;
+color:#24425f;
+}
+
+.live-box h3{margin-bottom:8px;color:#17324d}
+.live-box .muted{color:#6b7a8a;font-size:13px}
+
+.items-box{
+margin-top:20px;
+background:#fafafa;
+padding:18px;
+border-radius:10px;
+}
+
+.items-box div{
+padding:6px 0;
+border-bottom:1px solid #eee;
+}
+
+.empty{
+margin-top:20px;
+padding:20px;
+background:#fafafa;
+border-radius:10px;
+text-align:center;
+}
+</style>
+
+<style>html,body{background:#f1e3e3 !important;}</style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+
+<body>
+
+<div class="top-bar">
+Eat Healthy â€¢ Be Swadra Family
+</div>
+
+<div class="navbar">
+<div><b>Swadra Organics</b></div>
+<div>
+<a href="index.html">Home</a>
+<a href="cart.html">Cart</a>
+<a href="order.html">My Orders</a>
+</div>
+</div>
+
+<div class="container">
+
+<h2>Track Your Order</h2>
+
+<div class="input-row">
+<input id="orderId" placeholder="Enter Order ID">
+<button onclick="trackOrder()">Track</button>
+</div>
+
+<div id="result"></div>
+
+</div>
+
+<script>
+
+/* =====================================================
+   HELPERS
+===================================================== */
+function getCurrentUser(){
+  return localStorage.getItem("currentUser");
+}
+
+function getUsers(){
+  return JSON.parse(localStorage.getItem("users")) || {};
+}
+
+function safe(v){
+  return v ? v : "";
+}
+
+function money(value){
+  return "â‚¹" + Math.round(Number(value) || 0).toLocaleString("en-IN");
+}
+
+const API_BASE = window.SWADRA_API_BASE || "";
+
+/* =====================================================
+   AUTO LOAD LAST ORDER
+===================================================== */
+window.onload = function(){
+
+  let last = localStorage.getItem("currentOrderId");
+
+  if(last){
+    document.getElementById("orderId").value = last;
+    trackOrder();
+  }
+};
+
+/* =====================================================
+   FIND ORDER FROM USER HISTORY
+===================================================== */
+function findUserOrder(id){
+
+  let currentUser = getCurrentUser();
+
+  if(!currentUser){
+    return null;
+  }
+
+  let users = getUsers();
+
+  let userOrders =
+    users[currentUser]?.orders || [];
+
+  let found =
+    userOrders.find(o => o.id === id);
+
+  if(found){
+    return found;
+  }
+
+  /* legacy fallback */
+  let legacyOrders =
+    JSON.parse(localStorage.getItem("orders")) || [];
+
+  return legacyOrders.find(o => o.id === id);
+}
+
+async function fetchBackendOrder(id){
+  try{
+    const response = await fetch(`${API_BASE}/api/orders/${encodeURIComponent(id)}`, { cache:"no-store" });
+    const data = await response.json();
+    if(!response.ok || !data.ok) throw new Error(data.error || "Order not found");
+    return data.order;
+  }catch(error){
+    return null;
+  }
+}
+
+/* =====================================================
+   TRACK ORDER
+===================================================== */
+async function trackOrder(){
+
+  let id =
+    document.getElementById("orderId").value.trim();
+
+  let order = await fetchBackendOrder(id) || findUserOrder(id);
+
+  if(!order){
+    document.getElementById("result").innerHTML = `
+      <div class="empty">
+        <h3>Order not found</h3>
+        <p>Please check your Order ID.</p>
+      </div>
+    `;
+    return;
+  }
+
+  /* status map */
+  let steps = [
+    "placed",
+    "confirmed",
+    "packed",
+    "shipped",
+    "out_for_delivery",
+    "delivered"
+  ];
+
+  let labels = [
+    "Placed",
+    "Confirmed",
+    "Packed",
+    "Shipped",
+    "Out for Delivery",
+    "Delivered"
+  ];
+
+  /* current order status support */
+  let statusText =
+    (order.status || "").toLowerCase();
+
+  let currentIndex = 1; // default confirmed
+
+  if(statusText.includes("placed")) currentIndex = 0;
+  else if(statusText.includes("confirmed")) currentIndex = 1;
+  else if(statusText.includes("packed")) currentIndex = 2;
+  else if(statusText.includes("shipped")) currentIndex = 3;
+  else if(statusText.includes("out")) currentIndex = 4;
+  else if(statusText.includes("delivered")) currentIndex = 5;
+
+  if(statusText.includes("cancel")){
+    document.getElementById("result").innerHTML = `
+      <h3>Order ID: ${safe(order.id)}</h3>
+      <div class="empty">
+        <h3>Order Cancelled</h3>
+        <p>This order has been cancelled and will not be dispatched.</p>
+        ${order.refundStatus ? `<p><b>Refund Status:</b> ${safe(order.refundStatus)}</p>` : ""}
+        ${order.refundAmount ? `<p><b>Refund Amount:</b> â‚¹${safe(order.refundAmount)}</p>` : ""}
+        ${order.refundDate ? `<p><b>Refund Date:</b> ${safe(order.refundDate)}</p>` : ""}
+        ${order.refundMessage ? `<p>${safe(order.refundMessage)}</p>` : ""}
+      </div>
+      <div class="items-box">
+        <h3>Ordered Items</h3>
+        ${(order.items || order.products || []).map(item=>`<div>${safe(item.name)} Ã— ${safe(item.qty)}</div>`).join("")}
+      </div>
+    `;
+    return;
+  }
+
+  /* BUILD UI */
+  let html = `
+    <h3>Order ID: ${safe(order.id)}</h3>
+    <p><b>Status:</b> ${labels[currentIndex]}</p>
+
+    <div class="progress">
+  `;
+
+  steps.forEach((step,i)=>{
+
+    let active =
+      i <= currentIndex ? "active" : "";
+
+    html += `
+      <div class="step ${active}">
+        <div class="circle">${i+1}</div>
+        <div class="label">${labels[i]}</div>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+
+  /* items */
+  html += `
+    <div class="items-box">
+      <h3>Ordered Items</h3>
+  `;
+
+  (order.items || order.products || []).forEach(item=>{
+    html += `
+      <div>
+        ${safe(item.name)} Ã— ${safe(item.qty)}
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+
+  /* shipping */
+  let shipping = order.shipping || {};
+
+  html += `
+    <div class="info">
+      <p><b>Transaction ID:</b> ${safe(order.payment_id)}</p>
+      <p><b>Total Paid:</b> â‚¹${safe(order.total)}</p>
+      <p><b>Date:</b> ${safe(order.date)}</p>
+      <p><b>Name:</b> ${safe(shipping.name)}</p>
+      <p><b>Phone:</b> ${safe(shipping.phone)}</p>
+      <p><b>Address:</b> 
+        ${safe(shipping.house)} 
+        ${safe(shipping.area)} 
+        ${safe(shipping.city)} 
+        ${safe(shipping.state)}
+      </p>
+    </div>
+  `;
+
+  document.getElementById("result").innerHTML = html;
+  await loadShiprocketTracking(order);
+}
+
+function pickShiprocketShipment(data){
+  const root = data?.shiprocket || data || {};
+  if(Array.isArray(root.tracking_data?.shipment_track)) return root.tracking_data.shipment_track[0] || {};
+  if(Array.isArray(root.tracking_data?.shipment_track_activities)) return { activities: root.tracking_data.shipment_track_activities };
+  if(Array.isArray(root.shipment_track)) return root.shipment_track[0] || {};
+  if(Array.isArray(root.data?.shipment_track)) return root.data.shipment_track[0] || {};
+  return root.tracking_data || root.data || root;
+}
+
+function pickShiprocketActivities(data){
+  const root = data?.shiprocket || data || {};
+  return root.tracking_data?.shipment_track_activities
+    || root.data?.shipment_track_activities
+    || root.shipment_track_activities
+    || pickShiprocketShipment(data).activities
+    || [];
+}
+
+async function loadShiprocketTracking(order){
+  const awb = String(order.trackingId || order.awb || order.awbCode || "").trim();
+  const result = document.getElementById("result");
+  if(!result) return;
+
+  if(!awb){
+    result.insertAdjacentHTML("beforeend", `<div class="live-box"><h3>Live Courier Tracking</h3><p class="muted">AWB / tracking ID is not added to this order yet. Add Shiprocket AWB in the order record to enable auto tracking.</p></div>`);
+    return;
+  }
+
+  result.insertAdjacentHTML("beforeend", `<div class="live-box" id="shiprocketLiveBox"><h3>Live Courier Tracking</h3><p class="muted">Fetching Shiprocket tracking...</p></div>`);
+
+  try{
+    const response = await fetch(`${API_BASE}/api/shiprocket/track/${encodeURIComponent(awb)}`);
+    const data = await response.json();
+    const box = document.getElementById("shiprocketLiveBox");
+    if(!box) return;
+
+    if(!response.ok || !data.ok){
+      box.innerHTML = `<h3>Live Courier Tracking</h3><p>${safe(data.error) || "Tracking is not available right now."}</p><p class="muted">AWB: ${safe(awb)}</p>`;
+      return;
+    }
+
+    const shipment = pickShiprocketShipment(data);
+    const activities = pickShiprocketActivities(data).slice(0, 5);
+    const status = shipment.current_status || shipment.shipment_status || shipment.status || "Tracking updated";
+    const courier = shipment.courier_name || shipment.courier || order.courierName || "Shiprocket";
+    const eta = shipment.edd || shipment.expected_delivery_date || shipment.estimated_delivery_date || "";
+    const activityHtml = activities.length ? activities.map(item=>`
+      <div style="border-top:1px solid #dcecff;padding-top:8px;margin-top:8px;">
+        <strong>${safe(item.activity || item.status || item.remark || "Update")}</strong><br>
+        <span class="muted">${safe(item.date || item.datetime || item.scan_date)} ${safe(item.location)}</span>
+      </div>
+    `).join("") : `<p class="muted">No activity log received yet.</p>`;
+
+    box.innerHTML = `
+      <h3>Live Courier Tracking</h3>
+      <p><b>Status:</b> ${safe(status)}</p>
+      <p><b>Courier:</b> ${safe(courier)}</p>
+      <p><b>AWB:</b> ${safe(awb)}</p>
+      ${eta ? `<p><b>Expected delivery:</b> ${safe(eta)}</p>` : ""}
+      ${activityHtml}
+    `;
+  }catch(error){
+    const box = document.getElementById("shiprocketLiveBox");
+    if(box){
+      box.innerHTML = `<h3>Live Courier Tracking</h3><p>Backend server is offline or Shiprocket could not be reached.</p><p class="muted">${safe(error.message)}</p>`;
+    }
+  }
+}
+
+</script>
+
+</body>
+</html>
+
+
+
+
+
+

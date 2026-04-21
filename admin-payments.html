@@ -1,0 +1,767 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swadra Organics - Admin Payments</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root{
+      --primary:#7a3d3d;
+      --primary-dark:#5f2f2f;
+      --bg:#f8f5f2;
+      --card:#ffffff;
+      --text:#1f1f1f;
+      --muted:#6c6c6c;
+      --line:#e7dfd7;
+      --success:#137a43;
+      --warn:#b36b00;
+      --danger:#c62828;
+      --shadow:0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .wrap{
+      width:min(100%, 1880px);
+      margin:0 auto;
+      padding:20px 24px 28px;
+    }
+
+    .topbar{
+      background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+      color:#fff;
+      padding:24px 28px;
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      margin-bottom:18px;
+    }
+
+    .topbar h1{
+      margin:0;
+      font-size:30px;
+      line-height:1.2;
+    }
+
+    .topbar p{
+      margin:8px 0 0;
+      opacity:0.92;
+      font-size:15px;
+      line-height:1.6;
+    }
+
+    .toolbar{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+
+    button, .toolbar a{
+      border:none;
+      outline:none;
+      cursor:pointer;
+      border-radius:12px;
+      padding:12px 18px;
+      font-size:14px;
+      font-weight:700;
+      transition:0.2s ease;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .btn-primary{ background:var(--primary); color:#fff; }
+    .btn-primary:hover{ background:var(--primary-dark); }
+    .btn-secondary{ background:#1d6d5c; color:#fff; }
+    .btn-dark{ background:#333; color:#fff; }
+    .btn-danger{ background:var(--danger); color:#fff; }
+    .btn-light{ background:#eee7df; color:#3a2b2b; }
+
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:14px;
+      margin-bottom:18px;
+    }
+
+    .stat-card{
+      background:var(--card);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+
+    .stat-card .label{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    .stat-card .value{
+      font-size:28px;
+      font-weight:800;
+      margin-top:8px;
+      color:var(--primary);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:380px minmax(0,1fr);
+      gap:18px;
+      align-items:start;
+    }
+
+    .panel{
+      background:var(--card);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:22px 24px;
+      width:100%;
+    }
+
+    .panel h2{
+      margin:0 0 14px;
+      font-size:24px;
+    }
+
+    .product-form{
+      display:grid;
+      gap:16px;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px;
+    }
+
+    .row.one{ grid-template-columns:1fr; }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .field label{
+      font-size:13px;
+      font-weight:700;
+      color:#3b2a2a;
+    }
+
+    .field input, .field select{
+      width:100%;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:12px;
+      padding:12px 13px;
+      font-size:14px;
+      color:var(--text);
+      outline:none;
+    }
+
+    .field input:focus, .field select:focus{
+      border-color:var(--primary);
+      box-shadow:0 0 0 3px rgba(122,61,61,0.10);
+    }
+
+    .summary-box{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:12px;
+      margin-top:4px;
+    }
+
+    .summary-card{
+      background:#fbf8f5;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+    }
+
+    .summary-card .label{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+      font-weight:700;
+    }
+
+    .summary-card .value{
+      font-size:24px;
+      font-weight:800;
+      color:#222;
+    }
+
+    .summary-card.green .value{ color:var(--success); }
+    .summary-card.gold .value{ color:var(--warn); }
+    .summary-card.red .value{ color:var(--danger); }
+
+    .hint{
+      font-size:12px;
+      color:#7d7268;
+      line-height:1.6;
+    }
+
+    .payments-list{
+      display:grid;
+      gap:14px;
+      max-height:calc(100vh - 250px);
+      overflow:auto;
+      padding-right:4px;
+    }
+
+    .payment-card{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fffdfa;
+      padding:16px;
+      display:grid;
+      gap:12px;
+    }
+
+    .payment-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .payment-head h3{
+      margin:0;
+      font-size:20px;
+      line-height:1.3;
+    }
+
+    .badge-wrap{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:6px;
+    }
+
+    .badge{
+      padding:7px 11px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      background:#f2ebe4;
+      color:#433;
+    }
+
+    .badge.green{ background:#e7f5ec; color:var(--success); }
+    .badge.red{ background:#fdeceb; color:var(--danger); }
+    .badge.gold{ background:#fff3dc; color:var(--warn); }
+
+    .card-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+    }
+
+    .mini{
+      background:#faf6f2;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
+
+    .mini .k{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+      margin-bottom:5px;
+    }
+
+    .mini .v{
+      font-size:16px;
+      font-weight:800;
+      word-break:break-word;
+    }
+
+    .card-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .empty{
+      padding:20px;
+      border:1px dashed #d8cdc2;
+      border-radius:16px;
+      color:var(--muted);
+      text-align:center;
+      background:#fffdfa;
+    }
+
+    .small-note{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.6;
+      margin-top:6px;
+    }
+
+    @media (max-width:1200px){
+      .stats-grid{ grid-template-columns:repeat(2,1fr); }
+      .grid{ grid-template-columns:1fr; }
+    }
+
+    @media (max-width:900px){
+      .row, .summary-box, .card-grid{
+        grid-template-columns:repeat(2,1fr);
+      }
+    }
+
+    @media (max-width:600px){
+      .row, .summary-box, .card-grid, .stats-grid{
+        grid-template-columns:1fr;
+      }
+      .topbar h1{ font-size:24px; }
+      .wrap{ padding:16px; }
+    }
+  </style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+<body>
+<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
+  <div class="wrap">
+    <div class="topbar">
+      <h1>Swadra Organics Admin Payments</h1>
+      <p>Yahan payment records, order-linked payments aur review status manage kar sakte ho. Search, filter aur review toggle working hain.</p>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-primary" onclick="refreshPayments()">Refresh Payments</button>
+      <button class="btn-secondary" onclick="clearFilters()">Clear Filters</button>
+      <a class="btn-dark" href="payment.html">Open Payment Page</a>
+      <a class="btn-light" href="invoice.html">Open Invoice</a>
+      <a class="btn-light" href="admin-index.html">Back to Admin</a>
+    </div>
+
+    <div class="stats-grid" id="paymentStats"></div>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>Payment Filters</h2>
+
+        <div class="product-form">
+          <div class="row one">
+            <div class="field">
+              <label>Search Payment</label>
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="Search by order id, payment id, name, email or mobile"
+                oninput="renderPayments()"
+              >
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Payment Status</label>
+              <select id="statusFilter" onchange="renderPayments()">
+                <option value="all">All</option>
+                <option value="paid">Paid</option>
+                <option value="pending">Pending</option>
+                <option value="failed">Failed</option>
+                <option value="cod">COD</option>
+                <option value="unknown">Unknown</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Review Status</label>
+              <select id="reviewFilter" onchange="renderPayments()">
+                <option value="all">All</option>
+                <option value="reviewed">Reviewed</option>
+                <option value="unreviewed">Unreviewed</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="summary-box">
+            <div class="summary-card">
+              <div class="label">Visible Records</div>
+              <div class="value" id="visiblePaymentsView">0</div>
+            </div>
+            <div class="summary-card green">
+              <div class="label">Paid Amount</div>
+              <div class="value" id="paidAmountView">â‚¹0</div>
+            </div>
+            <div class="summary-card gold">
+              <div class="label">Pending Amount</div>
+              <div class="value" id="pendingAmountView">â‚¹0</div>
+            </div>
+            <div class="summary-card red">
+              <div class="label">Reviewed</div>
+              <div class="value" id="reviewedPaymentsView">0</div>
+            </div>
+          </div>
+
+          <div class="hint">
+            Page common payment and order storage keys read karta hai.<br>
+            Reviewed status alag localStorage map me save hota hai, original payment data break nahi hota.<br>
+            Agar order/payment data localStorage me save ho raha hai to yahan auto show hoga.
+          </div>
+
+          <div class="small-note">
+            Keys checked: <b>payments, adminPayments, swadraPayments, orders, adminOrders, swadraOrders, customerOrders, allOrders</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Saved Payments</h2>
+        <div class="payments-list" id="paymentsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PAYMENT_SOURCE_KEYS = [
+      "payments",
+      "adminPayments",
+      "swadraPayments",
+      "orders",
+      "adminOrders",
+      "swadraOrders",
+      "customerOrders",
+      "allOrders"
+    ];
+
+    const PAYMENT_REVIEW_KEY = "adminPaymentReviewMap";
+
+    function safeJsonParse(value, fallback){
+      try{
+        const parsed = JSON.parse(value);
+        return parsed ?? fallback;
+      }catch(error){
+        return fallback;
+      }
+    }
+
+    function rupee(value){
+      return "â‚¹" + Number(value || 0).toFixed(0);
+    }
+
+    function escapeHtml(str){
+      return String(str || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function normalizeText(value){
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function getValueByPossibleKeys(obj, keys){
+      for(const key of keys){
+        if(obj && obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== ""){
+          return obj[key];
+        }
+      }
+      return "";
+    }
+
+    function getReviewMap(){
+      return safeJsonParse(localStorage.getItem(PAYMENT_REVIEW_KEY), {});
+    }
+
+    function setReviewMap(map){
+      localStorage.setItem(PAYMENT_REVIEW_KEY, JSON.stringify(map || {}));
+    }
+
+    function normalizeStatus(raw){
+      const value = normalizeText(raw);
+      if(!value) return "unknown";
+      if(value.includes("paid") || value.includes("success") || value.includes("completed")) return "paid";
+      if(value.includes("pending") || value.includes("processing")) return "pending";
+      if(value.includes("fail") || value.includes("cancel")) return "failed";
+      if(value.includes("cod") || value.includes("cash")) return "cod";
+      return value;
+    }
+
+    function parseAnyDate(value){
+      if(!value) return null;
+      const date = new Date(value);
+      if(!isNaN(date.getTime())) return date;
+
+      const secondTry = new Date(String(value).replace(/,/g, ""));
+      if(!isNaN(secondTry.getTime())) return secondTry;
+
+      return null;
+    }
+
+    function buildPaymentId(raw, sourceKey, index){
+      const directId = getValueByPossibleKeys(raw, ["paymentId","id","txnId","transactionId","razorpayPaymentId"]);
+      const orderId = getValueByPossibleKeys(raw, ["orderId","orderID","invoiceId"]);
+      const email = getValueByPossibleKeys(raw, ["email","emailId"]);
+      return String(directId || orderId || `${sourceKey}_${email || "record"}_${index}`);
+    }
+
+    function extractAmount(raw){
+      const directAmount = Number(getValueByPossibleKeys(raw, ["amount","totalAmount","paidAmount","grandTotal","paymentAmount"]));
+      if(directAmount > 0) return directAmount;
+
+      const items = raw.items || raw.products || raw.cartItems || [];
+      if(Array.isArray(items) && items.length){
+        return items.reduce((sum, item) => {
+          const price = Number(getValueByPossibleKeys(item, ["price","sellingPrice","amount"])) || 0;
+          const qty = Number(getValueByPossibleKeys(item, ["quantity","qty","count"])) || 1;
+          return sum + (price * qty);
+        }, 0);
+      }
+
+      return 0;
+    }
+
+    function normalizePayment(raw, sourceKey, index){
+      const reviewMap = getReviewMap();
+      const id = buildPaymentId(raw, sourceKey, index);
+      const orderId = String(getValueByPossibleKeys(raw, ["orderId","orderID","invoiceId","order_id"])).trim();
+      const paymentId = String(getValueByPossibleKeys(raw, ["paymentId","txnId","transactionId","razorpayPaymentId","id"])).trim() || id;
+      const customerName = String(getValueByPossibleKeys(raw, ["name","customerName","fullName","username"])).trim() || "Unknown Customer";
+      const email = String(getValueByPossibleKeys(raw, ["email","emailId","mail"])).trim();
+      const mobile = String(getValueByPossibleKeys(raw, ["mobile","phone","phoneNumber","mobileNumber","contactNumber"])).trim();
+      const method = String(getValueByPossibleKeys(raw, ["paymentMethod","method","mode"])).trim() || "Unknown";
+      const status = normalizeStatus(getValueByPossibleKeys(raw, ["paymentStatus","status","payment_state"]));
+      const amount = extractAmount(raw);
+      const dateRaw = getValueByPossibleKeys(raw, ["createdAt","date","orderedAt","timestamp","time","paidAt"]);
+      const date = parseAnyDate(dateRaw);
+      const reviewed = Boolean(reviewMap[id]);
+
+      return {
+        id,
+        sourceKey,
+        orderId,
+        paymentId,
+        customerName,
+        email,
+        mobile,
+        method,
+        status,
+        amount,
+        reviewed,
+        dateLabel: date ? date.toLocaleString("en-IN") : "-",
+        searchText: [
+          id,
+          orderId,
+          paymentId,
+          customerName,
+          email,
+          mobile,
+          method,
+          status
+        ].join(" ").toLowerCase()
+      };
+    }
+
+    function getPaymentsFromStorage(){
+      const merged = [];
+      const seen = new Set();
+
+      PAYMENT_SOURCE_KEYS.forEach((key) => {
+        const parsed = safeJsonParse(localStorage.getItem(key), []);
+        if(!Array.isArray(parsed)) return;
+
+        parsed.forEach((item, index) => {
+          if(!item || typeof item !== "object") return;
+
+          const normalized = normalizePayment(item, key, index);
+          const dedupeKey = [normalized.paymentId, normalized.orderId, normalized.amount].join("|");
+          if(seen.has(dedupeKey)) return;
+          seen.add(dedupeKey);
+          merged.push(normalized);
+        });
+      });
+
+      return merged;
+    }
+
+    function getFilteredPayments(){
+      const payments = getPaymentsFromStorage();
+      const query = normalizeText(document.getElementById("searchInput").value);
+      const statusFilter = document.getElementById("statusFilter").value;
+      const reviewFilter = document.getElementById("reviewFilter").value;
+
+      return payments.filter((payment) => {
+        const queryMatch = !query || payment.searchText.includes(query);
+        const statusMatch = statusFilter === "all" || payment.status === statusFilter;
+        const reviewMatch =
+          reviewFilter === "all" ||
+          (reviewFilter === "reviewed" && payment.reviewed) ||
+          (reviewFilter === "unreviewed" && !payment.reviewed);
+
+        return queryMatch && statusMatch && reviewMatch;
+      });
+    }
+
+    function renderStats(allPayments, visiblePayments){
+      const totalPaid = allPayments
+        .filter(item => item.status === "paid")
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+      const totalPending = allPayments
+        .filter(item => item.status === "pending")
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+      const reviewedCount = allPayments.filter(item => item.reviewed).length;
+      const failedCount = allPayments.filter(item => item.status === "failed").length;
+
+      document.getElementById("paymentStats").innerHTML = `
+        <div class="stat-card">
+          <div class="label">Total Records</div>
+          <div class="value">${allPayments.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Paid Amount</div>
+          <div class="value">${rupee(totalPaid)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Pending Amount</div>
+          <div class="value">${rupee(totalPending)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Failed Records</div>
+          <div class="value">${failedCount}</div>
+        </div>
+      `;
+
+      document.getElementById("visiblePaymentsView").textContent = visiblePayments.length;
+      document.getElementById("paidAmountView").textContent = rupee(
+        visiblePayments
+          .filter(item => item.status === "paid")
+          .reduce((sum, item) => sum + Number(item.amount || 0), 0)
+      );
+      document.getElementById("pendingAmountView").textContent = rupee(
+        visiblePayments
+          .filter(item => item.status === "pending")
+          .reduce((sum, item) => sum + Number(item.amount || 0), 0)
+      );
+      document.getElementById("reviewedPaymentsView").textContent = reviewedCount;
+    }
+
+    function renderPayments(){
+      const allPayments = getPaymentsFromStorage();
+      const payments = getFilteredPayments();
+      const paymentsList = document.getElementById("paymentsList");
+
+      renderStats(allPayments, payments);
+
+      if(!payments.length){
+        paymentsList.innerHTML = `<div class="empty">No payment records found.</div>`;
+        return;
+      }
+
+      paymentsList.innerHTML = payments.map((payment) => {
+        const statusClass =
+          payment.status === "paid" ? "green" :
+          payment.status === "pending" ? "gold" :
+          payment.status === "failed" ? "red" : "";
+
+        return `
+          <div class="payment-card">
+            <div class="payment-head">
+              <div>
+                <h3>${escapeHtml(payment.customerName)}</h3>
+                <div class="badge-wrap">
+                  <span class="badge ${statusClass}">${escapeHtml(payment.status)}</span>
+                  <span class="badge">${payment.reviewed ? "Reviewed" : "Unreviewed"}</span>
+                  <span class="badge gold">Method: ${escapeHtml(payment.method)}</span>
+                </div>
+              </div>
+              <div class="badge-wrap">
+                <span class="badge green">Amount: ${rupee(payment.amount)}</span>
+              </div>
+            </div>
+
+            <div class="card-grid">
+              <div class="mini">
+                <div class="k">Order ID</div>
+                <div class="v">${escapeHtml(payment.orderId || "-")}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Payment ID</div>
+                <div class="v">${escapeHtml(payment.paymentId || "-")}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Email</div>
+                <div class="v">${escapeHtml(payment.email || "-")}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Mobile</div>
+                <div class="v">${escapeHtml(payment.mobile || "-")}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Date</div>
+                <div class="v">${escapeHtml(payment.dateLabel || "-")}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Source</div>
+                <div class="v">${escapeHtml(payment.sourceKey || "-")}</div>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <button
+                class="${payment.reviewed ? 'btn-dark' : 'btn-secondary'}"
+                onclick="toggleReviewed('${escapeHtml(payment.id)}')"
+              >
+                ${payment.reviewed ? "Mark Unreviewed" : "Mark Reviewed"}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function toggleReviewed(paymentId){
+      const reviewMap = getReviewMap();
+      reviewMap[paymentId] = !reviewMap[paymentId];
+
+      if(!reviewMap[paymentId]){
+        delete reviewMap[paymentId];
+      }
+
+      setReviewMap(reviewMap);
+      renderPayments();
+    }
+
+    function clearFilters(){
+      document.getElementById("searchInput").value = "";
+      document.getElementById("statusFilter").value = "all";
+      document.getElementById("reviewFilter").value = "all";
+      renderPayments();
+    }
+
+    function refreshPayments(){
+      renderPayments();
+    }
+
+    window.addEventListener("storage", function(event){
+      if(PAYMENT_SOURCE_KEYS.includes(event.key) || event.key === PAYMENT_REVIEW_KEY){
+        renderPayments();
+      }
+    });
+
+    renderPayments();
+  </script>
+</body>
+</html>
+
+
+
+
+

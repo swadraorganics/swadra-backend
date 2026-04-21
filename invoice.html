@@ -1,0 +1,198 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice</title>
+
+<link rel="stylesheet" href="invoice.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>html,body{background:#f1e3e3 !important;}</style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+
+<body>
+
+<!-- BRAND HEADER -->
+<div class="brand">
+Swadra Organics
+</div>
+
+<div class="tagline">
+Choose Healthy â€¢ Be Swadra Family
+</div>
+
+<div class="main" id="invoice">
+
+<h2>Tax Invoice</h2>
+
+<p><strong>Order ID:</strong> <span id="orderId"></span></p>
+<p><strong>Date:</strong> <span id="date"></span></p>
+
+<!-- ADDRESS -->
+<div class="address-section">
+
+<div>
+<h4>Billing Address</h4>
+<p id="billingName"></p>
+<p id="billingAddress"></p>
+<p id="billingPhone"></p>
+</div>
+
+<div>
+<h4>Delivery Address</h4>
+<p id="deliveryName"></p>
+<p id="deliveryAddress"></p>
+<p id="deliveryPhone"></p>
+</div>
+
+</div>
+
+<hr>
+
+<h3>Order Summary</h3>
+<div id="items"></div>
+
+<hr>
+
+<!-- GST BREAKDOWN -->
+<div class="price-box">
+
+<p>Subtotal: â‚¹<span id="subtotal"></span></p>
+
+<p>CGST (2.5%): â‚¹<span id="cgst"></span></p>
+<p>SGST (2.5%): â‚¹<span id="sgst"></span></p>
+
+<p>Delivery: â‚¹<span id="delivery"></span></p>
+<p>Discount: â‚¹<span id="discount"></span></p>
+
+<h3>Total: â‚¹<span id="total"></span></h3>
+
+</div>
+
+<hr>
+
+<div class="payment-info">
+<h4>Payment Method</h4>
+<p>UPI Payment</p>
+
+<h4>Status</h4>
+<p class="paid">Paid âœ…</p>
+</div>
+
+<div class="actions">
+<button onclick="downloadPDF()">Download Invoice</button>
+<button onclick="shareWhatsApp()">Share on WhatsApp</button>
+</div>
+
+</div>
+
+<script>
+
+function loadInvoice(){
+
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+let subtotal = Number(localStorage.getItem("subtotal")) || 0;
+let discount = Number(localStorage.getItem("discount")) || 0;
+let delivery = Number(localStorage.getItem("delivery")) || 0;
+
+// âœ… GST CALCULATION (5%)
+let gstTotal = Number(localStorage.getItem("gstTotal")) || 0;
+
+let cgst = gstTotal / 2;
+let sgst = gstTotal / 2;
+
+let total = subtotal + delivery - discount;
+
+// ORDER ID
+let orderId = "SWO-" + Math.floor(100000 + Math.random() * 900000);
+document.getElementById("orderId").innerText = orderId;
+
+// DATE
+document.getElementById("date").innerText = new Date().toLocaleDateString();
+
+
+// ADDRESS
+let name = localStorage.getItem("name") || "Customer Name";
+let email = localStorage.getItem("email") || "Email not provided";
+let phone = localStorage.getItem("phone") || "Phone not provided";
+let address = localStorage.getItem("address") || "Address not provided";
+
+document.getElementById("billingName").innerText = name + " (" + email + ")";
+document.getElementById("billingAddress").innerText = address;
+document.getElementById("billingPhone").innerText = phone;
+
+document.getElementById("deliveryName").innerText = name;
+document.getElementById("deliveryAddress").innerText = address;
+document.getElementById("deliveryPhone").innerText = phone;
+
+// ITEMS
+let itemsDiv = document.getElementById("items");
+itemsDiv.innerHTML = "";
+
+cart.forEach(item=>{
+itemsDiv.innerHTML += `
+<div class="item">
+<span>${item.name}</span>
+<span>â‚¹${item.price} Ã— ${item.qty}</span>
+</div>
+`;
+});
+
+// UPDATE
+document.getElementById("subtotal").innerText = subtotal.toFixed(0);
+document.getElementById("cgst").innerText = cgst.toFixed(0);
+document.getElementById("sgst").innerText = sgst.toFixed(0);
+document.getElementById("delivery").innerText = delivery;
+document.getElementById("discount").innerText = discount;
+document.getElementById("total").innerText = total.toFixed(0);
+
+}
+
+// PDF
+function downloadPDF(){
+html2pdf().from(document.getElementById("invoice")).save("invoice.pdf");
+}
+
+function shareWhatsApp(){
+
+let phone = localStorage.getItem("phone") || "";
+let name = localStorage.getItem("name") || "Customer";
+
+let total = document.getElementById("total").innerText;
+
+// format number (India)
+if(phone.startsWith("0")) phone = phone.slice(1);
+if(!phone.startsWith("91")) phone = "91" + phone;
+
+// message
+let message = `Hello ${name},
+
+ðŸ§¾ Your Swadra Organics Order Invoice
+
+Total Amount: â‚¹${total}
+
+Please find your invoice attached.
+
+Thank you for shopping with us ðŸŒ¿`;
+
+// open WhatsApp
+let url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+window.open(url, "_blank");
+}
+
+window.onload = loadInvoice;
+
+</script>
+
+</body>
+</html>
+
+
+
+
+

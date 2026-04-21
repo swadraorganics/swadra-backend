@@ -1,0 +1,670 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swadra Organics - Admin Coupons</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root{
+      --primary:#7a3d3d;
+      --primary-dark:#5f2f2f;
+      --bg:#f8f5f2;
+      --card:#ffffff;
+      --text:#1f1f1f;
+      --muted:#6c6c6c;
+      --line:#e7dfd7;
+      --success:#137a43;
+      --warn:#b36b00;
+      --danger:#c62828;
+      --shadow:0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .wrap{
+      width:min(100%, 1880px);
+      margin:0 auto;
+      padding:20px 24px 28px;
+    }
+
+    .topbar{
+      background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+      color:#fff;
+      padding:24px 28px;
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      margin-bottom:18px;
+    }
+
+    .topbar h1{
+      margin:0;
+      font-size:30px;
+      line-height:1.2;
+    }
+
+    .topbar p{
+      margin:8px 0 0;
+      opacity:0.92;
+      font-size:15px;
+    }
+
+    .toolbar{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+
+    button,
+    .toolbar a{
+      border:none;
+      outline:none;
+      cursor:pointer;
+      border-radius:12px;
+      padding:12px 18px;
+      font-size:14px;
+      font-weight:700;
+      transition:0.2s ease;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .btn-primary{ background:var(--primary); color:#fff; }
+    .btn-primary:hover{ background:var(--primary-dark); }
+    .btn-secondary{ background:#1d6d5c; color:#fff; }
+    .btn-dark{ background:#333; color:#fff; }
+    .btn-danger{ background:var(--danger); color:#fff; }
+    .btn-light{ background:#eee7df; color:#3a2b2b; }
+
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:14px;
+      margin-bottom:18px;
+    }
+
+    .stat-card{
+      background:var(--card);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+
+    .stat-card .label{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    .stat-card .value{
+      font-size:28px;
+      font-weight:800;
+      margin-top:8px;
+      color:var(--primary);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:420px minmax(0,1fr);
+      gap:18px;
+      align-items:start;
+    }
+
+    .panel{
+      background:var(--card);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:22px 24px;
+      width:100%;
+    }
+
+    .panel h2{
+      margin:0 0 14px;
+      font-size:24px;
+    }
+
+    .product-form{
+      display:grid;
+      gap:16px;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px;
+    }
+
+    .row.one{ grid-template-columns:1fr; }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .field label{
+      font-size:13px;
+      font-weight:700;
+      color:#3b2a2a;
+    }
+
+    .field input,
+    .field select{
+      width:100%;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:12px;
+      padding:12px 13px;
+      font-size:14px;
+      color:var(--text);
+      outline:none;
+    }
+
+    .field input:focus,
+    .field select:focus{
+      border-color:var(--primary);
+      box-shadow:0 0 0 3px rgba(122,61,61,0.10);
+    }
+
+    .section-title{
+      font-size:15px;
+      font-weight:800;
+      color:var(--primary);
+      margin-top:4px;
+      margin-bottom:2px;
+    }
+
+    .summary-box{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:12px;
+      margin-top:4px;
+    }
+
+    .summary-card{
+      background:#fbf8f5;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+    }
+
+    .summary-card .label{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+      font-weight:700;
+    }
+
+    .summary-card .value{
+      font-size:24px;
+      font-weight:800;
+      color:#222;
+    }
+
+    .summary-card.green .value{ color:var(--success); }
+    .summary-card.red .value{ color:var(--danger); }
+
+    .hint{
+      font-size:12px;
+      color:#7d7268;
+      line-height:1.5;
+    }
+
+    .coupon-list{
+      display:grid;
+      gap:14px;
+      max-height:calc(100vh - 250px);
+      overflow:auto;
+      padding-right:4px;
+    }
+
+    .coupon-card{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fffdfa;
+      padding:16px;
+      display:grid;
+      gap:12px;
+    }
+
+    .coupon-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .coupon-head h3{
+      margin:0;
+      font-size:20px;
+      line-height:1.3;
+      word-break:break-word;
+    }
+
+    .badge-wrap{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:6px;
+    }
+
+    .badge{
+      padding:7px 11px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      background:#f2ebe4;
+      color:#433;
+    }
+
+    .badge.green{ background:#e7f5ec; color:var(--success); }
+    .badge.red{ background:#fdeceb; color:var(--danger); }
+    .badge.gold{ background:#fff3dc; color:var(--warn); }
+
+    .card-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+    }
+
+    .mini{
+      background:#faf6f2;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
+
+    .mini .k{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+      margin-bottom:5px;
+    }
+
+    .mini .v{
+      font-size:16px;
+      font-weight:800;
+    }
+
+    .card-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .empty{
+      padding:20px;
+      border:1px dashed #d8cdc2;
+      border-radius:16px;
+      color:var(--muted);
+      text-align:center;
+      background:#fffdfa;
+    }
+
+    @media (max-width:1200px){
+      .stats-grid{ grid-template-columns:repeat(2,1fr); }
+      .grid{ grid-template-columns:1fr; }
+    }
+
+    @media (max-width:900px){
+      .row,
+      .summary-box,
+      .card-grid{ grid-template-columns:repeat(2,1fr); }
+    }
+
+    @media (max-width:600px){
+      .row,
+      .summary-box,
+      .card-grid,
+      .stats-grid{ grid-template-columns:1fr; }
+      .topbar h1{ font-size:24px; }
+    }
+  </style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+<body>
+<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
+  <div class="wrap">
+    <div class="topbar">
+      <h1>Swadra Organics Admin Coupons</h1>
+      <p>AI products page jaisa same premium layout rakha gaya hai. Coupon create, update, delete aur cart sync ke saare original functions working rahenge.</p>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-primary" onclick="saveCoupon()">Save Coupon</button>
+      <button class="btn-secondary" onclick="resetForm()">Clear Form</button>
+      <a class="btn-light" href="cart.html">Cart Preview</a>
+      <a class="btn-dark" href="admin-index.html">Back to Admin</a>
+    </div>
+
+    <div class="stats-grid" id="couponStats"></div>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>Coupon Editor</h2>
+
+        <div class="product-form">
+          <div class="row one">
+            <div class="field">
+              <label>Coupon Code</label>
+              <input id="couponCode" placeholder="Enter coupon code">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Discount Percentage</label>
+              <input id="couponDiscount" type="number" min="1" max="100" placeholder="Enter discount %" oninput="updateLivePreview()">
+            </div>
+            <div class="field">
+              <label>Minimum Cart Amount</label>
+              <input id="couponMinAmount" type="number" min="0" placeholder="Example: 999" oninput="updateLivePreview()">
+            </div>
+          </div>
+
+          <div class="row one">
+            <div class="field">
+              <label>Status</label>
+              <select id="couponStatus" onchange="updateLivePreview()">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="section-title">Coupon Summary</div>
+          <div class="summary-box">
+            <div class="summary-card">
+              <div class="label">Total Coupons</div>
+              <div class="value" id="totalCouponsView">0</div>
+            </div>
+            <div class="summary-card green">
+              <div class="label">Active Coupons</div>
+              <div class="value" id="activeCouponsView">0</div>
+            </div>
+            <div class="summary-card red">
+              <div class="label">Inactive Coupons</div>
+              <div class="value" id="inactiveCouponsView">0</div>
+            </div>
+            <div class="summary-card">
+              <div class="label">Current Discount</div>
+              <div class="value" id="currentDiscountView">0%</div>
+            </div>
+            <div class="summary-card">
+              <div class="label">Minimum Amount</div>
+              <div class="value" id="currentMinAmountView">â‚¹0</div>
+            </div>
+          </div>
+
+          <div class="hint">
+            Maximum 50 coupons allowed.<br>
+            Active coupon cart page par sync hota rahega.<br>
+            Same coupon code dubara save karne par update ho jayega.
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Saved Coupons</h2>
+        <div class="coupon-list" id="couponList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MAX_COUPONS = 50;
+    const COUPONS_API_URL = window.SWADRA_COUPONS_API_URL || "/api/coupons";
+    const RUPEE = "\u20b9";
+    let couponStore = [];
+
+    function getCoupons(){
+      return Array.isArray(couponStore) ? couponStore.slice(0, MAX_COUPONS) : [];
+    }
+
+    function setValue(id, value){
+      document.getElementById(id).value = value;
+    }
+
+    function escapeHtml(str){
+      return String(str || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function updateStats(coupons){
+      const activeCount = coupons.filter(function(coupon){
+        return coupon.status === "active";
+      }).length;
+      const inactiveCount = coupons.length - activeCount;
+
+      document.getElementById("couponStats").innerHTML = `
+        <div class="stat-card">
+          <div class="label">Total Coupons</div>
+          <div class="value">${coupons.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Active</div>
+          <div class="value">${activeCount}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Inactive</div>
+          <div class="value">${inactiveCount}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Usage Limit</div>
+          <div class="value">${coupons.length}/${MAX_COUPONS}</div>
+        </div>`;
+
+      document.getElementById("totalCouponsView").textContent = coupons.length;
+      document.getElementById("activeCouponsView").textContent = activeCount;
+      document.getElementById("inactiveCouponsView").textContent = inactiveCount;
+    }
+
+    function updateLivePreview(){
+      const discount = Number(document.getElementById("couponDiscount").value || 0);
+      const minimumAmount = Number(document.getElementById("couponMinAmount").value || 0);
+      document.getElementById("currentDiscountView").textContent = discount > 0 ? (discount + "%") : "0%";
+      document.getElementById("currentMinAmountView").textContent = RUPEE + Math.max(0, Math.round(minimumAmount)).toLocaleString("en-IN");
+    }
+
+    function resetForm(){
+      setValue("couponCode", "");
+      setValue("couponDiscount", "");
+      setValue("couponMinAmount", "");
+      setValue("couponStatus", "active");
+      updateLivePreview();
+    }
+
+    function renderCoupons(){
+      const couponList = document.getElementById("couponList");
+      const coupons = getCoupons();
+      updateStats(coupons);
+
+      if(!coupons.length){
+        couponList.innerHTML = '<div class="empty">Abhi tak koi coupon create nahi hua.</div>';
+        return;
+      }
+
+      couponList.innerHTML = coupons.map(function(coupon){
+        let createdLabel = coupon.createdAt ? new Date(coupon.createdAt).toLocaleString("en-IN") : "Just now";
+        let badgeClass = coupon.status === "inactive" ? "red" : "green";
+
+        return `
+          <div class="coupon-card">
+            <div class="coupon-head">
+              <div>
+                <h3>${escapeHtml(coupon.code)}</h3>
+                <div class="badge-wrap">
+                  <span class="badge ${badgeClass}">${escapeHtml(coupon.status)}</span>
+                  <span class="badge gold">${Number(coupon.discount || 0)}% Off</span>
+                  <span class="badge">Min ${RUPEE}${Math.round(Number(coupon.minimumAmount || 0)).toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+              <div class="badge-wrap">
+                <span class="badge">Created: ${escapeHtml(createdLabel)}</span>
+              </div>
+            </div>
+
+            <div class="card-grid">
+              <div class="mini">
+                <div class="k">Discount</div>
+                <div class="v">${Number(coupon.discount || 0)}%</div>
+              </div>
+              <div class="mini">
+                <div class="k">Status</div>
+                <div class="v">${escapeHtml(coupon.status)}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Minimum</div>
+                <div class="v">${RUPEE}${Math.round(Number(coupon.minimumAmount || 0)).toLocaleString("en-IN")}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Code</div>
+                <div class="v">${escapeHtml(coupon.code)}</div>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <button class="btn-primary" type="button" onclick="fillCouponForm('${coupon.id}')">Edit</button>
+              <button class="btn-danger" type="button" onclick="deleteCoupon('${coupon.id}')">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function saveCoupon(){
+      const couponCodeInput = document.getElementById("couponCode");
+      const couponDiscountInput = document.getElementById("couponDiscount");
+      const couponMinAmountInput = document.getElementById("couponMinAmount");
+      const couponStatusSelect = document.getElementById("couponStatus");
+      let code = String(couponCodeInput.value || "").trim().toUpperCase();
+      let discount = Number(couponDiscountInput.value);
+      let minimumAmount = Math.max(0, Math.round(Number(couponMinAmountInput.value || 0)));
+      let status = couponStatusSelect.value;
+
+      if(!code){
+        alert("Enter coupon code");
+        return;
+      }
+
+      if(!discount || discount <= 0 || discount > 100){
+        alert("Enter valid discount percentage between 1 and 100");
+        return;
+      }
+
+      let coupons = getCoupons();
+      let existingCoupon = coupons.find(function(coupon){
+        return String(coupon.code || "").trim().toUpperCase() === code;
+      }) || null;
+
+      if(!existingCoupon && coupons.length >= MAX_COUPONS){
+        alert("Maximum 50 coupons allowed");
+        return;
+      }
+      let nextCoupon = {
+        id: existingCoupon ? existingCoupon.id : "coupon_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+        code: code,
+        discount: discount,
+        minimumAmount: minimumAmount,
+        status: status,
+        createdAt: existingCoupon ? existingCoupon.createdAt : Date.now()
+      };
+      try{
+        const response = await fetch(COUPONS_API_URL,{
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body:JSON.stringify(nextCoupon)
+        });
+        const data = await response.json().catch(()=>({ ok:false }));
+        if(!response.ok || !data.ok){
+          throw new Error(data.error || "Failed to save coupon");
+        }
+        couponStore = Array.isArray(data.coupons) ? data.coupons : [];
+        renderCoupons();
+        resetForm();
+        alert(existingCoupon ? "Coupon updated successfully" : "Coupon saved successfully");
+      }catch(error){
+        alert(error.message || "Failed to save coupon");
+      }
+    }
+
+    function fillCouponForm(couponId){
+      let coupon = getCoupons().find(function(item){
+        return item.id === couponId;
+      });
+
+      if(!coupon){
+        return;
+      }
+
+      setValue("couponCode", coupon.code || "");
+      setValue("couponDiscount", coupon.discount || "");
+      setValue("couponMinAmount", coupon.minimumAmount || "");
+      setValue("couponStatus", coupon.status || "active");
+      updateLivePreview();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function deleteCoupon(couponId){
+      let coupons = getCoupons();
+      let coupon = coupons.find(function(item){
+        return item.id === couponId;
+      });
+
+      if(!coupon){
+        alert("Coupon not found");
+        return;
+      }
+
+      try{
+        const response = await fetch(`${COUPONS_API_URL}/${encodeURIComponent(coupon.code)}`,{ method:"DELETE" });
+        const data = await response.json().catch(()=>({ ok:false }));
+        if(!response.ok || !data.ok){
+          throw new Error(data.error || "Failed to delete coupon");
+        }
+        couponStore = Array.isArray(data.coupons) ? data.coupons : [];
+        renderCoupons();
+        if(String(document.getElementById("couponCode").value || "").trim().toUpperCase() === coupon.code){
+          resetForm();
+        }
+        alert("Coupon deleted successfully");
+      }catch(error){
+        alert(error.message || "Failed to delete coupon");
+      }
+    }
+
+    async function initCoupons(){
+      try{
+        const response = await fetch(COUPONS_API_URL,{ cache:"no-store" });
+        const data = await response.json().catch(()=>({ ok:false }));
+        couponStore = Array.isArray(data.coupons) ? data.coupons : [];
+      }catch(error){
+        couponStore = [];
+      }
+      renderCoupons();
+      updateLivePreview();
+    }
+
+    initCoupons();
+  </script>
+</body>
+</html>
+
+
+
+
+

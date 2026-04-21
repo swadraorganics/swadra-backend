@@ -1,0 +1,881 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swadra Organics - Admin Hub</title>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root{
+      --primary:#7a3d3d;
+      --primary-dark:#5f2f2f;
+      --bg:#f8f5f2;
+      --card:#ffffff;
+      --text:#1f1f1f;
+      --muted:#6c6c6c;
+      --line:#e7dfd7;
+      --success:#137a43;
+      --warn:#b36b00;
+      --danger:#c62828;
+      --shadow:0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .login-wrap{
+      position:fixed;
+      inset:0;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      background:var(--bg);
+      z-index:9999;
+      padding:20px;
+    }
+
+    .login-card{
+      width:min(100%, 440px);
+      background:var(--card);
+      border-radius:28px;
+      box-shadow:var(--shadow);
+      padding:34px 30px;
+      border:1px solid var(--line);
+    }
+
+    .login-card h2{
+      margin:0 0 10px;
+      font-size:30px;
+      color:var(--primary);
+    }
+
+    .login-card p{
+      margin:0 0 22px;
+      color:var(--muted);
+      line-height:1.6;
+      font-size:14px;
+    }
+
+    input, select, button{
+      width:100%;
+      padding:14px 15px;
+      border-radius:14px;
+      margin-bottom:14px;
+      font-size:14px;
+      outline:none;
+    }
+
+    input, select{
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--text);
+    }
+
+    input:focus, select:focus{
+      border-color:var(--primary);
+      box-shadow:0 0 0 3px rgba(122,61,61,0.10);
+    }
+
+    button{
+      border:none;
+      background:var(--primary);
+      color:#fff;
+      font-weight:800;
+      cursor:pointer;
+      transition:0.2s ease;
+    }
+
+    button:hover{
+      background:var(--primary-dark);
+    }
+
+    .app-shell{
+      display:none;
+      min-height:100vh;
+    }
+
+    .sidebar{
+      position:fixed;
+      left:0;
+      top:0;
+      width:290px;
+      height:100vh;
+      background:linear-gradient(180deg,var(--primary),var(--primary-dark));
+      padding:24px 18px;
+      color:#fff;
+      overflow:auto;
+      box-shadow:var(--shadow);
+    }
+
+    .brand-box{
+      background:rgba(255,255,255,0.10);
+      border:1px solid rgba(255,255,255,0.18);
+      border-radius:22px;
+      padding:18px 16px;
+      margin-bottom:18px;
+    }
+
+    .brand{
+      font-size:30px;
+      font-weight:800;
+      line-height:1.1;
+      margin-bottom:6px;
+    }
+
+    .brand-sub{
+      font-size:13px;
+      opacity:0.9;
+      line-height:1.5;
+    }
+
+    .sidebar button{
+      background:rgba(255,255,255,0.14);
+      text-align:left;
+      margin-bottom:12px;
+      border:1px solid rgba(255,255,255,0.08);
+    }
+
+    .sidebar button:hover{
+      background:#fff;
+      color:var(--primary);
+    }
+
+    .main{
+      margin-left:290px;
+      width:calc(100% - 290px);
+      padding:20px 24px 28px;
+    }
+
+    .topbar{
+      background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+      color:#fff;
+      padding:24px 28px;
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      margin-bottom:18px;
+    }
+
+    .topbar h1{
+      margin:0;
+      font-size:30px;
+      line-height:1.2;
+    }
+
+    .topbar p{
+      margin:8px 0 0;
+      opacity:0.92;
+      font-size:15px;
+      line-height:1.6;
+    }
+
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:14px;
+      margin-bottom:18px;
+    }
+
+    .stat-card{
+      background:var(--card);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+
+    .stat-card .label{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    .stat-card .value{
+      font-size:28px;
+      font-weight:800;
+      margin-top:8px;
+      color:var(--primary);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1.2fr 1fr;
+      gap:18px;
+      align-items:start;
+    }
+
+    .panel{
+      background:var(--card);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:22px 24px;
+      width:100%;
+    }
+
+    .panel h2{
+      margin:0 0 14px;
+      font-size:24px;
+      color:var(--text);
+    }
+
+    .muted{
+      color:var(--muted);
+      line-height:1.7;
+      font-size:15px;
+    }
+
+    .section-title{
+      font-size:15px;
+      font-weight:800;
+      color:var(--primary);
+      margin:18px 0 10px;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px;
+    }
+
+    .row.one{
+      grid-template-columns:1fr;
+    }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      margin-bottom:14px;
+    }
+
+    .field label{
+      font-size:13px;
+      font-weight:700;
+      color:#3b2a2a;
+    }
+
+    .summary-box{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:12px;
+      margin-top:8px;
+    }
+
+    .summary-card{
+      background:#fbf8f5;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+    }
+
+    .summary-card .label{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+      font-weight:700;
+    }
+
+    .summary-card .value{
+      font-size:22px;
+      font-weight:800;
+      color:#222;
+    }
+
+    .summary-card.green .value{ color:var(--success); }
+    .summary-card.red .value{ color:var(--danger); }
+
+    .coupon-box{
+      margin-top:0;
+      padding:0;
+      border:none;
+      background:transparent;
+      max-width:none;
+    }
+
+    .coupon-status{
+      margin-top:8px;
+      font-size:14px;
+      font-weight:700;
+      color:var(--success);
+      line-height:1.6;
+    }
+
+    .actions{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+
+    .actions button{
+      width:auto;
+      min-width:160px;
+      margin-bottom:0;
+      border-radius:12px;
+      padding:12px 18px;
+    }
+
+    .btn-dark{
+      background:#333;
+    }
+
+    .btn-dark:hover{
+      background:#111;
+    }
+
+    .hidden{
+      display:none;
+    }
+
+    @media (max-width:1200px){
+      .stats-grid{ grid-template-columns:repeat(2,1fr); }
+      .grid{ grid-template-columns:1fr; }
+    }
+
+    @media (max-width:980px){
+      .sidebar{
+        position:relative;
+        width:100%;
+        height:auto;
+      }
+
+      .main{
+        margin-left:0;
+        width:100%;
+      }
+
+      .app-shell{
+        display:block;
+      }
+    }
+
+    @media (max-width:700px){
+      .row,
+      .summary-box,
+      .stats-grid{
+        grid-template-columns:1fr;
+      }
+
+      .topbar h1,
+      .login-card h2{
+        font-size:24px;
+      }
+
+      .main{
+        padding:16px;
+      }
+    }
+  </style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+<body>
+<div class="admin-global-nav" id="adminGlobalNav" style="position:sticky;top:0;z-index:99999;display:none;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
+
+  <!-- LOGIN -->
+  <div class="login-wrap" id="adminLoginScreen">
+    <div class="login-card">
+      <h2>Admin Login</h2>
+      <p>Secure admin access for Swadra Organics control hub.</p>
+
+      <input id="adminBackendUrl" placeholder="Backend URL (e.g. https://your-backend.onrender.com)">
+      <input id="adminUser" placeholder="Username (admin)">
+      <input id="adminPass" type="password" placeholder="Password">
+      <button type="button" onclick="saveAdminBackendUrl()" style="background:#8f6b5b;">Save Backend URL</button>
+      <button onclick="loginAdmin()">Login</button>
+    </div>
+  </div>
+
+  <div class="app-shell" id="appShell">
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+      <div class="brand-box">
+        <div class="brand">Swadra Admin</div>
+        <div class="brand-sub">Central control panel for pages, products, coupons, orders and settings.</div>
+      </div>
+
+      <button onclick="goTo('admin-dashboard.html')">Dashboard</button>
+      <button onclick="goTo('admin-home.html')">Home Pages Controls</button>
+      <button onclick="goTo('admin-products.html')">Products</button>
+      <button onclick="goTo('backend/ai.html')">Products Control</button>
+      <button onclick="goTo('admin-orders.html')">Orders Control</button>
+      <button onclick="goTo('admin-customers.html')">Customers</button>
+      <button onclick="goTo('admin-payments.html')">Payments</button>
+      <button onclick="goTo('admin-coupons.html')">Coupons</button>
+      <button onclick="goTo('admin-profit.html')">Profit Tracker</button>
+      <button onclick="goTo('admin-extra.html')">Extra</button>
+      <button onclick="showSettings()">Settings</button>
+      <button onclick="logout()">Logout</button>
+      <button onclick="goToHome()">Home</button>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main" id="mainPanel">
+      <div class="topbar">
+        <h1>Swadra Admin Control Hub</h1>
+        <p>Sidebar se alag-alag backend sections open honge. Settings aur coupon control isi page par available hain, with upgraded AI-style layout.</p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">Admin Status</div>
+          <div class="value">Live</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Login Mode</div>
+          <div class="value">Secure</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Coupon Status</div>
+          <div class="value" id="couponStatusShort">None</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Discount</div>
+          <div class="value" id="couponDiscountShort">0%</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h2>Admin Overview</h2>
+          <p class="muted">
+            Yeh main admin hub page hai. Is page se aap admin sections open kar sakte ho,
+            credentials update kar sakte ho, aur quick coupon control bhi use kar sakte ho.
+          </p>
+
+          <div class="section-title">Quick Navigation</div>
+          <div class="actions">
+            <button onclick="goTo('admin-dashboard.html')">Open Dashboard</button>
+            <button onclick="goTo('admin-products.html')">Open Products</button>
+            <button class="btn-dark" onclick="goTo('admin-orders.html')">Open Orders</button>
+          </div>
+
+          <div class="section-title">Change Username & Password</div>
+          <div class="setting-box hidden" id="settingsBox">
+            <div class="row one">
+              <div class="field">
+                <label>New Username</label>
+                <input id="newUser" placeholder="New Username">
+              </div>
+            </div>
+
+            <div class="row one">
+              <div class="field">
+                <label>New Password</label>
+                <input id="newPass" placeholder="New Password">
+              </div>
+            </div>
+
+            <div class="actions">
+              <button onclick="sendOTP()">Send OTP</button>
+            </div>
+
+            <div class="row one" style="margin-top:14px;">
+              <div class="field">
+                <label>Enter OTP</label>
+                <input id="otpInput" placeholder="Enter OTP">
+              </div>
+            </div>
+
+            <div class="actions">
+              <button onclick="verifyOTP()">Save Changes</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Coupon Control</h2>
+
+          <div class="coupon-box">
+            <div class="row one">
+              <div class="field">
+                <label>Coupon Code</label>
+                <input id="couponCode" placeholder="Coupon Code">
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label>Discount Percentage</label>
+                <input id="couponDiscount" type="number" placeholder="Discount Percentage">
+              </div>
+              <div class="field">
+                <label>Status</label>
+                <select id="couponStatus">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="summary-box">
+              <div class="summary-card">
+                <div class="label">Current Code</div>
+                <div class="value" id="currentCouponCode">-</div>
+              </div>
+              <div class="summary-card green">
+                <div class="label">Current Discount</div>
+                <div class="value" id="currentCouponDiscount">0%</div>
+              </div>
+              <div class="summary-card red">
+                <div class="label">Current Status</div>
+                <div class="value" id="currentCouponState">Inactive</div>
+              </div>
+              <div class="summary-card">
+                <div class="label">Sync</div>
+                <div class="value">Cart</div>
+              </div>
+            </div>
+
+            <div class="actions" style="margin-top:18px;">
+              <button onclick="saveCoupon()">Save Coupon</button>
+              <button class="btn-dark" onclick="clearCoupon()">Clear Coupon</button>
+            </div>
+
+            <div class="coupon-status" id="couponStatusText">No admin coupon configured.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    emailjs.init("uqdnXG18txM1DBF6j");
+
+    const ADMIN_SESSION_KEY = "swadraAdminLoggedIn";
+    const ADMIN_CREDENTIALS_CACHE_KEY = "swadraAdminCredentials";
+    const ADMIN_BACKEND_STORAGE_KEY = "swadra_backend_panel_settings_v2";
+    let adminCouponCache = [];
+
+    function normalizeBackendUrl(url){
+      return String(url || "").trim().replace(/\/+$/, "");
+    }
+
+    function getSavedBackendUrl(){
+      try{
+        const parsed = JSON.parse(localStorage.getItem(ADMIN_BACKEND_STORAGE_KEY) || "{}");
+        return normalizeBackendUrl(parsed.backendUrl || "");
+      }catch(error){
+        return "";
+      }
+    }
+
+    function saveAdminBackendUrl(){
+      const backendUrl = normalizeBackendUrl((document.getElementById("adminBackendUrl") || {}).value || "");
+      if(!backendUrl){
+        alert("Backend URL enter karo");
+        return;
+      }
+      let parsed = {};
+      try{
+        parsed = JSON.parse(localStorage.getItem(ADMIN_BACKEND_STORAGE_KEY) || "{}");
+      }catch(error){}
+      parsed.backendUrl = backendUrl;
+      localStorage.setItem(ADMIN_BACKEND_STORAGE_KEY, JSON.stringify(parsed));
+      window.SWADRA_API_BASE = backendUrl;
+      alert("Backend URL saved: " + backendUrl);
+    }
+
+    function getApiBase(){
+      return normalizeBackendUrl(window.SWADRA_API_BASE || getSavedBackendUrl() || window.location.origin);
+    }
+
+    function getAdminLoginUrl(){ return getApiBase() + "/api/admin/login"; }
+    function getAdminConfigUrl(){ return getApiBase() + "/api/admin/config"; }
+    function getAdminCredentialsUrl(){ return getApiBase() + "/api/admin/credentials"; }
+    function getCouponsApiUrl(){ return getApiBase() + "/api/coupons"; }
+
+    function getCachedAdminCredentials(){
+      try{
+        const parsed = JSON.parse(localStorage.getItem(ADMIN_CREDENTIALS_CACHE_KEY) || "{}");
+        return {
+          username:String(parsed.username || "admin").trim() || "admin",
+          password:String(parsed.password || "1234")
+        };
+      }catch(error){
+        return { username:"admin", password:"1234" };
+      }
+    }
+
+    function saveCachedAdminCredentials(username, password){
+      localStorage.setItem(ADMIN_CREDENTIALS_CACHE_KEY, JSON.stringify({
+        username:String(username || "admin").trim() || "admin",
+        password:String(password || "1234")
+      }));
+    }
+
+    function showAdminPanel(){
+      const nav = document.getElementById("adminGlobalNav");
+      if(nav) nav.style.display = "flex";
+      adminLoginScreen.style.display = "none";
+      appShell.style.display = "block";
+      sidebar.style.display = "block";
+      mainPanel.style.display = "block";
+    }
+
+    function showAdminLogin(){
+      const nav = document.getElementById("adminGlobalNav");
+      if(nav) nav.style.display = "none";
+      adminLoginScreen.style.display = "flex";
+      appShell.style.display = "none";
+      sidebar.style.display = "none";
+      mainPanel.style.display = "none";
+    }
+
+    function restoreAdminSession(){
+      if(localStorage.getItem(ADMIN_SESSION_KEY) === "true"){
+        showAdminPanel();
+      }else{
+        showAdminLogin();
+      }
+    }
+
+    async function loginAdmin(){
+      const enteredUsername = String(adminUser.value || "").trim();
+      const enteredPassword = String(adminPass.value || "");
+      const adminLoginUrl = getAdminLoginUrl();
+      try{
+        const response = await fetch(adminLoginUrl,{
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body:JSON.stringify({
+            username:enteredUsername,
+            password:enteredPassword
+          })
+        });
+        const data = await response.json().catch(()=>({ ok:false, message:"Login failed" }));
+        if(response.ok && data.ok){
+          saveCachedAdminCredentials(enteredUsername, enteredPassword);
+          localStorage.setItem(ADMIN_SESSION_KEY, "true");
+          showAdminPanel();
+          return;
+        }
+        alert((data.message || data.error || "Wrong credentials") + " | URL: " + adminLoginUrl + " | Status: " + response.status);
+      }catch(error){
+        const cached = getCachedAdminCredentials();
+        if(enteredUsername === cached.username && enteredPassword === cached.password){
+          localStorage.setItem(ADMIN_SESSION_KEY, "true");
+          showAdminPanel();
+          return;
+        }
+        alert("Admin login failed. Backend connection issue hai aur credentials bhi match nahi hue.");
+      }
+    }
+
+    function goTo(page){
+      window.location.href = page;
+    }
+
+    function goToHome(){
+      window.location.href = "index.html";
+    }
+
+    function logout(){
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      window.location.href = "index.html";
+    }
+
+    window.addEventListener("DOMContentLoaded", ()=>{
+      const cachedAdmin = getCachedAdminCredentials();
+      const savedBackendUrl = getSavedBackendUrl();
+      if(adminBackendUrl && savedBackendUrl){
+        adminBackendUrl.value = savedBackendUrl;
+      }
+      if(!adminUser.value){
+        adminUser.value = cachedAdmin.username;
+      }
+      restoreAdminSession();
+    });
+    window.addEventListener("pageshow", restoreAdminSession);
+
+    function showSettings(){
+      settingsBox.classList.toggle("hidden");
+    }
+
+    let generatedOTP = "";
+
+    function sendOTP(){
+      generatedOTP = Math.floor(100000 + Math.random()*900000);
+
+      emailjs.send(
+        "service_12k6w9q",
+        "template_qvyodce",
+        {
+          to_email:"ajaysingroha1@gmail.com",
+          otp:generatedOTP
+        }
+      );
+
+      alert("OTP sent to ajaysingroha1@gmail.com");
+    }
+
+    async function verifyOTP(){
+      if(otpInput.value != generatedOTP){
+        alert("Wrong OTP");
+        return;
+      }
+      try{
+        const response = await fetch(getAdminCredentialsUrl(),{
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body:JSON.stringify({
+            username:String(newUser.value || "").trim(),
+            password:String(newPass.value || "")
+          })
+        });
+        const data = await response.json().catch(()=>({ ok:false }));
+        if(!response.ok || !data.ok){
+          throw new Error(data.error || "Failed to update credentials");
+        }
+        saveCachedAdminCredentials(String(newUser.value || "").trim(), String(newPass.value || ""));
+        alert("Credentials updated successfully");
+      }catch(error){
+        saveCachedAdminCredentials(String(newUser.value || "").trim(), String(newPass.value || ""));
+        alert((error.message || "Failed to update credentials") + ". Local fallback save ho gaya hai.");
+      }
+    }
+
+    function updateCouponSummary(coupon){
+      const codeEl = document.getElementById("currentCouponCode");
+      const discountEl = document.getElementById("currentCouponDiscount");
+      const stateEl = document.getElementById("currentCouponState");
+      const shortStatusEl = document.getElementById("couponStatusShort");
+      const shortDiscountEl = document.getElementById("couponDiscountShort");
+
+      if(!coupon){
+        codeEl.textContent = "-";
+        discountEl.textContent = "0%";
+        stateEl.textContent = "Inactive";
+        shortStatusEl.textContent = "None";
+        shortDiscountEl.textContent = "0%";
+        return;
+      }
+
+      codeEl.textContent = coupon.code || "-";
+      discountEl.textContent = (coupon.discount || 0) + "%";
+      stateEl.textContent = coupon.status || "active";
+      shortStatusEl.textContent = coupon.status || "active";
+      shortDiscountEl.textContent = (coupon.discount || 0) + "%";
+    }
+
+    function setCouponFormValues(coupon){
+      const couponCodeInput = document.getElementById("couponCode");
+      const couponDiscountInput = document.getElementById("couponDiscount");
+      const couponStatusSelect = document.getElementById("couponStatus");
+      const couponStatusLabel = document.getElementById("couponStatusText");
+
+      if(!coupon){
+        couponCodeInput.value = "";
+        couponDiscountInput.value = "";
+        couponStatusSelect.value = "active";
+        couponStatusLabel.innerText = "No admin coupon configured.";
+        updateCouponSummary(null);
+        return;
+      }
+
+      couponCodeInput.value = coupon.code || "";
+      couponDiscountInput.value = coupon.discount || "";
+      couponStatusSelect.value = coupon.status || "active";
+      couponStatusLabel.innerText = `Current coupon: ${coupon.code || "-"} | ${coupon.discount || 0}% | ${coupon.status || "active"}`;
+      updateCouponSummary(coupon);
+    }
+
+    async function loadCoupon(){
+      try{
+        const response = await fetch(getCouponsApiUrl(),{ cache:"no-store" });
+        const data = await response.json().catch(()=>({ ok:false }));
+        adminCouponCache = Array.isArray(data.coupons) ? data.coupons : [];
+        setCouponFormValues(data.primaryCoupon || adminCouponCache[0] || null);
+      }catch(error){
+        setCouponFormValues(null);
+      }
+    }
+
+    async function saveCoupon(){
+      const couponCodeInput = document.getElementById("couponCode");
+      const couponDiscountInput = document.getElementById("couponDiscount");
+      const couponStatusSelect = document.getElementById("couponStatus");
+
+      let code = String(couponCodeInput.value || "").trim().toUpperCase();
+      let discount = Number(couponDiscountInput.value);
+      let status = couponStatusSelect.value;
+
+      if(!code){
+        alert("Enter coupon code");
+        return;
+      }
+
+      if(!discount || discount <= 0){
+        alert("Enter valid discount percentage");
+        return;
+      }
+
+      const couponData = {
+        code: code,
+        discount: discount,
+        status: status
+      };
+      try{
+        const response = await fetch(getCouponsApiUrl(),{
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body:JSON.stringify(couponData)
+        });
+        const data = await response.json().catch(()=>({ ok:false }));
+        if(!response.ok || !data.ok){
+          throw new Error(data.error || "Failed to save coupon");
+        }
+        adminCouponCache = Array.isArray(data.coupons) ? data.coupons : [];
+        setCouponFormValues(data.primaryCoupon || couponData);
+        alert("Coupon saved successfully");
+      }catch(error){
+        alert(error.message || "Failed to save coupon");
+      }
+    }
+
+    async function clearCoupon(){
+      const couponCodeInput = document.getElementById("couponCode");
+      let code = String(couponCodeInput.value || "").trim().toUpperCase();
+      if(!code){
+        setCouponFormValues(null);
+        return alert("Enter coupon code to clear");
+      }
+      try{
+        const response = await fetch(`${getCouponsApiUrl()}/${encodeURIComponent(code)}`,{ method:"DELETE" });
+        const data = await response.json().catch(()=>({ ok:false }));
+        if(!response.ok || !data.ok){
+          throw new Error(data.error || "Failed to clear coupon");
+        }
+        adminCouponCache = Array.isArray(data.coupons) ? data.coupons : [];
+        setCouponFormValues(data.primaryCoupon || null);
+        alert("Coupon cleared");
+      }catch(error){
+        alert(error.message || "Failed to clear coupon");
+      }
+    }
+
+    sidebar.style.display = "none";
+    mainPanel.style.display = "none";
+    appShell.style.display = "none";
+
+    window.addEventListener("DOMContentLoaded", async ()=>{
+      try{
+        const response = await fetch(getAdminConfigUrl(),{ cache:"no-store" });
+        const data = await response.json().catch(()=>({}));
+        if(data.username && !adminUser.value){
+          adminUser.value = data.username;
+        }
+      }catch(error){}
+      loadCoupon();
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+

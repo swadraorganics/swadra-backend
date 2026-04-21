@@ -1,0 +1,196 @@
+html{
+scroll-behavior:smooth;}
+body{
+font-family:Arial;
+margin:0;
+background:#f1e3e3;
+}
+
+header{
+
+position:sticky;
+top:0;
+z-index:1000;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:20px 60px;
+background:#7a3d3d;
+box-shadow:0 3px 10px rgba(0,0,0,0.1);
+}
+
+
+.logo{
+font-size:40px;
+font-weight:bold;
+  margin-top:0px
+}
+
+.logo a{
+text-decoration:none;
+color:white;
+}
+
+
+/* NAVBAR */
+.navbar {
+  position: sticky;
+  top: 0;
+  background: #7a3d3d;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 40px;
+  z-index: 1000;
+  height:40px;
+}
+
+.nav-buttons{
+display:flex;
+gap:30px;
+}
+
+.nav-buttons a{
+color:white;
+text-decoration:none;
+font-size: 22px;
+font-weight:500;
+}
+
+.nav-buttons a:hover{
+color:white;
+}
+
+.main-heading {
+  font-family: 'Playfair Display', serif;
+  font-size:40px;
+color:#7a3d3d;
+text-align:center;
+max-width:700px;
+margin:50px auto 30px;
+}
+
+
+/* ===== BOTTOM TAGLINE ===== */
+.bottom-tagline {
+  background:none;
+height:auto;
+  display: block;
+  align-items: center;
+text-align:center;
+padding:10px 20px;
+}
+
+.bottom-tagline {
+  font-family: 'Playfair Display', serif;
+  font-size:36px;
+color:#000;
+max-width:700px;
+margin:-70px auto 20px;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+}
+
+
+/* Heading */
+.story-title {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 35px;
+
+}
+
+/* Highlight line */
+.story-highlight {
+font-family: 'poppins', sans-serif;
+    text-align: left;
+    font-size: 18px;
+   max-width:100%;
+   line-height:1.8;
+   font-weight: 500;
+letter-spacing:0.5px;
+    margin-bottom: 20px;
+margin-top: 30px;
+}
+
+/* Normal text */
+.story-text {
+    text-align: center;
+    font-size: 15px;
+    margin-bottom: 10px;
+}
+
+/* Golden line */
+.story-gold {
+    text-align: center;
+    color: #7a3d3d;
+    font-weight: 800;
+    margin: 15px 0;
+}
+
+/* Signature */
+.story-sign {
+    text-align: center;
+    font-size: 28px;
+    margin-top: 15px;
+    font-family: 'great vibes', cursive;
+}
+
+/* ===== FOUNDER ===== */
+.swadra-aboutus-container {
+  display: flex;
+align-items:flex-start;
+  gap: 50px;
+  padding: 10px 100px;
+margin-top: -20px;
+min-height:500px;
+}
+
+
+.swadra-aboutus-founder-img img {
+  width: 350px;
+  border-radius: 10px;
+margin-top:30px;
+}
+
+.highlight {
+  font-size: 18px;
+}
+
+.gold {
+  color: gold;
+}
+
+.sign {
+  font-family: cursive;
+  font-size: 26px;
+}
+
+
+/* ===== QUALITY ===== */
+.swadra-aboutus-quality {
+  text-align: center;
+  padding: 80px;
+  background:white;
+font-size:20px;
+}
+
+.swadra-aboutus-quality h2 {
+  text-align: center;
+  padding: 20px;
+  background:white;
+font-size:40px;
+color:#7a3d3d;
+}
+
+
+/* ===== PREMIUM ===== */
+.swadra-aboutus-premium {
+  text-align: center;
+  padding: 20px;
+  background:#7a3d3d;
+  color:  white;
+font-size: 20px;
+font-weight:500;
+}    

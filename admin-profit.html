@@ -1,0 +1,918 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swadra Organics - Admin Profit</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root{
+      --primary:#7a3d3d;
+      --primary-dark:#5f2f2f;
+      --bg:#f8f5f2;
+      --card:#ffffff;
+      --text:#1f1f1f;
+      --muted:#6c6c6c;
+      --line:#e7dfd7;
+      --success:#137a43;
+      --warn:#b36b00;
+      --danger:#c62828;
+      --shadow:0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .wrap{
+      width:min(100%, 1880px);
+      margin:0 auto;
+      padding:20px 24px 28px;
+    }
+
+    .topbar{
+      background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+      color:#fff;
+      padding:24px 28px;
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      margin-bottom:18px;
+    }
+
+    .topbar h1{
+      margin:0;
+      font-size:30px;
+      line-height:1.2;
+    }
+
+    .topbar p{
+      margin:8px 0 0;
+      opacity:0.92;
+      font-size:15px;
+      line-height:1.6;
+    }
+
+    .toolbar{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+
+    button, .toolbar a{
+      border:none;
+      outline:none;
+      cursor:pointer;
+      border-radius:12px;
+      padding:12px 18px;
+      font-size:14px;
+      font-weight:700;
+      transition:0.2s ease;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .btn-primary{ background:var(--primary); color:#fff; }
+    .btn-primary:hover{ background:var(--primary-dark); }
+    .btn-secondary{ background:#1d6d5c; color:#fff; }
+    .btn-dark{ background:#333; color:#fff; }
+    .btn-light{ background:#eee7df; color:#3a2b2b; }
+
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:14px;
+      margin-bottom:18px;
+    }
+
+    .stat-card{
+      background:var(--card);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+
+    .stat-card .label{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    .stat-card .value{
+      font-size:28px;
+      font-weight:800;
+      margin-top:8px;
+      color:var(--primary);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:380px minmax(0,1fr);
+      gap:18px;
+      align-items:start;
+    }
+
+    .panel{
+      background:var(--card);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:22px 24px;
+      width:100%;
+    }
+
+    .panel h2{
+      margin:0 0 14px;
+      font-size:24px;
+    }
+
+    .product-form{
+      display:grid;
+      gap:16px;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px;
+    }
+
+    .row.one{ grid-template-columns:1fr; }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .field label{
+      font-size:13px;
+      font-weight:700;
+      color:#3b2a2a;
+    }
+
+    .field input, .field select{
+      width:100%;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:12px;
+      padding:12px 13px;
+      font-size:14px;
+      color:var(--text);
+      outline:none;
+    }
+
+    .field input:focus, .field select:focus{
+      border-color:var(--primary);
+      box-shadow:0 0 0 3px rgba(122,61,61,0.10);
+    }
+
+    .summary-box{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:12px;
+      margin-top:4px;
+    }
+
+    .summary-card{
+      background:#fbf8f5;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+    }
+
+    .summary-card .label{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+      font-weight:700;
+    }
+
+    .summary-card .value{
+      font-size:24px;
+      font-weight:800;
+      color:#222;
+    }
+
+    .summary-card.green .value{ color:var(--success); }
+    .summary-card.gold .value{ color:var(--warn); }
+    .summary-card.red .value{ color:var(--danger); }
+
+    .hint{
+      font-size:12px;
+      color:#7d7268;
+      line-height:1.6;
+    }
+
+    .profit-list{
+      display:grid;
+      gap:14px;
+      max-height:calc(100vh - 250px);
+      overflow:auto;
+      padding-right:4px;
+    }
+
+    .profit-card{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fffdfa;
+      padding:16px;
+      display:grid;
+      gap:12px;
+    }
+
+    .profit-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .profit-head h3{
+      margin:0;
+      font-size:20px;
+      line-height:1.3;
+    }
+
+    .badge-wrap{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:6px;
+    }
+
+    .badge{
+      padding:7px 11px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      background:#f2ebe4;
+      color:#433;
+    }
+
+    .badge.green{ background:#e7f5ec; color:var(--success); }
+    .badge.red{ background:#fdeceb; color:var(--danger); }
+    .badge.gold{ background:#fff3dc; color:var(--warn); }
+
+    .card-grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+    }
+
+    .mini{
+      background:#faf6f2;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
+
+    .mini .k{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+      margin-bottom:5px;
+    }
+
+    .mini .v{
+      font-size:16px;
+      font-weight:800;
+      word-break:break-word;
+    }
+
+    .line-items{
+      display:grid;
+      gap:8px;
+    }
+
+    .line-item{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      font-size:13px;
+      line-height:1.5;
+    }
+
+    .empty{
+      padding:20px;
+      border:1px dashed #d8cdc2;
+      border-radius:16px;
+      color:var(--muted);
+      text-align:center;
+      background:#fffdfa;
+    }
+
+    .small-note{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.6;
+      margin-top:6px;
+    }
+
+    @media (max-width:1200px){
+      .stats-grid{ grid-template-columns:repeat(2,1fr); }
+      .grid{ grid-template-columns:1fr; }
+    }
+
+    @media (max-width:900px){
+      .row, .summary-box, .card-grid{
+        grid-template-columns:repeat(2,1fr);
+      }
+    }
+
+    @media (max-width:600px){
+      .row, .summary-box, .card-grid, .stats-grid{
+        grid-template-columns:1fr;
+      }
+      .topbar h1{ font-size:24px; }
+      .wrap{ padding:16px; }
+    }
+  </style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+<body>
+<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
+  <div class="wrap">
+    <div class="topbar">
+      <h1>Swadra Organics Profit Tracker</h1>
+      <p>Yeh page ai.html ke product data se connect hai. Order data milne par date-wise realized profit dikhayega, warna AI product margins ke basis par daily snapshot fallback show karega.</p>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-primary" onclick="refreshProfitData()">Refresh Profit</button>
+      <button class="btn-secondary" onclick="clearFilters()">Clear Filters</button>
+      <a class="btn-dark" href="backend/ai.html">Open AI Products</a>
+      <a class="btn-light" href="admin-index.html">Back to Admin</a>
+    </div>
+
+    <div class="stats-grid" id="profitStats"></div>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>Profit Filters</h2>
+
+        <div class="product-form">
+          <div class="row one">
+            <div class="field">
+              <label>Search by Date / Product</label>
+              <input type="text" id="searchInput" placeholder="Search date or product name" oninput="renderProfitView()">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Profit Mode</label>
+              <select id="profitMode" onchange="renderProfitView()">
+                <option value="all">Auto</option>
+                <option value="realized">Realized Profit Only</option>
+                <option value="snapshot">Snapshot Profit Only</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Sort</label>
+              <select id="sortMode" onchange="renderProfitView()">
+                <option value="date_desc">Newest First</option>
+                <option value="date_asc">Oldest First</option>
+                <option value="profit_desc">Highest Profit</option>
+                <option value="profit_asc">Lowest Profit</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="summary-box">
+            <div class="summary-card">
+              <div class="label">Tracked Days</div>
+              <div class="value" id="trackedDaysView">0</div>
+            </div>
+            <div class="summary-card green">
+              <div class="label">Total Profit</div>
+              <div class="value" id="totalProfitView">â‚¹0</div>
+            </div>
+            <div class="summary-card gold">
+              <div class="label">Products From AI</div>
+              <div class="value" id="productCountView">0</div>
+            </div>
+            <div class="summary-card red">
+              <div class="label">Orders Linked</div>
+              <div class="value" id="orderCountView">0</div>
+            </div>
+          </div>
+
+          <div class="hint">
+            Realized profit = order items Ã— (selling price - total cost).<br>
+            Snapshot profit fallback = ai.html me saved products ke margin records by updated date.<br>
+            Page ai.html ke keys aur IndexedDB dono se product data read karne ki koshish karta hai.
+          </div>
+
+          <div class="small-note">
+            Product keys checked: <b>swadraBackendProductsCache, adminProducts</b><br>
+            Order keys checked: <b>adminOrders, orders, swadraOrders, customerOrders, allOrders</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Date-wise Profit</h2>
+        <div class="profit-list" id="profitList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PRODUCTS_DB_NAME = "swadraProductsDB";
+    const PRODUCTS_STORE_NAME = "products";
+    const PRODUCT_KEYS = ["swadraBackendProductsCache", "adminProducts"];
+    const ORDER_KEYS = ["adminOrders", "orders", "swadraOrders", "customerOrders", "allOrders"];
+
+    function safeJsonParse(value, fallback){
+      try{
+        const parsed = JSON.parse(value);
+        return parsed ?? fallback;
+      }catch(error){
+        return fallback;
+      }
+    }
+
+    function rupee(value){
+      return "â‚¹" + Number(value || 0).toFixed(0);
+    }
+
+    function escapeHtml(str){
+      return String(str || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function formatDateKey(date){
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function prettyDateFromKey(key){
+      const date = new Date(key + "T00:00:00");
+      if(isNaN(date.getTime())) return key;
+      return date.toLocaleDateString("en-IN", {
+        day:"2-digit",
+        month:"short",
+        year:"numeric"
+      });
+    }
+
+    function parseAnyDate(value){
+      if(!value) return null;
+      const date = new Date(value);
+      if(!isNaN(date.getTime())) return date;
+
+      const normalized = String(value).replace(/,/g, "");
+      const secondTry = new Date(normalized);
+      if(!isNaN(secondTry.getTime())) return secondTry;
+
+      return null;
+    }
+
+    function normalizeText(value){
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function getValueByPossibleKeys(obj, keys){
+      for(const key of keys){
+        if(obj && obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== ""){
+          return obj[key];
+        }
+      }
+      return "";
+    }
+
+    function normalizeProduct(raw){
+      const name = String(raw.name || raw.productName || "").trim();
+      const size = String(raw.size || raw.productSize || "").trim();
+      const totalCost = Number(raw.totalCost ?? 0) || 0;
+      const sellingPrice = Number(raw.price ?? raw.sellingPrice ?? 0) || 0;
+      const createdAtRaw = raw.updatedAt || raw.createdAt || "";
+      const margin = Math.max(0, sellingPrice - totalCost);
+
+      return {
+        id: String(raw.id || ""),
+        name,
+        size,
+        key: [normalizeText(name), normalizeText(size)].join("|"),
+        totalCost,
+        sellingPrice,
+        margin,
+        createdAtRaw,
+        createdAtDate: parseAnyDate(createdAtRaw)
+      };
+    }
+
+    async function openProductsDb(){
+      return new Promise((resolve,reject)=>{
+        const request = indexedDB.open(PRODUCTS_DB_NAME,1);
+        request.onsuccess = ()=>resolve(request.result);
+        request.onerror = ()=>reject(request.error);
+      });
+    }
+
+    async function getProductsFromIndexedDb(){
+      try{
+        const db = await openProductsDb();
+        return await new Promise((resolve,reject)=>{
+          const tx = db.transaction(PRODUCTS_STORE_NAME, "readonly");
+          const store = tx.objectStore(PRODUCTS_STORE_NAME);
+          const request = store.getAll();
+          request.onsuccess = ()=>resolve(request.result || []);
+          request.onerror = ()=>reject(request.error);
+        });
+      }catch(error){
+        return [];
+      }
+    }
+
+    async function getAiProducts(){
+      let merged = [];
+
+      PRODUCT_KEYS.forEach((key)=>{
+        const parsed = safeJsonParse(localStorage.getItem(key), []);
+        if(Array.isArray(parsed)){
+          merged = merged.concat(parsed);
+        }
+      });
+
+      const indexedProducts = await getProductsFromIndexedDb();
+      if(Array.isArray(indexedProducts) && indexedProducts.length){
+        merged = merged.concat(indexedProducts);
+      }
+
+      const uniqueMap = new Map();
+      merged.forEach((item)=>{
+        if(!item || typeof item !== "object") return;
+        const normalized = normalizeProduct(item);
+        const dedupeKey = normalized.id || normalized.key;
+        if(!dedupeKey) return;
+        uniqueMap.set(dedupeKey, normalized);
+      });
+
+      return Array.from(uniqueMap.values());
+    }
+
+    function normalizeOrderItem(rawItem){
+      const name = String(getValueByPossibleKeys(rawItem, ["name","productName","title"])).trim();
+      const size = String(getValueByPossibleKeys(rawItem, ["size","variant","productSize"])).trim();
+      const quantity = Number(getValueByPossibleKeys(rawItem, ["quantity","qty","count"])) || 1;
+      const productId = String(getValueByPossibleKeys(rawItem, ["id","productId"])).trim();
+      const price = Number(getValueByPossibleKeys(rawItem, ["price","sellingPrice","amount"])) || 0;
+
+      return {
+        productId,
+        name,
+        size,
+        quantity,
+        price,
+        key: [normalizeText(name), normalizeText(size)].join("|")
+      };
+    }
+
+    function normalizeOrder(raw){
+      const dateRaw = getValueByPossibleKeys(raw, ["createdAt","date","orderedAt","timestamp","time"]);
+      const orderDate = parseAnyDate(dateRaw);
+      const itemsRaw = raw.items || raw.products || raw.cartItems || [];
+      const items = Array.isArray(itemsRaw) ? itemsRaw.map(normalizeOrderItem) : [];
+
+      return {
+        id: String(getValueByPossibleKeys(raw, ["id","orderId"])).trim(),
+        date: orderDate,
+        dateKey: orderDate ? formatDateKey(orderDate) : "",
+        items
+      };
+    }
+
+    function getOrders(){
+      let merged = [];
+      ORDER_KEYS.forEach((key)=>{
+        const parsed = safeJsonParse(localStorage.getItem(key), []);
+        if(Array.isArray(parsed)){
+          merged = merged.concat(parsed);
+        }
+      });
+
+      return merged
+        .filter(item => item && typeof item === "object")
+        .map(normalizeOrder)
+        .filter(order => order.dateKey && Array.isArray(order.items) && order.items.length);
+    }
+
+    function buildProductLookup(products){
+      const byId = new Map();
+      const byKey = new Map();
+
+      products.forEach((product)=>{
+        if(product.id) byId.set(String(product.id), product);
+        if(product.key) byKey.set(product.key, product);
+
+        if(product.name){
+          const looseKey = [normalizeText(product.name), ""].join("|");
+          if(!byKey.has(looseKey)) byKey.set(looseKey, product);
+        }
+      });
+
+      return { byId, byKey };
+    }
+
+    function buildRealizedProfitDays(products, orders){
+      const lookup = buildProductLookup(products);
+      const days = {};
+
+      orders.forEach((order)=>{
+        if(!days[order.dateKey]){
+          days[order.dateKey] = {
+            dateKey: order.dateKey,
+            mode: "realized",
+            totalProfit: 0,
+            totalOrders: 0,
+            totalItems: 0,
+            lines: []
+          };
+        }
+
+        let orderProfit = 0;
+        let matchedItems = 0;
+
+        order.items.forEach((item)=>{
+          const matchedProduct =
+            lookup.byId.get(String(item.productId || "")) ||
+            lookup.byKey.get(item.key) ||
+            lookup.byKey.get([normalizeText(item.name), ""].join("|"));
+
+          if(!matchedProduct) return;
+
+          const unitProfit = Math.max(0, Number(matchedProduct.margin || 0));
+          const lineProfit = unitProfit * Number(item.quantity || 1);
+
+          orderProfit += lineProfit;
+          matchedItems += Number(item.quantity || 1);
+
+          days[order.dateKey].lines.push({
+            name: item.name || matchedProduct.name || "Product",
+            size: item.size || matchedProduct.size || "",
+            quantity: Number(item.quantity || 1),
+            unitProfit,
+            lineProfit
+          });
+        });
+
+        if(orderProfit > 0){
+          days[order.dateKey].totalProfit += orderProfit;
+          days[order.dateKey].totalOrders += 1;
+          days[order.dateKey].totalItems += matchedItems;
+        }
+      });
+
+      return Object.values(days).filter(day => day.totalProfit > 0 || day.totalOrders > 0);
+    }
+
+    function buildSnapshotProfitDays(products){
+      const days = {};
+
+      products.forEach((product)=>{
+        const date = product.createdAtDate || new Date();
+        const dateKey = formatDateKey(date);
+
+        if(!days[dateKey]){
+          days[dateKey] = {
+            dateKey,
+            mode: "snapshot",
+            totalProfit: 0,
+            totalOrders: 0,
+            totalItems: 0,
+            lines: []
+          };
+        }
+
+        const lineProfit = Math.max(0, Number(product.margin || 0));
+        days[dateKey].totalProfit += lineProfit;
+        days[dateKey].totalItems += 1;
+        days[dateKey].lines.push({
+          name: product.name || "Product",
+          size: product.size || "",
+          quantity: 1,
+          unitProfit: lineProfit,
+          lineProfit
+        });
+      });
+
+      return Object.values(days);
+    }
+
+    async function getProfitDataset(){
+      const products = await getAiProducts();
+      const orders = getOrders();
+
+      const realizedDays = buildRealizedProfitDays(products, orders);
+      const snapshotDays = buildSnapshotProfitDays(products);
+
+      return {
+        products,
+        orders,
+        realizedDays,
+        snapshotDays
+      };
+    }
+
+    function mergeAutoDays(realizedDays, snapshotDays){
+      const map = new Map();
+
+      realizedDays.forEach(day=>{
+        map.set(day.dateKey, day);
+      });
+
+      snapshotDays.forEach(day=>{
+        if(!map.has(day.dateKey)){
+          map.set(day.dateKey, day);
+        }
+      });
+
+      return Array.from(map.values());
+    }
+
+    let PROFIT_CACHE = {
+      products: [],
+      orders: [],
+      realizedDays: [],
+      snapshotDays: []
+    };
+
+    function getVisibleDays(){
+      const mode = document.getElementById("profitMode").value;
+      let days = [];
+
+      if(mode === "realized"){
+        days = [...PROFIT_CACHE.realizedDays];
+      }else if(mode === "snapshot"){
+        days = [...PROFIT_CACHE.snapshotDays];
+      }else{
+        days = mergeAutoDays(PROFIT_CACHE.realizedDays, PROFIT_CACHE.snapshotDays);
+      }
+
+      const query = normalizeText(document.getElementById("searchInput").value);
+      if(query){
+        days = days.filter(day=>{
+          if(day.dateKey.includes(query)) return true;
+          if(prettyDateFromKey(day.dateKey).toLowerCase().includes(query)) return true;
+          return day.lines.some(line=>{
+            const label = [line.name, line.size].join(" ").toLowerCase();
+            return label.includes(query);
+          });
+        });
+      }
+
+      const sortMode = document.getElementById("sortMode").value;
+      days.sort((a,b)=>{
+        if(sortMode === "date_asc") return a.dateKey.localeCompare(b.dateKey);
+        if(sortMode === "profit_desc") return Number(b.totalProfit || 0) - Number(a.totalProfit || 0);
+        if(sortMode === "profit_asc") return Number(a.totalProfit || 0) - Number(b.totalProfit || 0);
+        return b.dateKey.localeCompare(a.dateKey);
+      });
+
+      return days;
+    }
+
+    function renderStats(days){
+      const totalProfit = days.reduce((sum, day)=>sum + Number(day.totalProfit || 0), 0);
+
+      document.getElementById("profitStats").innerHTML = `
+        <div class="stat-card">
+          <div class="label">Tracked Days</div>
+          <div class="value">${days.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Profit</div>
+          <div class="value">${rupee(totalProfit)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">AI Products</div>
+          <div class="value">${PROFIT_CACHE.products.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Orders Linked</div>
+          <div class="value">${PROFIT_CACHE.orders.length}</div>
+        </div>
+      `;
+
+      document.getElementById("trackedDaysView").textContent = days.length;
+      document.getElementById("totalProfitView").textContent = rupee(totalProfit);
+      document.getElementById("productCountView").textContent = PROFIT_CACHE.products.length;
+      document.getElementById("orderCountView").textContent = PROFIT_CACHE.orders.length;
+    }
+
+    function renderProfitView(){
+      const days = getVisibleDays();
+      const profitList = document.getElementById("profitList");
+
+      renderStats(days);
+
+      if(!days.length){
+        profitList.innerHTML = `<div class="empty">No profit data found. Pehle ai.html me products save karo ya orders storage available hone do.</div>`;
+        return;
+      }
+
+      profitList.innerHTML = days.map(day=>{
+        const modeLabel = day.mode === "realized" ? "Realized Profit" : "Snapshot Profit";
+        const modeClass = day.mode === "realized" ? "green" : "gold";
+
+        const topLines = day.lines
+          .slice()
+          .sort((a,b)=>Number(b.lineProfit || 0) - Number(a.lineProfit || 0))
+          .slice(0, 5);
+
+        return `
+          <div class="profit-card">
+            <div class="profit-head">
+              <div>
+                <h3>${escapeHtml(prettyDateFromKey(day.dateKey))}</h3>
+                <div class="badge-wrap">
+                  <span class="badge ${modeClass}">${modeLabel}</span>
+                  <span class="badge">Date Key: ${escapeHtml(day.dateKey)}</span>
+                </div>
+              </div>
+              <div class="badge-wrap">
+                <span class="badge green">Profit: ${rupee(day.totalProfit)}</span>
+              </div>
+            </div>
+
+            <div class="card-grid">
+              <div class="mini">
+                <div class="k">Total Profit</div>
+                <div class="v">${rupee(day.totalProfit)}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Orders</div>
+                <div class="v">${Number(day.totalOrders || 0)}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Items Count</div>
+                <div class="v">${Number(day.totalItems || 0)}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Mode</div>
+                <div class="v">${escapeHtml(modeLabel)}</div>
+              </div>
+            </div>
+
+            <div class="line-items">
+              ${topLines.length ? topLines.map(line => `
+                <div class="line-item">
+                  <div>
+                    <b>${escapeHtml(line.name || "Product")}</b>
+                    ${line.size ? `(${escapeHtml(line.size)})` : ""}
+                    Ã— ${Number(line.quantity || 1)}
+                  </div>
+                  <div>${rupee(line.lineProfit)}</div>
+                </div>
+              `).join("") : `<div class="empty">No line items</div>`}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function refreshProfitData(){
+      PROFIT_CACHE = await getProfitDataset();
+      renderProfitView();
+    }
+
+    function clearFilters(){
+      document.getElementById("searchInput").value = "";
+      document.getElementById("profitMode").value = "all";
+      document.getElementById("sortMode").value = "date_desc";
+      renderProfitView();
+    }
+
+    window.addEventListener("storage", function(event){
+      if(PRODUCT_KEYS.includes(event.key) || ORDER_KEYS.includes(event.key)){
+        refreshProfitData();
+      }
+    });
+
+    refreshProfitData();
+  </script>
+</body>
+</html>
+
+
+
+
+

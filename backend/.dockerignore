@@ -1,0 +1,8 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+db.json
+shiprocket.env
+*.local
+*.log

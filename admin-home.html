@@ -1,0 +1,1178 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Swadra Organics Home Panel</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif}
+
+:root{
+  --primary:#7a3d3d;
+  --primary-dark:#5f2f2f;
+  --bg:#f8f5f2;
+  --card:#ffffff;
+  --text:#1f1f1f;
+  --muted:#6c6c6c;
+  --line:#e7dfd7;
+  --success:#137a43;
+  --warn:#b36b00;
+  --danger:#c62828;
+  --shadow:0 10px 30px rgba(0,0,0,0.08);
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+}
+
+.wrap{
+  width:min(100%,1880px);
+  margin:0 auto;
+  padding:20px 24px 28px;
+}
+
+.topbar{
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+  color:#fff;
+  padding:24px 28px;
+  border-radius:22px;
+  box-shadow:var(--shadow);
+  margin-bottom:18px;
+}
+
+.topbar h1{
+  font-size:30px;
+  line-height:1.2;
+  margin:0;
+}
+
+.topbar p{
+  margin:8px 0 0;
+  opacity:.92;
+  font-size:15px;
+  line-height:1.6;
+}
+
+.status{
+  margin:0 0 18px;
+  padding:12px 14px;
+  border-radius:12px;
+  background:#ecfdf3;
+  color:#166534;
+  font-weight:600;
+  box-shadow:var(--shadow);
+}
+
+.toolbar{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:18px;
+}
+
+.toolbar a,
+.toolbar button,
+button.main,
+.asset-delete{
+  border:none;
+  outline:none;
+  cursor:pointer;
+  border-radius:12px;
+  padding:12px 18px;
+  font-size:14px;
+  font-weight:700;
+  transition:.2s ease;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.btn-primary,
+button.main{
+  background:var(--primary);
+  color:#fff;
+}
+
+.btn-primary:hover,
+button.main:hover{
+  background:var(--primary-dark);
+}
+
+.btn-light{
+  background:#eee7df;
+  color:#3a2b2b;
+}
+
+.btn-dark{
+  background:#333;
+  color:#fff;
+}
+
+.stats-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
+  margin-bottom:18px;
+}
+
+.stat-card{
+  background:var(--card);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  padding:16px;
+}
+
+.stat-card .label{
+  font-size:12px;
+  color:var(--muted);
+  font-weight:700;
+}
+
+.stat-card .value{
+  font-size:28px;
+  font-weight:800;
+  margin-top:8px;
+  color:var(--primary);
+}
+
+.main-grid{
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  gap:18px;
+  align-items:start;
+}
+
+.left-col,
+.right-col{
+  display:grid;
+  gap:18px;
+}
+
+.panel{
+  background:var(--card);
+  padding:22px 24px;
+  border-radius:22px;
+  box-shadow:var(--shadow);
+}
+
+.title{
+  font-weight:800;
+  color:var(--primary);
+  margin-bottom:14px;
+  font-size:22px;
+}
+
+.sub{
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.6;
+  margin-bottom:14px;
+}
+
+.upload{
+  border:2px dashed #d8cdc2;
+  padding:22px;
+  text-align:center;
+  border-radius:16px;
+  cursor:pointer;
+  background:#fbf8f5;
+  font-weight:700;
+  color:#5e4a4a;
+  transition:.2s ease;
+}
+
+.upload:hover{
+  background:#f5efe8;
+  border-color:#cbb8a7;
+}
+
+.preview{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+
+.preview img,
+.preview video,
+#videoPreview video,
+#videoAssets video{
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:#fff;
+  box-shadow:0 4px 14px rgba(0,0,0,.04);
+}
+
+.preview img{
+  width:110px;
+  height:110px;
+  object-fit:cover;
+}
+
+input,textarea,select{
+  width:100%;
+  padding:12px 13px;
+  margin-bottom:12px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:#fff;
+  font-size:14px;
+  color:var(--text);
+  outline:none;
+}
+
+input:focus,
+textarea:focus,
+select:focus{
+  border-color:var(--primary);
+  box-shadow:0 0 0 3px rgba(122,61,61,0.10);
+}
+
+.hero-control-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-bottom:12px;
+}
+
+.hero-toggle{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 13px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fff;
+  color:var(--text);
+  font-size:14px;
+  font-weight:700;
+}
+
+.hero-toggle input{
+  width:18px;
+  height:18px;
+  margin:0;
+  accent-color:var(--primary);
+}
+
+textarea{
+  min-height:110px;
+  resize:vertical;
+}
+
+.asset-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  background:#fffdfa;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  margin-bottom:10px;
+}
+
+.asset-row span{
+  line-height:1.5;
+  word-break:break-word;
+}
+
+.asset-delete{
+  background:#ff4d4d;
+  color:#fff;
+  padding:8px 12px;
+  border-radius:10px;
+  flex-shrink:0;
+}
+
+.asset-delete:hover{
+  opacity:.92;
+}
+
+.section-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:18px;
+}
+
+.empty-note{
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.6;
+}
+
+.file-input-label{
+  font-size:12px;
+  color:var(--muted);
+  font-weight:600;
+  margin:-2px 0 10px;
+}
+
+.story-admin-preview{
+  display:grid;
+  grid-template-columns:170px 1fr;
+  gap:14px;
+  align-items:center;
+  padding:14px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:#fffdfa;
+  margin:12px 0;
+}
+
+.story-admin-preview img{
+  width:170px;
+  height:110px;
+  border-radius:14px;
+  object-fit:cover;
+  background:#f1e6dc;
+}
+
+.story-admin-preview strong{
+  display:block;
+  color:var(--primary);
+  margin-bottom:6px;
+}
+
+.story-admin-preview span{
+  display:block;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.5;
+}
+
+@media (max-width:1200px){
+  .stats-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .main-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+@media (max-width:700px){
+  .stats-grid,
+  .section-grid{
+    grid-template-columns:1fr;
+  }
+  .topbar h1{
+    font-size:24px;
+  }
+  .wrap{
+    padding:16px;
+  }
+}
+</style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+
+<body>
+<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
+<div class="wrap">
+
+  <div class="topbar">
+    <h1>Swadra Organics Home Panel</h1>
+    <p>Hero images, homepage video, offers aur customer reviews yahin se manage honge. Existing save, delete aur sync functions same working rahenge.</p>
+  </div>
+
+  <div id="saveStatus" class="status">Panel ready. Add data to save it.</div>
+
+  <div class="toolbar">
+    <button class="btn-primary" onclick="renderAll()">Refresh Panel</button>
+    <a class="btn-light" href="admin-dashboard.html">Dashboard</a>
+    <a class="btn-dark" href="admin-index.html">Back to Admin</a>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="label">Hero Images</div>
+      <div class="value" id="heroCount">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Customer Reviews</div>
+      <div class="value" id="customerCount">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Panel Status</div>
+      <div class="value">LIVE</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Storage Mode</div>
+      <div class="value">Hybrid</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <div class="left-col">
+
+      <div class="panel">
+        <div class="title">Hero Images</div>
+        <div class="sub">Homepage slider ke liye hero images upload karo. Existing IndexedDB + legacy storage sync same rahega.</div>
+        <div class="upload" onclick="heroInput.click()">Upload Hero Images</div>
+        <input type="file" id="heroInput" multiple hidden>
+        <div id="heroPreview" class="preview"></div>
+      </div>
+
+      <div class="panel">
+        <div class="title">Homepage Video</div>
+        <div class="sub">Main homepage section ke liye video upload karo. Video DB logic same working rahega.</div>
+        <div class="upload" onclick="videoInput.click()">Upload Video</div>
+        <input type="file" id="videoInput" hidden>
+        <div id="videoPreview" class="preview"></div>
+      </div>
+
+      <div class="panel">
+        <div class="title">Family Counter Banner</div>
+        <div class="sub">Index page par combo section ke niche full background banner yahin se manage hoga. Number = base number + every order + every customer.</div>
+        <div class="story-admin-preview">
+          <img id="storyPreviewImage" alt="Family counter preview">
+          <div>
+            <strong id="storyPreviewTitle">More Than a Brand, A Family</strong>
+            <span id="storyPreviewMeta">Base number + orders + customers auto count.</span>
+          </div>
+        </div>
+        <div class="upload" onclick="storyImageInput.click()">Upload Full Background Image</div>
+        <input type="file" id="storyImageInput" accept="image/*" hidden>
+        <input id="storyTitleInput" placeholder="More Than a Brand, A Family">
+        <input id="storySubtitleInput" placeholder="à¤œà¤¡à¤¼à¥‹à¤‚ à¤¸à¥‡ à¤œà¥à¤¡à¤¼à¥‡ à¤²à¥‹à¤—, à¤…à¤¸à¤²à¥€ à¤¬à¤¦à¤²à¤¾à¤µ">
+        <input id="storyBaseCountInput" type="number" min="0" step="1" placeholder="5978">
+        <input id="storyCaptionInput" placeholder="Every Number Tells a Story">
+        <button class="main" onclick="saveStoryCounterSettings()">Save Family Counter Banner</button>
+      </div>
+
+      <div class="panel">
+        <div class="title">Hero Text Control</div>
+        <div class="sub">Index page ke main hero section ka heading, subtitle, trust line, badges aur button text yahin se control hoga.</div>
+        <div class="hero-control-row">
+          <label class="hero-toggle">
+            <input type="checkbox" id="heroTextEnabledInput">
+            <span>Hero Text Enable</span>
+          </label>
+          <select id="heroTextPositionInput">
+            <option value="right">Right Side Place</option>
+            <option value="left">Left Side Place</option>
+          </select>
+        </div>
+        <input id="heroTitleLine1Input" placeholder="Crafted For Global">
+        <input id="heroTitleLine2Input" placeholder="Standards">
+        <input id="heroSublineInput" placeholder="Pure Quality. Honest Food. Swadra Promise.">
+        <input id="heroTrustInput" placeholder="â˜… Packed Fresh When You Order">
+        <input id="heroBadge1Input" placeholder="âœ“ 100% Natural">
+        <input id="heroBadge2Input" placeholder="âœ“ Expertly Selected">
+        <input id="heroBadge3Input" placeholder="âœ“ Farm Direct">
+        <input id="heroButtonInput" placeholder="Explore Products â†’">
+        <button class="main" onclick="saveHeroTextSettings()">Save Hero Text</button>
+      </div>
+
+      <div class="panel">
+        <div class="title">Offers</div>
+        <div class="sub">Homepage offer lines yahin add hongi.</div>
+        <input id="offerText" placeholder="Enter offer text">
+        <button class="main" onclick="addOffer()">Add Offer</button>
+        <div id="offerPreview" class="preview" style="display:grid;gap:8px;"></div>
+      </div>
+
+      <div class="panel">
+        <div class="title">Customers</div>
+        <div class="sub">Customer name, product, review aur dono images upload karke homepage review section banao.</div>
+
+        <input id="cName" placeholder="Name">
+        <input id="cProduct" placeholder="Product">
+        <textarea id="cReview" placeholder="Review"></textarea>
+
+        <div class="file-input-label">Customer Image</div>
+        <input type="file" id="cImg">
+
+        <div class="file-input-label">Product Image</div>
+        <input type="file" id="pImg">
+
+        <button class="main" onclick="addCustomer()">Add Customer Review</button>
+        <div id="customerList" class="preview"></div>
+      </div>
+
+    </div>
+
+    <div class="right-col">
+      <div class="panel">
+        <div class="title">Hero Data</div>
+        <div id="heroAssets"></div>
+      </div>
+
+      <div class="panel">
+        <div class="title">Video Data</div>
+        <div id="videoAssets"></div>
+      </div>
+
+      <div class="panel">
+        <div class="title">Offers Data</div>
+        <div id="offerAssets"></div>
+      </div>
+
+      <div class="panel">
+        <div class="title">Customer Data</div>
+        <div id="customerAssets"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+if(location.protocol === "file:"){
+alert("Please open this page from http://localhost:5500/admin-home.html using start-local-server.bat. file:// mode can block data sync.");
+}
+
+// DOM
+const heroInput = document.getElementById("heroInput");
+const videoInput = document.getElementById("videoInput");
+const storyImageInput = document.getElementById("storyImageInput");
+const storyTitleInput = document.getElementById("storyTitleInput");
+const storySubtitleInput = document.getElementById("storySubtitleInput");
+const storyBaseCountInput = document.getElementById("storyBaseCountInput");
+const storyCaptionInput = document.getElementById("storyCaptionInput");
+const heroTitleLine1Input = document.getElementById("heroTitleLine1Input");
+const heroTitleLine2Input = document.getElementById("heroTitleLine2Input");
+const heroSublineInput = document.getElementById("heroSublineInput");
+const heroTrustInput = document.getElementById("heroTrustInput");
+const heroBadge1Input = document.getElementById("heroBadge1Input");
+const heroBadge2Input = document.getElementById("heroBadge2Input");
+const heroBadge3Input = document.getElementById("heroBadge3Input");
+const heroButtonInput = document.getElementById("heroButtonInput");
+const heroTextEnabledInput = document.getElementById("heroTextEnabledInput");
+const heroTextPositionInput = document.getElementById("heroTextPositionInput");
+const offerText = document.getElementById("offerText");
+const cName = document.getElementById("cName");
+const cProduct = document.getElementById("cProduct");
+const cReview = document.getElementById("cReview");
+const cImg = document.getElementById("cImg");
+const pImg = document.getElementById("pImg");
+
+const heroPreview = document.getElementById("heroPreview");
+const videoPreview = document.getElementById("videoPreview");
+const storyPreviewImage = document.getElementById("storyPreviewImage");
+const storyPreviewTitle = document.getElementById("storyPreviewTitle");
+const storyPreviewMeta = document.getElementById("storyPreviewMeta");
+const heroAssets = document.getElementById("heroAssets");
+const videoAssets = document.getElementById("videoAssets");
+const offerPreview = document.getElementById("offerPreview");
+const offerAssets = document.getElementById("offerAssets");
+const customerList = document.getElementById("customerList");
+const customerAssets = document.getElementById("customerAssets");
+const heroCount = document.getElementById("heroCount");
+const customerCount = document.getElementById("customerCount");
+const saveStatus = document.getElementById("saveStatus");
+const STORY_COUNTER_KEY = "swadra_home_family_story_v1";
+const STORY_DEFAULT_IMAGE = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560"><rect width="900" height="560" fill="#ffe6a8"/><circle cx="720" cy="112" r="62" fill="#fff5bf"/><path d="M0 400 C160 350 290 378 440 338 C620 290 750 330 900 286 L900 560 L0 560 Z" fill="#719444"/><g fill="#5b3822"><circle cx="135" cy="190" r="29"/><rect x="100" y="228" width="70" height="160" rx="28"/><circle cx="245" cy="170" r="34"/><rect x="205" y="215" width="80" height="184" rx="32"/><circle cx="368" cy="182" r="31"/><rect x="331" y="224" width="74" height="170" rx="30"/></g><text x="590" y="470" text-anchor="middle" font-family="Georgia" font-size="34" fill="#7a3d3d">Swadra Family</text></svg>`);
+
+function setStatus(message,isError){
+saveStatus.textContent = message;
+saveStatus.style.background = isError ? "#fee2e2" : "#ecfdf3";
+saveStatus.style.color = isError ? "#991b1b" : "#166534";
+}
+
+// SAFE STORAGE
+function safeSet(key,data){
+try{
+localStorage.setItem(key,JSON.stringify(data));
+console.log("Saved:", key);
+setStatus(`${key} saved successfully`, false);
+return true;
+}catch(e){
+setStatus(`${key} save failed: ${e.message}`, true);
+alert("Storage full or blocked. Delete old images/videos and try again.");
+console.error(e);
+return false;
+}
+}
+
+function safeParse(key){
+try{
+return JSON.parse(localStorage.getItem(key)) || [];
+}catch(e){
+console.error("Parse failed:", key, e);
+return [];
+}
+}
+
+function saveHomeContent(partial){
+let current = {};
+try{
+current = JSON.parse(localStorage.getItem("homeContent")) || {};
+}catch(e){
+console.error("homeContent parse failed", e);
+}
+
+let next = {
+offers: safeParse("offers"),
+updatedAt: Date.now(),
+...current,
+...partial
+};
+
+try{
+localStorage.setItem("homeContent", JSON.stringify(next));
+}catch(e){
+setStatus(`homeContent save failed: ${e.message}`, true);
+console.error("homeContent save failed", e);
+}
+}
+
+function canUseStorage(){
+try{
+localStorage.setItem("__storage_test__", "ok");
+localStorage.removeItem("__storage_test__");
+return true;
+}catch(e){
+setStatus(`Storage unavailable: ${e.message}`, true);
+console.error("Storage unavailable", e);
+return false;
+}
+}
+
+// FILE READ
+function readFile(file){
+return new Promise((res)=>{
+let r=new FileReader();
+r.onload=e=>res(e.target.result);
+r.readAsDataURL(file);
+});
+}
+
+function safeObjectParse(key){
+try{
+return JSON.parse(localStorage.getItem(key)) || {};
+}catch(e){
+return {};
+}
+}
+
+function getRegisteredCustomerCount(){
+try{
+let users = JSON.parse(localStorage.getItem("users") || "{}") || {};
+return Object.keys(users).filter(Boolean).length;
+}catch(e){
+return 0;
+}
+}
+
+function getPaidOrderCount(){
+try{
+let users = JSON.parse(localStorage.getItem("users") || "{}") || {};
+return Object.values(users).reduce((sum,user)=>{
+let orders = Array.isArray(user && user.orders) ? user.orders : [];
+return sum + orders.filter(order => String(order.payment || order.status || "").toLowerCase().includes("paid") || String(order.status || "").toLowerCase().includes("confirmed")).length;
+},0);
+}catch(e){
+return 0;
+}
+}
+
+function getStoryReviewCustomerCount(){
+return safeParse("customers").length;
+}
+
+function getStoryCurrentCount(settings){
+let data = settings || safeObjectParse(STORY_COUNTER_KEY);
+return Math.max(0, Number(data.baseCount || 5978)) + getRegisteredCustomerCount() + getStoryReviewCustomerCount() + getPaidOrderCount();
+}
+
+function renderStoryCounterAdmin(){
+let data = safeObjectParse(STORY_COUNTER_KEY);
+storyTitleInput.value = data.title || "More Than a Brand, A Family";
+storySubtitleInput.value = data.subtitle || "à¤œà¤¡à¤¼à¥‹à¤‚ à¤¸à¥‡ à¤œà¥à¤¡à¤¼à¥‡ à¤²à¥‹à¤—, à¤…à¤¸à¤²à¥€ à¤¬à¤¦à¤²à¤¾à¤µ";
+storyBaseCountInput.value = Number(data.baseCount || 5978);
+storyCaptionInput.value = data.caption || "Every Number Tells a Story";
+storyPreviewImage.src = data.image || STORY_DEFAULT_IMAGE;
+storyPreviewTitle.textContent = data.title || "More Than a Brand, A Family";
+storyPreviewMeta.textContent = `Live count: ${getStoryCurrentCount(data).toLocaleString("en-IN")} = base + orders + customers. Image full background me show hogi.`;
+}
+
+function getHeroTextSettings(){
+let content = {};
+try{
+content = JSON.parse(localStorage.getItem("homeContent")) || {};
+}catch(e){
+content = {};
+}
+return {
+titleLine1: content.heroTitleLine1 || "Crafted For Global",
+titleLine2: content.heroTitleLine2 || "Standards",
+subline: content.heroSubline || "Pure Quality. Honest Food. Swadra Promise.",
+trust: content.heroTrust || "â˜… Packed Fresh When You Order",
+badge1: content.heroBadge1 || "âœ“ 100% Natural",
+badge2: content.heroBadge2 || "âœ“ Expertly Selected",
+badge3: content.heroBadge3 || "âœ“ Farm Direct",
+button: content.heroButton || "Explore Products â†’"
+};
+}
+
+function renderHeroTextAdmin(){
+let data = getHeroTextSettings();
+heroTitleLine1Input.value = data.titleLine1;
+heroTitleLine2Input.value = data.titleLine2;
+heroSublineInput.value = data.subline;
+heroTrustInput.value = data.trust;
+heroBadge1Input.value = data.badge1;
+heroBadge2Input.value = data.badge2;
+heroBadge3Input.value = data.badge3;
+heroButtonInput.value = data.button;
+let content = {};
+try{
+content = JSON.parse(localStorage.getItem("homeContent")) || {};
+}catch(e){
+content = {};
+}
+heroTextEnabledInput.checked = content.heroTextEnabled !== false;
+heroTextPositionInput.value = content.heroTextPosition === "left" ? "left" : "right";
+}
+
+function saveHeroTextSettings(){
+saveHomeContent({
+heroTitleLine1: heroTitleLine1Input.value.trim() || "Crafted For Global",
+heroTitleLine2: heroTitleLine2Input.value.trim() || "Standards",
+heroSubline: heroSublineInput.value.trim() || "Pure Quality. Honest Food. Swadra Promise.",
+heroTrust: heroTrustInput.value.trim() || "â˜… Packed Fresh When You Order",
+heroBadge1: heroBadge1Input.value.trim() || "âœ“ 100% Natural",
+heroBadge2: heroBadge2Input.value.trim() || "âœ“ Expertly Selected",
+heroBadge3: heroBadge3Input.value.trim() || "âœ“ Farm Direct",
+heroButton: heroButtonInput.value.trim() || "Explore Products â†’",
+heroTextEnabled: heroTextEnabledInput.checked,
+heroTextPosition: heroTextPositionInput.value === "left" ? "left" : "right",
+heroTextUpdatedAt: Date.now()
+});
+renderHeroTextAdmin();
+setStatus("Hero text saved successfully", false);
+}
+
+storyImageInput.onchange = async function(){
+let file = storyImageInput.files[0];
+if(!file) return renderStoryCounterAdmin();
+if(!file.type.startsWith("image/")){
+alert("Please upload valid image file");
+storyImageInput.value = "";
+return;
+}
+storyPreviewImage.src = await readFile(file);
+};
+
+async function saveStoryCounterSettings(){
+let existing = safeObjectParse(STORY_COUNTER_KEY);
+let image = existing.image || "";
+let file = storyImageInput.files[0];
+if(file){
+if(!file.type.startsWith("image/")){
+alert("Please upload valid image file");
+return;
+}
+image = await readFile(file);
+}
+let settings = {
+image,
+title: storyTitleInput.value.trim() || "More Than a Brand, A Family",
+subtitle: storySubtitleInput.value.trim() || "à¤œà¤¡à¤¼à¥‹à¤‚ à¤¸à¥‡ à¤œà¥à¤¡à¤¼à¥‡ à¤²à¥‹à¤—, à¤…à¤¸à¤²à¥€ à¤¬à¤¦à¤²à¤¾à¤µ",
+baseCount: Math.max(0, Number(storyBaseCountInput.value) || 5978),
+caption: storyCaptionInput.value.trim() || "Every Number Tells a Story",
+updatedAt: Date.now()
+};
+if(safeSet(STORY_COUNTER_KEY, settings)){
+storyImageInput.value = "";
+saveHomeContent({storyCounterUpdatedAt: Date.now()});
+renderStoryCounterAdmin();
+setStatus("Family counter banner saved successfully", false);
+}
+}
+
+// HOME ASSETS (IndexedDB)
+let homeDb;
+const HOME_DB_NAME = "swadraHomeAssetsDB";
+const HOME_DB_VERSION = 1;
+const HERO_STORE = "heroImages";
+const CUSTOMER_STORE = "customers";
+let activePreviewUrls = [];
+
+function revokePreviewUrls(){
+activePreviewUrls.forEach(url=>URL.revokeObjectURL(url));
+activePreviewUrls = [];
+}
+
+function trackObjectUrl(file){
+let url = URL.createObjectURL(file);
+activePreviewUrls.push(url);
+return url;
+}
+
+function openHomeDb(){
+return new Promise((resolve,reject)=>{
+let request = indexedDB.open(HOME_DB_NAME, HOME_DB_VERSION);
+
+request.onupgradeneeded = e=>{
+let database = e.target.result;
+if(!database.objectStoreNames.contains(HERO_STORE)){
+database.createObjectStore(HERO_STORE,{keyPath:"id"});
+}
+if(!database.objectStoreNames.contains(CUSTOMER_STORE)){
+database.createObjectStore(CUSTOMER_STORE,{keyPath:"id"});
+}
+};
+
+request.onsuccess = e=>{
+homeDb = e.target.result;
+resolve(homeDb);
+};
+
+request.onerror = ()=>reject(request.error);
+});
+}
+
+async function ensureHomeDb(){
+if(homeDb) return homeDb;
+return openHomeDb();
+}
+
+async function getDbItems(storeName){
+let database = await ensureHomeDb();
+return new Promise((resolve,reject)=>{
+let tx = database.transaction(storeName,"readonly");
+let request = tx.objectStore(storeName).getAll();
+request.onsuccess = ()=>resolve(request.result || []);
+request.onerror = ()=>reject(request.error);
+});
+}
+
+async function addDbItem(storeName, value){
+let database = await ensureHomeDb();
+return new Promise((resolve,reject)=>{
+let tx = database.transaction(storeName,"readwrite");
+tx.objectStore(storeName).put(value);
+tx.oncomplete = ()=>resolve();
+tx.onerror = ()=>reject(tx.error);
+});
+}
+
+async function deleteDbItem(storeName, id){
+let database = await ensureHomeDb();
+return new Promise((resolve,reject)=>{
+let tx = database.transaction(storeName,"readwrite");
+tx.objectStore(storeName).delete(id);
+tx.oncomplete = ()=>resolve();
+tx.onerror = ()=>reject(tx.error);
+});
+}
+
+function updateAssetTimestamp(key, partial){
+let stamp = Date.now();
+localStorage.setItem(key, String(stamp));
+saveHomeContent({updatedAt: stamp, ...partial});
+}
+
+function makeAssetId(prefix){
+return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+// HERO
+heroInput.onchange=async function(){
+try{
+await ensureHomeDb();
+
+for(let f of this.files){
+
+if(!f.type.startsWith("image/")) continue;
+
+if(f.size > 5*1024*1024){
+alert("Max 5MB allowed");
+continue;
+}
+
+await addDbItem(HERO_STORE,{
+id: makeAssetId("hero"),
+data: f,
+createdAt: Date.now()
+});
+}
+
+updateAssetTimestamp("heroImagesUpdatedAt",{heroImagesUpdatedAt: Date.now()});
+setStatus("Hero images saved successfully", false);
+}catch(e){
+setStatus(`Hero images save failed: ${e.message}`, true);
+console.error(e);
+alert("Hero images save failed. Please try again.");
+}
+heroInput.value="";
+await renderAll();
+};
+
+// VIDEO (IndexedDB)
+let db;
+let videoDbRequest = indexedDB.open("swadraVideoDB",2);
+
+videoDbRequest.onupgradeneeded = e=>{
+db = e.target.result;
+if(!db.objectStoreNames.contains("videos")){
+db.createObjectStore("videos",{keyPath:"id"});
+}
+};
+
+videoDbRequest.onsuccess = e=>{
+db = e.target.result;
+loadVideo();
+};
+
+videoDbRequest.onerror = e=>{
+console.error("Video DB error", e.target.error);
+};
+
+function saveVideo(file){
+if(!db) return;
+let tx=db.transaction("videos","readwrite");
+tx.objectStore("videos").put({id:"heroVideo",data:file});
+tx.oncomplete=()=>{
+localStorage.setItem("heroVideoUpdatedAt", String(Date.now()));
+saveHomeContent({heroVideoUpdatedAt: Date.now()});
+setStatus("Video saved successfully", false);
+loadVideo();
+};
+tx.onerror=()=>{
+setStatus("Video save failed", true);
+};
+}
+
+function loadVideo(){
+if(!db) return;
+let tx=db.transaction("videos","readonly");
+let r=tx.objectStore("videos").get("heroVideo");
+
+r.onsuccess=()=>{
+if(r.result){
+let url=URL.createObjectURL(r.result.data);
+let markup=`<video src="${url}" width="250" controls></video>`;
+videoPreview.innerHTML=markup;
+videoAssets.innerHTML=markup;
+}else{
+videoPreview.innerHTML="";
+videoAssets.innerHTML="<p class='empty-note'>No video uploaded.</p>";
+}
+};
+}
+
+videoInput.onchange=function(){
+let file=this.files[0];
+if(!file) return;
+if(!file.type.startsWith("video/")){
+alert("Please upload a valid video file");
+return;
+}
+saveVideo(file);
+};
+
+// OFFER
+function addOffer(){
+if(!canUseStorage()) return;
+let val=offerText.value.trim();
+if(!val) return alert("Enter offer");
+
+let o=safeParse("offers");
+o.push(val);
+
+if(safeSet("offers",o)){
+saveHomeContent({offers:o});
+}
+offerText.value="";
+renderAll();
+}
+
+// CUSTOMER
+async function addCustomer(){
+
+if(!cName.value||!cProduct.value||!cReview.value) return alert("Fill all");
+
+if(!cImg.files[0] || !pImg.files[0]){
+alert("Upload both customer and product images");
+return;
+}
+
+if(cImg.files[0].size > 3*1024*1024 || pImg.files[0].size > 3*1024*1024){
+alert("Max 3MB images");
+return;
+}
+
+try{
+await ensureHomeDb();
+await addDbItem(CUSTOMER_STORE,{
+id: makeAssetId("customer"),
+name:cName.value,
+product:cProduct.value,
+review:cReview.value,
+customerImg:cImg.files[0],
+productImg:pImg.files[0],
+createdAt: Date.now()
+});
+
+updateAssetTimestamp("customersUpdatedAt",{customersUpdatedAt: Date.now()});
+setStatus("Customer review saved successfully", false);
+}catch(e){
+setStatus(`Customer review save failed: ${e.message}`, true);
+console.error(e);
+alert("Customer review save failed. Please try again.");
+return;
+}
+
+cName.value="";
+cProduct.value="";
+cReview.value="";
+cImg.value="";
+pImg.value="";
+
+await renderAll();
+}
+
+// DELETE
+async function delHero(id){
+try{
+if(String(id).startsWith("legacy-hero-")){
+let index = Number(String(id).split("-").pop());
+let d=safeParse("heroImages");
+d.splice(index,1);
+if(safeSet("heroImages",d)){
+saveHomeContent({heroImagesUpdatedAt: Date.now()});
+}
+await renderAll();
+return;
+}
+await deleteDbItem(HERO_STORE,id);
+updateAssetTimestamp("heroImagesUpdatedAt",{heroImagesUpdatedAt: Date.now()});
+setStatus("Hero image deleted", false);
+await renderAll();
+}catch(e){
+setStatus(`Hero image delete failed: ${e.message}`, true);
+console.error(e);
+}
+}
+
+function delOffer(i){
+let o=safeParse("offers");
+o.splice(i,1);
+if(safeSet("offers",o)){
+saveHomeContent({offers:o});
+}
+renderAll();
+}
+
+async function delCustomer(id){
+try{
+if(String(id).startsWith("legacy-customer-")){
+let index = Number(String(id).split("-").pop());
+let d=safeParse("customers");
+d.splice(index,1);
+if(safeSet("customers",d)){
+saveHomeContent({customersUpdatedAt: Date.now()});
+}
+await renderAll();
+return;
+}
+await deleteDbItem(CUSTOMER_STORE,id);
+updateAssetTimestamp("customersUpdatedAt",{customersUpdatedAt: Date.now()});
+setStatus("Customer review deleted", false);
+await renderAll();
+}catch(e){
+setStatus(`Customer delete failed: ${e.message}`, true);
+console.error(e);
+}
+}
+
+// RENDER
+async function renderAll(){
+revokePreviewUrls();
+renderStoryCounterAdmin();
+renderHeroTextAdmin();
+
+let hero = [];
+let customers = [];
+
+try{
+await ensureHomeDb();
+hero = await getDbItems(HERO_STORE);
+customers = await getDbItems(CUSTOMER_STORE);
+}catch(e){
+console.error("Home assets DB read failed", e);
+}
+
+if(hero.length === 0){
+hero = safeParse("heroImages").map((img,index)=>({id:`legacy-hero-${index}`, legacySrc:img}));
+}
+
+if(customers.length === 0){
+customers = safeParse("customers").map((item,index)=>({
+id:`legacy-customer-${index}`,
+...item,
+legacy:true
+}));
+}
+
+heroCount.innerText=hero.length;
+
+heroPreview.innerHTML=hero.map((img)=>{
+let src = img.legacySrc || trackObjectUrl(img.data);
+return `<img src="${src}" width="100">`;
+}).join("") || "<p class='empty-note'>No hero images uploaded.</p>";
+
+heroAssets.innerHTML=hero.map((img,i)=>`
+<div class="asset-row">
+<span>Hero Image ${i+1}</span>
+<button class="asset-delete" onclick="delHero('${img.id}')">Delete</button>
+</div>
+`).join("") || "<p class='empty-note'>No hero images uploaded.</p>";
+
+let offers=safeParse("offers");
+offerPreview.innerHTML=offers.map(o=>`
+<div class="asset-row" style="margin-bottom:0;">
+  <span>${o}</span>
+</div>
+`).join("") || "<p class='empty-note'>No offers added.</p>";
+
+offerAssets.innerHTML=offers.map((offer,i)=>`
+<div class="asset-row">
+<span>${offer}</span>
+<button class="asset-delete" onclick="delOffer(${i})">Delete</button>
+</div>
+`).join("") || "<p class='empty-note'>No offers added.</p>";
+
+customerCount.innerText=customers.length;
+
+customerList.innerHTML=customers.map(x=>{
+let src = x.legacy ? x.customerImg : trackObjectUrl(x.customerImg);
+return `<img src="${src}" width="80">`;
+}).join("") || "<p class='empty-note'>No customer reviews added.</p>";
+
+customerAssets.innerHTML=customers.map((x)=>`
+<div class="asset-row">
+<span>${x.name} - ${x.product}</span>
+<button class="asset-delete" onclick="delCustomer('${x.id}')">Delete</button>
+</div>
+`).join("") || "<p class='empty-note'>No customer reviews added.</p>";
+
+videoAssets.innerHTML=videoPreview.innerHTML || "<p class='empty-note'>No video uploaded.</p>";
+
+}
+
+openHomeDb()
+.then(()=>renderAll())
+.catch(e=>{
+setStatus(`Asset database unavailable: ${e.message}`, true);
+console.error(e);
+renderAll();
+});
+saveHomeContent({});
+setStatus("Panel ready. Add data to save it.", false);
+</script>
+
+</body>
+</html>
+
+
+
+
+

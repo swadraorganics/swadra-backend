@@ -1,0 +1,901 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swadra Organics - Admin Dashboard</title>
+  <style>
+    *{box-sizing:border-box}
+
+    :root{
+      --primary:#7a3d3d;
+      --primary-dark:#5f2f2f;
+      --bg:#f8f5f2;
+      --card:#ffffff;
+      --text:#1f1f1f;
+      --muted:#6c6c6c;
+      --line:#e7dfd7;
+      --success:#137a43;
+      --warn:#b36b00;
+      --danger:#c62828;
+      --shadow:0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .wrap{
+      width:min(100%, 1880px);
+      margin:0 auto;
+      padding:20px 24px 28px;
+    }
+
+    .topbar{
+      background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+      color:#fff;
+      padding:24px 28px;
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      margin-bottom:18px;
+    }
+
+    .topbar h1{
+      margin:0;
+      font-size:30px;
+      line-height:1.2;
+    }
+
+    .topbar p{
+      margin:8px 0 0;
+      opacity:.92;
+      font-size:15px;
+      line-height:1.6;
+    }
+
+    .toolbar{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+
+    .toolbar a,
+    .toolbar button,
+    .quick-links a,
+    .action-btn{
+      border:none;
+      outline:none;
+      cursor:pointer;
+      border-radius:12px;
+      padding:12px 18px;
+      font-size:14px;
+      font-weight:700;
+      transition:.2s ease;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .btn-primary{background:var(--primary);color:#fff}
+    .btn-primary:hover{background:var(--primary-dark)}
+    .btn-secondary{background:#1d6d5c;color:#fff}
+    .btn-dark{background:#333;color:#fff}
+    .btn-light{background:#eee7df;color:#3a2b2b}
+
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:14px;
+      margin-bottom:18px;
+    }
+
+    .stat-card{
+      background:var(--card);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+
+    .stat-card .label{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    .stat-card .value{
+      font-size:28px;
+      font-weight:800;
+      margin-top:8px;
+      color:var(--primary);
+      word-break:break-word;
+    }
+
+    .main-grid{
+      display:grid;
+      grid-template-columns:1.2fr .8fr;
+      gap:18px;
+      align-items:start;
+    }
+
+    .panel{
+      background:var(--card);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:22px 24px;
+      width:100%;
+    }
+
+    .panel h2{
+      margin:0 0 14px;
+      font-size:24px;
+    }
+
+    .muted{
+      color:var(--muted);
+      line-height:1.7;
+      font-size:14px;
+    }
+
+    .section-gap{margin-top:18px}
+
+    .quick-links{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .quick-links a{
+      min-height:72px;
+      text-align:center;
+      background:#fbf8f5;
+      color:var(--text);
+      border:1px solid var(--line);
+      box-shadow:none;
+      flex-direction:column;
+      gap:4px;
+    }
+
+    .quick-links a:hover{
+      background:#f3ece6;
+    }
+
+    .quick-links .title{
+      font-size:15px;
+      font-weight:800;
+      color:var(--primary);
+    }
+
+    .quick-links .sub{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:600;
+    }
+
+    .summary-box{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:12px;
+    }
+
+    .summary-card{
+      background:#fbf8f5;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+    }
+
+    .summary-card .label{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+      font-weight:700;
+    }
+
+    .summary-card .value{
+      font-size:22px;
+      font-weight:800;
+      color:#222;
+      word-break:break-word;
+    }
+
+    .summary-card.green .value{color:var(--success)}
+    .summary-card.gold .value{color:var(--warn)}
+    .summary-card.red .value{color:var(--danger)}
+
+    .list{
+      display:grid;
+      gap:12px;
+    }
+
+    .list-card{
+      background:#fffdfa;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+      display:grid;
+      gap:10px;
+    }
+
+    .list-card-head{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:flex-start;
+    }
+
+    .list-card-title{
+      font-size:16px;
+      font-weight:800;
+      color:var(--text);
+      line-height:1.4;
+    }
+
+    .badge-wrap{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .badge{
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:700;
+      background:#f2ebe4;
+      color:#433;
+    }
+
+    .badge.green{background:#e7f5ec;color:var(--success)}
+    .badge.red{background:#fdeceb;color:var(--danger)}
+    .badge.gold{background:#fff3dc;color:var(--warn)}
+
+    .mini-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .mini{
+      background:#faf6f2;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
+
+    .mini .k{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+      margin-bottom:5px;
+    }
+
+    .mini .v{
+      font-size:16px;
+      font-weight:800;
+      word-break:break-word;
+    }
+
+    .actions{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+
+    .empty{
+      padding:18px;
+      border:1px dashed #d8cdc2;
+      border-radius:16px;
+      color:var(--muted);
+      text-align:center;
+      background:#fffdfa;
+      font-size:14px;
+    }
+
+    .small-note{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.6;
+      margin-top:8px;
+    }
+
+    @media (max-width:1200px){
+      .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .main-grid{grid-template-columns:1fr}
+      .quick-links{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+
+    @media (max-width:700px){
+      .stats-grid,
+      .summary-box,
+      .quick-links,
+      .mini-grid{
+        grid-template-columns:1fr;
+      }
+
+      .topbar h1{
+        font-size:24px;
+      }
+
+      .wrap{
+        padding:16px;
+      }
+    }
+  </style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+<body>
+<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
+  <div class="wrap">
+    <div class="topbar">
+      <h1>Swadra Organics Admin Dashboard</h1>
+      <p>Yeh ab sirf landing page nahi hai. Is dashboard par products, customers, payments, coupons aur profit ka quick live overview dikh raha hai.</p>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-primary" onclick="refreshDashboard()">Refresh Dashboard</button>
+      <a class="btn-secondary" href="admin-index.html">Admin Home</a>
+      <a class="btn-dark" href="backend/ai.html">Products Control</a>
+      <a class="btn-light" href="admin-profit.html">Profit Tracker</a>
+    </div>
+
+    <div class="stats-grid" id="topStats"></div>
+
+    <div class="main-grid">
+      <div class="panel">
+        <h2>Quick Access</h2>
+        <div class="quick-links">
+          <a href="admin-index.html">
+            <span class="title">Admin Home</span>
+            <span class="sub">Main control hub</span>
+          </a>
+          <a href="admin-home.html">
+            <span class="title">Home Controls</span>
+            <span class="sub">Homepage manage</span>
+          </a>
+          <a href="backend/ai.html">
+            <span class="title">Products</span>
+            <span class="sub">AI pricing & stock</span>
+          </a>
+          <a href="admin-orders.html">
+            <span class="title">Orders</span>
+            <span class="sub">Order management</span>
+          </a>
+          <a href="admin-customers.html">
+            <span class="title">Customers</span>
+            <span class="sub">Accounts & pause</span>
+          </a>
+          <a href="admin-payments.html">
+            <span class="title">Payments</span>
+            <span class="sub">Review payments</span>
+          </a>
+          <a href="admin-coupons.html">
+            <span class="title">Coupons</span>
+            <span class="sub">Discount control</span>
+          </a>
+          <a href="admin-profit.html">
+            <span class="title">Profit</span>
+            <span class="sub">Date-wise profit</span>
+          </a>
+          <a href="admin-extra.html">
+            <span class="title">Extra</span>
+            <span class="sub">Other settings</span>
+          </a>
+        </div>
+
+        <div class="section-gap"></div>
+
+        <h2>Business Snapshot</h2>
+        <div class="summary-box">
+          <div class="summary-card">
+            <div class="label">Active Products</div>
+            <div class="value" id="activeProductsView">0</div>
+          </div>
+          <div class="summary-card red">
+            <div class="label">Out of Stock</div>
+            <div class="value" id="outStockView">0</div>
+          </div>
+          <div class="summary-card green">
+            <div class="label">Paid Amount</div>
+            <div class="value" id="paidAmountView">â‚¹0</div>
+          </div>
+          <div class="summary-card gold">
+            <div class="label">Pending Amount</div>
+            <div class="value" id="pendingAmountView">â‚¹0</div>
+          </div>
+        </div>
+
+        <div class="section-gap"></div>
+
+        <h2>System Health</h2>
+        <div class="list" id="systemHealthList"></div>
+
+        <div class="small-note">
+          Dashboard common localStorage keys aur AI products storage ko read karta hai. Isliye jo pages tumne pehle banwaye hain unka quick overview yahan auto show hoga.
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Recent Activity</h2>
+
+        <div class="section-gap"></div>
+        <h2 style="font-size:20px;">Recent Products</h2>
+        <div class="list" id="recentProductsList"></div>
+
+        <div class="section-gap"></div>
+        <h2 style="font-size:20px;">Recent Coupons</h2>
+        <div class="list" id="recentCouponsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PRODUCTS_DB_NAME = "swadraProductsDB";
+    const PRODUCTS_STORE_NAME = "products";
+
+    const PRODUCT_KEYS = ["swadraBackendProductsCache", "adminProducts"];
+    const CUSTOMER_KEYS = ["users","customers","accounts","registeredUsers","userAccounts","swadraUsers","swadraCustomers","allUsers"];
+    const ORDER_KEYS = ["adminOrders","orders","swadraOrders","customerOrders","allOrders"];
+    const PAYMENT_KEYS = ["payments","adminPayments","swadraPayments","orders","adminOrders","swadraOrders","customerOrders","allOrders"];
+    const COUPON_KEYS = ["adminCoupons"];
+    const CUSTOMER_PAUSE_KEY = "adminPausedCustomers";
+    const PAYMENT_REVIEW_KEY = "adminPaymentReviewMap";
+
+    function safeJsonParse(value, fallback){
+      try{
+        const parsed = JSON.parse(value);
+        return parsed ?? fallback;
+      }catch(error){
+        return fallback;
+      }
+    }
+
+    function rupee(value){
+      return "â‚¹" + Number(value || 0).toFixed(0);
+    }
+
+    function normalizeText(value){
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function getValueByPossibleKeys(obj, keys){
+      for(const key of keys){
+        if(obj && obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== ""){
+          return obj[key];
+        }
+      }
+      return "";
+    }
+
+    function parseAnyDate(value){
+      if(!value) return null;
+      const date = new Date(value);
+      if(!isNaN(date.getTime())) return date;
+
+      const secondTry = new Date(String(value).replace(/,/g, ""));
+      if(!isNaN(secondTry.getTime())) return secondTry;
+
+      return null;
+    }
+
+    function prettyDate(value){
+      const date = parseAnyDate(value);
+      if(!date) return "-";
+      return date.toLocaleString("en-IN");
+    }
+
+    async function openProductsDb(){
+      return new Promise((resolve,reject)=>{
+        const request = indexedDB.open(PRODUCTS_DB_NAME,1);
+        request.onsuccess = ()=>resolve(request.result);
+        request.onerror = ()=>reject(request.error);
+      });
+    }
+
+    async function getProductsFromIndexedDb(){
+      try{
+        const db = await openProductsDb();
+        return await new Promise((resolve,reject)=>{
+          const tx = db.transaction(PRODUCTS_STORE_NAME, "readonly");
+          const store = tx.objectStore(PRODUCTS_STORE_NAME);
+          const request = store.getAll();
+          request.onsuccess = ()=>resolve(request.result || []);
+          request.onerror = ()=>reject(request.error);
+        });
+      }catch(error){
+        return [];
+      }
+    }
+
+    function normalizeProduct(raw){
+      const name = String(raw.name || raw.productName || "").trim() || "Product";
+      const size = String(raw.size || raw.productSize || "").trim();
+      const stockQty = Number(raw.stockQty ?? 0) || 0;
+      const availability = String(raw.availability || (raw.outOfStock ? "Out of Stock" : "Available")).trim();
+      const mrp = Number(raw.mrp ?? 0) || 0;
+      const price = Number(raw.price ?? raw.sellingPrice ?? 0) || 0;
+      const totalCost = Number(raw.totalCost ?? 0) || 0;
+      const updatedAt = raw.updatedAt || raw.createdAt || "";
+      const isOut = availability === "Out of Stock" || stockQty <= 0;
+
+      return {
+        id: String(raw.id || ""),
+        name,
+        size,
+        stockQty,
+        availability,
+        mrp,
+        price,
+        totalCost,
+        updatedAt,
+        isOut,
+        margin: Math.max(0, price - totalCost)
+      };
+    }
+
+    async function getProducts(){
+      let merged = [];
+      PRODUCT_KEYS.forEach((key)=>{
+        const parsed = safeJsonParse(localStorage.getItem(key), []);
+        if(Array.isArray(parsed)) merged = merged.concat(parsed);
+      });
+
+      const indexed = await getProductsFromIndexedDb();
+      if(Array.isArray(indexed) && indexed.length){
+        merged = merged.concat(indexed);
+      }
+
+      const uniqueMap = new Map();
+      merged.forEach((item)=>{
+        if(!item || typeof item !== "object") return;
+        const normalized = normalizeProduct(item);
+        const mapKey = normalized.id || [normalized.name, normalized.size].join("|");
+        uniqueMap.set(mapKey, normalized);
+      });
+
+      return Array.from(uniqueMap.values());
+    }
+
+    function getCustomers(){
+      const pausedMap = safeJsonParse(localStorage.getItem(CUSTOMER_PAUSE_KEY), {});
+      let merged = [];
+      const seen = new Set();
+
+      CUSTOMER_KEYS.forEach((key)=>{
+        const parsed = safeJsonParse(localStorage.getItem(key), []);
+        if(!Array.isArray(parsed)) return;
+
+        parsed.forEach((item, index)=>{
+          if(!item || typeof item !== "object") return;
+
+          const name = String(getValueByPossibleKeys(item, ["name","fullName","username","userName"])).trim() || "Unnamed Customer";
+          const email = String(getValueByPossibleKeys(item, ["email","emailId","mail"])).trim();
+          const mobile = String(getValueByPossibleKeys(item, ["mobile","phone","phoneNumber","mobileNumber","contactNumber"])).trim();
+          const id = String(getValueByPossibleKeys(item, ["id","userId","uid","customerId","accountId"])) || `${key}_${email}_${mobile}_${index}`;
+          const dedupeKey = [email.toLowerCase(), mobile, name.toLowerCase()].join("|");
+
+          if(seen.has(dedupeKey)) return;
+          seen.add(dedupeKey);
+
+          merged.push({
+            id,
+            name,
+            email,
+            mobile,
+            paused: Boolean(pausedMap[id])
+          });
+        });
+      });
+
+      return merged;
+    }
+
+    function normalizePaymentStatus(raw){
+      const value = normalizeText(raw);
+      if(!value) return "unknown";
+      if(value.includes("paid") || value.includes("success") || value.includes("completed")) return "paid";
+      if(value.includes("pending") || value.includes("processing")) return "pending";
+      if(value.includes("fail") || value.includes("cancel")) return "failed";
+      if(value.includes("cod") || value.includes("cash")) return "cod";
+      return value;
+    }
+
+    function extractAmount(raw){
+      const directAmount = Number(getValueByPossibleKeys(raw, ["amount","totalAmount","paidAmount","grandTotal","paymentAmount"]));
+      if(directAmount > 0) return directAmount;
+
+      const items = raw.items || raw.products || raw.cartItems || [];
+      if(Array.isArray(items) && items.length){
+        return items.reduce((sum, item)=>{
+          const price = Number(getValueByPossibleKeys(item, ["price","sellingPrice","amount"])) || 0;
+          const qty = Number(getValueByPossibleKeys(item, ["quantity","qty","count"])) || 1;
+          return sum + (price * qty);
+        },0);
+      }
+
+      return 0;
+    }
+
+    function getPayments(){
+      const reviewMap = safeJsonParse(localStorage.getItem(PAYMENT_REVIEW_KEY), {});
+      let merged = [];
+      const seen = new Set();
+
+      PAYMENT_KEYS.forEach((key)=>{
+        const parsed = safeJsonParse(localStorage.getItem(key), []);
+        if(!Array.isArray(parsed)) return;
+
+        parsed.forEach((item, index)=>{
+          if(!item || typeof item !== "object") return;
+
+          const paymentId = String(getValueByPossibleKeys(item, ["paymentId","txnId","transactionId","razorpayPaymentId","id"])).trim() || `${key}_payment_${index}`;
+          const orderId = String(getValueByPossibleKeys(item, ["orderId","orderID","invoiceId","order_id"])).trim();
+          const name = String(getValueByPossibleKeys(item, ["name","customerName","fullName","username"])).trim() || "Unknown Customer";
+          const status = normalizePaymentStatus(getValueByPossibleKeys(item, ["paymentStatus","status","payment_state"]));
+          const amount = extractAmount(item);
+          const createdAt = getValueByPossibleKeys(item, ["createdAt","date","orderedAt","timestamp","time","paidAt"]);
+          const dedupeKey = [paymentId, orderId, amount].join("|");
+
+          if(seen.has(dedupeKey)) return;
+          seen.add(dedupeKey);
+
+          merged.push({
+            id: paymentId,
+            orderId,
+            name,
+            status,
+            amount,
+            reviewed: Boolean(reviewMap[paymentId]),
+            createdAt
+          });
+        });
+      });
+
+      return merged;
+    }
+
+    function getCoupons(){
+      const parsed = safeJsonParse(localStorage.getItem("adminCoupons"), []);
+      if(Array.isArray(parsed) && parsed.length) return parsed;
+
+      const single = safeJsonParse(localStorage.getItem("adminCoupon"), null);
+      if(single && single.code){
+        return [{
+          id: "single_coupon",
+          code: single.code,
+          discount: Number(single.discount || 0),
+          status: single.status || "active",
+          createdAt: Date.now()
+        }];
+      }
+
+      return [];
+    }
+
+    async function buildDashboardData(){
+      const [products] = await Promise.all([getProducts()]);
+      const customers = getCustomers();
+      const payments = getPayments();
+      const coupons = getCoupons();
+
+      const activeProducts = products.filter(item => !item.isOut).length;
+      const outProducts = products.filter(item => item.isOut).length;
+      const pausedCustomers = customers.filter(item => item.paused).length;
+      const paidPayments = payments.filter(item => item.status === "paid");
+      const pendingPayments = payments.filter(item => item.status === "pending");
+      const totalPaidAmount = paidPayments.reduce((sum, item)=>sum + Number(item.amount || 0), 0);
+      const totalPendingAmount = pendingPayments.reduce((sum, item)=>sum + Number(item.amount || 0), 0);
+      const reviewedPayments = payments.filter(item => item.reviewed).length;
+      const totalPotentialMargin = products.reduce((sum, item)=>sum + Number(item.margin || 0), 0);
+
+      return {
+        products,
+        customers,
+        payments,
+        coupons,
+        activeProducts,
+        outProducts,
+        pausedCustomers,
+        totalPaidAmount,
+        totalPendingAmount,
+        reviewedPayments,
+        totalPotentialMargin
+      };
+    }
+
+    function renderTopStats(data){
+      document.getElementById("topStats").innerHTML = `
+        <div class="stat-card">
+          <div class="label">Products</div>
+          <div class="value">${data.products.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Customers</div>
+          <div class="value">${data.customers.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Payments</div>
+          <div class="value">${data.payments.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Coupons</div>
+          <div class="value">${data.coupons.length}</div>
+        </div>
+      `;
+
+      document.getElementById("activeProductsView").textContent = data.activeProducts;
+      document.getElementById("outStockView").textContent = data.outProducts;
+      document.getElementById("paidAmountView").textContent = rupee(data.totalPaidAmount);
+      document.getElementById("pendingAmountView").textContent = rupee(data.totalPendingAmount);
+    }
+
+    function renderSystemHealth(data){
+      const list = document.getElementById("systemHealthList");
+
+      const cards = [
+        {
+          title:"Products Storage",
+          status:data.products.length ? "Connected" : "Empty",
+          className:data.products.length ? "green" : "gold",
+          meta1:"Saved products",
+          value1:data.products.length,
+          meta2:"Potential margin",
+          value2:rupee(data.totalPotentialMargin)
+        },
+        {
+          title:"Customer Accounts",
+          status:data.customers.length ? "Available" : "Empty",
+          className:data.customers.length ? "green" : "gold",
+          meta1:"Customers",
+          value1:data.customers.length,
+          meta2:"Paused",
+          value2:data.pausedCustomers
+        },
+        {
+          title:"Payment Records",
+          status:data.payments.length ? "Tracking" : "Empty",
+          className:data.payments.length ? "green" : "gold",
+          meta1:"Reviewed",
+          value1:data.reviewedPayments,
+          meta2:"Pending amount",
+          value2:rupee(data.totalPendingAmount)
+        },
+        {
+          title:"Coupon System",
+          status:data.coupons.length ? "Active" : "Not Set",
+          className:data.coupons.length ? "green" : "red",
+          meta1:"Coupons",
+          value1:data.coupons.length,
+          meta2:"Primary coupon",
+          value2:data.coupons[0]?.code || "-"
+        }
+      ];
+
+      list.innerHTML = cards.map(card => `
+        <div class="list-card">
+          <div class="list-card-head">
+            <div class="list-card-title">${card.title}</div>
+            <div class="badge-wrap">
+              <span class="badge ${card.className}">${card.status}</span>
+            </div>
+          </div>
+          <div class="mini-grid">
+            <div class="mini">
+              <div class="k">${card.meta1}</div>
+              <div class="v">${card.value1}</div>
+            </div>
+            <div class="mini">
+              <div class="k">${card.meta2}</div>
+              <div class="v">${card.value2}</div>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderRecentProducts(data){
+      const list = document.getElementById("recentProductsList");
+      const items = [...data.products]
+        .sort((a,b)=>{
+          const da = parseAnyDate(a.updatedAt);
+          const db = parseAnyDate(b.updatedAt);
+          return (db ? db.getTime() : 0) - (da ? da.getTime() : 0);
+        })
+        .slice(0,5);
+
+      if(!items.length){
+        list.innerHTML = `<div class="empty">No saved products found.</div>`;
+        return;
+      }
+
+      list.innerHTML = items.map(item => `
+        <div class="list-card">
+          <div class="list-card-head">
+            <div class="list-card-title">${item.name}${item.size ? ` - ${item.size}` : ""}</div>
+            <div class="badge-wrap">
+              <span class="badge ${item.isOut ? 'red' : 'green'}">${item.isOut ? 'Out of Stock' : 'Active'}</span>
+            </div>
+          </div>
+          <div class="mini-grid">
+            <div class="mini">
+              <div class="k">Selling Price</div>
+              <div class="v">${rupee(item.price)}</div>
+            </div>
+            <div class="mini">
+              <div class="k">Margin</div>
+              <div class="v">${rupee(item.margin)}</div>
+            </div>
+            <div class="mini">
+              <div class="k">Stock Qty</div>
+              <div class="v">${Number(item.stockQty || 0)}</div>
+            </div>
+            <div class="mini">
+              <div class="k">Updated</div>
+              <div class="v">${prettyDate(item.updatedAt)}</div>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderRecentCoupons(data){
+      const list = document.getElementById("recentCouponsList");
+      const items = [...data.coupons]
+        .sort((a,b)=>Number(b.createdAt || 0) - Number(a.createdAt || 0))
+        .slice(0,5);
+
+      if(!items.length){
+        list.innerHTML = `<div class="empty">No coupons configured yet.</div>`;
+        return;
+      }
+
+      list.innerHTML = items.map(item => `
+        <div class="list-card">
+          <div class="list-card-head">
+            <div class="list-card-title">${item.code || '-'}</div>
+            <div class="badge-wrap">
+              <span class="badge ${String(item.status || '').toLowerCase() === 'inactive' ? 'red' : 'green'}">${item.status || 'active'}</span>
+              <span class="badge gold">${Number(item.discount || 0)}% Off</span>
+            </div>
+          </div>
+          <div class="mini-grid">
+            <div class="mini">
+              <div class="k">Discount</div>
+              <div class="v">${Number(item.discount || 0)}%</div>
+            </div>
+            <div class="mini">
+              <div class="k">Created</div>
+              <div class="v">${item.createdAt ? prettyDate(item.createdAt) : '-'}</div>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    async function refreshDashboard(){
+      const data = await buildDashboardData();
+      renderTopStats(data);
+      renderSystemHealth(data);
+      renderRecentProducts(data);
+      renderRecentCoupons(data);
+    }
+
+    window.addEventListener("storage", function(){
+      refreshDashboard();
+    });
+
+    refreshDashboard();
+  </script>
+</body>
+</html>
+
+
+
+
+

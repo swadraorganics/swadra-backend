@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swadra Backend Control Panel</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root{
+      --primary:#7a3d3d;
+      --primary-dark:#5f2f2f;
+      --bg:#f7f3ef;
+      --card:#ffffff;
+      --text:#1e1e1e;
+      --muted:#6c6c6c;
+      --line:#e6ddd4;
+      --success:#147c45;
+      --warn:#b36b00;
+      --danger:#c62828;
+      --shadow:0 10px 28px rgba(0,0,0,0.08);
+      --radius:18px;
+    }
+
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .admin-index-link{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      margin-bottom:14px;
+      padding:11px 16px;
+      border-radius:14px;
+      background:#7a3d3d;
+      color:#fff;
+      text-decoration:none;
+      font-weight:800;
+      box-shadow:0 10px 24px rgba(122,61,61,.18);
+    }
+
+    .wrap{
+      max-width:1400px;
+      margin:0 auto;
+      padding:20px;
+    }
+
+    .topbar{
+      background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+      color:#fff;
+      padding:24px;
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      margin-bottom:18px;
+    }
+
+    .topbar h1{
+      margin:0;
+      font-size:30px;
+    }
+
+    .topbar p{
+      margin:8px 0 0;
+      opacity:0.92;
+      font-size:15px;
+      line-height:1.6;
+    }
+
+    .topbar-actions{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:16px;
+    }
+
+    .status-pill{
+      border:none;
+      border-radius:999px;
+      padding:12px 18px;
+      font-size:14px;
+      font-weight:800;
+      letter-spacing:0.2px;
+      cursor:default;
+      color:#fff;
+      box-shadow:var(--shadow);
+    }
+
+    .status-pill.online{ background:var(--success); }
+    .status-pill.offline{ background:var(--danger); }
+    .status-pill.checking{ background:var(--warn); }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      gap:18px;
+      align-items:start;
+    }
+
+    .panel{
+      background:var(--card);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:18px;
+    }
+
+    .panel h2{
+      margin:0 0 14px;
+      font-size:22px;
+    }
+
+    .toolbar{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+
+    button{
+      border:none;
+      border-radius:12px;
+      padding:12px 16px;
+      font-weight:700;
+      cursor:pointer;
+      transition:0.2s ease;
+    }
+
+    .btn-primary{ background:var(--primary); color:#fff; }
+    .btn-primary:hover{ background:var(--primary-dark); }
+
+    .btn-secondary{ background:#1f6d5b; color:#fff; }
+    .btn-dark{ background:#333; color:#fff; }
+    .btn-danger{ background:var(--danger); color:#fff; }
+    .btn-light{ background:#eee7df; color:#3a2b2b; }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      margin-bottom:12px;
+    }
+
+    .field label{
+      font-size:13px;
+      font-weight:700;
+      color:#3c2d2d;
+    }
+
+    .field input, .field textarea, .field select{
+      width:100%;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:12px;
+      padding:12px 14px;
+      font-size:14px;
+      outline:none;
+    }
+
+    .field input:focus, .field textarea:focus, .field select:focus{
+      border-color:var(--primary);
+      box-shadow:0 0 0 3px rgba(122,61,61,0.10);
+    }
+
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+      margin-top:8px;
+    }
+
+    .stat{
+      background:#fbf8f5;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+    }
+
+    .stat .k{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+      margin-bottom:5px;
+    }
+
+    .stat .v{
+      font-size:24px;
+      font-weight:800;
+      word-break:break-word;
+    }
+
+    .success{ color:var(--success); }
+    .warn{ color:var(--warn); }
+    .danger{ color:var(--danger); }
+
+    .small{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.6;
+    }
+
+    .product-list, .log-list{
+      display:grid;
+      gap:12px;
+      max-height:700px;
+      overflow:auto;
+      padding-right:4px;
+    }
+
+    .item-card{
+      border:1px solid var(--line);
+      background:#fffdfa;
+      border-radius:16px;
+      padding:14px;
+    }
+
+    .item-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .item-head h3{
+      margin:0;
+      font-size:18px;
+      line-height:1.3;
+    }
+
+    .badge-wrap{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+
+    .badge{
+      padding:7px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      background:#f1e9e2;
+      color:#443;
+    }
+
+    .badge.green{
+      background:#e7f5ec;
+      color:var(--success);
+    }
+
+    .badge.gold{
+      background:#fff3dc;
+      color:var(--warn);
+    }
+
+    .badge.red{
+      background:#fdeceb;
+      color:var(--danger);
+    }
+
+    .meta-grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+
+    .mini{
+      background:#faf6f2;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+    }
+
+    .mini .k{
+      font-size:11px;
+      color:var(--muted);
+      font-weight:700;
+      margin-bottom:4px;
+    }
+
+    .mini .v{
+      font-size:14px;
+      font-weight:800;
+      word-break:break-word;
+    }
+
+    .log{
+      padding:12px;
+      border-radius:14px;
+      border-left:4px solid #bbb;
+      background:#fafafa;
+    }
+
+    .log.success{ border-left-color:var(--success); }
+    .log.warn{ border-left-color:var(--warn); }
+    .log.error{ border-left-color:var(--danger); }
+
+    .empty{
+      padding:18px;
+      border:1px dashed #d5c9be;
+      border-radius:16px;
+      color:var(--muted);
+      text-align:center;
+      background:#fffdfa;
+    }
+
+    code{
+      background:#f3eee8;
+      padding:2px 6px;
+      border-radius:6px;
+    }
+
+    @media (max-width:1100px){
+      .grid{ grid-template-columns:1fr; }
+    }
+
+    @media (max-width:780px){
+      .stats{ grid-template-columns:repeat(2,1fr); }
+      .meta-grid{ grid-template-columns:1fr; }
+    }
+
+    @media (max-width:520px){
+      .stats{ grid-template-columns:1fr; }
+      .topbar h1{ font-size:24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="admin-index-link" href="../admin-index.html">Back To Admin Index</a>
+    <div class="topbar">
+      <h1>Swadra Backend Control Panel</h1>
+      <p>Ye panel backend health, product sync, auto market search aur fetched values ko clearly monitor karne ke liye optimized hai. Exact price issue backend parser me hota hai, panel usko clearly expose karega.</p>
+
+      <div class="topbar-actions">
+        <button id="serverStatusButton" class="status-pill checking" title="Server status">
+          Server Status: Checking...
+        </button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>Backend Settings</h2>
+
+        <div class="field">
+          <label>Render / Local Backend Base URL</label>
+          <input id="backendUrl" type="text" placeholder="https://your-app.onrender.com or http://127.0.0.1:3000">
+        </div>
+
+        <div class="field">
+          <label>Scheduler Mode</label>
+          <select id="schedulerMode">
+            <option value="manual">Manual Only</option>
+            <option value="2hours">Every 2 Hours</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Price Search Mode</label>
+          <select id="searchMode">
+            <option value="product_name">Product Name Auto Search</option>
+            <option value="product_name_size">Product Name + Size</option>
+            <option value="hybrid">Hybrid (Name First, URL Fallback)</option>
+            <option value="url_only">URL Only</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Search Engines / Markets</label>
+          <select id="searchTarget">
+            <option value="all">Amazon + Flipkart + Google</option>
+            <option value="amazon_flipkart">Amazon + Flipkart</option>
+            <option value="amazon_only">Amazon Only</option>
+            <option value="flipkart_only">Flipkart Only</option>
+            <option value="google_only">Google Only</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Notes</label>
+          <textarea id="notes" rows="4" placeholder="Optional notes..."></textarea>
+        </div>
+
+        <div class="toolbar">
+          <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
+          <button class="btn-secondary" onclick="checkBackendHealth()">Check Backend</button>
+          <button class="btn-secondary" onclick="fetchAllCompetitorPrices()">Auto Search All Prices</button>
+          <button class="btn-dark" onclick="runPricingNow()">Run Pricing Now</button>
+          <button class="btn-light" onclick="autoSearchSelectedProducts()">Search Current Product Names</button>
+          <button class="btn-danger" onclick="clearLogs()">Clear Logs</button>
+        </div>
+
+        <div class="small">
+          Best flow:
+          <br><code>/api/pricing/search-by-product-name</code>
+          <br><code>/api/pricing/fetch-all-competitor-prices</code>
+          <br><br>
+          Agar yahan exact market price wrong aa raha hai, to issue HTML me nahi, backend fetch/parser me hai.
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="k">Backend Status</div>
+            <div class="v" id="backendStatusText">Offline</div>
+          </div>
+          <div class="stat">
+            <div class="k">Products Found</div>
+            <div class="v" id="productsCountText">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">Last Run</div>
+            <div class="v" id="lastRunText" style="font-size:16px;">Never</div>
+          </div>
+          <div class="stat">
+            <div class="k">Scheduler</div>
+            <div class="v" id="schedulerText" style="font-size:18px;">Manual</div>
+          </div>
+        </div>
+
+        <div style="height:16px;"></div>
+
+        <h2>Products from Backend</h2>
+        <div id="productsList" class="product-list"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Backend Logs</h2>
+        <div class="toolbar">
+          <button class="btn-secondary" onclick="loadLogs()">Refresh Logs</button>
+          <button class="btn-dark" onclick="loadProducts()">Refresh Products</button>
+        </div>
+        <div id="logsList" class="log-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "swadra_backend_panel_settings_v2";
+
+    let state = {
+      backendUrl: "",
+      schedulerMode: "manual",
+      searchMode: "product_name",
+      searchTarget: "all",
+      notes: "",
+      logs: [],
+      products: []
+    };
+
+    function saveLocalState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        backendUrl: state.backendUrl,
+        schedulerMode: state.schedulerMode,
+        searchMode: state.searchMode,
+        searchTarget: state.searchTarget,
+        notes: state.notes
+      }));
+    }
+
+    function loadLocalState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        state.backendUrl = saved.backendUrl || "http://127.0.0.1:3000";
+        state.schedulerMode = saved.schedulerMode || "manual";
+        state.searchMode = saved.searchMode || "product_name";
+        state.searchTarget = saved.searchTarget || "all";
+        state.notes = saved.notes || "";
+      } catch (e) {
+        state.backendUrl = "http://127.0.0.1:3000";
+      }
+
+      document.getElementById("backendUrl").value = state.backendUrl;
+      document.getElementById("schedulerMode").value = state.schedulerMode;
+      document.getElementById("searchMode").value = state.searchMode;
+      document.getElementById("searchTarget").value = state.searchTarget;
+      document.getElementById("notes").value = state.notes;
+      document.getElementById("schedulerText").textContent =
+        state.schedulerMode === "2hours" ? "2 Hours" : "Manual";
+    }
+
+    function normalizeUrl(url) {
+      return (url || "").trim().replace(/\/+$/, "");
+    }
+
+    function setServerStatusButton(status, text) {
+      const btn = document.getElementById("serverStatusButton");
+      if (!btn) return;
+
+      btn.className = "status-pill";
+      if (status === "online") {
+        btn.classList.add("online");
+        btn.textContent = "Server Status: Online";
+      } else if (status === "offline") {
+        btn.classList.add("offline");
+        btn.textContent = "Server Status: Offline";
+      } else {
+        btn.classList.add("checking");
+        btn.textContent = text || "Server Status: Checking...";
+      }
+    }
+
+    function saveSettings() {
+      state.backendUrl = normalizeUrl(document.getElementById("backendUrl").value);
+      state.schedulerMode = document.getElementById("schedulerMode").value;
+      state.searchMode = document.getElementById("searchMode").value;
+      state.searchTarget = document.getElementById("searchTarget").value;
+      state.notes = document.getElementById("notes").value.trim();
+
+      saveLocalState();
+      document.getElementById("schedulerText").textContent =
+        state.schedulerMode === "2hours" ? "2 Hours" : "Manual";
+
+      setServerStatusButton("checking", "Server Status: Checking...");
+      addLocalLog("Settings saved locally.", "success");
+      renderLogs();
+      alert("Settings saved.");
+    }
+
+    function addLocalLog(message, level = "info") {
+      state.logs.unshift({
+        time: new Date().toLocaleString(),
+        message,
+        level
+      });
+      state.logs = state.logs.slice(0, 150);
+    }
+
+    async function fetchJson(path, options = {}) {
+      const base = normalizeUrl(document.getElementById("backendUrl").value);
+      if (!base) {
+        throw new Error("Backend URL missing");
+      }
+
+      const response = await fetch(base + path, options);
+      if (!response.ok) {
+        throw new Error("HTTP " + response.status);
+      }
+      return await response.json();
+    }
+
+    async function tryPost(paths, body) {
+      let lastError = null;
+
+      for (const path of paths) {
+        try {
+          const data = await fetchJson(path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body || {})
+          });
+          return { ok: true, path, data };
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      throw lastError || new Error("All endpoint attempts failed");
+    }
+
+    function getSearchSettingsPayload() {
+      return {
+        searchMode: document.getElementById("searchMode").value,
+        searchTarget: document.getElementById("searchTarget").value,
+        notes: document.getElementById("notes").value.trim()
+      };
+    }
+
+    function getProductSearchLabel(product) {
+      const name = product.productName || product.name || product.title || "";
+      const size = product.productSize || product.size || "";
+      const mode = document.getElementById("searchMode").value;
+
+      if (mode === "product_name_size" && size) {
+        return `${name} ${size}`.trim();
+      }
+      return String(name || "").trim();
+    }
+
+    function buildProductsPayload(products) {
+      return products.map((product) => ({
+        id: product.id || product.productId || "",
+        productName: product.productName || product.name || product.title || "",
+        productSize: product.productSize || product.size || "",
+        query: getProductSearchLabel(product),
+        amazonUrl: product.amazonUrl || "",
+        flipkartUrl: product.flipkartUrl || "",
+        otherUrl: product.otherUrl || "",
+        mrp: Number(product.mrp || 0) || 0,
+        sellingPrice: Number(product.sellingPrice || product.currentPrice || product.price || 0) || 0
+      }));
+    }
+
+    function getMarketStatus(product, market) {
+      const keyMap = {
+        amazon: ["amazonStatus", "amazonFetchStatus", "amazonResultStatus"],
+        flipkart: ["flipkartStatus", "flipkartFetchStatus", "flipkartResultStatus"],
+        other: ["otherStatus", "googleStatus", "otherFetchStatus", "googleFetchStatus"]
+      };
+
+      const keys = keyMap[market] || [];
+      for (const key of keys) {
+        if (product && product[key]) return String(product[key]);
+      }
+      return "No status";
+    }
+
+    async function checkBackendHealth() {
+      setServerStatusButton("checking", "Server Status: Checking...");
+      try {
+        const data = await fetchJson("/health");
+        document.getElementById("backendStatusText").textContent = "Online";
+        document.getElementById("backendStatusText").className = "v success";
+        setServerStatusButton("online");
+        addLocalLog("Backend connected successfully.", "success");
+        if (data && data.time) {
+          document.getElementById("lastRunText").textContent = new Date(data.time).toLocaleString();
+        }
+      } catch (error) {
+        document.getElementById("backendStatusText").textContent = "Offline";
+        document.getElementById("backendStatusText").className = "v danger";
+        setServerStatusButton("offline");
+        addLocalLog("Backend check failed: " + error.message, "error");
+      }
+      renderLogs();
+    }
+
+    async function loadProducts() {
+      try {
+        const data = await fetchJson("/api/products");
+        state.products = Array.isArray(data.products) ? data.products : (Array.isArray(data) ? data : []);
+        document.getElementById("productsCountText").textContent = state.products.length;
+        renderProducts();
+        addLocalLog("Products loaded from backend.", "success");
+      } catch (error) {
+        state.products = [];
+        renderProducts();
+        document.getElementById("productsCountText").textContent = "0";
+        addLocalLog("Products load failed: " + error.message, "error");
+      }
+      renderLogs();
+    }
+
+    async function runPricingNow() {
+      try {
+        const payload = {
+          ...getSearchSettingsPayload(),
+          mode: "pricing_run"
+        };
+
+        const data = await tryPost([
+          "/api/pricing/run",
+          "/api/pricing/run-ai"
+        ], payload);
+
+        document.getElementById("lastRunText").textContent = new Date().toLocaleString();
+        addLocalLog(`AI pricing run completed via ${data.path}.`, "success");
+
+        if (data.data && data.data.products) {
+          state.products = data.data.products;
+          document.getElementById("productsCountText").textContent = state.products.length;
+          renderProducts();
+        } else {
+          await loadProducts();
+        }
+      } catch (error) {
+        addLocalLog("AI pricing run failed: " + error.message, "error");
+      }
+      renderLogs();
+    }
+
+    async function fetchAllCompetitorPrices() {
+      try {
+        if (!state.products.length) {
+          await loadProducts();
+        }
+
+        const payload = {
+          ...getSearchSettingsPayload(),
+          products: buildProductsPayload(state.products),
+          useProductNameSearch: true,
+          urlOptional: true
+        };
+
+        const result = await tryPost([
+          "/api/pricing/search-by-product-name",
+          "/api/pricing/fetch-all-competitor-prices"
+        ], payload);
+
+        const data = result.data;
+
+        if (data && data.products) {
+          state.products = data.products;
+          document.getElementById("productsCountText").textContent = state.products.length;
+          renderProducts();
+        } else {
+          await loadProducts();
+        }
+
+        document.getElementById("lastRunText").textContent = new Date().toLocaleString();
+        addLocalLog(`Bulk competitor auto-search completed via ${result.path}.`, "success");
+      } catch (error) {
+        addLocalLog("Bulk competitor auto-search failed: " + error.message, "error");
+      }
+      renderLogs();
+    }
+
+    async function autoSearchSelectedProducts() {
+      try {
+        if (!state.products.length) {
+          await loadProducts();
+        }
+
+        if (!state.products.length) {
+          alert("No products found.");
+          return;
+        }
+
+        const payload = {
+          ...getSearchSettingsPayload(),
+          products: buildProductsPayload(state.products),
+          source: "backend-panel-manual-trigger",
+          useProductNameSearch: true,
+          urlOptional: true
+        };
+
+        const result = await tryPost([
+          "/api/pricing/search-by-product-name",
+          "/api/pricing/fetch-all-competitor-prices"
+        ], payload);
+
+        const data = result.data;
+
+        if (data && data.products) {
+          state.products = data.products;
+          document.getElementById("productsCountText").textContent = state.products.length;
+          renderProducts();
+        } else {
+          await loadProducts();
+        }
+
+        document.getElementById("lastRunText").textContent = new Date().toLocaleString();
+        addLocalLog(`Current product name search completed via ${result.path}.`, "success");
+      } catch (error) {
+        addLocalLog("Current product name search failed: " + error.message, "error");
+      }
+      renderLogs();
+    }
+
+    async function loadLogs() {
+      try {
+        const data = await fetchJson("/api/logs");
+        const remoteLogs = Array.isArray(data.logs) ? data.logs : (Array.isArray(data) ? data : []);
+
+        const normalized = remoteLogs.map(log => ({
+          time: log.time ? new Date(log.time).toLocaleString() : new Date().toLocaleString(),
+          message: log.message || "No message",
+          level: log.level || "info"
+        }));
+
+        state.logs = [...normalized, ...state.logs].slice(0, 200);
+      } catch (error) {
+        addLocalLog("Remote logs load failed: " + error.message, "warn");
+      }
+      renderLogs();
+    }
+
+    function clearLogs() {
+      state.logs = [];
+      renderLogs();
+    }
+
+    function renderProducts() {
+      const wrap = document.getElementById("productsList");
+
+      if (!state.products.length) {
+        wrap.innerHTML = `<div class="empty">No products found from backend.</div>`;
+        return;
+      }
+
+      wrap.innerHTML = state.products.map(product => {
+        const title = escapeHtml(product.productName || product.title || product.name || "Untitled Product");
+        const size = escapeHtml(product.productSize || product.size || "");
+        const searchLabel = escapeHtml(getProductSearchLabel(product));
+        const selling = rupee(product.sellingPrice || product.currentPrice || product.price || 0);
+        const mrp = rupee(product.mrp || 0);
+        const floor = rupee(product.floorPrice || 0);
+        const amazon = rupee(product.amazonPrice || 0);
+        const flipkart = rupee(product.flipkartPrice || 0);
+        const other = rupee(product.otherPrice || 0);
+        const status = escapeHtml(product.aiStatus || product.lastStatus || "No Status");
+        const updatedAt = escapeHtml(product.updatedAt || product.lastCheckedAt || "N/A");
+        const stock = product.outOfStock ? "Out of Stock" : "In Stock";
+        const amazonUrl = escapeHtml(product.amazonUrl || "Auto");
+        const flipkartUrl = escapeHtml(product.flipkartUrl || "Auto");
+        const otherUrl = escapeHtml(product.otherUrl || "Auto");
+
+        const amazonStatus = escapeHtml(getMarketStatus(product, "amazon"));
+        const flipkartStatus = escapeHtml(getMarketStatus(product, "flipkart"));
+        const otherStatus = escapeHtml(getMarketStatus(product, "other"));
+
+        let statusClass = "gold";
+        if (/safe|success|connected|updated|beat|found|tracked/i.test(status)) statusClass = "green";
+        if (/error|failed|protected|offline|loss|not found/i.test(status)) statusClass = "red";
+
+        return `
+          <div class="item-card">
+            <div class="item-head">
+              <div>
+                <h3>${title}${size ? " - " + size : ""}</h3>
+                <div class="badge-wrap">
+                  <span class="badge green">Selling: ${selling}</span>
+                  <span class="badge">MRP: ${mrp}</span>
+                  <span class="badge gold">Floor: ${floor}</span>
+                  <span class="badge ${product.outOfStock ? "red" : "green"}">${stock}</span>
+                </div>
+              </div>
+              <div class="badge-wrap">
+                <span class="badge ${statusClass}">${status}</span>
+                <span class="badge">Updated: ${updatedAt}</span>
+              </div>
+            </div>
+
+            <div class="meta-grid">
+              <div class="mini">
+                <div class="k">Auto Search Query</div>
+                <div class="v">${searchLabel || "-"}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Market Mode</div>
+                <div class="v">${escapeHtml(document.getElementById("searchTarget").value)}</div>
+              </div>
+
+              <div class="mini">
+                <div class="k">Amazon Price</div>
+                <div class="v">${amazon}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Amazon Fetch Status</div>
+                <div class="v">${amazonStatus}</div>
+              </div>
+
+              <div class="mini">
+                <div class="k">Flipkart Price</div>
+                <div class="v">${flipkart}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Flipkart Fetch Status</div>
+                <div class="v">${flipkartStatus}</div>
+              </div>
+
+              <div class="mini">
+                <div class="k">Google / Other Price</div>
+                <div class="v">${other}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Google / Other Status</div>
+                <div class="v">${otherStatus}</div>
+              </div>
+
+              <div class="mini">
+                <div class="k">URL Mode</div>
+                <div class="v">${document.getElementById("searchMode").value === "url_only" ? "URL Only" : "Auto Name Search"}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Exact Fetch Reality</div>
+                <div class="v">${(Number(product.amazonPrice||0) > 0 || Number(product.flipkartPrice||0) > 0 || Number(product.otherPrice||0) > 0) ? "Some value fetched" : "No real market price found"}</div>
+              </div>
+            </div>
+
+            <div class="badge-wrap" style="margin-top:12px;">
+              <span class="badge">Amazon URL: ${amazonUrl}</span>
+              <span class="badge">Flipkart URL: ${flipkartUrl}</span>
+              <span class="badge">Other URL: ${otherUrl}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderLogs() {
+      const wrap = document.getElementById("logsList");
+
+      if (!state.logs.length) {
+        wrap.innerHTML = `<div class="empty">No logs yet.</div>`;
+        return;
+      }
+
+      wrap.innerHTML = state.logs.map(log => `
+        <div class="log ${escapeHtml(log.level)}">
+          <div style="font-weight:700; margin-bottom:4px;">${escapeHtml((log.level || "info").toUpperCase())}</div>
+          <div class="small" style="margin-bottom:6px;">${escapeHtml(log.time || "")}</div>
+          <div>${escapeHtml(log.message || "")}</div>
+        </div>
+      `).join("");
+    }
+
+    function rupee(value) {
+      return "₹" + Number(value || 0).toFixed(0);
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    loadLocalState();
+    renderProducts();
+    renderLogs();
+    checkBackendHealth();
+    loadProducts();
+    loadLogs();
+  </script>
+</body>
+</html>

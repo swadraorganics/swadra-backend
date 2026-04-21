@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saved Products - Swadra Backend</title>
+  <style>
+    *{box-sizing:border-box}
+    :root{
+      --primary:#7a3d3d;
+      --primary-dark:#5f2f2f;
+      --bg:#f7f3ef;
+      --card:#ffffff;
+      --text:#1e1e1e;
+      --muted:#6c6c6c;
+      --line:#e6ddd4;
+      --success:#147c45;
+      --danger:#c62828;
+      --shadow:0 10px 28px rgba(0,0,0,0.08);
+    }
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    .admin-index-link{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      margin-bottom:14px;
+      padding:11px 16px;
+      border-radius:14px;
+      background:#7a3d3d;
+      color:#fff;
+      text-decoration:none;
+      font-weight:800;
+      box-shadow:0 10px 24px rgba(122,61,61,.18);
+    }
+    .wrap{
+      max-width:1450px;
+      margin:0 auto;
+      padding:20px;
+    }
+    .topbar{
+      background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+      color:#fff;
+      padding:24px;
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      margin-bottom:18px;
+    }
+    .topbar h1{
+      margin:0;
+      font-size:30px;
+    }
+    .topbar p{
+      margin:8px 0 0;
+      opacity:.92;
+      font-size:15px;
+    }
+    .toolbar{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+    button{
+      border:none;
+      border-radius:12px;
+      padding:12px 16px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .btn-primary{background:var(--primary);color:#fff}
+    .btn-dark{background:#2f2f2f;color:#fff}
+    .summary{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+      margin-bottom:18px;
+    }
+    .summary-card{
+      background:var(--card);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+    .summary-card .k{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+      margin-bottom:8px;
+    }
+    .summary-card .v{
+      font-size:28px;
+      font-weight:800;
+      color:var(--primary);
+    }
+    .category-group{
+      display:grid;
+      gap:14px;
+      margin-bottom:22px;
+    }
+    .category-title{
+      font-size:22px;
+      font-weight:800;
+      color:var(--primary);
+      padding:4px 2px;
+    }
+    .products-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:16px;
+    }
+    .product-card{
+      background:var(--card);
+      border-radius:20px;
+      box-shadow:var(--shadow);
+      border:1px solid var(--line);
+      padding:16px;
+      display:grid;
+      gap:12px;
+    }
+    .product-head{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+    }
+    .product-head-copy{
+      flex:1 1 auto;
+      min-width:0;
+    }
+    .thumb{
+      width:78px;
+      height:78px;
+      object-fit:contain;
+      border-radius:12px;
+      background:#fff;
+      border:1px solid var(--line);
+      padding:6px;
+      flex:0 0 auto;
+    }
+    .product-head h3{
+      margin:0;
+      font-size:22px;
+      line-height:1.25;
+    }
+    .sub{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:14px;
+    }
+    .sub-actions{
+      margin-top:10px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .image-strip{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:10px;
+    }
+    .image-tile{
+      display:grid;
+      gap:6px;
+    }
+    .image-tile-label{
+      font-size:11px;
+      font-weight:800;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.04em;
+    }
+    .image-preview{
+      width:100%;
+      aspect-ratio:1/1;
+      object-fit:contain;
+      border-radius:12px;
+      background:#fff;
+      border:1px solid var(--line);
+      padding:6px;
+    }
+    .image-empty{
+      width:100%;
+      aspect-ratio:1/1;
+      border-radius:12px;
+      border:1px dashed #d5c9be;
+      background:#faf6f2;
+      color:var(--muted);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:8px;
+      font-size:12px;
+      font-weight:700;
+    }
+    .badge-wrap{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .badge{
+      padding:7px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      background:#f1e9e2;
+      color:#433;
+    }
+    .badge.green{background:#e7f5ec;color:var(--success)}
+    .badge.red{background:#fdeceb;color:var(--danger)}
+    .mini-grid{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
+    }
+    .mini{
+      background:#faf6f2;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
+    .mini .k{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+      margin-bottom:5px;
+    }
+    .mini .v{
+      font-size:18px;
+      font-weight:800;
+    }
+    .stock-toggle{
+      border:none;
+      border-radius:999px;
+      padding:9px 14px;
+      font-size:12px;
+      font-weight:800;
+      cursor:pointer;
+    }
+    .stock-toggle.available{
+      background:#e7f5ec;
+      color:var(--success);
+    }
+    .stock-toggle.out{
+      background:#fdeceb;
+      color:var(--danger);
+    }
+    .edit-btn{
+      background:#efe5dd;
+      color:#4b3333;
+    }
+    .delete-btn{
+      background:#fdeceb;
+      color:var(--danger);
+    }
+    .confirm-modal{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      background:rgba(18,18,18,.44);
+      z-index:99999;
+      opacity:0;
+      transition:opacity .18s ease;
+    }
+    .confirm-modal.open{
+      display:flex;
+      opacity:1;
+    }
+    .confirm-card{
+      width:min(420px,100%);
+      border-radius:22px;
+      background:#fff;
+      box-shadow:0 24px 70px rgba(0,0,0,.24);
+      border:1px solid var(--line);
+      padding:22px;
+      transform:translateY(8px) scale(.98);
+      transition:transform .18s ease;
+    }
+    .confirm-modal.open .confirm-card{
+      transform:translateY(0) scale(1);
+    }
+    .confirm-title{
+      margin:0 0 8px;
+      color:var(--primary);
+      font-size:21px;
+      font-weight:900;
+    }
+    .confirm-message{
+      margin:0;
+      color:#4f4545;
+      line-height:1.5;
+      font-size:14px;
+    }
+    .confirm-actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      margin-top:20px;
+    }
+    .confirm-cancel{
+      background:#f4ebe3;
+      color:#5c4545;
+    }
+    .confirm-ok{
+      background:var(--primary);
+      color:#fff;
+    }
+    .feature-btn{
+      background:#efe5dd;
+      color:#5b3a3a;
+    }
+    .feature-btn.active{
+      background:#7a3d3d;
+      color:#fff;
+    }
+    .modal{
+      position:fixed;
+      inset:0;
+      background:rgba(20,14,12,0.52);
+      display:none;
+      align-items:flex-start;
+      justify-content:center;
+      padding:20px;
+      overflow-y:auto;
+      z-index:9999;
+    }
+    .modal.open{display:flex}
+    .modal-card{
+      width:min(100%,640px);
+      max-height:calc(100vh - 40px);
+      overflow-y:auto;
+      overscroll-behavior:contain;
+      scrollbar-gutter:stable;
+      background:#fff;
+      border-radius:24px;
+      box-shadow:var(--shadow);
+      padding:22px;
+      display:grid;
+      gap:16px;
+    }
+    .modal-head{
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      align-items:flex-start;
+    }
+    .modal-head h2{
+      margin:0;
+      font-size:24px;
+      color:var(--primary);
+    }
+    .modal-head p{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:14px;
+    }
+    .field-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .field-grid .full{
+      grid-column:1 / -1;
+    }
+    .field{
+      display:grid;
+      gap:6px;
+    }
+    .field label{
+      font-size:13px;
+      font-weight:700;
+      color:#533;
+    }
+    .field input,
+    .field textarea{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px 14px;
+      font-size:14px;
+      outline:none;
+    }
+    .field textarea{
+      min-height:110px;
+      resize:vertical;
+      line-height:1.5;
+    }
+    .current-images{
+      display:grid;
+      gap:10px;
+      padding:14px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#faf6f2;
+    }
+    .current-images-title{
+      font-size:13px;
+      font-weight:800;
+      color:#533;
+    }
+    .modal-actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      flex-wrap:wrap;
+      position:sticky;
+      bottom:-22px;
+      margin:0 -22px -22px;
+      padding:14px 22px 22px;
+      background:#fff;
+      border-top:1px solid var(--line);
+      border-radius:0 0 24px 24px;
+    }
+    .btn-light{
+      background:#f3ece6;
+      color:#433;
+    }
+    .empty{
+      padding:24px;
+      background:#fffdfa;
+      border:1px dashed #d5c9be;
+      border-radius:18px;
+      color:var(--muted);
+      text-align:center;
+    }
+    @media(max-width:1100px){
+      .products-grid{grid-template-columns:repeat(2,1fr)}
+      .summary{grid-template-columns:repeat(2,1fr)}
+    }
+    @media(max-width:700px){
+      .products-grid,.summary,.mini-grid,.field-grid{grid-template-columns:1fr}
+      .topbar h1{font-size:24px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="admin-index-link" href="../admin-index.html">Back To Admin Index</a>
+    <div class="topbar">
+      <h1>Saved Products</h1>
+      <p>Backend se category-wise grouped products yahan show ho rahe hain.</p>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-primary" onclick="loadProducts()">Refresh Products</button>
+      <button class="btn-dark" onclick="window.location.href='ai.html'">Back To AI Panel</button>
+    </div>
+
+    <div class="summary" id="summaryCards"></div>
+    <div id="productsByCategory"></div>
+  </div>
+
+  <div class="modal" id="editModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h2>Edit Saved Product</h2>
+          <p>Yahin se product name, summary, stock, offline price aur image update kar sakte ho.</p>
+        </div>
+        <button class="btn-dark" onclick="closeEditModal()">Close</button>
+      </div>
+
+      <div class="field-grid">
+        <div class="field full">
+          <label>Product Name</label>
+          <input id="editProductName" type="text" placeholder="Product Name">
+        </div>
+        <div class="field">
+          <label>Size</label>
+          <input id="editProductSize" type="text" disabled>
+        </div>
+        <div class="field">
+          <label>Offline Price</label>
+          <input id="editOfflinePrice" type="number" min="0" placeholder="Offline Price">
+        </div>
+        <div class="field">
+          <label>Stock Qty</label>
+          <input id="editStockQty" type="number" min="0" placeholder="Stock Qty">
+        </div>
+        <div class="field full">
+          <label>Product Summary</label>
+          <textarea id="editProductSummary" placeholder="Product summary"></textarea>
+        </div>
+        <div class="field full">
+          <div class="current-images">
+            <div class="current-images-title">Current / Next Product Images</div>
+            <div class="image-strip" id="editImagePreviewGrid"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Hero Image</label>
+          <input id="editProductImage" type="file" accept="image/*">
+        </div>
+        <div class="field">
+          <label>2nd Image</label>
+          <input id="editProductImage2" type="file" accept="image/*">
+        </div>
+        <div class="field">
+          <label>3rd Image</label>
+          <input id="editProductImage3" type="file" accept="image/*">
+        </div>
+        <div class="field">
+          <label>4th Image</label>
+          <input id="editProductImage4" type="file" accept="image/*">
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-light" onclick="closeEditModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveProductEdits()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="confirm-modal" id="smoothConfirmModal" aria-hidden="true">
+    <div class="confirm-card">
+      <h2 class="confirm-title" id="smoothConfirmTitle">Confirm Action</h2>
+      <p class="confirm-message" id="smoothConfirmMessage">Are you sure?</p>
+      <div class="confirm-actions">
+        <button class="confirm-cancel" type="button" id="smoothConfirmCancel">Cancel</button>
+        <button class="confirm-ok" type="button" id="smoothConfirmOk">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PRODUCT_API_URLS = ["http://127.0.0.1:3000/api/products","http://localhost:3000/api/products"];
+    const BACKEND_PRODUCTS_CACHE_KEY = "swadraBackendProductsCache";
+    const PRODUCTS_DB_NAME = "swadraProductsDB";
+    const PRODUCTS_STORE_NAME = "products";
+    let state = { products: [], editingId: null };
+    const IMAGE_SLOT_LABELS = ["Hero Image","2nd Image","3rd Image","4th Image"];
+
+    function rupee(value){
+      return "\u20b9" + Number(value || 0).toFixed(0);
+    }
+
+    function escapeHtml(str){
+      return String(str || "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function smoothConfirm(message, title){
+      return new Promise(resolve=>{
+        const modal = document.getElementById("smoothConfirmModal");
+        const titleEl = document.getElementById("smoothConfirmTitle");
+        const messageEl = document.getElementById("smoothConfirmMessage");
+        const okBtn = document.getElementById("smoothConfirmOk");
+        const cancelBtn = document.getElementById("smoothConfirmCancel");
+        if(!modal || !okBtn || !cancelBtn){
+          resolve(window.confirm(message));
+          return;
+        }
+
+        titleEl.textContent = title || "Confirm Action";
+        messageEl.textContent = message || "Are you sure?";
+        modal.classList.add("open");
+        modal.setAttribute("aria-hidden", "false");
+
+        const finish = value=>{
+          modal.classList.remove("open");
+          modal.setAttribute("aria-hidden", "true");
+          okBtn.removeEventListener("click", onOk);
+          cancelBtn.removeEventListener("click", onCancel);
+          modal.removeEventListener("click", onBackdrop);
+          document.removeEventListener("keydown", onKeydown);
+          resolve(value);
+        };
+        const onOk = ()=>finish(true);
+        const onCancel = ()=>finish(false);
+        const onBackdrop = event=>{ if(event.target === modal) finish(false); };
+        const onKeydown = event=>{
+          if(event.key === "Escape") finish(false);
+          if(event.key === "Enter") finish(true);
+        };
+
+        okBtn.addEventListener("click", onOk);
+        cancelBtn.addEventListener("click", onCancel);
+        modal.addEventListener("click", onBackdrop);
+        document.addEventListener("keydown", onKeydown);
+        setTimeout(()=>okBtn.focus(), 50);
+      });
+    }
+
+    function normalizeProduct(product){
+      const name = product?.name || product?.productName || "";
+      const size = product?.size || product?.productSize || "";
+      const sellingPrice = Number(product?.price ?? product?.sellingPrice ?? 0) || 0;
+      const stockQty = Number(product?.stockQty ?? 0) || 0;
+      const availability = String(
+        product?.availability || ((product?.outOfStock || stockQty <= 0) ? "Out of Stock" : "Available")
+      );
+
+      return {
+        ...product,
+        id: product?.id || `${name}-${size}`.replace(/\s+/g,"-").toLowerCase(),
+        name,
+        productName: name,
+        size,
+        productSize: size,
+        price: sellingPrice,
+        sellingPrice,
+        stockQty,
+        availability,
+        images: Array.isArray(product?.images) ? product.images.filter(Boolean).slice(0,4) : (product?.image ? [product.image] : []),
+        summary: String(product?.summary || product?.productSummary || "").trim(),
+        productSummary: String(product?.summary || product?.productSummary || "").trim()
+      };
+    }
+
+    function buildImageStrip(images){
+      const safeImages = Array.isArray(images) ? images.filter(Boolean).slice(0,4) : [];
+      return IMAGE_SLOT_LABELS.map((label,index)=>{
+        const src = safeImages[index];
+        return `<div class="image-tile">
+          <div class="image-tile-label">${label}</div>
+          ${src ? `<img class="image-preview" src="${src}" alt="${escapeHtml(label)}">` : `<div class="image-empty">No image</div>`}
+        </div>`;
+      }).join("");
+    }
+
+    function getEditImageInputIds(){
+      return ["editProductImage","editProductImage2","editProductImage3","editProductImage4"];
+    }
+
+    function readSavedProductImage(file){
+      return new Promise((resolve,reject)=>{
+        const reader = new FileReader();
+        reader.onload = e=>resolve(e.target.result);
+        reader.onerror = ()=>reject(reader.error || new Error("Image read failed"));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function collectEditedImages(product){
+      const inputIds = getEditImageInputIds();
+      const existingImages = Array.isArray(product?.images) && product.images.length
+        ? product.images.filter(Boolean).slice(0,4)
+        : (product?.image ? [product.image] : []);
+      const nextImages = [];
+
+      for(let index = 0; index < inputIds.length; index += 1){
+        const input = document.getElementById(inputIds[index]);
+        const file = input?.files?.[0];
+        if(file){
+          if(!file.type.startsWith("image/")){
+            throw new Error(`Valid image file choose karo for image ${index + 1}.`);
+          }
+          nextImages.push(await readSavedProductImage(file));
+        }else if(existingImages[index]){
+          nextImages.push(existingImages[index]);
+        }
+      }
+
+      return nextImages.filter(Boolean).slice(0,4);
+    }
+
+    function applyOfflineFallbackPricing(products){
+      return (Array.isArray(products) ? products : []).map(product=>{
+        const normalized = normalizeProduct(product);
+        const offlinePrice = Number(normalized.offlinePrice || 0) || 0;
+        return offlinePrice > 0 ? {...normalized, price: offlinePrice, sellingPrice: offlinePrice} : normalized;
+      });
+    }
+
+function normalizeCategoryKey(value){
+const normalized = String(value || "").toLowerCase().replace(/&/g,"and").replace(/,/g," ").replace(/\s+/g," ").trim();
+if(normalized.includes("achar") || normalized.includes("pickle")) return "achar";
+if(normalized.includes("best seller") || normalized.includes("bestseller")) return "bestseller";
+if(normalized.includes("combo")) return "combos";
+if(normalized.includes("special")) return "special";
+if(normalized.includes("dry fruits") || normalized.includes("dryfruits")) return "dryfruits";
+if(normalized.includes("oil") || normalized.includes("ghee")) return "oilghee";
+return "spices";
+}
+
+    function openProductsDb(){
+      return new Promise((resolve,reject)=>{
+        const request = indexedDB.open(PRODUCTS_DB_NAME,1);
+        request.onupgradeneeded = e=>{
+          const db = e.target.result;
+          if(!db.objectStoreNames.contains(PRODUCTS_STORE_NAME)){
+            db.createObjectStore(PRODUCTS_STORE_NAME,{keyPath:"id"});
+          }
+        };
+        request.onsuccess = ()=>resolve(request.result);
+        request.onerror = ()=>reject(request.error);
+      });
+    }
+
+    function getCachedBackendProducts(){
+      try{
+        return applyOfflineFallbackPricing(JSON.parse(localStorage.getItem(BACKEND_PRODUCTS_CACHE_KEY)) || []);
+      }catch(error){
+        return [];
+      }
+    }
+
+    async function getIndexedDbProducts(){
+      try{
+        const db = await openProductsDb();
+        const products = await new Promise((resolve,reject)=>{
+          const tx = db.transaction(PRODUCTS_STORE_NAME,"readonly");
+          const request = tx.objectStore(PRODUCTS_STORE_NAME).getAll();
+          request.onsuccess = ()=>resolve(request.result || []);
+          request.onerror = ()=>reject(request.error);
+        });
+        return applyOfflineFallbackPricing(products);
+      }catch(error){
+        return [];
+      }
+    }
+
+    async function writeIndexedDbProducts(products){
+      try{
+        const db = await openProductsDb();
+        await new Promise((resolve,reject)=>{
+          const tx = db.transaction(PRODUCTS_STORE_NAME,"readwrite");
+          const store = tx.objectStore(PRODUCTS_STORE_NAME);
+          store.clear();
+          (Array.isArray(products) ? products : []).forEach(product=>store.put(normalizeProduct(product)));
+          tx.oncomplete = ()=>resolve(true);
+          tx.onerror = ()=>reject(tx.error);
+        });
+      }catch(error){}
+    }
+
+    function signalProductsUpdated(){
+      try{
+        localStorage.setItem("adminProductsUpdatedAt", String(Date.now()));
+      }catch(error){}
+    }
+
+    async function persistProductsLocally(products){
+      const normalizedProducts = applyOfflineFallbackPricing(products);
+const grouped = {
+spices: [],
+dryfruits: [],
+oilghee: [],
+achar: [],
+combos: [],
+bestseller: [],
+special: []
+};
+
+      normalizedProducts.forEach(product=>{
+        const key = normalizeCategoryKey(product.category);
+        if(!grouped[key]) grouped[key] = [];
+        grouped[key].push(product);
+        if(product.isBestseller && key !== "bestseller"){
+          grouped.bestseller.push(product);
+        }
+        if(product.isSpecialProduct && key !== "special"){
+          grouped.special.push(product);
+        }
+      });
+
+      try{ localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(normalizedProducts)); }catch(error){}
+      try{ localStorage.setItem("adminProducts", JSON.stringify(normalizedProducts)); }catch(error){}
+      try{ localStorage.setItem("adminProductsByCategory", JSON.stringify(grouped)); }catch(error){}
+      await writeIndexedDbProducts(normalizedProducts);
+      signalProductsUpdated();
+      return normalizedProducts;
+    }
+
+    async function replaceLocalProduct(updatedProduct){
+      const currentProducts = (state.products || []).map(normalizeProduct);
+      const nextProducts = currentProducts.map(product => {
+        if(String(product.id) !== String(updatedProduct.id)){
+          return normalizeProduct(product);
+        }
+        return normalizeProduct({
+          ...product,
+          ...updatedProduct,
+          image: updatedProduct?.image || product.image || ""
+        });
+      });
+      state.products = await persistProductsLocally(nextProducts);
+    }
+
+    async function removeLocalProduct(id){
+      const currentProducts = (state.products || []).map(normalizeProduct);
+      const nextProducts = currentProducts.filter(product => String(product.id) !== String(id));
+      state.products = await persistProductsLocally(nextProducts);
+    }
+
+    function getLegacyFallbackProducts(){
+      const deduped = new Map();
+
+      try{
+        const grouped = JSON.parse(localStorage.getItem("adminProductsByCategory")) || {};
+        Object.values(grouped).forEach(items=>{
+          (Array.isArray(items) ? items : []).forEach(product=>{
+            const normalized = normalizeProduct(product);
+            deduped.set(String(normalized.id), normalized);
+          });
+        });
+      }catch(error){}
+
+      try{
+        applyOfflineFallbackPricing(JSON.parse(localStorage.getItem("adminProducts")) || []).forEach(product=>{
+          deduped.set(String(product.id), product);
+        });
+      }catch(error){}
+
+      return Array.from(deduped.values());
+    }
+
+    async function apiGetProducts(){
+      let lastError = null;
+      for(const url of PRODUCT_API_URLS){
+        try{
+          const response = await fetch(url,{ cache:"no-store" });
+          if(!response.ok) throw new Error("HTTP " + response.status);
+          return await response.json();
+        }catch(error){
+          lastError = error;
+        }
+      }
+      throw lastError || new Error("Backend unavailable");
+    }
+
+    async function apiUpdateProduct(id, payload){
+      let lastError = null;
+      for(const url of PRODUCT_API_URLS){
+        try{
+          const response = await fetch(`${url}/${encodeURIComponent(id)}`,{
+            method:"PUT",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify(payload)
+          });
+          if(!response.ok){
+            const text = await response.text();
+            throw new Error(text || ("HTTP " + response.status));
+          }
+          return await response.json();
+        }catch(error){
+          lastError = error;
+        }
+      }
+      throw lastError || new Error("Update failed");
+    }
+
+    async function apiDeleteProduct(id){
+      let lastError = null;
+      for(const url of PRODUCT_API_URLS){
+        try{
+          const response = await fetch(`${url}/${encodeURIComponent(id)}`,{
+            method:"DELETE"
+          });
+          if(!response.ok){
+            const text = await response.text();
+            throw new Error(text || ("HTTP " + response.status));
+          }
+          return await response.json();
+        }catch(error){
+          lastError = error;
+        }
+      }
+      throw lastError || new Error("Delete failed");
+    }
+
+    function renderSummary(products){
+      const available = products.filter(item => (item.availability || "Available") !== "Out of Stock" && Number(item.stockQty || 0) > 0).length;
+      const outOfStock = products.filter(item => (item.availability || "") === "Out of Stock" || Number(item.stockQty || 0) <= 0).length;
+      const stockUnits = products.reduce((sum,item)=>sum + (Number(item.stockQty || 0) || 0),0);
+
+      document.getElementById("summaryCards").innerHTML = `
+        <div class="summary-card"><div class="k">Total Products</div><div class="v">${products.length}</div></div>
+        <div class="summary-card"><div class="k">Available</div><div class="v">${available}</div></div>
+        <div class="summary-card"><div class="k">Out Of Stock</div><div class="v">${outOfStock}</div></div>
+        <div class="summary-card"><div class="k">Stock Units</div><div class="v">${stockUnits}</div></div>
+      `;
+    }
+
+    function renderProducts(){
+      const wrap = document.getElementById("productsByCategory");
+      const products = state.products || [];
+
+      if(!products.length){
+        wrap.innerHTML = `<div class="empty">No products found in backend.</div>`;
+        renderSummary([]);
+        return;
+      }
+
+      renderSummary(products);
+
+      const grouped = products.reduce((acc, product) => {
+        const key = product.category || "Uncategorized";
+        if(!acc[key]) acc[key] = [];
+        acc[key].push(product);
+
+        if(product.isBestseller && key !== "Bestseller"){
+          if(!acc["Bestseller"]) acc["Bestseller"] = [];
+          acc["Bestseller"].push(product);
+        }
+
+        if(product.isSpecialProduct && key !== "Special Products"){
+          if(!acc["Special Products"]) acc["Special Products"] = [];
+          acc["Special Products"].push(product);
+        }
+
+        return acc;
+      }, {});
+
+      wrap.innerHTML = Object.entries(grouped).map(([category, items]) => `
+        <div class="category-group">
+          <div class="category-title">${escapeHtml(category)} (${items.length})</div>
+          <div class="products-grid">
+            ${items.map(product => {
+              const stockStatus = (product.availability || "") === "Out of Stock" || Number(product.stockQty || 0) <= 0 ? "Out Of Stock" : "Available";
+              const toggleClass = stockStatus === "Available" ? "available" : "out";
+              return `
+                <div class="product-card">
+                  <div class="product-head">
+                    <img class="thumb" src="${product.image || 'https://via.placeholder.com/120?text=No+Image'}" alt="">
+                    <div class="product-head-copy">
+                      <h3>${escapeHtml(product.name || product.productName)} - ${escapeHtml(product.size || product.productSize)}</h3>
+                      <div class="sub">Updated: ${escapeHtml(product.updatedAt || "N/A")}</div>
+                      <div class="sub-actions">
+                        <button class="stock-toggle ${toggleClass}" onclick="toggleProductAvailability('${product.id}')">${stockStatus}</button>
+                        <button class="stock-toggle feature-btn ${product.isBestseller ? "active" : ""}" onclick="toggleProductFlag('${product.id}','bestseller')">${product.isBestseller ? "Bestseller On" : "Mark Bestseller"}</button>
+                        <button class="stock-toggle feature-btn ${product.isSpecialProduct ? "active" : ""}" onclick="toggleProductFlag('${product.id}','special')">${product.isSpecialProduct ? "Special On" : "Mark Special"}</button>
+                        <button class="stock-toggle edit-btn" onclick="openEditModal('${product.id}')">Edit</button>
+                        <button class="stock-toggle delete-btn" onclick="deleteSavedProduct('${product.id}')">Delete</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="image-strip">${buildImageStrip(product.images)}</div>
+                  <div class="badge-wrap">
+                    <span class="badge green">Selling: ${rupee(product.price || product.sellingPrice)}</span>
+                    <span class="badge">MRP: ${rupee(product.mrp)}</span>
+                    <span class="badge">Offline: ${rupee(product.offlinePrice || 0)}</span>
+                    ${product.isBestseller ? '<span class="badge">Bestseller</span>' : ''}
+                    ${product.isSpecialProduct ? '<span class="badge">Special Product</span>' : ''}
+                    <span class="badge">${escapeHtml(product.aiStatus || "Manual")}</span>
+                  </div>
+                  ${product.summary ? `<div class="sub" style="line-height:1.5;">${escapeHtml(product.summary)}</div>` : ``}
+                  <div class="mini-grid">
+                    <div class="mini"><div class="k">Floor Price</div><div class="v">${rupee(product.floorPrice)}</div></div>
+                    <div class="mini"><div class="k">Stock Qty</div><div class="v">${Number(product.stockQty || 0)}</div></div>
+                    <div class="mini"><div class="k">Amazon</div><div class="v">${rupee(product.amazonPrice)}</div></div>
+                    <div class="mini"><div class="k">Flipkart</div><div class="v">${rupee(product.flipkartPrice)}</div></div>
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    async function loadProducts(){
+      const cachedProducts = getCachedBackendProducts();
+      if(cachedProducts.length && !(state.products || []).length){
+        state.products = cachedProducts;
+        renderProducts();
+      }
+      try{
+        const data = await apiGetProducts();
+        const apiProducts = Array.isArray(data?.products) ? data.products.map(normalizeProduct) : [];
+        if(apiProducts.length){
+          state.products = await persistProductsLocally(apiProducts);
+        }
+      }catch(error){
+        if(cachedProducts.length){
+          state.products = cachedProducts;
+        }else{
+          const indexedDbProducts = await getIndexedDbProducts();
+          state.products = indexedDbProducts.length ? indexedDbProducts : getLegacyFallbackProducts();
+        }
+      }
+      renderProducts();
+    }
+
+    async function toggleProductAvailability(id){
+      const product = (state.products || []).find(item => String(item.id) === String(id));
+      if(!product) return;
+
+      const currentOut = (product.availability || "") === "Out of Stock" || Number(product.stockQty || 0) <= 0;
+      const nextAvailability = currentOut ? "Available" : "Out of Stock";
+      const confirmed = await smoothConfirm(`Are you sure you want to mark this product as ${nextAvailability}?`, "Update Stock Status");
+      if(!confirmed) return;
+
+      const payload = {
+        id: product.id,
+        name: product.name || product.productName,
+        productName: product.productName || product.name,
+        size: product.size || product.productSize,
+        productSize: product.productSize || product.size,
+        category: product.category || "Spices",
+        isBestseller: Boolean(product.isBestseller),
+        isSpecialProduct: Boolean(product.isSpecialProduct),
+        mrp: Number(product.mrp || 0),
+        offlinePrice: Number(product.offlinePrice || 0),
+        availability: nextAvailability,
+        outOfStock: nextAvailability === "Out of Stock",
+        stockQty: nextAvailability === "Out of Stock" ? 0 : Math.max(1, Number(product.stockQty || 1))
+      };
+
+      try{
+        await apiUpdateProduct(id, payload);
+        await replaceLocalProduct(payload);
+        renderProducts();
+      }catch(error){
+        await replaceLocalProduct(payload);
+        renderProducts();
+      }
+    }
+
+    async function toggleProductFlag(id, flagType){
+      const product = (state.products || []).find(item => String(item.id) === String(id));
+      if(!product) return;
+
+      const nextBestseller = flagType === "bestseller" ? !Boolean(product.isBestseller) : Boolean(product.isBestseller);
+      const nextSpecial = flagType === "special" ? !Boolean(product.isSpecialProduct) : Boolean(product.isSpecialProduct);
+      const label = flagType === "bestseller" ? (nextBestseller ? "mark as Bestseller" : "remove from Bestseller") : (nextSpecial ? "mark as Special Product" : "remove from Special Product");
+      const confirmed = await smoothConfirm(`Are you sure you want to ${label}?`, "Update Product Badge");
+      if(!confirmed) return;
+
+      const payload = {
+        id: product.id,
+        name: product.name || product.productName,
+        productName: product.productName || product.name,
+        size: product.size || product.productSize,
+        productSize: product.productSize || product.size,
+        category: product.category || "Spices",
+        isBestseller: nextBestseller,
+        isSpecialProduct: nextSpecial,
+        mrp: Number(product.mrp || 0),
+        offlinePrice: Number(product.offlinePrice || 0),
+        availability: product.availability || "Available",
+        outOfStock: (product.availability || "") === "Out of Stock" || Number(product.stockQty || 0) <= 0,
+        stockQty: Number(product.stockQty || 0)
+      };
+
+      try{
+        await apiUpdateProduct(id, payload);
+        await replaceLocalProduct(payload);
+        renderProducts();
+      }catch(error){
+        await replaceLocalProduct(payload);
+        renderProducts();
+      }
+    }
+
+    async function deleteSavedProduct(id){
+      const product = (state.products || []).find(item => String(item.id) === String(id));
+      if(!product) return;
+
+      const confirmed = await smoothConfirm(`Are you sure you want to delete ${product.name || product.productName}?`, "Delete Product");
+      if(!confirmed) return;
+
+      try{
+        await apiDeleteProduct(id);
+        await removeLocalProduct(id);
+        renderProducts();
+      }catch(error){
+        await removeLocalProduct(id);
+        renderProducts();
+      }
+    }
+
+    function openEditModal(id){
+      const product = (state.products || []).find(item => String(item.id) === String(id));
+      if(!product) return;
+      state.editingId = id;
+      document.getElementById("editProductName").value = product.name || product.productName || "";
+      document.getElementById("editProductSize").value = product.size || product.productSize || "";
+      document.getElementById("editOfflinePrice").value = Number(product.offlinePrice || 0) || 0;
+      document.getElementById("editStockQty").value = Number(product.stockQty || 0) || 0;
+      document.getElementById("editProductSummary").value = product.summary || product.productSummary || "";
+      getEditImageInputIds().forEach(inputId=>{
+        const input = document.getElementById(inputId);
+        input.value = "";
+        input.onchange = ()=>refreshEditImagePreview(product);
+      });
+      refreshEditImagePreview(product);
+      document.getElementById("editModal").classList.add("open");
+    }
+
+    async function refreshEditImagePreview(product){
+      try{
+        const nextImages = await collectEditedImages(product);
+        document.getElementById("editImagePreviewGrid").innerHTML = buildImageStrip(nextImages);
+      }catch(error){
+        document.getElementById("editImagePreviewGrid").innerHTML = buildImageStrip(product?.images || []);
+      }
+    }
+
+    function closeEditModal(){
+      state.editingId = null;
+      document.getElementById("editModal").classList.remove("open");
+    }
+
+    async function saveProductEdits(){
+      const id = state.editingId;
+      const product = (state.products || []).find(item => String(item.id) === String(id));
+      if(!product) return;
+
+      const nextName = document.getElementById("editProductName").value.trim();
+      const nextOfflinePrice = Number(document.getElementById("editOfflinePrice").value || 0);
+      const nextStockQty = Math.max(0, Number(document.getElementById("editStockQty").value || 0));
+      const nextSummary = document.getElementById("editProductSummary").value.trim();
+
+      if(!nextName){
+        alert("Product name required hai.");
+        return;
+      }
+
+      const saveWithImage = async (imagesData)=>{
+        const safeImages = Array.isArray(imagesData) ? imagesData.filter(Boolean).slice(0,4) : [];
+        const payload = {
+          id: product.id,
+          name: nextName,
+          productName: nextName,
+          category: product.category || "Spices",
+          isBestseller: Boolean(product.isBestseller),
+          isSpecialProduct: Boolean(product.isSpecialProduct),
+          availability: nextStockQty <= 0 ? "Out of Stock" : "Available",
+          stockQty: nextStockQty,
+          outOfStock: nextStockQty <= 0,
+          mrp: Number(product.mrp || 0),
+          price: Number(product.price || product.sellingPrice || 0),
+          sellingPrice: Number(product.price || product.sellingPrice || 0),
+          offlinePrice: nextOfflinePrice,
+          summary: nextSummary,
+          productSummary: nextSummary,
+          images: safeImages,
+          image: safeImages[0] || undefined,
+          productSize: product.productSize || product.size,
+          size: product.size || product.productSize
+        };
+
+        try{
+          await apiUpdateProduct(id, payload);
+          await replaceLocalProduct({
+            ...product,
+            ...payload,
+            images: safeImages.length ? safeImages : (product.images || []),
+            image: (safeImages[0] || product.image || ""),
+            updatedAt: new Date().toISOString()
+          });
+          closeEditModal();
+          renderProducts();
+        }catch(error){
+          await replaceLocalProduct({
+            ...product,
+            ...payload,
+            images: safeImages.length ? safeImages : (product.images || []),
+            image: (safeImages[0] || product.image || ""),
+            updatedAt: new Date().toISOString()
+          });
+          closeEditModal();
+          renderProducts();
+        }
+      };
+
+      try{
+        const nextImages = await collectEditedImages(product);
+        await saveWithImage(nextImages);
+      }catch(error){
+        alert(error.message || "Image update failed");
+      }
+    }
+
+    loadProducts();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1080 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account - Swadra Organics</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --brand:#7A3D3D;
+      --brand-dark:#643131;
+      --brand-light:#9b5a5a;
+      --brand-soft:#f5ecec;
+      --line:#e8dddd;
+      --text:#1a1a1a;
+      --muted:#726767;
+      --white:#ffffff;
+      --success:#198754;
+      --danger:#b42345;
+      --bg:#f1e3e3;
+    }
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:'Inter',sans-serif;
+    }
+
+    body{
+      min-height:100vh;
+      background:
+        radial-gradient(circle at top left, rgba(122,61,61,0.08), transparent 22%),
+        radial-gradient(circle at bottom right, rgba(122,61,61,0.08), transparent 20%),
+        linear-gradient(135deg,#f1e3e3,#f7eeee,#f1e3e3);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      color:var(--text);
+    }
+
+    .auth-overlay{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:calc(100vh - 48px);
+    }
+
+    .auth-modal{
+      width:100%;
+      max-width:440px;
+      background:rgba(255,255,255,0.97);
+      border:1px solid var(--line);
+      border-radius:26px;
+      box-shadow:0 30px 80px rgba(122,61,61,0.14);
+      overflow:hidden;
+    }
+
+    .auth-layout{
+      display:block;
+    }
+
+    .auth-left{
+      display:none;
+    }
+
+    .auth-left::before{
+      content:"";
+      position:absolute;
+      width:240px;
+      height:240px;
+      border-radius:50%;
+      background:rgba(255,255,255,0.08);
+      top:-70px;
+      right:-70px;
+    }
+
+    .auth-left::after{
+      content:"";
+      position:absolute;
+      width:220px;
+      height:220px;
+      border-radius:50%;
+      background:rgba(255,255,255,0.06);
+      bottom:-80px;
+      left:-60px;
+    }
+
+    .left-content,
+    .left-bottom{
+      position:relative;
+      z-index:1;
+    }
+
+    .brand-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:10px 16px;
+      border-radius:999px;
+      background:rgba(255,255,255,0.12);
+      border:1px solid rgba(255,255,255,0.18);
+      color:#fff;
+      font-size:12px;
+      font-weight:800;
+      margin-bottom:20px;
+    }
+
+    .left-title{
+      font-size:42px;
+      line-height:1.08;
+      font-weight:900;
+      letter-spacing:-1px;
+      margin-bottom:14px;
+    }
+
+    .left-text{
+      font-size:15px;
+      line-height:1.8;
+      color:rgba(255,255,255,0.92);
+      max-width:420px;
+    }
+
+    .feature-grid{
+      margin-top:28px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+
+    .feature-box{
+      background:rgba(255,255,255,0.10);
+      border:1px solid rgba(255,255,255,0.16);
+      border-radius:20px;
+      padding:16px;
+      min-height:100px;
+    }
+
+    .feature-box h3{
+      font-size:18px;
+      font-weight:800;
+      margin-bottom:6px;
+    }
+
+    .feature-box p{
+      font-size:13px;
+      line-height:1.6;
+      color:rgba(255,255,255,0.92);
+    }
+
+    .left-bottom{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:24px;
+    }
+
+    .trust-pill{
+      padding:10px 14px;
+      border-radius:999px;
+      background:rgba(255,255,255,0.10);
+      border:1px solid rgba(255,255,255,0.15);
+      font-size:12px;
+      font-weight:700;
+    }
+
+    .auth-right{
+      padding:24px;
+      background:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+
+    .auth-card{
+      width:100%;
+      max-width:600px;
+      margin:0 auto;
+    }
+
+    .auth-card::before{
+      content:"";
+      display:block;
+      width:82px;
+      height:4px;
+      margin:0 auto 18px;
+      border-radius:999px;
+      background:linear-gradient(90deg,#7A3D3D,#d0a36b);
+    }
+
+.form-shell{
+  padding:24px;
+}
+
+    .account-hub,
+    .account-mini-sections,
+    .footer-note{
+      display:none;
+    }
+
+    .account-hub{
+      background:linear-gradient(180deg,#fffdfc 0%,#faf4f1 100%);
+      border:1px solid #efe2de;
+      border-radius:24px;
+      padding:18px;
+      margin-bottom:18px;
+      box-shadow:0 14px 34px rgba(122,61,61,0.08);
+    }
+
+    .account-hub-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:16px;
+    }
+
+    .account-hub-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:8px 14px;
+      border-radius:999px;
+      background:#f7e9e5;
+      color:var(--brand);
+      font-size:12px;
+      font-weight:800;
+      margin-bottom:10px;
+    }
+
+    .account-hub-title{
+      color:var(--brand);
+      font-size:26px;
+      line-height:1.1;
+      font-weight:900;
+      margin-bottom:6px;
+    }
+
+    .account-hub-copy{
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.65;
+      max-width:360px;
+    }
+
+    .account-hub-icon{
+      width:54px;
+      height:54px;
+      min-width:54px;
+      border-radius:18px;
+      background:linear-gradient(135deg,#7A3D3D,#9b5a5a);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#fff;
+      box-shadow:0 12px 24px rgba(122,61,61,0.18);
+    }
+
+    .account-hub-icon svg,
+    .shortcut-icon svg{
+      width:18px;
+      height:18px;
+      stroke:currentColor;
+      fill:none;
+      stroke-width:1.9;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+
+    .account-hub-icon svg{
+      width:24px;
+      height:24px;
+    }
+
+    .account-shortcuts{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .account-shortcut{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:14px;
+      border-radius:18px;
+      background:#fff;
+      border:1px solid #efe4e1;
+      text-decoration:none;
+      color:#352727;
+      transition:transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+    }
+
+    .account-shortcut:hover{
+      transform:translateY(-2px);
+      border-color:#ddbdb6;
+      box-shadow:0 12px 24px rgba(122,61,61,0.10);
+    }
+
+    .shortcut-icon{
+      width:40px;
+      height:40px;
+      min-width:40px;
+      border-radius:14px;
+      background:#f8ece8;
+      color:var(--brand);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .shortcut-text strong{
+      display:block;
+      font-size:14px;
+      font-weight:800;
+      margin-bottom:2px;
+    }
+
+    .shortcut-text span{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.45;
+    }
+
+    .top-row{
+      display:block;
+      margin-bottom:14px;
+      text-align:center;
+    }
+
+    .top-row-left-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:8px 14px;
+      border-radius:999px;
+      background:var(--brand-soft);
+      color:var(--brand);
+      border:1px solid #eadbdb;
+      font-size:11px;
+      font-weight:800;
+      margin-bottom:12px;
+    }
+
+    .auth-title{
+      font-size:29px;
+      line-height:1.02;
+      font-weight:900;
+      color:var(--brand);
+      letter-spacing:-1px;
+      margin-bottom:10px;
+    }
+
+    .auth-subtitle{
+      display:none;
+    }
+
+    .secure-badge{
+      display:none;
+    }
+
+    .progress-box{
+      background:#fcfbfa;
+      border:1px solid #eee4e1;
+      border-radius:22px;
+      padding:14px;
+      margin:14px 0 12px;
+    }
+
+    .progress-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:10px;
+    }
+
+    .progress-head span{
+      font-size:12px;
+      font-weight:800;
+      color:#554949;
+    }
+
+    .progress-steps{
+      display:flex;
+      gap:8px;
+    }
+
+    .step-pill{
+      flex:1;
+      height:9px;
+      background:#e9dddd;
+      border-radius:999px;
+      overflow:hidden;
+      position:relative;
+    }
+
+    .step-pill::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(90deg,var(--brand-dark),var(--brand),var(--brand-light));
+      transform:scaleX(0);
+      transform-origin:left;
+      transition:transform .25s ease;
+    }
+
+    .step-pill.active::after{
+      transform:scaleX(1);
+    }
+
+    .info-box{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      background:#faf7f5;
+      border:1px solid #ece1de;
+      border-radius:16px;
+      padding:13px;
+      margin-bottom:14px;
+      font-size:12px;
+      color:#6f6363;
+      line-height:1.7;
+    }
+
+    .info-icon{
+      width:28px;
+      height:28px;
+      min-width:28px;
+      border-radius:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#efe1e1;
+      color:var(--brand);
+      font-weight:900;
+      font-size:13px;
+    }
+
+    .form-shell{
+      background:#fff;
+      border:1px solid #ece2df;
+      border-radius:20px;
+      padding:16px;
+      box-shadow:0 18px 42px rgba(122,61,61,0.08);
+    }
+
+    .section-head{
+      margin-bottom:12px;
+    }
+
+    .section-head h3{
+      font-size:14px;
+      font-weight:800;
+      color:#241f1f;
+      margin-bottom:6px;
+    }
+
+    .section-head p{
+      font-size:12px;
+      line-height:1.6;
+      color:var(--muted);
+    }
+
+    .input-group{
+      margin-bottom:12px;
+    }
+
+    .label{
+      display:block;
+      margin-bottom:6px;
+      font-size:12px;
+      font-weight:800;
+      color:#5f5454;
+    }
+
+    input,button{
+      width:100%;
+      border:none;
+      outline:none;
+      font-size:15px;
+    }
+
+    input{
+      background:#fcfbfa;
+      border:1px solid #eadfdd;
+      color:var(--text);
+      padding:13px 14px;
+      border-radius:14px;
+      transition:border-color .22s ease, box-shadow .22s ease, background .22s ease;
+    }
+
+    input::placeholder{
+      color:#9b9191;
+    }
+
+    input:focus{
+      background:#fff;
+      border-color:rgba(122,61,61,0.42);
+      box-shadow:0 0 0 4px rgba(122,61,61,0.08);
+    }
+
+    .phone-box{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    .country-code{
+      min-width:84px;
+      background:#fcfbfa;
+      border:1px solid #eadfdd;
+      padding:13px 12px;
+      border-radius:14px;
+      text-align:center;
+      font-size:14px;
+      font-weight:800;
+      color:#433838;
+    }
+
+    .primary-btn{
+      margin-top:6px;
+      padding:13px;
+      border-radius:15px;
+      background:linear-gradient(135deg,var(--brand-dark),var(--brand),var(--brand-light));
+      color:#fff;
+      font-size:14px;
+      font-weight:800;
+      cursor:pointer;
+      box-shadow:0 14px 30px rgba(122,61,61,0.24);
+      transition:transform .22s ease, box-shadow .22s ease;
+    }
+
+    .primary-btn:hover{
+      transform:translateY(-2px);
+      box-shadow:0 18px 34px rgba(122,61,61,0.28);
+    }
+
+    .secondary-link-btn{
+      margin-top:12px;
+      background:transparent;
+      color:var(--brand);
+      font-weight:800;
+      cursor:pointer;
+      padding:8px 0 2px;
+      text-align:left;
+    }
+
+    .secondary-link-btn:hover{
+      text-decoration:underline;
+    }
+
+    .hidden{
+      display:none !important;
+    }
+
+    #message{
+      min-height:24px;
+      margin-top:12px;
+      text-align:center;
+      font-size:12px;
+      font-weight:800;
+      line-height:1.5;
+      color:var(--brand);
+    }
+
+    .message-success{
+      color:var(--success) !important;
+    }
+
+    .message-error{
+      color:var(--danger) !important;
+    }
+
+    .footer-note{
+      margin-top:12px;
+      padding-top:10px;
+      border-top:1px dashed #eadfdd;
+      text-align:center;
+      font-size:11px;
+      font-weight:700;
+      color:#8a7f7f;
+    }
+
+    @media (max-width: 900px){
+      .auth-right{
+        padding:18px;
+      }
+
+      .auth-title{
+        font-size:28px;
+      }
+
+      .account-shortcuts{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media (max-width: 560px){
+      body{
+        padding:12px;
+      }
+
+      .auth-modal{
+        border-radius:22px;
+      }
+
+      .auth-right{
+        padding:14px;
+      }
+
+      .top-row{
+        margin-bottom:16px;
+      }
+
+      .auth-title{
+        font-size:18px;
+      }
+
+      .phone-box{
+        flex-direction:column;
+        align-items:stretch;
+      }
+
+      .country-code{
+        width:100%;
+      }
+
+      .feature-grid{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
+<style>html,body{background:#f1e3e3 !important;}</style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+<body>
+
+  <div class="auth-overlay">
+    <div class="auth-modal">
+      <div class="auth-layout">
+
+        
+        <div class="auth-right">
+          <div class="auth-card">
+
+            <div class="account-hub">
+              <div class="account-hub-top">
+                <div>
+                  <div class="account-hub-badge">Swadra Account Hub</div>
+                  <div class="account-hub-title">Everything important in one quick account menu.</div>
+                  <div class="account-hub-copy">Orders, cart, coupons, saved address and support shortcuts are arranged in the same premium profile style you wanted.</div>
+                </div>
+                <div class="account-hub-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg>
+                </div>
+              </div>
+
+              <div class="account-shortcuts">
+                <a class="account-shortcut" href="dashboard.html">
+                  <span class="shortcut-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span>
+                  <span class="shortcut-text"><strong>Orders</strong><span>Track your purchases and delivery status.</span></span>
+                </a>
+                <a class="account-shortcut" href="cart.html">
+                  <span class="shortcut-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span>
+                  <span class="shortcut-text"><strong>Cart</strong><span>Continue shopping with your saved products.</span></span>
+                </a>
+                <a class="account-shortcut" href="#coupons">
+                  <span class="shortcut-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span>
+                  <span class="shortcut-text"><strong>Coupons</strong><span>Keep your savings and offer codes ready.</span></span>
+                </a>
+                <a class="account-shortcut" href="#saved-address">
+                  <span class="shortcut-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span>
+                  <span class="shortcut-text"><strong>Saved Address</strong><span>Manage delivery locations for faster checkout.</span></span>
+                </a>
+                <a class="account-shortcut" href="aboutus.html#contact">
+                  <span class="shortcut-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span>
+                  <span class="shortcut-text"><strong>Contact Us</strong><span>Reach support for delivery, account or product help.</span></span>
+                </a>
+                <a class="account-shortcut" href="#login-area">
+                  <span class="shortcut-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"></path><path d="M10 17l5-5-5-5"></path><path d="M15 12H4"></path></svg></span>
+                  <span class="shortcut-text"><strong>Login / Signup</strong><span>Use the secure flow below to continue.</span></span>
+                </a>
+              </div>
+            </div>
+
+            <div class="top-row-left-badge">Swadra Login / Signup</div>
+
+            <div class="top-row">
+              <div>
+                <h2 class="auth-title" id="login-area">Login / Signup</h2>
+                <p class="auth-subtitle"></p>
+              </div>
+              <div class="secure-badge">Secure Access</div>
+            </div>
+
+            <div class="progress-box">
+              <div class="progress-head">
+                <span>Account Verification Flow</span>
+                <span id="progressLabel">Step 1 of 4</span>
+              </div>
+              <div class="progress-steps">
+                <div class="step-pill active"></div>
+                <div class="step-pill"></div>
+                <div class="step-pill"></div>
+                <div class="step-pill"></div>
+              </div>
+            </div>
+
+            <div class="info-box">
+              <div class="info-icon">i</div>
+              <div>
+                For security, the same mobile number and email address must belong to the same registered user account.
+              </div>
+            </div>
+
+            <div class="form-shell">
+
+              <div id="step1">
+                <div class="section-head">
+                  <h3>Enter account details</h3>
+                  <p>Existing users will go to password login. New users will receive an OTP.</p>
+                </div>
+
+                <div class="input-group">
+                  <label class="label">Mobile Number</label>
+                  <div class="phone-box">
+                    <div class="country-code">+91</div>
+                    <input type="tel" id="phone" placeholder="Enter Mobile Number" maxlength="10" inputmode="numeric">
+                  </div>
+                </div>
+
+                <div class="input-group">
+                  <label class="label">Email Address</label>
+                  <input type="email" id="email" placeholder="Enter Email Address">
+                </div>
+
+                <button class="primary-btn" onclick="startFlow()">Continue</button>
+              </div>
+
+              <div id="step2" class="hidden">
+                <div class="section-head">
+                  <h3>OTP verification</h3>
+                  <p>Please enter the OTP sent to your email address.</p>
+                </div>
+
+                <div class="input-group">
+                  <label class="label">OTP</label>
+                  <input type="text" id="otp" placeholder="Enter OTP" inputmode="numeric" maxlength="6">
+                </div>
+
+                <button class="primary-btn" onclick="verifyOTP()">Verify OTP</button>
+              </div>
+
+              <div id="step3" class="hidden">
+                <div class="section-head">
+                  <h3 id="passwordHeading">Create account password</h3>
+                  <p>Set your password to finish creating your Swadra account.</p>
+                </div>
+
+                <div class="input-group">
+                  <label class="label" id="passwordStepLabel">Create Password</label>
+                  <input type="password" id="password" placeholder="Create Password">
+                </div>
+
+                <button class="primary-btn" id="createAccountBtn" onclick="createAccount()">Create Account</button>
+              </div>
+
+              <div id="step4" class="hidden">
+                <div class="section-head">
+                  <h3>Welcome back</h3>
+                  <p>Your account is already registered. Enter password to continue.</p>
+                </div>
+
+                <div class="input-group">
+                  <label class="label">Enter Password</label>
+                  <input type="password" id="loginPass" placeholder="Enter Password">
+                </div>
+
+                <button class="primary-btn" onclick="login()">Login</button>
+                <button class="secondary-link-btn" onclick="forgotPassword()">Forgot Password?</button>
+              </div>
+
+            </div>
+
+            <p id="message"></p>
+
+            <div class="footer-note">
+              Premium secure customer login
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    emailjs.init("uqdnXG18txM1DBF6j");
+
+    let currentEmail = "";
+    let currentPhone = "";
+    let isPasswordResetFlow = false;
+
+    function updateProgress(stepNumber){
+      const pills = document.querySelectorAll('.step-pill');
+      const progressLabel = document.getElementById("progressLabel");
+
+      pills.forEach((pill,index)=>{
+        if(index < stepNumber){
+          pill.classList.add('active');
+        }else{
+          pill.classList.remove('active');
+        }
+      });
+
+      if(progressLabel){
+        progressLabel.innerText = `Step ${stepNumber} of 4`;
+      }
+    }
+
+    function redirectAfterAuth(){
+      const redirectTo = localStorage.getItem("redirectAfterLogin") || "index.html";
+      localStorage.removeItem("redirectAfterLogin");
+      window.location.href = redirectTo;
+    }
+
+    function startFlow(){
+      let email = document.getElementById("email").value.trim().toLowerCase();
+      let phone = document.getElementById("phone").value.trim();
+
+      if(!email || !email.includes("@")){
+        return showMsg("Please enter a valid email address.", "error");
+      }
+
+      if(!/^\d{10}$/.test(phone)){
+        return showMsg("Please enter a valid 10-digit mobile number.", "error");
+      }
+
+      currentEmail = email;
+      currentPhone = phone;
+
+      localStorage.setItem("tempUser", JSON.stringify({
+        email: email,
+        phone: phone
+      }));
+
+      let users = JSON.parse(localStorage.getItem("users")) || {};
+
+      if(users[email] && users[email].phone !== phone){
+        return showMsg("This email is already registered with a different mobile number.", "error");
+      }
+
+      for(let userEmail in users){
+        if(users[userEmail].phone === phone && userEmail !== email){
+          return showMsg("This mobile number is already linked with another email account.", "error");
+        }
+      }
+
+      if(users[email] && users[email].password){
+        isPasswordResetFlow = false;
+        document.getElementById("loginPass").value = "";
+        showMsg("Account found. Please enter your password.", "success");
+        showStep("step4");
+        updateProgress(4);
+        return;
+      }
+
+      let otp = String(Math.floor(1000 + Math.random()*9000));
+      localStorage.setItem("otp", otp);
+
+      emailjs.send(
+        "service_12k6w9q",
+        "template_qvyodce",
+        {
+          to_email: email,
+          otp: otp
+        }
+      )
+      .then(()=>{
+        showMsg("OTP sent successfully.", "success");
+        showStep("step2");
+        updateProgress(2);
+      })
+      .catch(()=>{
+        showMsg("Failed to send OTP.", "error");
+      });
+    }
+
+    function verifyOTP(){
+      let entered = document.getElementById("otp").value.trim();
+      let saved = localStorage.getItem("otp");
+
+      if(entered === saved){
+        localStorage.removeItem("otp");
+        showMsg(
+          isPasswordResetFlow
+            ? "OTP verified. Set your new password."
+            : "OTP verified successfully.",
+          "success"
+        );
+
+        document.getElementById("createAccountBtn").innerText = isPasswordResetFlow ? "Reset Password" : "Create Account";
+        document.getElementById("passwordStepLabel").innerText = isPasswordResetFlow ? "New Password" : "Create Password";
+        document.getElementById("password").placeholder = isPasswordResetFlow ? "Enter New Password" : "Create Password";
+        document.getElementById("passwordHeading").innerText = isPasswordResetFlow ? "Reset password" : "Set password";
+
+        showStep("step3");
+        updateProgress(3);
+      }else{
+        showMsg("Incorrect OTP.", "error");
+      }
+    }
+
+    function createAccount(){
+      let pass = document.getElementById("password").value;
+
+      if(pass.length < 6){
+        return showMsg("Password must be at least 6 characters.", "error");
+      }
+
+      let temp = JSON.parse(localStorage.getItem("tempUser"));
+      let users = JSON.parse(localStorage.getItem("users")) || {};
+
+      if(!temp){
+        if(isPasswordResetFlow && currentEmail && users[currentEmail]){
+          temp = {
+            email: currentEmail,
+            phone: users[currentEmail].phone
+          };
+        }else{
+          return showMsg("Session expired. Please try again.", "error");
+        }
+      }
+
+      const existingUser = users[temp.email] || {};
+
+      users[temp.email] = {
+        email: temp.email,
+        phone: temp.phone,
+        password: pass,
+        cart: existingUser.cart || [],
+        orders: existingUser.orders || [],
+        address: existingUser.address || {},
+        profile: {
+          name: existingUser.profile?.name || temp.email.split("@")[0],
+          email: temp.email,
+          phone: temp.phone
+        }
+      };
+
+      localStorage.setItem("users", JSON.stringify(users));
+      localStorage.setItem("currentUser", temp.email);
+      localStorage.setItem("userPhone", temp.phone);
+      localStorage.setItem("cart", JSON.stringify(users[temp.email].cart || []));
+      localStorage.removeItem("tempUser");
+
+      showMsg(
+        isPasswordResetFlow
+          ? "Password reset successfully."
+          : "Account created successfully.",
+        "success"
+      );
+
+      isPasswordResetFlow = false;
+      document.getElementById("createAccountBtn").innerText = "Create Account";
+      document.getElementById("passwordStepLabel").innerText = "Create Password";
+      document.getElementById("password").placeholder = "Create Password";
+      document.getElementById("passwordHeading").innerText = "Set password";
+
+      setTimeout(()=>{
+        redirectAfterAuth();
+      },1000);
+    }
+
+    function login(){
+      let pass = document.getElementById("loginPass").value;
+      let users = JSON.parse(localStorage.getItem("users")) || {};
+
+      if(users[currentEmail] && users[currentEmail].password === pass){
+        localStorage.setItem("currentUser", currentEmail);
+        localStorage.setItem("userPhone", users[currentEmail].phone);
+        localStorage.setItem("cart", JSON.stringify(users[currentEmail].cart || []));
+
+        showMsg("Login successful.", "success");
+
+        setTimeout(()=>{
+          redirectAfterAuth();
+        },1000);
+      }else{
+        showMsg("Incorrect password.", "error");
+      }
+    }
+
+    function forgotPassword(){
+      let users = JSON.parse(localStorage.getItem("users")) || {};
+
+      if(!currentEmail || !users[currentEmail]){
+        return showMsg("Enter your email and mobile number first, then continue.", "error");
+      }
+
+      let otp = String(Math.floor(1000 + Math.random()*9000));
+      localStorage.setItem("otp", otp);
+      localStorage.setItem("tempUser", JSON.stringify({
+        email: currentEmail,
+        phone: users[currentEmail].phone
+      }));
+      isPasswordResetFlow = true;
+
+      emailjs.send(
+        "service_12k6w9q",
+        "template_qvyodce",
+        {
+          to_email: currentEmail,
+          otp: otp
+        }
+      )
+      .then(()=>{
+        showMsg("Password reset OTP sent to your email.", "success");
+        document.getElementById("password").value = "";
+        document.getElementById("otp").value = "";
+        showStep("step2");
+        updateProgress(2);
+      })
+      .catch(()=>{
+        showMsg("Failed to send reset OTP.", "error");
+      });
+    }
+
+    function showStep(step){
+      ["step1","step2","step3","step4"].forEach(s=>{
+        document.getElementById(s).classList.add("hidden");
+      });
+      document.getElementById(step).classList.remove("hidden");
+    }
+
+    function showMsg(msg, type){
+      const messageEl = document.getElementById("message");
+      messageEl.innerText = msg;
+      messageEl.classList.remove("message-success","message-error");
+
+      if(type === "success"){
+        messageEl.classList.add("message-success");
+      }else if(type === "error"){
+        messageEl.classList.add("message-error");
+      }
+    }
+
+    document.addEventListener("keydown", function(e){
+      const visibleStep = ["step1","step2","step3","step4"].find(id => {
+        return !document.getElementById(id).classList.contains("hidden");
+      });
+
+      if(e.key === "Enter"){
+        if(visibleStep === "step1") startFlow();
+        if(visibleStep === "step2") verifyOTP();
+        if(visibleStep === "step3") createAccount();
+        if(visibleStep === "step4") login();
+      }
+    });
+
+    updateProgress(1);
+  </script>
+</body>
+</html>
+
+
+
+
+

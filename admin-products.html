@@ -1,0 +1,992 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swadra Admin Products</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
+:root{
+  --wine:#7a3d3d;
+  --rose:#7a3d3d;
+  --ink:#1f2430;
+  --muted:#677282;
+  --line:#e7e9ee;
+  --panel:#ffffff;
+  --surface:#f4f5f8;
+  --soft:#fff7fb;
+  --success:#0f8a47;
+  --danger:#c62828;
+}
+body{
+  background:
+    radial-gradient(circle at top right,rgba(122,61,61,.14),transparent 28%),
+    linear-gradient(180deg,#f8f2f5 0%,#f4f5f8 26%,#eef1f6 100%);
+  color:var(--ink);
+}
+.sidebar{
+  position:fixed;left:0;top:0;width:280px;height:100vh;
+  background:#7a3d3d;
+  padding:26px;color:#fff;overflow:auto;
+  box-shadow:24px 0 40px rgba(122,61,61,.14);
+}
+.brand{font-size:34px;font-weight:800;margin-bottom:10px;letter-spacing:-.04em}
+.brand-sub{font-size:13px;line-height:1.6;color:rgba(255,255,255,.78);margin-bottom:24px}
+.nav-label{font-size:12px;text-transform:uppercase;letter-spacing:.16em;color:rgba(255,255,255,.58);margin:20px 0 10px}
+.sidebar button{
+  width:100%;padding:15px 16px;border:none;border-radius:18px;
+  background:rgba(255,255,255,.12);color:#fff;font-weight:700;text-align:left;
+  margin-bottom:12px;cursor:pointer;transition:.25s;backdrop-filter:blur(6px)
+}
+.sidebar button:hover,.sidebar button.active{
+  background:#fff;color:var(--wine);transform:translateX(4px)
+}
+.main{margin-left:280px;padding:34px}
+.topbar{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  margin-bottom:24px;gap:20px;flex-wrap:wrap
+}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#9b6b7d;margin-bottom:8px}
+.topbar h1{font-size:42px;color:var(--wine);line-height:1;letter-spacing:-.05em}
+.topbar p{margin-top:10px;color:var(--muted);max-width:760px;line-height:1.7}
+.primary-btn{
+  padding:16px 24px;border:none;border-radius:18px;
+  background:linear-gradient(135deg,var(--wine),var(--rose));
+  color:#fff;font-weight:800;cursor:pointer;
+  box-shadow:0 14px 30px rgba(123,40,66,.22);transition:.28s
+}
+.primary-btn:hover{transform:translateY(-2px);box-shadow:0 18px 34px rgba(123,40,66,.26)}
+.stats-grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:24px
+}
+.stat-card{
+  background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.75);
+  border-radius:24px;padding:20px 22px;box-shadow:0 16px 35px rgba(25,35,52,.06)
+}
+.stat-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#8a6a77}
+.stat-value{font-size:34px;font-weight:800;color:var(--wine);margin-top:8px;letter-spacing:-.05em}
+.stat-note{margin-top:6px;font-size:13px;color:var(--muted)}
+.panel{
+  background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.85);
+  border-radius:30px;padding:28px;box-shadow:0 18px 50px rgba(18,26,39,.06);margin-bottom:28px
+}
+.panel-head{
+  display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;
+  margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--line)
+}
+.panel-head h2{font-size:28px;font-weight:800;color:var(--wine);letter-spacing:-.04em}
+.panel-head p{color:var(--muted);font-size:14px}
+.category-section{margin-bottom:40px}
+.category-header{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  margin-bottom:18px
+}
+.group-title{font-size:28px;font-weight:800;color:var(--wine);letter-spacing:-.04em}
+.group-count{
+  padding:8px 14px;border-radius:999px;background:var(--soft);color:var(--wine);
+  font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase
+}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:22px}
+.product-card{
+  background:linear-gradient(180deg,#fff 0%,#fcfbfd 100%);
+  border:1px solid var(--line);border-radius:28px;padding:18px;position:relative;
+  box-shadow:0 12px 30px rgba(20,25,36,.05)
+}
+.product-preview{
+  background:#fff;border-radius:18px;padding:10px;box-shadow:0 8px 25px rgba(0,0,0,0.08);margin-bottom:16px
+}
+.product-preview:hover{box-shadow:0 15px 40px rgba(0,0,0,0.12)}
+.product-thumb-wrap{
+  position:relative;background:#fff;border-radius:16px;padding:5px;margin-bottom:0;overflow:hidden;
+  height:300px;display:flex;align-items:center;justify-content:center
+}
+.product-thumb{
+  width:100%;height:100%;object-fit:contain;border-radius:12px;background:#eee;display:block
+}
+.thumb-dots{display:flex;justify-content:center;gap:6px;margin-top:10px;flex-wrap:wrap}
+.thumb-dot{width:8px;height:8px;border-radius:50%;background:#d5b1bd;cursor:pointer}
+.thumb-dot.active{background:var(--wine)}
+.badge{
+  display:inline-flex;align-items:center;padding:7px 12px;border-radius:999px;
+  font-size:12px;font-weight:700;margin-bottom:10px
+}
+.badge.available{background:#e6f8ec;color:var(--success)}
+.badge.out{background:#ffe9e9;color:var(--danger)}
+.product-preview .product-name{margin:10px 10px -2px;font-size:17px;font-weight:700;letter-spacing:0;line-height:1.2}
+.product-preview .product-size{font-size:15px;color:#444;margin:0 10px -3px}
+.product-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:6px;gap:8px}
+.product-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.price{font-size:20px;color:var(--wine);font-weight:900}
+.price-stack{display:flex;flex-direction:column;gap:4px}
+.price-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.old-price{font-size:13px;color:#8f7f74;text-decoration:line-through;font-weight:700}
+.discount-badge{font-size:11px;color:#0c831f;font-weight:800}
+.out-stock-text{font-size:14px;color:var(--danger);font-weight:700;white-space:nowrap}
+.qty-box{display:flex;align-items:center;gap:3px}
+.qty-btn{background:#eee;border:none;width:20px;height:20px;border-radius:50%;cursor:default;font-size:12px}
+.cart-btn{
+  background:linear-gradient(135deg,#7a3d3d,#b76e79,#d4af37);color:#fff;border:none;
+  padding:10px 18px;border-radius:20px;font-size:13px;font-weight:700;position:relative;overflow:hidden
+}
+.cart-btn.disabled{background:#c62828}
+.meta-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px
+}
+.meta-chip{
+  border:1px solid var(--line);background:#fff;border-radius:16px;padding:12px 14px
+}
+.meta-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#8a6a77;margin-bottom:6px}
+.meta-value{font-size:15px;font-weight:700;color:#28303d}
+.edit-box{
+  background:#fafbfd;border:1px solid var(--line);border-radius:20px;padding:16px;margin-top:10px
+}
+.edit-title{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#8a6a77;margin-bottom:12px}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field-grid .full{grid-column:1 / -1}
+.field label{font-size:12px;font-weight:700;color:#5c6574;display:block;margin-bottom:6px}
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.small-btn{padding:13px;border:none;border-radius:16px;font-weight:800;cursor:pointer;transition:.25s}
+.small-btn:hover{transform:translateY(-1px)}
+.save-btn{background:#111827;color:#fff}
+.delete-btn{background:#fff1f1;color:var(--danger)}
+input,select{
+  width:100%;padding:15px;border-radius:16px;border:1px solid #ddd;background:#fff;
+  margin-bottom:0;font-size:14px;outline:none;transition:border-color .2s, box-shadow .2s
+}
+input:focus,select:focus{border-color:#7a3d3d;box-shadow:0 0 0 4px rgba(122,61,61,.12)}
+.hidden{display:none}
+.modal{
+  position:fixed;inset:0;background:rgba(17,24,39,.58);display:none;justify-content:center;align-items:center;
+  z-index:9999;padding:20px;backdrop-filter:blur(10px)
+}
+.modal-card{
+  background:#fff;width:100%;max-width:760px;border-radius:32px;padding:32px;max-height:92vh;overflow:auto;
+  box-shadow:0 28px 70px rgba(17,24,39,.24)
+}
+.modal-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;gap:16px}
+.modal-top h2{font-size:34px;color:var(--wine);letter-spacing:-.04em}
+.modal-top p{margin-top:8px;color:var(--muted);line-height:1.7}
+.close-btn{width:auto;padding:10px 16px;background:#111;color:#fff;border:none;border-radius:14px;cursor:pointer}
+.modal-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.modal-form-grid .full{grid-column:1 / -1}
+.empty-state{
+  text-align:center;padding:34px;color:#777;font-weight:700;background:#fafbfd;
+  border:1px dashed #d8dce5;border-radius:22px
+}
+@media(max-width:1200px){.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:980px){
+  .sidebar{position:relative;width:100%;height:auto}
+  .main{margin-left:0;padding:20px}
+}
+@media(max-width:720px){
+  .stats-grid,.field-grid,.modal-form-grid{grid-template-columns:1fr}
+  .product-grid{grid-template-columns:1fr}
+  .topbar h1{font-size:34px}
+}
+</style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+<body>
+<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
+
+<div class="sidebar">
+<div class="brand">Swadra Admin</div>
+<div class="brand-sub">Products, pricing, stock and merchandising ko ek jagah se control karo.</div>
+<div class="nav-label">Workspace</div>
+<button onclick="location.href='admin-dashboard.html'">Dashboard</button>
+<button class="active">Products</button>
+<button onclick="location.href='admin-orders.html'">Orders</button>
+<button onclick="location.href='admin-customers.html'">Customers</button>
+<button onclick="location.href='admin-payments.html'">Payments</button>
+<button onclick="location.href='admin-profit.html'">Profit Tracker</button>
+<button onclick="location.href='admin-extra.html'">Extra</button>
+<button onclick="location.href='admin-index.html'">Settings</button>
+<div class="nav-label">Storefront</div>
+<button onclick="location.href='index.html'">Home</button>
+</div>
+
+<div class="main">
+<div class="topbar">
+<div>
+<div class="eyebrow">Catalog Control Room</div>
+<h1>Manage Products</h1>
+<p>Existing functions same rahenge. Yahan se aap products add, update, stock manage aur home/category pages ko sync kar sakte ho.</p>
+</div>
+<button class="primary-btn" onclick="openModal()">+ Add Product</button>
+</div>
+
+<div class="stats-grid" id="productStats"></div>
+
+<div class="panel">
+<div class="panel-head">
+  <div>
+    <h2>Catalog Overview</h2>
+    <p>Har category ka product list, stock status aur pricing yahin se manage karo.</p>
+  </div>
+</div>
+<div id="productsContainer"></div>
+</div>
+</div>
+
+<div class="modal" id="productModal">
+<div class="modal-card">
+<div class="modal-top">
+<div>
+<h2>Add Product</h2>
+<p>New SKU details bhar ke catalog me instantly push karo.</p>
+</div>
+<button class="close-btn" onclick="closeModal()">Close</button>
+</div>
+
+<div class="modal-form-grid">
+<div class="field full">
+<label for="productName">Product Name</label>
+<input id="productName" placeholder="Product Name">
+</div>
+
+<div class="field">
+<label for="productMRP">MRP</label>
+<input id="productMRP" type="number" placeholder="MRP">
+</div>
+
+<div class="field">
+<label for="productSellingPrice">Selling Price</label>
+<input id="productSellingPrice" type="number" placeholder="Selling Price">
+</div>
+
+<div class="field">
+<label for="productStockQty">Stock Quantity</label>
+<input id="productStockQty" type="number" placeholder="Stock Quantity">
+</div>
+
+<div class="field">
+<label for="productCategory">Category</label>
+<select id="productCategory">
+<option>Spices</option>
+<option>Dry Fruits</option>
+<option>Oil, Ghee & More</option>
+<option>Achar / Pickle</option>
+<option>Combos</option>
+<option>Special Products</option>
+<option>Bestseller</option>
+</select>
+</div>
+
+<div class="field">
+<label for="productSize">Size</label>
+<select id="productSize">
+<option>100gm</option>
+<option>250gm</option>
+<option>500gm</option>
+<option>1kg</option>
+<option>5kg</option>
+<option>1L</option>
+<option value="__custom__">Custom Size</option>
+</select>
+</div>
+
+<div class="field full hidden" id="customSizeWrap">
+<label for="productCustomSize">Type Custom Size</label>
+<input id="productCustomSize" placeholder="Eg. 750gm, 2kg, 500ml">
+</div>
+
+<div class="field">
+<label for="productAvailability">Availability</label>
+<select id="productAvailability">
+<option>Available</option>
+<option>Out of Stock</option>
+</select>
+</div>
+
+<div class="field full">
+<label for="productImages">Product Images (Max 4)</label>
+<input id="productImages" type="file" accept="image/*" multiple>
+</div>
+
+<div class="field full">
+<button class="primary-btn" onclick="saveProduct()">Save Product</button>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+const PRODUCTS_DB_NAME = "swadraProductsDB";
+const PRODUCTS_STORE_NAME = "products";
+const PRODUCT_API_URLS = window.SWADRA_PRODUCTS_API_URLS || ["/api/products"];
+const BACKEND_PRODUCTS_CACHE_KEY = "swadraBackendProductsCache";
+
+function normalizeFrontendProduct(product){
+const images = Array.isArray(product.images) ? product.images.filter(Boolean).slice(0,4) : [];
+const primaryImage = product.image || images[0] || "";
+return {
+...product,
+id: product.id,
+name: String(product.name || product.productName || "").trim(),
+size: String(product.size || product.productSize || "").trim(),
+category: String(product.category || "").trim(),
+price: Number(product.price ?? product.sellingPrice ?? 0) || 0,
+mrp: Number(product.mrp ?? product.price ?? product.sellingPrice ?? 0) || 0,
+stockQty: Number(product.stockQty ?? 0) || 0,
+availability: String(product.availability || (product.outOfStock ? "Out of Stock" : "Available")),
+image: primaryImage,
+images: images.length ? images : (primaryImage ? [primaryImage] : []),
+offPercent: Number(product.offPercent ?? 0) || 0
+};
+}
+
+async function fetchBackendProducts(){
+for(const url of PRODUCT_API_URLS){
+try{
+const response = await fetch(url,{cache:"no-store"});
+if(!response.ok) continue;
+const data = await response.json();
+const products = Array.isArray(data?.products) ? data.products.map(normalizeFrontendProduct) : [];
+if(products.length || data?.ok){
+try{ localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(products)); }catch(e){}
+return products;
+}
+}catch(error){}
+}
+return null;
+}
+
+async function saveBackendProduct(product){
+for(const baseUrl of PRODUCT_API_URLS){
+try{
+const response = await fetch(baseUrl,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body: JSON.stringify(product)
+});
+if(!response.ok) continue;
+const data = await response.json();
+if(data?.product) return normalizeFrontendProduct(data.product);
+}catch(error){}
+}
+throw new Error("Backend save failed");
+}
+
+async function deleteBackendProduct(id){
+for(const baseUrl of PRODUCT_API_URLS){
+try{
+const response = await fetch(`${baseUrl}/${encodeURIComponent(id)}`,{method:"DELETE"});
+if(response.ok) return true;
+}catch(error){}
+}
+throw new Error("Backend delete failed");
+}
+
+function openProductsDb(){
+return new Promise((resolve,reject)=>{
+const request = indexedDB.open(PRODUCTS_DB_NAME,1);
+request.onupgradeneeded = e=>{
+const db = e.target.result;
+if(!db.objectStoreNames.contains(PRODUCTS_STORE_NAME)){
+db.createObjectStore(PRODUCTS_STORE_NAME,{keyPath:"id"});
+}
+};
+request.onsuccess = ()=>resolve(request.result);
+request.onerror = ()=>reject(request.error);
+});
+}
+
+function signalProductsUpdated(){
+localStorage.setItem("adminProductsUpdatedAt", String(Date.now()));
+}
+
+function normalizeCategoryKey(value){
+const normalized = String(value || "").toLowerCase().replace(/&/g,"and").replace(/,/g," ").replace(/\s+/g," ").trim();
+if(normalized.includes("achar") || normalized.includes("pickle")) return "achar";
+if(normalized.includes("best seller") || normalized.includes("bestseller")) return "bestseller";
+if(normalized.includes("combo")) return "combos";
+if(normalized.includes("special")) return "special";
+if(normalized.includes("dry fruits") || normalized.includes("dryfruits")) return "dryfruits";
+if(normalized.includes("oil") || normalized.includes("ghee")) return "oilghee";
+return "spices";
+}
+
+async function syncProductsFallbackStore(){
+try{
+const products = await getProducts();
+localStorage.setItem(BACKEND_PRODUCTS_CACHE_KEY, JSON.stringify(products));
+localStorage.setItem("adminProducts", JSON.stringify(products));
+const grouped = {
+spices: [],
+dryfruits: [],
+oilghee: [],
+achar: [],
+combos: [],
+bestseller: [],
+special: []
+};
+products.forEach(product=>{
+const key = normalizeCategoryKey(product.category);
+if(!grouped[key]) grouped[key] = [];
+grouped[key].push(product);
+});
+localStorage.setItem("adminProductsByCategory", JSON.stringify(grouped));
+}catch(e){
+console.error("adminProducts fallback sync failed", e);
+}
+}
+
+async function getProducts(){
+const backendProducts = await fetchBackendProducts();
+if(backendProducts){
+return backendProducts;
+}
+try{
+const db = await openProductsDb();
+return await new Promise((resolve,reject)=>{
+const tx = db.transaction(PRODUCTS_STORE_NAME,"readonly");
+const store = tx.objectStore(PRODUCTS_STORE_NAME);
+const request = store.getAll();
+request.onsuccess = ()=>resolve(request.result || []);
+request.onerror = ()=>reject(request.error);
+});
+}catch(e){
+console.error("IndexedDB products read failed", e);
+try{
+const cachedProducts = JSON.parse(localStorage.getItem(BACKEND_PRODUCTS_CACHE_KEY)) || [];
+if(cachedProducts.length) return cachedProducts;
+return JSON.parse(localStorage.getItem("adminProducts")) || [];
+}catch(parseError){
+console.error("adminProducts parse failed", parseError);
+return [];
+}
+}
+}
+
+async function putProduct(product){
+const payload = normalizeFrontendProduct(product);
+const saved = await saveBackendProduct(payload);
+const db = await openProductsDb();
+return await new Promise((resolve,reject)=>{
+const tx = db.transaction(PRODUCTS_STORE_NAME,"readwrite");
+tx.objectStore(PRODUCTS_STORE_NAME).put(saved);
+tx.oncomplete = ()=>resolve(true);
+tx.onerror = ()=>reject(tx.error);
+});
+}
+
+async function deleteProductRecord(id){
+await deleteBackendProduct(id);
+const db = await openProductsDb();
+return await new Promise((resolve,reject)=>{
+const tx = db.transaction(PRODUCTS_STORE_NAME,"readwrite");
+tx.objectStore(PRODUCTS_STORE_NAME).delete(id);
+tx.oncomplete = ()=>resolve(true);
+tx.onerror = ()=>reject(tx.error);
+});
+}
+
+function normalizeProductName(value){
+return String(value || "").trim().replace(/\s+/g," ").toLowerCase();
+}
+
+function buildProductRecord(base){
+const mrp = Number(base.mrp || base.price || 0);
+const price = Number(base.price || 0);
+const offPercent = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
+const images = Array.isArray(base.images) ? base.images.filter(Boolean).slice(0,4) : [];
+const primaryImage = base.image || images[0] || "";
+
+return {
+...base,
+mrp,
+price,
+image: primaryImage,
+images: images.length ? images : (primaryImage ? [primaryImage] : []),
+offPercent
+};
+}
+
+function getProductImages(product){
+return Array.isArray(product?.images) && product.images.length ? product.images.filter(Boolean).slice(0,4) : (product?.image ? [product.image] : []);
+}
+
+function buildAdminImageDots(productId, images){
+return images.map((image,index)=>`<span class="thumb-dot ${index===0?"active":""}" onclick="setAdminPreviewImage('${productId}',${index})"></span>`).join("");
+}
+
+function setAdminPreviewImage(productId, index){
+const wrap = document.querySelector(`[data-preview-id="${productId}"]`);
+if(!wrap) return;
+const images = JSON.parse(wrap.dataset.images || "[]");
+const target = wrap.querySelector(".product-thumb");
+if(!target || !images[index]) return;
+target.src = images[index];
+wrap.querySelectorAll(".thumb-dot").forEach((dot,dotIndex)=>{
+dot.classList.toggle("active", dotIndex === index);
+});
+}
+
+function buildAdminPreviewPriceMarkup(product){
+const mrp = Number(product.mrp || product.price || 0);
+const price = Number(product.price || 0);
+const offPercent = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
+if(offPercent > 0){
+return `
+<div class="price-stack">
+<div class="price-line">
+<span class="old-price">â‚¹${mrp}</span>
+<div class="price">â‚¹${price}</div>
+</div>
+<div class="discount-badge">${offPercent}% OFF</div>
+</div>`;
+}
+return `<div class="price">â‚¹${price}</div>`;
+}
+
+async function migrateLegacyProductsIfNeeded(){
+let legacyProducts = [];
+try{
+legacyProducts = JSON.parse(localStorage.getItem("adminProducts")) || [];
+}catch(e){
+legacyProducts = [];
+}
+
+if(!legacyProducts.length){
+return;
+}
+
+const currentProducts = await getProducts();
+
+if(currentProducts.length === 0){
+for(const product of legacyProducts){
+await putProduct(buildProductRecord(product));
+}
+await syncProductsFallbackStore();
+signalProductsUpdated();
+return;
+}
+
+await syncProductsFallbackStore();
+}
+
+function openModal(){
+productModal.style.display = "flex";
+}
+
+function closeModal(){
+productModal.style.display = "none";
+}
+
+function clearForm(){
+productName.value = "";
+productMRP.value = "";
+productSellingPrice.value = "";
+productStockQty.value = "";
+productImages.value = "";
+productSize.value = "100gm";
+productCustomSize.value = "";
+customSizeWrap.classList.add("hidden");
+}
+
+function getSelectedProductSize(){
+if(productSize.value === "__custom__"){
+return String(productCustomSize.value || "").trim();
+}
+return String(productSize.value || "").trim();
+}
+
+function toggleCustomSizeInput(){
+if(productSize.value === "__custom__"){
+customSizeWrap.classList.remove("hidden");
+}else{
+customSizeWrap.classList.add("hidden");
+productCustomSize.value = "";
+}
+}
+
+productSize.addEventListener("change", toggleCustomSizeInput);
+
+async function saveProduct(){
+const files = Array.from(productImages.files || []);
+const name = String(productName.value || "").trim();
+const mrp = Number(productMRP.value) || 0;
+const price = Number(productSellingPrice.value) || 0;
+const stockQty = Number(productStockQty.value) || 0;
+const size = getSelectedProductSize();
+
+if(!name){
+alert("Please enter product name");
+return;
+}
+
+if(mrp <= 0){
+alert("Please enter valid MRP");
+return;
+}
+
+if(price <= 0){
+alert("Please enter valid selling price");
+return;
+}
+
+if(price > mrp){
+alert("Selling price cannot be greater than MRP");
+return;
+}
+
+if(!size){
+alert("Please enter product size");
+return;
+}
+
+if(!files.length){
+alert("Please upload at least one product image");
+return;
+}
+
+if(files.length > 4){
+alert("You can upload maximum 4 product images");
+return;
+}
+
+for(const file of files){
+if(!file.type.startsWith("image/")){
+alert("Please upload valid image files only");
+return;
+}
+if(file.size > 10 * 1024 * 1024){
+alert("Each image size must be 10MB or less");
+return;
+}
+}
+
+Promise.all(files.map(file=>new Promise((resolve,reject)=>{
+const reader = new FileReader();
+reader.onload = e=>resolve(e.target.result);
+reader.onerror = ()=>reject(new Error("Image read failed"));
+reader.readAsDataURL(file);
+}))).then(async uploadedImages=>{
+let products = await getProducts();
+const hasSameName = products.some(p => normalizeProductName(p.name) === normalizeProductName(name));
+
+if(hasSameName){
+const shouldContinue = confirm("Same product name already exists. Do you still want to add this product?");
+if(!shouldContinue){
+return;
+}
+}
+
+const product = buildProductRecord({
+id: Date.now() + Math.floor(Math.random()*10000),
+name,
+mrp,
+price,
+stockQty,
+category: productCategory.value,
+size,
+availability: productAvailability.value || "Available",
+image: uploadedImages[0],
+images: uploadedImages
+});
+
+try{
+await putProduct(product);
+await syncProductsFallbackStore();
+signalProductsUpdated();
+await renderProducts();
+closeModal();
+clearForm();
+alert("Product saved successfully");
+}catch(saveError){
+alert("Products save failed. Storage may be full.");
+console.error("IndexedDB product save failed", saveError);
+}
+}).catch(error=>{
+alert("Image upload failed");
+console.error(error);
+});
+}
+
+async function deleteProduct(id){
+try{
+await deleteProductRecord(id);
+await syncProductsFallbackStore();
+signalProductsUpdated();
+await renderProducts();
+}catch(e){
+alert("Delete failed");
+console.error("Delete failed", e);
+}
+}
+
+async function updateProduct(id){
+let products = await getProducts();
+const index = products.findIndex(p=>p.id===id);
+if(index === -1) return;
+
+const name = String(document.getElementById("name-"+id).value || "").trim();
+const size = String(document.getElementById("size-"+id).value || "").trim();
+
+products[index] = buildProductRecord({
+...products[index],
+name,
+size,
+mrp: Number(document.getElementById("mrp-"+id).value),
+price: Number(document.getElementById("price-"+id).value),
+stockQty: Number(document.getElementById("stock-"+id).value),
+availability: document.getElementById("availability-"+id).value
+});
+
+if(!products[index].name){
+alert("Product name is required");
+return;
+}
+
+if(!products[index].size){
+alert("Product size is required");
+return;
+}
+
+if(products[index].mrp <= 0 || products[index].price <= 0){
+alert("MRP and selling price must be valid");
+return;
+}
+
+if(products[index].price > products[index].mrp){
+alert("Selling price cannot be greater than MRP");
+return;
+}
+
+try{
+await putProduct(products[index]);
+await syncProductsFallbackStore();
+signalProductsUpdated();
+await renderProducts();
+}catch(e){
+alert("Update failed");
+console.error("Update failed", e);
+}
+}
+
+async function renderProducts(){
+const products = (await getProducts()).map(buildProductRecord);
+const categories = [
+"Spices",
+"Dry Fruits",
+"Oil, Ghee & More",
+"Achar / Pickle",
+"Combos",
+"Special Products",
+"Bestseller"
+];
+
+productsContainer.innerHTML = categories.map(category=>{
+const items = products.filter(p=>p.category===category);
+
+return `
+<div style="margin-bottom:40px;">
+<div class="group-title">${category}</div>
+${items.length===0
+? `<div class="empty-state">No products added yet</div>`
+: `<div class="product-grid">
+${items.map(item=>{
+const stockStatus = item.availability === "Out of Stock" || Number(item.stockQty) <= 0 ? "Out of Stock" : "Available";
+
+return `
+<div class="product-card">
+<div class="product-preview" data-preview-id="${item.id}" data-images='${JSON.stringify(getProductImages(item))}'>
+<div class="product-thumb-wrap"><img src="${item.image || 'https://via.placeholder.com/600x400?text=No+Image'}" class="product-thumb"></div>
+${getProductImages(item).length > 1 ? `<div class="thumb-dots">${buildAdminImageDots(item.id, getProductImages(item))}</div>` : ""}
+</div>
+<span class="badge ${stockStatus==="Available"?"available":"out"}">${stockStatus}</span>
+<h3>${item.name}</h3>
+<div class="meta">
+<div><b>Size:</b> ${item.size || "100gm"}</div>
+<div><b>MRP:</b> â‚¹${item.mrp}</div>
+<div><b>Selling Price:</b> â‚¹${item.price}</div>
+<div><b>Discount:</b> ${item.offPercent}% OFF</div>
+<div><b>Stock:</b> ${item.stockQty}</div>
+</div>
+
+<label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:6px;">Edit MRP</label>
+<input id="mrp-${item.id}" type="number" value="${item.mrp}">
+
+<label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:6px;">Edit Price</label>
+<input id="price-${item.id}" type="number" value="${item.price}">
+
+<label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:6px;">Edit Stock Qty</label>
+<input id="stock-${item.id}" type="number" value="${item.stockQty}">
+
+<label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:6px;">Availability</label>
+<select id="availability-${item.id}">
+<option ${stockStatus==="Available"?"selected":""}>Available</option>
+<option ${stockStatus==="Out of Stock"?"selected":""}>Out of Stock</option>
+</select>
+
+<div class="action-grid">
+<button class="small-btn save-btn" onclick="updateProduct(${item.id})">Save Changes</button>
+<button class="small-btn delete-btn" onclick="deleteProduct(${item.id})">Delete</button>
+</div>
+</div>`;
+}).join("")}
+</div>`}
+</div>`;
+}).join("");
+}
+
+async function renderProducts(){
+const products = (await getProducts()).map(buildProductRecord);
+const categories = [
+"Spices",
+"Dry Fruits",
+"Oil, Ghee & More",
+"Achar / Pickle",
+"Combos",
+"Special Products",
+"Bestseller"
+];
+
+const inStockCount = products.filter(item=>!(item.availability === "Out of Stock" || Number(item.stockQty) <= 0)).length;
+const outStockCount = products.filter(item=>item.availability === "Out of Stock" || Number(item.stockQty) <= 0).length;
+const totalStockUnits = products.reduce((sum,item)=>sum + (Number(item.stockQty) || 0), 0);
+
+productStats.innerHTML = `
+<div class="stat-card">
+<div class="stat-label">Total Products</div>
+<div class="stat-value">${products.length}</div>
+<div class="stat-note">Catalog me saved records</div>
+</div>
+<div class="stat-card">
+<div class="stat-label">Available</div>
+<div class="stat-value">${inStockCount}</div>
+<div class="stat-note">Storefront ke liye ready</div>
+</div>
+<div class="stat-card">
+<div class="stat-label">Out Of Stock</div>
+<div class="stat-value">${outStockCount}</div>
+<div class="stat-note">Inventory attention needed</div>
+</div>
+<div class="stat-card">
+<div class="stat-label">Stock Units</div>
+<div class="stat-value">${totalStockUnits}</div>
+<div class="stat-note">Total sellable quantity</div>
+</div>`;
+
+productsContainer.innerHTML = categories.map(category=>{
+const items = products.filter(p=>p.category===category);
+
+return `
+<div class="category-section">
+<div class="category-header">
+<div class="group-title">${category}</div>
+<div class="group-count">${items.length} Product${items.length===1?"":"s"}</div>
+</div>
+${items.length===0
+? `<div class="empty-state">No products added yet</div>`
+: `<div class="product-grid">
+${items.map(item=>{
+const stockStatus = item.availability === "Out of Stock" || Number(item.stockQty) <= 0 ? "Out of Stock" : "Available";
+
+return `
+<div class="product-card">
+<div class="product-preview" data-preview-id="${item.id}" data-images='${JSON.stringify(getProductImages(item))}'>
+<div class="product-thumb-wrap">
+<img src="${item.image || 'https://via.placeholder.com/600x400?text=No+Image'}" class="product-thumb">
+</div>
+${getProductImages(item).length > 1 ? `<div class="thumb-dots">${buildAdminImageDots(item.id, getProductImages(item))}</div>` : ""}
+<div class="product-name">${item.name}</div>
+<div class="product-size">${item.size || "100gm"}</div>
+<div class="product-bottom">
+<div class="product-left">
+${stockStatus==="Out of Stock"
+? `<div class="out-stock-text">Out Of Stock</div>`
+: `${buildAdminPreviewPriceMarkup(item)}
+<div class="qty-box">
+<button class="qty-btn" type="button">-</button>
+<span>1</span>
+<button class="qty-btn" type="button">+</button>
+</div>`}
+</div>
+<button class="cart-btn ${stockStatus==="Out of Stock"?"disabled":""}" ${stockStatus==="Out of Stock"?"disabled":""}>${stockStatus==="Out of Stock"?"OUT OF STOCK":"ADD TO CART"}</button>
+</div>
+</div>
+<span class="badge ${stockStatus==="Available"?"available":"out"}">${stockStatus}</span>
+<div class="meta-grid">
+<div class="meta-chip">
+<div class="meta-label">Size</div>
+<div class="meta-value">${item.size || "100gm"}</div>
+</div>
+<div class="meta-chip">
+<div class="meta-label">MRP</div>
+<div class="meta-value">â‚¹${item.mrp}</div>
+</div>
+<div class="meta-chip">
+<div class="meta-label">Selling Price</div>
+<div class="meta-value">â‚¹${item.price}</div>
+</div>
+<div class="meta-chip">
+<div class="meta-label">Discount</div>
+<div class="meta-value">${item.offPercent}% OFF</div>
+</div>
+<div class="meta-chip">
+<div class="meta-label">Stock</div>
+<div class="meta-value">${item.stockQty}</div>
+</div>
+<div class="meta-chip">
+<div class="meta-label">Category</div>
+<div class="meta-value">${item.category}</div>
+</div>
+</div>
+<div class="edit-box">
+<div class="edit-title">Quick Edit</div>
+<div class="field-grid">
+<div class="field full">
+<label for="name-${item.id}">Edit Product Name</label>
+<input id="name-${item.id}" value="${item.name}">
+</div>
+<div class="field">
+<label for="size-${item.id}">Edit Size</label>
+<input id="size-${item.id}" value="${item.size || "100gm"}">
+</div>
+<div class="field">
+<label for="mrp-${item.id}">Edit MRP</label>
+<input id="mrp-${item.id}" type="number" value="${item.mrp}">
+</div>
+<div class="field">
+<label for="price-${item.id}">Edit Price</label>
+<input id="price-${item.id}" type="number" value="${item.price}">
+</div>
+<div class="field">
+<label for="stock-${item.id}">Edit Stock Qty</label>
+<input id="stock-${item.id}" type="number" value="${item.stockQty}">
+</div>
+<div class="field">
+<label for="availability-${item.id}">Availability</label>
+<select id="availability-${item.id}">
+<option ${stockStatus==="Available"?"selected":""}>Available</option>
+<option ${stockStatus==="Out of Stock"?"selected":""}>Out of Stock</option>
+</select>
+</div>
+</div>
+</div>
+<div class="action-grid">
+<button class="small-btn save-btn" onclick="updateProduct(${item.id})">Save Changes</button>
+<button class="small-btn delete-btn" onclick="deleteProduct(${item.id})">Delete</button>
+</div>
+</div>`;
+}).join("")}
+</div>`}
+</div>`;
+}).join("");
+}
+
+migrateLegacyProductsIfNeeded().then(async ()=>{
+await syncProductsFallbackStore();
+await renderProducts();
+});
+</script>
+</body>
+</html>
+
+
+
+
+
+

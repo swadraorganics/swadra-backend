@@ -1,0 +1,1394 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swadra Organics - Admin Customers</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root{
+      --primary:#7a3d3d;
+      --primary-dark:#5f2f2f;
+      --bg:#f8f5f2;
+      --card:#ffffff;
+      --text:#1f1f1f;
+      --muted:#6c6c6c;
+      --line:#e7dfd7;
+      --success:#137a43;
+      --warn:#b36b00;
+      --danger:#c62828;
+      --shadow:0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .wrap{
+      width:min(100%, 1880px);
+      margin:0 auto;
+      padding:20px 24px 28px;
+    }
+
+    .topbar{
+      background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+      color:#fff;
+      padding:24px 28px;
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      margin-bottom:18px;
+    }
+
+    .topbar h1{
+      margin:0;
+      font-size:30px;
+      line-height:1.2;
+    }
+
+    .topbar p{
+      margin:8px 0 0;
+      opacity:0.92;
+      font-size:15px;
+      line-height:1.6;
+    }
+
+    .toolbar{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+
+    button, .toolbar a{
+      border:none;
+      outline:none;
+      cursor:pointer;
+      border-radius:12px;
+      padding:12px 18px;
+      font-size:14px;
+      font-weight:700;
+      transition:0.2s ease;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .btn-primary{ background:var(--primary); color:#fff; }
+    .btn-primary:hover{ background:var(--primary-dark); }
+    .btn-secondary{ background:#1d6d5c; color:#fff; }
+    .btn-dark{ background:#333; color:#fff; }
+    .btn-danger{ background:var(--danger); color:#fff; }
+    .btn-light{ background:#eee7df; color:#3a2b2b; }
+    .btn-warn{ background:#8d5d16; color:#fff; }
+
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:14px;
+      margin-bottom:18px;
+    }
+
+    .stat-card{
+      background:var(--card);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+
+    .stat-card .label{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    .stat-card .value{
+      font-size:28px;
+      font-weight:800;
+      margin-top:8px;
+      color:var(--primary);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:380px minmax(0,1fr);
+      gap:18px;
+      align-items:start;
+    }
+
+    .panel{
+      background:var(--card);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:22px 24px;
+      width:100%;
+    }
+
+    .panel h2{
+      margin:0 0 14px;
+      font-size:24px;
+    }
+
+    .product-form{
+      display:grid;
+      gap:16px;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px;
+    }
+
+    .row.one{
+      grid-template-columns:1fr;
+    }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .field label{
+      font-size:13px;
+      font-weight:700;
+      color:#3b2a2a;
+    }
+
+    .field input{
+      width:100%;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:12px;
+      padding:12px 13px;
+      font-size:14px;
+      color:var(--text);
+      outline:none;
+    }
+
+    .field input:focus{
+      border-color:var(--primary);
+      box-shadow:0 0 0 3px rgba(122,61,61,0.10);
+    }
+
+    .section-title{
+      font-size:15px;
+      font-weight:800;
+      color:var(--primary);
+      margin-top:4px;
+      margin-bottom:2px;
+    }
+
+    .summary-box{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:12px;
+      margin-top:4px;
+    }
+
+    .summary-card{
+      background:#fbf8f5;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+    }
+
+    .summary-card .label{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+      font-weight:700;
+    }
+
+    .summary-card .value{
+      font-size:24px;
+      font-weight:800;
+      color:#222;
+    }
+
+    .summary-card.green .value{ color:var(--success); }
+    .summary-card.red .value{ color:var(--danger); }
+
+    .hint{
+      font-size:12px;
+      color:#7d7268;
+      line-height:1.5;
+    }
+
+    .small-note{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.6;
+      margin-top:6px;
+    }
+
+    .deleted-panel{
+      margin-top:18px;
+    }
+
+    .customer-list{
+      display:grid;
+      gap:14px;
+      max-height:calc(100vh - 250px);
+      overflow:auto;
+      padding-right:4px;
+    }
+
+    .customer-card{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fffdfa;
+      padding:16px;
+      display:grid;
+      gap:12px;
+    }
+
+    .customer-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .customer-head h3{
+      margin:0;
+      font-size:20px;
+      line-height:1.3;
+    }
+
+    .badge-wrap{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:6px;
+    }
+
+    .badge{
+      padding:7px 11px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      background:#f2ebe4;
+      color:#433;
+    }
+
+    .badge.green{ background:#e7f5ec; color:var(--success); }
+    .badge.red{ background:#fdeceb; color:var(--danger); }
+    .badge.gold{ background:#fff3dc; color:var(--warn); }
+
+    .card-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+    }
+
+    .mini{
+      background:#faf6f2;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
+
+    .mini .k{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+      margin-bottom:5px;
+    }
+
+    .mini .v{
+      font-size:16px;
+      font-weight:800;
+      word-break:break-word;
+    }
+
+    .card-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .empty{
+      padding:20px;
+      border:1px dashed #d8cdc2;
+      border-radius:16px;
+      color:var(--muted);
+      text-align:center;
+      background:#fffdfa;
+    }
+
+    @media (max-width:1200px){
+      .stats-grid{ grid-template-columns:repeat(2,1fr); }
+      .grid{ grid-template-columns:1fr; }
+    }
+
+    @media (max-width:900px){
+      .row, .summary-box, .card-grid{
+        grid-template-columns:repeat(2,1fr);
+      }
+    }
+
+    @media (max-width:600px){
+      .row, .summary-box, .card-grid, .stats-grid{
+        grid-template-columns:1fr;
+      }
+      .topbar h1{ font-size:24px; }
+      .wrap{ padding:16px; }
+    }
+  </style>
+<link rel="stylesheet" href="swadra-responsive.css">
+</head>
+<body>
+<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
+  <div class="wrap">
+    <div class="topbar">
+      <h1>Swadra Organics Admin Customers</h1>
+      <p>Yahan active customers aur deleted accounts alag-alag section me dikhte hain. Full profile, address, cart aur order history alag full page me open hogi.</p>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-primary" onclick="refreshCustomers()">Refresh Customers</button>
+      <button class="btn-secondary" onclick="clearSearch()">Clear Search</button>
+      <a class="btn-dark" href="admin-index.html">Back to Admin</a>
+      <a class="btn-light" href="dashboard.html">Open Dashboard</a>
+    </div>
+
+    <div class="stats-grid" id="customerStats"></div>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>Customer Search & Control</h2>
+
+        <div class="product-form">
+          <div class="row one">
+            <div class="field">
+              <label>Search Customer</label>
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="Search by name, email or mobile"
+                oninput="renderCustomers()"
+              >
+            </div>
+          </div>
+
+          <div class="section-title">Quick Summary</div>
+          <div class="summary-box">
+            <div class="summary-card">
+              <div class="label">Total Customers</div>
+              <div class="value" id="totalCustomersView">0</div>
+            </div>
+            <div class="summary-card green">
+              <div class="label">Active Accounts</div>
+              <div class="value" id="activeCustomersView">0</div>
+            </div>
+            <div class="summary-card red">
+              <div class="label">Paused Accounts</div>
+              <div class="value" id="pausedCustomersView">0</div>
+            </div>
+            <div class="summary-card">
+              <div class="label">Deleted Accounts</div>
+              <div class="value" id="deletedCustomersView">0</div>
+            </div>
+          </div>
+
+          <div class="section-title">How it works</div>
+          <div class="hint">
+            Account page users ko <b>users</b> object me save karta hai, aur usme profile, cart, orders aur address fields rehti hain. Yahan wahi data customer history page me full detail ke saath open hota hai. :contentReference[oaicite:1]{index=1}
+          </div>
+
+          <div class="small-note">
+            Customer list active section me deleted accounts ko exclude karti hai. Deleted accounts alag section me safe snapshot ke saath save rehte hain. Current customers page layout and source logic is based on your existing file. :contentReference[oaicite:2]{index=2}
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Saved Customers</h2>
+        <div class="customer-list" id="customerList"></div>
+
+        <div class="deleted-panel">
+          <h2>Deleted Accounts</h2>
+          <div class="customer-list" id="deletedCustomerList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ARRAY_CUSTOMER_KEYS = [
+      "customers",
+      "accounts",
+      "registeredUsers",
+      "userAccounts",
+      "swadraUsers",
+      "swadraCustomers",
+      "allUsers"
+    ];
+
+    const ORDER_KEYS = [
+      "adminOrders",
+      "orders",
+      "swadraOrders",
+      "customerOrders",
+      "allOrders"
+    ];
+
+    const CUSTOMER_PAUSE_KEY = "adminPausedCustomers";
+    const DELETED_CUSTOMERS_KEY = "adminDeletedCustomers";
+
+    function safeJsonParse(value, fallback){
+      try{
+        const parsed = JSON.parse(value);
+        return parsed ?? fallback;
+      }catch(error){
+        return fallback;
+      }
+    }
+
+    function escapeHtml(str){
+      return String(str || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function normalizeMobile(value){
+      return String(value || "").replace(/\D/g, "");
+    }
+
+    function getValueByPossibleKeys(obj, keys){
+      for(const key of keys){
+        if(obj && obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== ""){
+          return obj[key];
+        }
+      }
+      return "";
+    }
+
+    function formatDate(value){
+      if(!value) return "-";
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? String(value) : date.toLocaleString("en-IN");
+    }
+
+    function rupee(value){
+      return "â‚¹" + Number(value || 0).toFixed(0);
+    }
+
+    function getPausedMap(){
+      return safeJsonParse(localStorage.getItem(CUSTOMER_PAUSE_KEY), {});
+    }
+
+    function setPausedMap(map){
+      localStorage.setItem(CUSTOMER_PAUSE_KEY, JSON.stringify(map || {}));
+    }
+
+    function getDeletedCustomers(){
+      const parsed = safeJsonParse(localStorage.getItem(DELETED_CUSTOMERS_KEY), []);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+
+    function setDeletedCustomers(list){
+      localStorage.setItem(DELETED_CUSTOMERS_KEY, JSON.stringify(list || []));
+    }
+
+    function readUsersObject(){
+      const parsed = safeJsonParse(localStorage.getItem("users"), {});
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    }
+
+    function isDeletedCustomer(customer){
+      const deleted = getDeletedCustomers();
+      const customerEmail = String(customer.email || "").trim().toLowerCase();
+      const customerMobile = normalizeMobile(customer.mobile || "");
+      const customerId = String(customer.id || "");
+
+      return deleted.some((item) => {
+        const deletedEmail = String(item.email || "").trim().toLowerCase();
+        const deletedMobile = normalizeMobile(item.mobile || "");
+        const deletedId = String(item.id || "");
+        return (
+          (customerEmail && deletedEmail && customerEmail === deletedEmail) ||
+          (customerMobile && deletedMobile && customerMobile === deletedMobile) ||
+          (customerId && deletedId && customerId === deletedId)
+        );
+      });
+    }
+
+    function collectGlobalOrdersForCustomer(email, mobile){
+      const allOrders = [];
+
+      ORDER_KEYS.forEach((key)=>{
+        const parsed = safeJsonParse(localStorage.getItem(key), []);
+        if(!Array.isArray(parsed)) return;
+
+        parsed.forEach((order)=>{
+          if(!order || typeof order !== "object") return;
+
+          const orderEmail = String(getValueByPossibleKeys(order, ["email","emailId","mail","customerEmail"])).trim().toLowerCase();
+          const orderMobile = normalizeMobile(getValueByPossibleKeys(order, ["mobile","phone","phoneNumber","mobileNumber","contactNumber","customerPhone"]));
+
+          const sameEmail = email && orderEmail === String(email).trim().toLowerCase();
+          const sameMobile = mobile && orderMobile === normalizeMobile(mobile);
+
+          if(sameEmail || sameMobile){
+            allOrders.push(order);
+          }
+        });
+      });
+
+      return allOrders;
+    }
+
+    function normalizeOrderItem(rawItem){
+      const name = String(getValueByPossibleKeys(rawItem, ["name","productName","title"])).trim() || "Product";
+      const size = String(getValueByPossibleKeys(rawItem, ["size","variant","productSize"])).trim();
+      const quantity = Number(getValueByPossibleKeys(rawItem, ["quantity","qty","count"])) || 1;
+      const price = Number(getValueByPossibleKeys(rawItem, ["price","sellingPrice","amount"])) || 0;
+
+      return { name, size, quantity, price };
+    }
+
+    function extractOrderAmount(raw){
+      const directAmount = Number(getValueByPossibleKeys(raw, ["amount","totalAmount","paidAmount","grandTotal","paymentAmount"]));
+      if(directAmount > 0) return directAmount;
+
+      const items = raw.items || raw.products || raw.cartItems || [];
+      if(Array.isArray(items) && items.length){
+        return items.reduce((sum, item) => {
+          const price = Number(getValueByPossibleKeys(item, ["price","sellingPrice","amount"])) || 0;
+          const qty = Number(getValueByPossibleKeys(item, ["quantity","qty","count"])) || 1;
+          return sum + (price * qty);
+        }, 0);
+      }
+
+      return 0;
+    }
+
+    function normalizeOrder(raw, fallbackLabel = "AccountOrder"){
+      const itemsRaw = raw.items || raw.products || raw.cartItems || [];
+      const items = Array.isArray(itemsRaw) ? itemsRaw.map(normalizeOrderItem) : [];
+
+      return {
+        id: String(getValueByPossibleKeys(raw, ["id","orderId","orderID","invoiceId","order_id"])) || `${fallbackLabel}_${Math.random().toString(16).slice(2)}`,
+        status: String(getValueByPossibleKeys(raw, ["orderStatus","status","deliveryStatus","paymentStatus"])).trim() || "Unknown",
+        date: formatDate(getValueByPossibleKeys(raw, ["createdAt","date","orderedAt","timestamp","time"])),
+        amount: extractOrderAmount(raw),
+        items
+      };
+    }
+
+    function buildCustomerDetails(userObj, email, mobile){
+      const profile = userObj?.profile || {};
+      const cart = Array.isArray(userObj?.cart) ? userObj.cart : [];
+      const address = userObj?.address && typeof userObj.address === "object" ? userObj.address : {};
+      const userOrders = Array.isArray(userObj?.orders) ? userObj.orders : [];
+      const globalOrders = collectGlobalOrdersForCustomer(email, mobile);
+
+      const mergedOrders = [];
+      const seen = new Set();
+
+      [...userOrders, ...globalOrders].forEach((order)=>{
+        const normalized = normalizeOrder(order, "CustomerOrder");
+        const dedupeKey = `${normalized.id}|${normalized.amount}|${normalized.date}`;
+        if(seen.has(dedupeKey)) return;
+        seen.add(dedupeKey);
+        mergedOrders.push(normalized);
+      });
+
+      const totalSpent = mergedOrders.reduce((sum, order)=>sum + Number(order.amount || 0), 0);
+
+      return {
+        profile,
+        cart,
+        cartCount: cart.length,
+        address,
+        orders: mergedOrders,
+        orderCount: mergedOrders.length,
+        totalSpent
+      };
+    }
+
+    function getCustomersFromUsersObject(){
+      const usersObject = readUsersObject();
+      const entries = Object.entries(usersObject);
+
+      return entries.map(([emailKey, user], index) => {
+        const profile = user?.profile || {};
+        const email = String(user?.email || profile?.email || emailKey || "").trim();
+        const mobile = String(user?.phone || profile?.phone || "").trim();
+        const name = String(profile?.name || email.split("@")[0] || "Unnamed Customer").trim();
+        const createdAtRaw = user?.createdAt || user?.registeredAt || user?.signupAt || user?.date || user?.timestamp || "";
+        const rawStatus = String(user?.status || user?.accountStatus || "").trim().toLowerCase();
+        const details = buildCustomerDetails(user, email, mobile);
+
+        return {
+          __sourceType: "users_object",
+          __sourceKey: "users",
+          __emailKey: emailKey,
+          id: String(user?.id || user?.userId || user?.uid || email || `users_${index}`),
+          sourceKey: "users",
+          name,
+          email,
+          mobile,
+          createdAtRaw,
+          rawStatus,
+          raw: user,
+          details
+        };
+      });
+    }
+
+    function getCustomersFromArrayKeys(){
+      const merged = [];
+
+      ARRAY_CUSTOMER_KEYS.forEach((key) => {
+        const parsed = safeJsonParse(localStorage.getItem(key), []);
+        if(!Array.isArray(parsed)) return;
+
+        parsed.forEach((item, index) => {
+          if(!item || typeof item !== "object") return;
+
+          const email = String(getValueByPossibleKeys(item, ["email","emailId","mail"])).trim();
+          const mobile = String(getValueByPossibleKeys(item, ["mobile","phone","phoneNumber","mobileNumber","contactNumber"])).trim();
+          const name = String(getValueByPossibleKeys(item, ["name","fullName","username","userName"])).trim() || (email ? email.split("@")[0] : "Unnamed Customer");
+          const createdAtRaw = getValueByPossibleKeys(item, ["createdAt","signupAt","registeredAt","date","timestamp"]);
+          const rawStatus = String(getValueByPossibleKeys(item, ["status","accountStatus"])).trim().toLowerCase();
+
+          merged.push({
+            __sourceType: "array_key",
+            __sourceKey: key,
+            __index: index,
+            id: String(getValueByPossibleKeys(item, ["id","userId","uid","customerId","accountId"]) || email || `${key}_${index}`),
+            sourceKey: key,
+            name,
+            email,
+            mobile,
+            createdAtRaw,
+            rawStatus,
+            raw: item,
+            details: buildCustomerDetails(item, email, mobile)
+          });
+        });
+      });
+
+      return merged;
+    }
+
+    function normalizeCustomer(base){
+      const pausedMap = getPausedMap();
+
+      return {
+        ...base,
+        createdAt: formatDate(base.createdAtRaw),
+        isPaused: Boolean(pausedMap[base.id]) || ["paused","inactive","blocked"].includes(base.rawStatus),
+        searchText: [base.name, base.email, base.mobile].join(" ").toLowerCase()
+      };
+    }
+
+    function getCustomersFromStorage(){
+      const merged = [];
+      const seen = new Set();
+
+      const sourceCustomers = [
+        ...getCustomersFromUsersObject(),
+        ...getCustomersFromArrayKeys()
+      ];
+
+      sourceCustomers.forEach((customer) => {
+        const normalized = normalizeCustomer(customer);
+        if(isDeletedCustomer(normalized)) return;
+
+        const dedupeKey = [
+          normalized.email.toLowerCase(),
+          normalizeMobile(normalized.mobile),
+          normalized.name.toLowerCase()
+        ].join("|");
+
+        if(seen.has(dedupeKey)) return;
+        seen.add(dedupeKey);
+        merged.push(normalized);
+      });
+
+      return merged;
+    }
+
+    function getFilteredCustomers(){
+      const customers = getCustomersFromStorage();
+      const query = String(document.getElementById("searchInput").value || "").trim().toLowerCase();
+
+      if(!query) return customers;
+
+      const normalizedQuery = query.replace(/\D/g, "");
+      return customers.filter((customer) => {
+        const textMatch = customer.searchText.includes(query);
+        const mobileMatch = normalizedQuery ? normalizeMobile(customer.mobile).includes(normalizedQuery) : false;
+        return textMatch || mobileMatch;
+      });
+    }
+
+    function renderStats(allCustomers){
+      const pausedCount = allCustomers.filter(item => item.isPaused).length;
+      const activeCount = allCustomers.length - pausedCount;
+      const deletedCount = getDeletedCustomers().length;
+
+      document.getElementById("customerStats").innerHTML = `
+        <div class="stat-card">
+          <div class="label">Total Customers</div>
+          <div class="value">${allCustomers.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Active Accounts</div>
+          <div class="value">${activeCount}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Paused Accounts</div>
+          <div class="value">${pausedCount}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Deleted Accounts</div>
+          <div class="value">${deletedCount}</div>
+        </div>
+      `;
+
+      document.getElementById("totalCustomersView").textContent = allCustomers.length;
+      document.getElementById("activeCustomersView").textContent = activeCount;
+      document.getElementById("pausedCustomersView").textContent = pausedCount;
+      document.getElementById("deletedCustomersView").textContent = deletedCount;
+    }
+
+    function buildAddressHtml(address){
+      const values = Object.entries(address || {})
+        .filter(([_, value]) => String(value || "").trim() !== "")
+        .map(([key, value]) => `
+          <div class="mini">
+            <div class="k">${escapeHtml(key)}</div>
+            <div class="v">${escapeHtml(value)}</div>
+          </div>
+        `);
+
+      return values.length
+        ? `<div class="card-grid">${values.join("")}</div>`
+        : `<div class="empty">No saved address.</div>`;
+    }
+
+    function buildCartHtml(cart){
+      if(!Array.isArray(cart) || !cart.length){
+        return `<div class="empty">Cart empty.</div>`;
+      }
+
+      return `
+        <div style="display:grid;gap:10px;">
+          ${cart.map(item => `
+            <div class="customer-card" style="padding:12px;">
+              <div class="card-grid">
+                <div class="mini">
+                  <div class="k">Product</div>
+                  <div class="v">${escapeHtml(getValueByPossibleKeys(item, ["name","productName","title"]) || "Product")}</div>
+                </div>
+                <div class="mini">
+                  <div class="k">Size</div>
+                  <div class="v">${escapeHtml(getValueByPossibleKeys(item, ["size","variant","productSize"]) || "-")}</div>
+                </div>
+                <div class="mini">
+                  <div class="k">Qty Ã— Price</div>
+                  <div class="v">${Number(getValueByPossibleKeys(item, ["quantity","qty","count"]) || 1)} Ã— ${rupee(getValueByPossibleKeys(item, ["price","sellingPrice","amount"]) || 0)}</div>
+                </div>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function buildOrdersHtml(orders){
+      if(!Array.isArray(orders) || !orders.length){
+        return `<div class="empty">No order history found.</div>`;
+      }
+
+      return `
+        <div style="display:grid;gap:12px;">
+          ${orders.map(order => `
+            <div class="customer-card" style="padding:14px;">
+              <div class="customer-head">
+                <div>
+                  <h3 style="font-size:18px;">Order: ${escapeHtml(order.id || "-")}</h3>
+                  <div class="badge-wrap">
+                    <span class="badge gold">${escapeHtml(order.status || "Unknown")}</span>
+                    <span class="badge green">${rupee(order.amount || 0)}</span>
+                    <span class="badge">${escapeHtml(order.date || "-")}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:grid;gap:8px;">
+                ${(order.items || []).length ? order.items.map(item => `
+                  <div class="mini">
+                    <div class="k">${escapeHtml(item.name || "Product")}</div>
+                    <div class="v">
+                      ${item.size ? `(${escapeHtml(item.size)}) ` : ""}Ã— ${Number(item.quantity || 1)} â€” ${rupee((Number(item.price || 0) * Number(item.quantity || 1)))}
+                    </div>
+                  </div>
+                `).join("") : `<div class="empty">No line items.</div>`}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function buildHistoryPageHtml(customer){
+      const details = customer.details || {};
+      const profile = details.profile || {};
+
+      return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtml(customer.name)} - Customer History</title>
+  <style>
+    * { box-sizing:border-box; }
+    :root{
+      --primary:#7a3d3d;
+      --primary-dark:#5f2f2f;
+      --bg:#f8f5f2;
+      --card:#ffffff;
+      --text:#1f1f1f;
+      --muted:#6c6c6c;
+      --line:#e7dfd7;
+      --success:#137a43;
+      --warn:#b36b00;
+      --danger:#c62828;
+      --shadow:0 10px 30px rgba(0,0,0,0.08);
+    }
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    .wrap{
+      width:min(100%, 1600px);
+      margin:0 auto;
+      padding:20px 24px 28px;
+    }
+    .topbar{
+      background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+      color:#fff;
+      padding:24px 28px;
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      margin-bottom:18px;
+    }
+    .topbar h1{
+      margin:0;
+      font-size:30px;
+      line-height:1.2;
+    }
+    .topbar p{
+      margin:8px 0 0;
+      opacity:0.92;
+      font-size:15px;
+      line-height:1.6;
+    }
+    .toolbar{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+    button{
+      border:none;
+      outline:none;
+      cursor:pointer;
+      border-radius:12px;
+      padding:12px 18px;
+      font-size:14px;
+      font-weight:700;
+    }
+    .btn-dark{ background:#333; color:#fff; }
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:14px;
+      margin-bottom:18px;
+    }
+    .stat-card{
+      background:var(--card);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+    .stat-card .label{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .stat-card .value{
+      font-size:28px;
+      font-weight:800;
+      margin-top:8px;
+      color:var(--primary);
+    }
+    .panel{
+      background:var(--card);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:22px 24px;
+      margin-bottom:18px;
+    }
+    .panel h2{
+      margin:0 0 14px;
+      font-size:24px;
+    }
+    .card-grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+    }
+    .mini{
+      background:#faf6f2;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+    }
+    .mini .k{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+      margin-bottom:5px;
+      text-transform:capitalize;
+    }
+    .mini .v{
+      font-size:16px;
+      font-weight:800;
+      word-break:break-word;
+    }
+    .history-list{
+      display:grid;
+      gap:12px;
+    }
+    .history-card{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fffdfa;
+      padding:14px;
+      display:grid;
+      gap:10px;
+    }
+    .history-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .badge-wrap{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:6px;
+    }
+    .badge{
+      padding:7px 11px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      background:#f2ebe4;
+      color:#433;
+    }
+    .badge.green{ background:#e7f5ec; color:var(--success); }
+    .badge.gold{ background:#fff3dc; color:var(--warn); }
+    .empty{
+      padding:20px;
+      border:1px dashed #d8cdc2;
+      border-radius:16px;
+      color:var(--muted);
+      text-align:center;
+      background:#fffdfa;
+    }
+    @media (max-width:1100px){
+      .stats-grid, .card-grid{ grid-template-columns:repeat(2,1fr); }
+    }
+    @media (max-width:600px){
+      .stats-grid, .card-grid{ grid-template-columns:1fr; }
+      .topbar h1{ font-size:24px; }
+      .wrap{ padding:16px; }
+    }
+  </style>
+<link rel="stylesheet" href="swadra-responsive.css">
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <h1>${escapeHtml(customer.name)} - Customer History</h1>
+      <p>Complete customer profile, saved address, cart snapshot aur order timeline.</p>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-dark" onclick="window.close()">Close Page</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">Orders</div>
+        <div class="value">${Number(details.orderCount || 0)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total Spent</div>
+        <div class="value">${rupee(details.totalSpent || 0)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Cart Items</div>
+        <div class="value">${Number(details.cartCount || 0)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Created</div>
+        <div class="value" style="font-size:18px;">${escapeHtml(customer.createdAt || "-")}</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Profile Details</h2>
+      <div class="card-grid">
+        <div class="mini"><div class="k">Name</div><div class="v">${escapeHtml(customer.name || "-")}</div></div>
+        <div class="mini"><div class="k">Email</div><div class="v">${escapeHtml(customer.email || "-")}</div></div>
+        <div class="mini"><div class="k">Mobile</div><div class="v">${escapeHtml(customer.mobile || "-")}</div></div>
+        <div class="mini"><div class="k">Source</div><div class="v">${escapeHtml(customer.sourceKey || "-")}</div></div>
+        <div class="mini"><div class="k">Created</div><div class="v">${escapeHtml(customer.createdAt || "-")}</div></div>
+        <div class="mini"><div class="k">Account Status</div><div class="v">${customer.isPaused ? "Paused" : "Active"}</div></div>
+        <div class="mini"><div class="k">Profile Name</div><div class="v">${escapeHtml(profile.name || "-")}</div></div>
+        <div class="mini"><div class="k">Profile Phone</div><div class="v">${escapeHtml(profile.phone || "-")}</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Saved Address</h2>
+      ${buildAddressHtml(details.address || {})}
+    </div>
+
+    <div class="panel">
+      <h2>Cart Snapshot</h2>
+      ${buildCartHtml(details.cart || [])}
+    </div>
+
+    <div class="panel">
+      <h2>Order History</h2>
+      ${buildOrdersHtml(details.orders || [])}
+    </div>
+  </div>
+</body>
+</html>
+      `;
+    }
+
+    function openHistoryPage(customerId, deletedMode = false){
+      const customers = deletedMode ? getDeletedCustomers() : getCustomersFromStorage();
+      const customer = customers.find(item => String(item.id) === String(customerId));
+      if(!customer){
+        alert("Customer not found.");
+        return;
+      }
+
+      const win = window.open("", "_blank");
+      if(!win){
+        alert("Popup blocked.");
+        return;
+      }
+
+      win.document.open();
+      win.document.write(buildHistoryPageHtml(customer));
+      win.document.close();
+    }
+
+    function renderCustomers(){
+      const allCustomers = getCustomersFromStorage();
+      const customers = getFilteredCustomers();
+      const customerList = document.getElementById("customerList");
+
+      renderStats(allCustomers);
+
+      if(!customers.length){
+        customerList.innerHTML = `<div class="empty">No customer accounts found.</div>`;
+        return;
+      }
+
+      customerList.innerHTML = customers.map((customer) => {
+        const stateClass = customer.isPaused ? "red" : "green";
+        const stateLabel = customer.isPaused ? "Paused" : "Active";
+
+        return `
+          <div class="customer-card">
+            <div class="customer-head">
+              <div>
+                <h3>${escapeHtml(customer.name)}</h3>
+                <div class="badge-wrap">
+                  <span class="badge ${stateClass}">${stateLabel}</span>
+                  <span class="badge gold">Source: ${escapeHtml(customer.sourceKey)}</span>
+                  <span class="badge">Orders: ${Number(customer.details?.orderCount || 0)}</span>
+                  <span class="badge green">Spent: ${rupee(customer.details?.totalSpent || 0)}</span>
+                </div>
+              </div>
+              <div class="badge-wrap">
+                <span class="badge">${escapeHtml(customer.id)}</span>
+              </div>
+            </div>
+
+            <div class="card-grid">
+              <div class="mini">
+                <div class="k">Email</div>
+                <div class="v">${escapeHtml(customer.email || "-")}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Mobile</div>
+                <div class="v">${escapeHtml(customer.mobile || "-")}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Created</div>
+                <div class="v">${escapeHtml(customer.createdAt || "-")}</div>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <button
+                class="${customer.isPaused ? 'btn-secondary' : 'btn-danger'}"
+                onclick="togglePauseCustomer('${escapeHtml(customer.id)}')"
+              >
+                ${customer.isPaused ? 'Unpause Account' : 'Pause Account'}
+              </button>
+
+              <button
+                class="btn-dark"
+                onclick="deleteCustomerAccount('${escapeHtml(customer.id)}')"
+              >
+                Delete Account
+              </button>
+
+              <button
+                class="btn-light"
+                onclick="openHistoryPage('${escapeHtml(customer.id)}', false)"
+              >
+                View Full History
+              </button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderDeletedCustomers(){
+      const deleted = getDeletedCustomers();
+      const deletedCustomerList = document.getElementById("deletedCustomerList");
+
+      if(!deleted.length){
+        deletedCustomerList.innerHTML = `<div class="empty">No deleted accounts yet.</div>`;
+        return;
+      }
+
+      deletedCustomerList.innerHTML = deleted.map((customer) => `
+        <div class="customer-card">
+          <div class="customer-head">
+            <div>
+              <h3>${escapeHtml(customer.name || "Deleted Customer")}</h3>
+              <div class="badge-wrap">
+                <span class="badge red">Deleted</span>
+                <span class="badge gold">Deleted At: ${escapeHtml(customer.deletedAt || "-")}</span>
+                <span class="badge">Orders: ${Number(customer.details?.orderCount || 0)}</span>
+                <span class="badge green">Spent: ${rupee(customer.details?.totalSpent || 0)}</span>
+              </div>
+            </div>
+            <div class="badge-wrap">
+              <span class="badge">${escapeHtml(customer.id || "-")}</span>
+            </div>
+          </div>
+
+          <div class="card-grid">
+            <div class="mini">
+              <div class="k">Email</div>
+              <div class="v">${escapeHtml(customer.email || "-")}</div>
+            </div>
+            <div class="mini">
+              <div class="k">Mobile</div>
+              <div class="v">${escapeHtml(customer.mobile || "-")}</div>
+            </div>
+            <div class="mini">
+              <div class="k">Created</div>
+              <div class="v">${escapeHtml(customer.createdAt || "-")}</div>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button
+              class="btn-light"
+              onclick="openHistoryPage('${escapeHtml(customer.id)}', true)"
+            >
+              View Full History
+            </button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function togglePauseCustomer(customerId){
+      const pausedMap = getPausedMap();
+      pausedMap[customerId] = !pausedMap[customerId];
+
+      if(!pausedMap[customerId]){
+        delete pausedMap[customerId];
+      }
+
+      setPausedMap(pausedMap);
+      renderCustomers();
+      renderDeletedCustomers();
+    }
+
+    function deleteFromUsersObject(customer){
+      const usersObject = readUsersObject();
+
+      if(customer.__sourceType === "users_object"){
+        delete usersObject[customer.__emailKey];
+      } else if(customer.email && usersObject[customer.email]){
+        delete usersObject[customer.email];
+      } else {
+        Object.keys(usersObject).forEach((emailKey) => {
+          const user = usersObject[emailKey];
+          const userEmail = String(user?.email || user?.profile?.email || emailKey || "").trim().toLowerCase();
+          const userMobile = normalizeMobile(user?.phone || user?.profile?.phone || "");
+          if(
+            userEmail === String(customer.email || "").trim().toLowerCase() ||
+            userMobile === normalizeMobile(customer.mobile)
+          ){
+            delete usersObject[emailKey];
+          }
+        });
+      }
+
+      localStorage.setItem("users", JSON.stringify(usersObject));
+    }
+
+    function deleteFromArrayKeys(customer){
+      ARRAY_CUSTOMER_KEYS.forEach((key) => {
+        const parsed = safeJsonParse(localStorage.getItem(key), []);
+        if(!Array.isArray(parsed) || !parsed.length) return;
+
+        const filtered = parsed.filter((item) => {
+          if(!item || typeof item !== "object") return false;
+
+          const itemEmail = String(getValueByPossibleKeys(item, ["email","emailId","mail"])).trim().toLowerCase();
+          const itemMobile = normalizeMobile(getValueByPossibleKeys(item, ["mobile","phone","phoneNumber","mobileNumber","contactNumber"]));
+          const itemId = String(getValueByPossibleKeys(item, ["id","userId","uid","customerId","accountId"]) || "");
+          const sameEmail = itemEmail && itemEmail === String(customer.email || "").trim().toLowerCase();
+          const sameMobile = itemMobile && itemMobile === normalizeMobile(customer.mobile);
+          const sameId = itemId && itemId === String(customer.id || "");
+          return !(sameEmail || sameMobile || sameId);
+        });
+
+        localStorage.setItem(key, JSON.stringify(filtered));
+      });
+    }
+
+    function deleteRelatedCurrentSession(customer){
+      const currentUser = localStorage.getItem("currentUser");
+      if(currentUser && String(currentUser).trim().toLowerCase() === String(customer.email || "").trim().toLowerCase()){
+        localStorage.removeItem("currentUser");
+        localStorage.removeItem("userPhone");
+        localStorage.removeItem("cart");
+        localStorage.removeItem("tempUser");
+      }
+    }
+
+    function archiveDeletedCustomer(customer){
+      const deleted = getDeletedCustomers();
+
+      const snapshot = {
+        ...customer,
+        deletedAt: formatDate(new Date().toISOString())
+      };
+
+      const dedupeKey = `${String(snapshot.id || "")}|${String(snapshot.email || "").toLowerCase()}|${normalizeMobile(snapshot.mobile || "")}`;
+      const filtered = deleted.filter((item)=>{
+        const itemKey = `${String(item.id || "")}|${String(item.email || "").toLowerCase()}|${normalizeMobile(item.mobile || "")}`;
+        return itemKey !== dedupeKey;
+      });
+
+      filtered.unshift(snapshot);
+      setDeletedCustomers(filtered.slice(0, 200));
+    }
+
+    function deleteFromPausedMap(customerId){
+      const pausedMap = getPausedMap();
+      delete pausedMap[customerId];
+      setPausedMap(pausedMap);
+    }
+
+    function deleteCustomerAccount(customerId){
+      const customers = getCustomersFromStorage();
+      const customer = customers.find(item => String(item.id) === String(customerId));
+
+      if(!customer){
+        alert("Customer not found.");
+        return;
+      }
+
+      const confirmed = confirm(`Delete account for ${customer.name}?`);
+      if(!confirmed) return;
+
+      try{
+        archiveDeletedCustomer(customer);
+        deleteFromUsersObject(customer);
+        deleteFromArrayKeys(customer);
+        deleteRelatedCurrentSession(customer);
+        deleteFromPausedMap(customer.id);
+        localStorage.setItem("adminCustomersUpdatedAt", String(Date.now()));
+        renderCustomers();
+        renderDeletedCustomers();
+        alert("Customer account deleted successfully.");
+      }catch(error){
+        console.error(error);
+        alert("Delete failed.");
+      }
+    }
+
+    function clearSearch(){
+      document.getElementById("searchInput").value = "";
+      renderCustomers();
+    }
+
+    function refreshCustomers(){
+      renderCustomers();
+      renderDeletedCustomers();
+    }
+
+    window.addEventListener("storage", function(event){
+      if(
+        event.key === "users" ||
+        ARRAY_CUSTOMER_KEYS.includes(event.key) ||
+        ORDER_KEYS.includes(event.key) ||
+        event.key === CUSTOMER_PAUSE_KEY ||
+        event.key === DELETED_CUSTOMERS_KEY
+      ){
+        refreshCustomers();
+      }
+    });
+
+    refreshCustomers();
+  </script>
+</body>
+</html>
+
+
+
+
+
+

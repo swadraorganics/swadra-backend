@@ -1,0 +1,624 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Orders - Swadra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
+body{background:#f1e3e3;color:#1d1d1f}
+:root{--top-bar-height:43px;--navbar-height:62px}
+.topbar{background:#1f6d2e;color:#fff;padding:14px 22px;font-size:24px;font-weight:800}
+.page{max-width:1180px;margin:0 auto;padding:28px 20px 48px}
+.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:26px}
+.hero h1{font-size:42px;font-weight:800;color:#202124}
+.hero p{margin-top:8px;color:#5f6368;font-size:15px}
+.hero-badge{padding:12px 16px;border-radius:18px;background:#ecf7ee;color:#1f6d2e;font-weight:700}
+.order-stack{display:grid;gap:18px}
+.order-card{background:#fff;border-radius:28px;padding:22px;box-shadow:0 14px 30px rgba(0,0,0,.06);border:1px solid #eef0ea}
+.order-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:18px}
+.order-id{font-size:22px;font-weight:800;color:#1f1f1f}
+.order-meta{display:grid;gap:6px;color:#5f6368;font-size:14px}
+.status-chip{padding:10px 14px;border-radius:999px;font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:8px}
+.status-confirmed{background:#ecf7ee;color:#1f6d2e}
+.status-processing{background:#fff7e8;color:#9a6700}
+.status-delivered{background:#e8f1ff;color:#0b57d0}
+.status-cancelled{background:#fdecec;color:#b42318}
+.status-dispatched{background:#eef4ff;color:#3157a6}
+.status-out{background:#fff4e5;color:#a15c00}
+.order-body{display:grid;grid-template-columns:1.3fr .9fr;gap:18px}
+.items-panel,.summary-panel{border:1px solid #edf0ea;border-radius:22px;padding:18px;background:#fcfcfa}
+.panel-title{font-size:18px;font-weight:800;margin-bottom:14px;color:#1f1f1f}
+.item-list{display:grid;gap:12px}
+.item-row{display:grid;grid-template-columns:56px 1fr auto auto;gap:12px;align-items:center;padding:14px;border-radius:18px;background:#fff;border:1px solid #eff2ec}
+.item-thumb{width:56px;height:56px;border-radius:14px;object-fit:cover;background:#f6f0ed;border:1px solid #eadfda}
+.item-name{font-weight:700}
+.item-qty{font-size:13px;color:#5f6368}
+.item-price{font-weight:800;color:#202124}
+.summary-grid{display:grid;gap:10px}
+.summary-line{display:flex;justify-content:space-between;gap:14px;color:#4d5156;font-size:14px}
+.summary-line strong{color:#1f1f1f}
+.address-box{margin-top:16px;padding:14px;border-radius:18px;background:#fff;border:1px solid #eff2ec;font-size:14px;line-height:1.7;color:#4d5156}
+.action-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}
+.primary-btn,.secondary-btn{padding:14px 18px;border:none;border-radius:16px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.primary-btn{background:#1f6d2e;color:#fff}
+.secondary-btn{background:#eef2ec;color:#1f1f1f}
+.danger-btn{background:#b42318;color:#fff}
+.disabled-btn{background:#e6e6e6;color:#7a7a7a;cursor:not-allowed}
+.action-note{margin-top:12px;font-size:13px;font-weight:700;color:#b42318}
+.order-controls{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 18px}
+.order-search,.order-filter{border:1px solid #e6ddd8;border-radius:16px;background:#fff;padding:13px 15px;font-size:14px;outline:none}
+.order-search{flex:1 1 280px}
+.order-filter{flex:0 0 190px}
+.details-panel{display:none;margin-top:14px;padding:14px;border-radius:18px;background:#fff;border:1px solid #eff2ec;color:#4d5156;font-size:14px;line-height:1.7}
+.details-panel.show{display:block}
+.support-box{margin-top:14px;padding:14px;border-radius:18px;background:#fff8f6;border:1px solid #f0d5cf;color:#7a3d3d;font-size:14px;font-weight:700}
+.refund-box{margin-top:14px;padding:14px;border-radius:18px;background:#f7fbff;border:1px solid #dcecff;color:#24425f;font-size:14px;line-height:1.7}
+.timeline{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.timeline-step{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#889087}
+.timeline-dot{width:12px;height:12px;border-radius:50%;background:#d8ded6}
+.timeline-step.active{color:#1f6d2e}
+.timeline-step.active .timeline-dot{background:#1f6d2e}
+.timeline.cancelled .timeline-step.active{color:#b42318}
+.timeline.cancelled .timeline-step.active .timeline-dot{background:#b42318}
+.timeline-line{width:36px;height:2px;background:#d8ded6}
+.empty{background:#fff;padding:42px;border-radius:28px;text-align:center;box-shadow:0 14px 30px rgba(0,0,0,.05);border:1px solid #eef0ea}
+.empty h3{font-size:26px;margin-bottom:10px}
+.empty p{color:#5f6368;margin-bottom:18px}
+@media(max-width:900px){.order-body{grid-template-columns:1fr}.hero h1{font-size:34px}}
+@media(max-width:640px){.page{padding:20px 14px 40px}.item-row{grid-template-columns:50px 1fr}.item-price{grid-column:2}.hero-badge,.primary-btn,.secondary-btn,.order-search,.order-filter{width:100%;flex:1 1 100%}.action-row{display:grid}}
+.top-bar{text-align:center;padding:12px;font-weight:600;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif}
+.navbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:#7a3d3d}
+.logo{color:#fff;font-size:26px;font-weight:900;font-family:Arial,sans-serif}
+.logo a{color:#fff;text-decoration:none}
+.nav-links{display:flex;gap:18px;flex-wrap:wrap}
+.nav-links a,.nav-links span a{color:#fff;text-decoration:none;font-weight:600;font-family:Arial,sans-serif}
+#stickyCart{position:fixed;bottom:20px;right:20px;display:none;align-items:center;gap:15px;padding:12px 18px;background:linear-gradient(135deg,#7a3d3d,#b76e79);color:white;border-radius:50px;z-index:9999;font-family:Arial,sans-serif}
+#stickyCart a{background:white;color:#7a3d3d;padding:8px 16px;border-radius:30px;text-decoration:none;font-weight:600}
+@media(max-width:900px){.nav-links{gap:14px}}
+.top-bar{
+text-align:center !important;
+padding:12px !important;
+font-weight:600 !important;
+font-size:16px !important;
+background:#fff !important;
+color:#7a3d3d !important;
+font-family:Arial,sans-serif !important;
+position:static !important;
+top:auto !important;
+border:none !important;
+}
+.navbar{
+display:flex !important;
+justify-content:space-between !important;
+align-items:center !important;
+padding:14px 24px !important;
+background:#7a3d3d !important;
+position:static !important;
+top:auto !important;
+z-index:auto !important;
+border:none !important;
+box-shadow:none !important;
+}
+.logo{
+color:#fff !important;
+font-size:26px !important;
+font-weight:900 !important;
+font-family:Arial,sans-serif !important;
+}
+.logo a{
+color:#fff !important;
+text-decoration:none !important;
+font-size:26px !important;
+font-weight:900 !important;
+font-family:Arial,sans-serif !important;
+}
+.nav-links{
+display:flex !important;
+gap:18px !important;
+align-items:center !important;
+flex-wrap:wrap !important;
+}
+.nav-links a,
+.nav-links span a{
+color:#fff !important;
+text-decoration:none !important;
+font-weight:600 !important;
+font-size:16px !important;
+font-family:Arial,sans-serif !important;
+margin:0 !important;
+}
+.top-bar{position:sticky !important;top:0 !important;z-index:7002 !important;border-bottom:1px solid #efe3df !important;margin:0 !important}
+.navbar{position:sticky !important;top:calc(var(--top-bar-height) - 2px) !important;z-index:7001 !important;display:grid !important;grid-template-columns:auto minmax(240px,380px) auto !important;gap:20px !important;padding:16px 30px !important;background:#7a3d3d !important}
+.nav-search{display:flex;align-items:center;min-height:46px;padding:0 14px;background:#fff;border-radius:14px}
+.nav-search input{width:100%;border:none;outline:none;background:transparent;color:#7a3d3d;font-size:13px}
+.nav-search-icon{font-size:22px;color:#8d929c;margin-right:10px;line-height:1}
+.sale-bar{position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height));z-index:7000;text-align:center;padding:10px 16px;background:#fff;color:#d73832;font-size:17px;font-weight:800;border-bottom:1px solid #efe3df;font-family:Arial,sans-serif;overflow:hidden;white-space:nowrap}
+.sale-bar span{display:inline-block;padding-left:100%;animation:swadraTicker 18s linear infinite}
+@keyframes swadraTicker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+.account-link{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;color:#fff;text-decoration:none}
+.account-link svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:900px){.nav-links{gap:14px}.navbar{grid-template-columns:1fr !important;top:calc(var(--top-bar-height) - 2px) !important;padding:14px 18px !important}.sale-bar{top:calc(var(--top-bar-height) + 124px)}}
+</style>
+<style>html,body{background:#f1e3e3 !important;}</style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<script src="api-config.js"></script></head>
+<body>
+<div id="stickyCart" style="position:fixed;bottom:20px;right:20px;display:none;align-items:center;gap:15px;padding:12px 18px;background:linear-gradient(135deg,#7a3d3d,#b76e79);color:#fff;border-radius:50px;z-index:9999;font-family:Arial,sans-serif;box-shadow:0 12px 30px rgba(0,0,0,0.18);"><span id="cartCount">0</span><a href="cart.html" style="background:#fff;color:#7a3d3d;padding:8px 16px;border-radius:30px;text-decoration:none;font-weight:600;font-family:Arial,sans-serif;">View Cart &rarr;</a></div>
+<div class="top-bar" style="text-align:center;padding:12px;font-weight:600;font-size:16px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;">Eat Healthy &bull; Be Swadra Family</div>
+<header class="navbar" style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:#7a3d3d;">
+<div class="logo" style="color:#fff;font-size:26px;font-weight:900;font-family:Arial,sans-serif;"><a href="index.html" style="color:#fff;text-decoration:none;font:inherit;">Swadra Organics</a></div>
+<div class="nav-search"><span class="nav-search-icon">&#128269;</span><input type="text" class="header-search-input" placeholder="Search for products, categories and more"></div>
+<div class="nav-links" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;">
+<a href="index.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Home</a>
+<a href="spices.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Spices</a>
+<a href="dryfruits.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Dry Fruits</a>
+<a href="oilghee.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Oil Ghee &amp; More</a>
+<a href="aboutus.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">About Us</a>
+<span id="accountNavSlot"><a class="account-link" href="account.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a></span>
+</div>
+</header><div class="sale-bar"><span>&#128666; Free Delivery on orders above &#8377;699</span></div><div class="page">
+  <div class="hero">
+    <div>
+      <h1>Your Orders</h1>
+      <p>Track, review, and reorder your Swadra purchases from one place.</p>
+    </div>
+    <div class="hero-badge">Fast reorder and live status</div>
+  </div>
+  <div class="order-controls">
+    <input class="order-search" id="orderSearchInput" type="search" placeholder="Search by order ID or product name">
+    <select class="order-filter" id="orderStatusFilter">
+      <option value="all">All Orders</option>
+      <option value="active">Active</option>
+      <option value="delivered">Delivered</option>
+      <option value="cancelled">Cancelled</option>
+    </select>
+  </div>
+  <div class="order-stack" id="ordersContainer"></div>
+</div>
+
+<script>
+function safe(v){ return v ? String(v) : ""; }
+function money(value){ return "₹" + Math.round(Number(value) || 0).toLocaleString("en-IN"); }
+function nowText(){ return new Date().toLocaleString("en-IN", { dateStyle:"medium", timeStyle:"short" }); }
+const API_BASE = window.SWADRA_API_BASE || "";
+function getCurrentUser(){ return localStorage.getItem("currentUser"); }
+function getUsers(){ return JSON.parse(localStorage.getItem("users")) || {}; }
+function saveUsers(users){ localStorage.setItem("users", JSON.stringify(users)); }
+function normalizeStatus(status){ return String(status || "Confirmed").trim().toLowerCase(); }
+function statusLabel(status){
+  const value = normalizeStatus(status);
+  if(value.includes("cancel")) return "Cancelled";
+  if(value.includes("out")) return "Out for Delivery";
+  if(value.includes("dispatch") || value.includes("ship")) return "Dispatched";
+  if(value.includes("deliver")) return "Delivered";
+  if(value.includes("pack")) return "Packed";
+  if(value.includes("process")) return "Packed";
+  return "Confirmed";
+}
+
+function migrateLegacyOrders(){
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+
+  if(!currentUser){ return; }
+
+  if(!users[currentUser]){
+    users[currentUser] = { cart: [], orders: [] };
+  }
+
+  let userOrders = users[currentUser].orders || [];
+  let legacyOrders = JSON.parse(localStorage.getItem("orders")) || [];
+
+  if(!legacyOrders.length){ return; }
+
+  legacyOrders.forEach(oldOrder=>{
+    let exists = userOrders.some(order => order.id === oldOrder.id);
+    if(!exists){
+      userOrders.push({
+        id: oldOrder.id,
+        payment: oldOrder.payment || "Paid",
+        payment_id: oldOrder.payment_id || "Legacy Order",
+        items: oldOrder.items || oldOrder.products || [],
+        total: oldOrder.total || 0,
+        status: oldOrder.status || "Confirmed",
+        refundStatus: oldOrder.refundStatus || "",
+        refundAmount: oldOrder.refundAmount || 0,
+        refundDate: oldOrder.refundDate || "",
+        refundMessage: oldOrder.refundMessage || "",
+        shipping: oldOrder.shipping || {},
+        date: oldOrder.date || ""
+      });
+    }
+  });
+
+  users[currentUser].orders = userOrders;
+  saveUsers(users);
+  localStorage.removeItem("orders");
+}
+
+function getStatusClass(status){
+  let value = normalizeStatus(status);
+  if(value.includes("cancel")) return "status-cancelled";
+  if(value.includes("out")) return "status-out";
+  if(value.includes("dispatch") || value.includes("ship")) return "status-dispatched";
+  if(value.includes("delivered")) return "status-delivered";
+  if(value.includes("process")) return "status-processing";
+  return "status-confirmed";
+}
+
+function buildTimeline(status){
+  let value = normalizeStatus(status);
+  if(value.includes("cancel")){
+    return `<div class="timeline cancelled"><div class="timeline-step active"><div class="timeline-dot"></div><span>Order Cancelled</span></div></div>`;
+  }
+  let labels = ["Confirmed","Packed","Dispatched","Out for Delivery","Delivered"];
+  let current = statusLabel(status);
+  let activeIndex = Math.max(0, labels.indexOf(current));
+  if(current === "Confirmed") activeIndex = 0;
+
+  return labels.map((label,index)=>{
+    let active = index <= activeIndex ? "active" : "";
+    let line = index < labels.length - 1 ? `<div class="timeline-line"></div>` : "";
+    return `<div class="timeline-step ${active}"><div class="timeline-dot"></div><span>${label}</span></div>${line}`;
+  }).join("");
+}
+
+function viewOrder(id){
+  localStorage.setItem("currentOrderId", id);
+  window.location.href = "trackorder.html";
+}
+
+function reorder(id){
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+  let orders = (users[currentUser] && users[currentUser].orders) || [];
+  let selected = orders.find(order => order.id === id);
+  if(!selected){ return; }
+
+  const existingCart = Array.isArray(users[currentUser].cart) ? users[currentUser].cart : [];
+  const mergedCart = [...existingCart];
+  (selected.items || []).forEach(item=>{
+    const available = item.availability !== "Out of Stock" && item.stock !== 0;
+    if(!available) return;
+    const existing = mergedCart.find(cartItem => String(cartItem.id || cartItem.name) === String(item.id || item.name));
+    if(existing){
+      existing.qty = Number(existing.qty || 0) + Number(item.qty || 1);
+    }else{
+      mergedCart.push({...item, qty:Number(item.qty || 1)});
+    }
+  });
+  users[currentUser].cart = mergedCart;
+  saveUsers(users);
+  localStorage.setItem("cart", JSON.stringify(mergedCart));
+  window.dispatchEvent(new Event("cartUpdated"));
+  alert("Available items were merged into your cart.");
+  window.location.href = "cart.html";
+}
+
+function isDispatchedStatus(status){
+  let value = String(status || "").toLowerCase();
+  return value.includes("dispatch") || value.includes("ship") || value.includes("out for delivery") || value.includes("out_for_delivery");
+}
+
+function isDeliveredStatus(status){
+  return normalizeStatus(status).includes("delivered") || statusLabel(status) === "Delivered";
+}
+
+function isCancelledStatus(status){
+  return String(status || "").toLowerCase().includes("cancel");
+}
+
+function getCancelState(order){
+  if(isCancelledStatus(order.status)){
+    return { disabled: true, className: "disabled-btn", label: "Cancelled", note: "This order has already been cancelled." };
+  }
+
+  if(isDeliveredStatus(order.status)){
+    return { disabled: true, className: "disabled-btn", label: "Return / Support", note: "Delivered orders cannot be cancelled. You can request return, replacement, or support." };
+  }
+
+  if(isDispatchedStatus(order.status)){
+    return { disabled: true, className: "disabled-btn", label: "Cancellation Closed", note: "This order is already dispatched. Cancellation is closed; use Help / Support for delivery changes." };
+  }
+
+  return { disabled: false, className: "danger-btn", label: "Cancel Order", note: "" };
+}
+
+function cancelOrder(id){
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+  let orders = (users[currentUser] && users[currentUser].orders) || [];
+  let selected = orders.find(order => order.id === id);
+
+  if(!selected){ return; }
+
+  if(isDeliveredStatus(selected.status)){
+    alert("Delivered orders cannot be cancelled. Please use Help / Support for return or replacement.");
+    return;
+  }
+
+  if(isDispatchedStatus(selected.status)){
+    alert("This order is already dispatched. Please contact support for delivery assistance.");
+    return;
+  }
+
+  if(isCancelledStatus(selected.status)){
+    alert("This order has already been cancelled.");
+    return;
+  }
+
+  selected.status = "Cancelled";
+  selected.payment = "Refund Initiated";
+  selected.refundStatus = "Refund Initiated";
+  selected.refundAmount = Math.round(Number(selected.total) || 0);
+  selected.refundDate = nowText();
+  selected.estimatedRefundDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN", { dateStyle:"medium" });
+  selected.refundId = selected.refundId || ("rfnd_" + Date.now());
+  selected.refundMode = selected.refundMode || "Original payment method";
+  selected.refundMessage = "Refund has been initiated. It will be processed to your original payment method after payment gateway confirmation.";
+  selected.statusHistory = Array.isArray(selected.statusHistory) ? selected.statusHistory : [];
+  selected.statusHistory.push({ status:"Cancelled", time:nowText(), note:"Cancellation accepted and refund initiated." });
+  selected.updatedAt = new Date().toISOString();
+  saveUsers(users);
+  alert("Your order has been cancelled. Refund has been initiated.");
+  loadOrders();
+}
+
+function orderMatchesFilter(order, filter){
+  const value = normalizeStatus(order.status);
+  if(filter === "delivered") return isDeliveredStatus(order.status) && !value.includes("cancel");
+  if(filter === "cancelled") return value.includes("cancel");
+  if(filter === "active") return !value.includes("deliver") && !value.includes("cancel");
+  return true;
+}
+
+function orderMatchesSearch(order, query){
+  const text = [
+    order.id,
+    order.payment_id,
+    order.status,
+    ...(order.items || []).map(item=>item.name)
+  ].join(" ").toLowerCase();
+  return text.includes(String(query || "").trim().toLowerCase());
+}
+
+function toggleOrderDetails(id){
+  const panel = document.getElementById("details-" + id);
+  if(panel) panel.classList.toggle("show");
+}
+
+function downloadInvoice(id){
+  localStorage.setItem("currentOrderId", id);
+  window.location.href = "invoice.html";
+}
+
+function requestSupport(id){
+  localStorage.setItem("supportOrderId", id);
+  alert("Support request noted for order " + id + ". Our team will contact you shortly.");
+}
+
+async function fetchBackendOrdersForUser(userId){
+  try{
+    const response = await fetch(`${API_BASE}/api/orders/user/${encodeURIComponent(userId)}`, { cache:"no-store" });
+    const data = await response.json();
+    if(!response.ok || !data.ok) throw new Error(data.error || "Backend orders unavailable");
+    return Array.isArray(data.orders) ? data.orders : [];
+  }catch(error){
+    console.warn("Backend order fetch failed, using localStorage fallback", error);
+    return null;
+  }
+}
+
+function mergeOrders(localOrders, backendOrders){
+  if(!Array.isArray(backendOrders)) return localOrders;
+  const map = new Map();
+  localOrders.forEach(order=>map.set(String(order.id), order));
+  backendOrders.forEach(order=>map.set(String(order.id), { ...(map.get(String(order.id)) || {}), ...order }));
+  return Array.from(map.values());
+}
+
+async function loadOrders(){
+  const container = document.getElementById("ordersContainer");
+  container.innerHTML = "";
+
+  let currentUser = getCurrentUser();
+  if(!currentUser){
+    window.location.href = "account.html";
+    return;
+  }
+
+  migrateLegacyOrders();
+
+  let users = getUsers();
+  if(!users[currentUser]){
+    container.innerHTML = `<div class="empty"><h3>No account data found</h3><p>Please log in again to view your orders.</p></div>`;
+    return;
+  }
+
+  let localOrders = users[currentUser].orders || [];
+  let backendOrders = await fetchBackendOrdersForUser(currentUser);
+  let orders = mergeOrders(localOrders, backendOrders);
+  if(Array.isArray(backendOrders)){
+    users[currentUser].orders = orders;
+    saveUsers(users);
+  }
+  if(!orders.length){
+    container.innerHTML = `
+      <div class="empty">
+        <h3>No orders yet</h3>
+        <p>Your confirmed purchases will appear here after checkout.</p>
+        <a class="primary-btn" href="index.html">Start Shopping</a>
+      </div>
+    `;
+    return;
+  }
+
+  const query = document.getElementById("orderSearchInput")?.value || "";
+  const filter = document.getElementById("orderStatusFilter")?.value || "all";
+  const visibleOrders = orders.slice().reverse().filter(order=>orderMatchesFilter(order, filter) && orderMatchesSearch(order, query));
+
+  if(!visibleOrders.length){
+    container.innerHTML = `<div class="empty"><h3>No matching orders</h3><p>Try a different order ID, product name, or filter.</p></div>`;
+    return;
+  }
+
+  visibleOrders.forEach(order=>{
+    let cancelState = getCancelState(order);
+    let itemCount = (order.items || []).reduce((sum,item)=>sum + Number(item.qty || 1), 0);
+    let statusText = statusLabel(order.status);
+    let itemsHtml = (order.items || []).map(item=>`
+      <div class="item-row">
+        <img class="item-thumb" src="${safe(item.image) || "images/logo.png"}" alt="${safe(item.name)}">
+        <div>
+          <div class="item-name">${safe(item.name)}</div>
+          <div class="item-qty">Qty ${safe(item.qty)}</div>
+        </div>
+        <div class="item-price">${money(item.discountedUnitPrice || item.displayPrice || item.price)}</div>
+        <div class="item-price">${Number(item.discountedLineTotal || item.displayLineTotal || 0) > 0 && Number(item.discountedLineTotal || item.displayLineTotal || 0) < (Number(item.price) || 0) * (Number(item.qty) || 0) ? `<span style="display:block;font-size:12px;color:#888;text-decoration:line-through;">${money((Number(item.price) || 0) * (Number(item.qty) || 0))}</span>` : ""}${money(item.discountedLineTotal || item.displayLineTotal || ((Number(item.price) || 0) * (Number(item.qty) || 0)))}</div>
+      </div>
+    `).join("");
+
+    let shipping = order.shipping || {};
+    let history = Array.isArray(order.statusHistory) && order.statusHistory.length ? order.statusHistory : [{ status: statusText, time: safe(order.date) || "Recently", note: "Order status updated." }];
+    let historyHtml = history.map(entry=>`<div><strong>${safe(entry.status)}</strong> - ${safe(entry.time)}${entry.note ? `<br><span>${safe(entry.note)}</span>` : ""}</div>`).join("");
+    let subtotal = Number(order.subtotal || order.items?.reduce((sum,item)=>sum + (Number(item.price) || 0) * (Number(item.qty) || 1), 0) || order.total || 0);
+    let discount = Number(order.discount || order.couponDiscount || 0);
+    let shippingFee = Number(order.shippingFee || order.deliveryFee || 0);
+    let gst = Number(order.gst || 0);
+    let card = document.createElement("div");
+    card.className = "order-card";
+    card.innerHTML = `
+      <div class="order-head">
+        <div>
+          <div class="order-id">Order ${safe(order.id)}</div>
+          <div class="order-meta">
+            <span>Placed on ${safe(order.date) || "Recently"}</span>
+            <span>Transaction ID: ${safe(order.payment_id) || "Not available"}</span>
+            <span>Payment: ${safe(order.payment) || "Paid online"}</span>
+            <span>${itemCount} ${itemCount === 1 ? "item" : "items"}${order.expectedDelivery ? ` • Expected by ${safe(order.expectedDelivery)}` : ""}</span>
+          </div>
+        </div>
+        <span class="status-chip ${getStatusClass(order.status)}">${statusText}</span>
+      </div>
+
+      <div class="order-body">
+        <div class="items-panel">
+          <div class="panel-title">Items in this order</div>
+          <div class="item-list">${itemsHtml}</div>
+          <div class="timeline">${buildTimeline(order.status)}</div>
+        </div>
+
+        <div class="summary-panel">
+          <div class="panel-title">Order summary</div>
+          <div class="summary-grid">
+            <div class="summary-line"><span>Subtotal</span><strong>${money(subtotal)}</strong></div>
+            ${discount ? `<div class="summary-line"><span>Coupon discount</span><strong>-${money(discount)}</strong></div>` : ""}
+            ${gst ? `<div class="summary-line"><span>GST</span><strong>${money(gst)}</strong></div>` : ""}
+            <div class="summary-line"><span>Shipping</span><strong>${shippingFee ? money(shippingFee) : "Free"}</strong></div>
+            <div class="summary-line"><span>Total paid</span><strong>${money(order.total)}</strong></div>
+            <div class="summary-line"><span>Payment status</span><strong>${safe(order.payment) || "Paid"}</strong></div>
+            <div class="summary-line"><span>Current status</span><strong>${statusText}</strong></div>
+            ${order.trackingId ? `<div class="summary-line"><span>Tracking ID</span><strong>${safe(order.trackingId)}</strong></div>` : ""}
+            ${order.courierName ? `<div class="summary-line"><span>Courier</span><strong>${safe(order.courierName)}</strong></div>` : ""}
+            ${order.refundStatus ? `<div class="summary-line"><span>Refund status</span><strong>${safe(order.refundStatus)}</strong></div>` : ""}
+            ${order.refundAmount ? `<div class="summary-line"><span>Refund amount</span><strong>${money(order.refundAmount)}</strong></div>` : ""}
+            ${order.refundDate ? `<div class="summary-line"><span>Refund date</span><strong>${safe(order.refundDate)}</strong></div>` : ""}
+          </div>
+          <div class="address-box">
+            <strong>Delivery address</strong><br>
+            ${safe(shipping.name) || "Customer"}<br>
+            ${safe(shipping.phone) || "No phone"}<br>
+            ${safe(shipping.address) || "Address not available"}
+          </div>
+          ${order.refundMessage ? `<div class="refund-box"><strong>Refund update</strong><br>${safe(order.refundMessage)}${order.estimatedRefundDate ? `<br>Estimated refund date: ${safe(order.estimatedRefundDate)}` : ""}${order.refundId ? `<br>Refund ID: ${safe(order.refundId)}` : ""}${order.refundMode ? `<br>Mode: ${safe(order.refundMode)}` : ""}</div>` : ""}
+          <div class="details-panel" id="details-${safe(order.id)}">
+            <strong>Status history</strong><br>${historyHtml}
+            <br><br><strong>Full address</strong><br>
+            ${safe(shipping.house || shipping.address) || "Address not available"} ${safe(shipping.area)} ${safe(shipping.district)} ${safe(shipping.state)} ${safe(shipping.pincode)}
+          </div>
+          <div class="action-row">
+            <button class="primary-btn" onclick="viewOrder('${safe(order.id)}')">Track Order</button>
+            <button class="secondary-btn" onclick="reorder('${safe(order.id)}')">Buy Again</button>
+            <button class="secondary-btn" onclick="toggleOrderDetails('${safe(order.id)}')">Order Details</button>
+            <button class="secondary-btn" onclick="downloadInvoice('${safe(order.id)}')">Invoice</button>
+            <button class="secondary-btn" onclick="requestSupport('${safe(order.id)}')">Help / Support</button>
+            ${isDeliveredStatus(order.status) ? `<button class="secondary-btn" onclick="requestSupport('${safe(order.id)}')">Return / Replace</button><button class="secondary-btn" onclick="requestSupport('${safe(order.id)}')">Review Product</button>` : ""}
+            <button class="secondary-btn ${cancelState.className}" onclick="cancelOrder('${safe(order.id)}')" ${cancelState.disabled ? "disabled" : ""}>${cancelState.label}</button>
+          </div>
+          ${cancelState.note ? `<div class="action-note">${cancelState.note}</div>` : ""}
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+window.addEventListener("load", loadOrders);
+document.addEventListener("input", function(event){
+  if(event.target && event.target.id === "orderSearchInput") loadOrders();
+});
+document.addEventListener("change", function(event){
+  if(event.target && event.target.id === "orderStatusFilter") loadOrders();
+});
+document.addEventListener("keydown", function(event){
+  const input = event.target;
+  if(input && input.classList && input.classList.contains("header-search-input") && event.key === "Enter"){
+    const query = input.value.trim();
+    if(query){
+      window.location.href = "index.html?search=" + encodeURIComponent(query);
+    }
+  }
+});
+</script>
+<script>
+function swadraHeaderGetCart(){
+  try{return JSON.parse(localStorage.getItem("cart")) || [];}catch(e){return [];}
+}
+function swadraHeaderUpdateStickyCart(){
+  let bar=document.getElementById("stickyCart");
+  let count=document.getElementById("cartCount");
+  if(!bar || !count) return;
+  let cart=swadraHeaderGetCart();
+  let totalItems=0,totalPrice=0;
+  cart.forEach(item=>{ totalItems+=Number(item.qty||0); totalPrice+=Number(item.qty||0)*Number(item.price||0); });
+  if(totalItems>0){
+    bar.style.display="flex";
+    count.innerText=totalItems+" item ₹"+totalPrice;
+  }else{
+    bar.style.display="none";
+  }
+}
+function swadraHeaderUpdateAccountNav(){
+  let slot=document.getElementById("accountNavSlot");
+  if(!slot) return;
+  let currentUser=localStorage.getItem("currentUser");
+  let users={};
+  try{ users=JSON.parse(localStorage.getItem("users")) || {}; }catch(e){}
+  if(currentUser && users[currentUser]){
+    slot.innerHTML='<a href="dashboard.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">My Account</a>';
+  }else{
+    slot.innerHTML='<a href="account.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Signup/Login</a>';
+  }
+}
+window.addEventListener("load", function(){ swadraHeaderUpdateStickyCart(); swadraHeaderUpdateAccountNav(); });
+window.addEventListener("cartUpdated", swadraHeaderUpdateStickyCart);
+window.addEventListener("storage", function(event){
+  if(["cart","users","currentUser"].includes(event.key)){
+    swadraHeaderUpdateStickyCart();
+    swadraHeaderUpdateAccountNav();
+  }
+});
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
