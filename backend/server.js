@@ -26,6 +26,7 @@ const USE_FIRESTORE = String(process.env.USE_FIRESTORE || "").toLowerCase() === 
 const FIRESTORE_COLLECTION = process.env.FIRESTORE_COLLECTION || "appData";
 const FIRESTORE_DOCUMENT = process.env.FIRESTORE_DOCUMENT || "swadra";
 const FIRESTORE_LISTS = ["products", "orders", "paymentAttempts", "logs"];
+const ENABLE_STARTUP_DB_LOG = String(process.env.ENABLE_STARTUP_DB_LOG || "").toLowerCase() === "true";
 let firestoreDb = null;
 let fileStorageAvailable = !USE_FIRESTORE;
 let memoryDb = null;
@@ -2149,9 +2150,11 @@ const server = app.listen(PORT, HOST, () => {
     console.log(`Public URL: ${publicUrl}`);
   }
 
-  addLog(`Backend server started on ${HOST}:${PORT}`, "success");
-  if(publicUrl){
-    addLog(`Public URL available at ${publicUrl}`, "success");
+  if (ENABLE_STARTUP_DB_LOG) {
+    addLog(`Backend server started on ${HOST}:${PORT}`, "success");
+    if(publicUrl){
+      addLog(`Public URL available at ${publicUrl}`, "success");
+    }
   }
 });
 
