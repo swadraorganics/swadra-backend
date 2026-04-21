@@ -555,10 +555,18 @@
       return String(url || "").trim().replace(/\/+$/, "");
     }
 
+    function isUnsafeProductionBackendUrl(url){
+      const normalized = normalizeBackendUrl(url);
+      if(!normalized) return false;
+      if(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalized)) return false;
+      return normalized === normalizeBackendUrl(window.location.origin);
+    }
+
     function getSavedBackendUrl(){
       try{
         const parsed = JSON.parse(localStorage.getItem(ADMIN_BACKEND_STORAGE_KEY) || "{}");
-        return normalizeBackendUrl(parsed.backendUrl || "");
+        const saved = normalizeBackendUrl(parsed.backendUrl || "");
+        return isUnsafeProductionBackendUrl(saved) ? "" : saved;
       }catch(error){
         return "";
       }
@@ -568,6 +576,10 @@
       const backendUrl = normalizeBackendUrl((document.getElementById("adminBackendUrl") || {}).value || "");
       if(!backendUrl){
         alert("Backend URL enter karo");
+        return;
+      }
+      if(isUnsafeProductionBackendUrl(backendUrl)){
+        alert("Website domain mat save karo. Backend Railway URL save karo.");
         return;
       }
       let parsed = {};
@@ -581,7 +593,8 @@
     }
 
     function getApiBase(){
-      return normalizeBackendUrl(window.SWADRA_API_BASE || getSavedBackendUrl() || DEFAULT_REMOTE_BASE);
+      const resolved = normalizeBackendUrl(window.SWADRA_API_BASE || getSavedBackendUrl() || DEFAULT_REMOTE_BASE);
+      return isUnsafeProductionBackendUrl(resolved) ? DEFAULT_REMOTE_BASE : resolved;
     }
 
     function getAdminLoginUrl(){ return getApiBase() + "/api/admin/login"; }
