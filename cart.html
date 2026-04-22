@@ -270,7 +270,7 @@ image:getSafeCartImage(item.image)
 }));
 }
 
-const PRODUCT_API_URLS = window.SWADRA_PRODUCTS_API_URLS || ["/api/products"];
+const productDataApi = window.SWADRA_PRODUCT_DATA || {};
 const COUPONS_API_URL = window.SWADRA_COUPONS_API_URL || "/api/coupons";
 let availableCoupons = [];
 
@@ -318,18 +318,12 @@ track.innerHTML = repeated.map(item=>`<span class="sale-bar-item">${item}</span>
 }
 
 async function getProducts(){
-for(const url of PRODUCT_API_URLS){
 try{
-const response = await fetch(url,{cache:"no-store"});
-if(response.ok){
-const data = await response.json();
-if(Array.isArray(data?.products)){
-return data.products.map(normalizeBackendProduct);
-}
+if(typeof productDataApi.fetchProducts === "function"){
+return (await productDataApi.fetchProducts()).map(normalizeBackendProduct);
 }
 }catch(error){
-console.error("cart products fetch failed", url, error);
-}
+console.error("cart products fetch failed", error);
 }
 return [];
 }

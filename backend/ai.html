@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Swadra Organics - Admin Products AI Pricing</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="../api-config.js"></script>
   <style>
     * { box-sizing: border-box; }
     :root{
@@ -629,9 +632,7 @@
 
   <script>
     const DEFAULT_REMOTE_BASE = "https://swadra-backend-production.up.railway.app";
-    const PRODUCTS_DB_NAME = "swadraProductsDB";
-    const PRODUCTS_STORE_NAME = "products";
-    const PRODUCT_API_URLS = [DEFAULT_REMOTE_BASE + "/api/products"];
+    const productDataApi = window.SWADRA_PRODUCT_DATA || {};
     let editId = null;
 
     function normalizeFrontendProduct(product){
@@ -679,17 +680,10 @@
     }
 
     async function fetchBackendProducts(){
-      for(const url of PRODUCT_API_URLS){
-        try{
-          const response = await fetch(url,{ cache:"no-store" });
-          if(!response.ok) continue;
-          const data = await response.json();
-          if(Array.isArray(data?.products)){
-            return data.products.map(normalizeFrontendProduct);
-          }
-        }catch(error){}
+      if(typeof productDataApi.fetchProducts !== "function"){
+        throw new Error("Firestore products fetch unavailable");
       }
-      throw new Error("Backend products fetch failed");
+      return (await productDataApi.fetchProducts()).map(normalizeFrontendProduct);
     }
 
     window.checkServerStatus = async function(){
@@ -700,66 +694,41 @@
         button.textContent = "Checking...";
       }
 
-      for(const url of PRODUCT_API_URLS){
-        try{
-          const response = await fetch(url,{ cache:"no-store" });
-          if(response.ok){
-            if(button){
-              button.classList.remove("checking","offline");
-              button.classList.add("online");
-              button.textContent = "Server Live";
-              button.title = url;
-            }
-            return true;
+      try{
+        if(typeof productDataApi.fetchProducts === "function"){
+          await productDataApi.fetchProducts();
+          if(button){
+            button.classList.remove("checking","offline");
+            button.classList.add("online");
+            button.textContent = "Firestore Live";
+            button.title = "Firestore products collection";
           }
-        }catch(error){}
-      }
+          return true;
+        }
+      }catch(error){}
 
       if(button){
         button.classList.remove("checking","online");
         button.classList.add("offline");
-        button.textContent = "Server Offline";
-        button.title = "Backend server is not responding";
+        button.textContent = "Firestore Offline";
+        button.title = "Firestore products collection is not responding";
       }
       return false;
     }
 
     async function saveBackendProduct(product){
-      let lastError = null;
-      for(const baseUrl of PRODUCT_API_URLS){
-        try{
-          const response = await fetch(baseUrl,{
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body: JSON.stringify(product)
-          });
-          const data = await response.json().catch(()=>({}));
-          if(!response.ok){
-            lastError = new Error(data?.error || data?.message || `Backend save failed (${response.status})`);
-            continue;
-          }
-          if(data?.product){
-            return normalizeFrontendProduct(data.product);
-          }
-          lastError = new Error("Backend save response missing product");
-        }catch(error){}
+      if(typeof productDataApi.saveProduct !== "function"){
+        throw new Error("Firestore save unavailable");
       }
-      throw lastError || new Error("Backend save failed");
+      return normalizeFrontendProduct(await productDataApi.saveProduct(product));
     }
 
     async function deleteBackendProduct(id){
-      let lastError = null;
-      for(const baseUrl of PRODUCT_API_URLS){
-        try{
-          const response = await fetch(`${baseUrl}/${encodeURIComponent(id)}`,{ method:"DELETE" });
-          if(response.ok) return true;
-          const data = await response.json().catch(()=>({}));
-          lastError = new Error(data?.error || data?.message || `Backend delete failed (${response.status})`);
-        }catch(error){
-          lastError = error;
-        }
+      if(typeof productDataApi.deleteProduct !== "function"){
+        throw new Error("Firestore delete unavailable");
       }
-      throw lastError || new Error("Backend delete failed");
+      await productDataApi.deleteProduct(id);
+      return true;
     }
 
 function normalizeCategoryKey(value){
@@ -826,15 +795,6 @@ return "spices";
       return ["productImage","productImage2","productImage3","productImage4"];
     }
 
-    function readImageFile(file){
-      return new Promise((resolve,reject)=>{
-        const reader = new FileReader();
-        reader.onload = e=>resolve(e.target.result);
-        reader.onerror = ()=>reject(reader.error || new Error("Image read failed"));
-        reader.readAsDataURL(file);
-      });
-    }
-
     async function collectProductImages(oldProduct){
       const inputIds = getImageInputIds();
       const existingImages = Array.isArray(oldProduct?.images) && oldProduct.images.length
@@ -852,7 +812,13 @@ return "spices";
           if(file.size > 10 * 1024 * 1024){
             throw new Error(`Image ${index + 1} size must be 10MB or less`);
           }
-          nextImages.push(await readImageFile(file));
+          if(typeof productDataApi.uploadImagesToCloudinary !== "function"){
+            throw new Error("Cloudinary upload helper unavailable");
+          }
+          const uploaded = await productDataApi.uploadImagesToCloudinary([file]);
+          if(uploaded[0]){
+            nextImages.push(uploaded[0]);
+          }
         }else if(existingImages[index]){
           nextImages.push(existingImages[index]);
         }

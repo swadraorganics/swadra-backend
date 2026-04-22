@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Swadra Backend Control Panel</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="../api-config.js"></script>
   <style>
     * { box-sizing: border-box; }
     :root{
@@ -656,11 +659,11 @@
 
     async function loadProducts() {
       try {
-        const data = await fetchJson("/api/products");
-        state.products = Array.isArray(data.products) ? data.products : (Array.isArray(data) ? data : []);
+        const productDataApi = window.SWADRA_PRODUCT_DATA || {};
+        state.products = typeof productDataApi.fetchProducts === "function" ? await productDataApi.fetchProducts() : [];
         document.getElementById("productsCountText").textContent = state.products.length;
         renderProducts();
-        addLocalLog("Products loaded from backend.", "success");
+        addLocalLog("Products loaded from Firestore.", "success");
       } catch (error) {
         state.products = [];
         renderProducts();

@@ -1046,9 +1046,10 @@ function normalizeHeaderSearchText(value){
 
 async function getDashboardSearchProducts(){
   try{
-    const response = await fetch((window.SWADRA_API_BASE || "") + "/api/products", { cache:"no-store" });
-    const data = await response.json();
-    if(data && Array.isArray(data.products)) return data.products;
+    const productDataApi = window.SWADRA_PRODUCT_DATA || {};
+    if(typeof productDataApi.fetchProducts === "function"){
+      return await productDataApi.fetchProducts();
+    }
   }catch(e){}
   return [];
 }

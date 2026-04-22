@@ -268,9 +268,8 @@ let backendProductCatalogCache = null;
 async function productCatalog(){
   if(Array.isArray(backendProductCatalogCache)) return backendProductCatalogCache;
   try{
-    const response = await fetch((window.SWADRA_API_BASE || "") + "/api/products", { cache:"no-store" });
-    const data = await response.json();
-    backendProductCatalogCache = Array.isArray(data?.products) ? data.products : [];
+    const productDataApi = window.SWADRA_PRODUCT_DATA || {};
+    backendProductCatalogCache = typeof productDataApi.fetchProducts === "function" ? await productDataApi.fetchProducts() : [];
     return backendProductCatalogCache;
   }catch(error){
     return [];
@@ -482,7 +481,7 @@ function renderUserInfo(){
   `;
 }
 
-function renderOrderSummary(){
+async function renderOrderSummary(){
   document.getElementById("amountText").innerText = money(finalTotal);
   document.getElementById("mrpTotalText").innerText = money(mrpTotal);
   document.getElementById("itemsTotal").innerHTML = couponDiscount > 0 ? `<span style="display:block;font-size:12px;color:#888;text-decoration:line-through;">${money(sellingTotal)}</span>${money(couponAdjustedSellingTotal)}` : money(sellingTotal);
@@ -493,7 +492,7 @@ function renderOrderSummary(){
 
   const box = document.getElementById("invoicePreview");
   box.innerHTML = displayCart.length ? "" : `<div class="box"><h3>Cart is empty</h3><p>Please go back to cart and add products.</p></div>`;
-  displayCart.forEach(item=>{
+  for(const item of displayCart){
     const qty = Number(item.qty) || 1;
     const originalLineTotal = Math.round((Number(item.price)||0) * qty);
     const lineTotal = Math.round(Number(item.discountedLineTotal || item.displayLineTotal || originalLineTotal));
@@ -505,7 +504,7 @@ function renderOrderSummary(){
         <div class="order-price">${lineTotal < originalLineTotal ? `<span style="display:block;font-size:11px;color:#8a7777;text-decoration:line-through;">${money(originalLineTotal)}</span>` : ""}${money(lineTotal)}</div>
       </div>
     `;
-  });
+  }
 }
 
 function validateUpiId(){

@@ -23,10 +23,10 @@ const ROOT_HTML = `<!doctype html>
       <p>Available endpoints:</p>
       <ul>
         <li><code>GET /health</code></li>
-        <li><code>GET /api/products</code></li>
-        <li><code>POST /api/products</code></li>
-        <li><code>PUT /api/products/:id</code></li>
-        <li><code>DELETE /api/products/:id</code></li>
+      <li><code>GET /api/products</code> (disabled; products are Firestore-only)</li>
+      <li><code>POST /api/products</code> (disabled; products are Firestore-only)</li>
+      <li><code>PUT /api/products/:id</code> (disabled; products are Firestore-only)</li>
+      <li><code>DELETE /api/products/:id</code> (disabled; products are Firestore-only)</li>
       </ul>
     </div>
   </body>

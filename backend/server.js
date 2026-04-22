@@ -191,6 +191,13 @@ function ensureDB() {
   }
 }
 
+function productPersistenceDisabledResponse(res) {
+  return res.status(410).json({
+    ok: false,
+    error: "Legacy product endpoint disabled. Use Firestore products collection and Cloudinary image upload only."
+  });
+}
+
 function ensureProductsFile() {
   if (USE_FIRESTORE || !fileStorageAvailable) return;
   try {
@@ -297,52 +304,13 @@ async function writeDB(data) {
 }
 
 async function readProducts() {
-  if (USE_FIRESTORE) {
-    const db = await readDB();
-    return Array.isArray(db.products) ? db.products : [];
-  }
-  if (productsCacheLoaded && Array.isArray(productsCache)) {
-    return productsCache;
-  }
-  ensureDB();
-  ensureProductsFile();
-  if (!fileStorageAvailable) {
-    productsCache = Array.isArray(productsCache) ? productsCache : [];
-    productsCacheLoaded = true;
-    return productsCache;
-  }
-  try {
-    const raw = fs.readFileSync(PRODUCTS_PATH, "utf8");
-    const parsed = JSON.parse(raw || "[]");
-    productsCache = Array.isArray(parsed) ? parsed : [];
-    productsCacheLoaded = true;
-    return productsCache;
-  } catch (error) {
-    console.error("[products fallback] read failed:", error.message);
-    productsCache = Array.isArray(productsCache) ? productsCache : [];
-    productsCacheLoaded = true;
-    return productsCache;
-  }
+  // Product master data is no longer served from backend files or Firestore appData.
+  // The only approved source is the frontend Firestore "products" collection helper.
+  return [];
 }
 
 async function writeProducts(products) {
-  const normalized = Array.isArray(products) ? products : [];
-  productsCache = normalized;
-  productsCacheLoaded = true;
-  if (USE_FIRESTORE) {
-    const db = await readDB();
-    db.products = normalized;
-    await writeDB(db);
-    return;
-  }
-  if (!fileStorageAvailable) return;
-  ensureProductsFile();
-  try {
-    fs.writeFileSync(PRODUCTS_PATH, JSON.stringify(normalized, null, 2), "utf8");
-  } catch (error) {
-    fileStorageAvailable = false;
-    console.error("[products fallback] write failed:", error.message);
-  }
+  throw new Error("Legacy backend product persistence is disabled. Use Firestore products collection only.");
 }
 
 async function addLog(message, level = "info") {
@@ -1221,20 +1189,7 @@ function normalizeProduct(input, existingProduct = null) {
 }
 
 app.get("/api/products", async (req, res) => {
-  try {
-    const products = await readProducts();
-    res.json({
-      ok: true,
-      count: products.length,
-      products
-    });
-  } catch (error) {
-    addLog("Failed to load products: " + error.message, "error");
-    res.status(500).json({
-      ok: false,
-      error: "Failed to load products"
-    });
-  }
+  return productPersistenceDisabledResponse(res);
 });
 
 app.get("/api/logs", async (req, res) => {
@@ -1725,171 +1680,29 @@ app.get("/api/payments/attempts", async (req, res) => {
 });
 
 app.post("/api/products", async (req, res) => {
-  try {
-    const input = req.body || {};
-
-    if (!input.productName || !String(input.productName).trim()) {
-      return res.status(400).json({
-        ok: false,
-        error: "Product name is required"
-      });
-    }
-
-    if (!input.productSize || !String(input.productSize).trim()) {
-      return res.status(400).json({
-        ok: false,
-        error: "Product size is required"
-      });
-    }
-
-    const products = await readProducts();
-    const existingIndex = products.findIndex(
-      (p) => String(p.id) === String(input.id)
-    );
-
-    let savedProduct;
-
-    if (existingIndex > -1) {
-      const existing = products[existingIndex];
-      savedProduct = normalizeProduct(input, existing);
-      products[existingIndex] = savedProduct;
-      addLog(`Product updated: ${savedProduct.productName} (${savedProduct.productSize})`, "success");
-    } else {
-      savedProduct = normalizeProduct(input);
-      products.unshift(savedProduct);
-      addLog(`Product created: ${savedProduct.productName} (${savedProduct.productSize})`, "success");
-    }
-
-    await writeProducts(products);
-
-    res.json({
-      ok: true,
-      product: savedProduct
-    });
-  } catch (error) {
-    addLog("Failed to save product: " + error.message, "error");
-    res.status(500).json({
-      ok: false,
-      error: "Failed to save product"
-    });
-  }
+  return productPersistenceDisabledResponse(res);
 });
 
 app.put("/api/products/:id", async (req, res) => {
-  try {
-    const id = req.params.id;
-    const products = await readProducts();
-    const index = products.findIndex((p) => String(p.id) === String(id));
-
-    if (index === -1) {
-      return res.status(404).json({
-        ok: false,
-        error: "Product not found"
-      });
-    }
-
-    const existing = products[index];
-    const updated = normalizeProduct({ ...req.body, id }, existing);
-
-    products[index] = updated;
-    await writeProducts(products);
-    addLog(`Product updated by ID: ${updated.productName} (${updated.productSize})`, "success");
-
-    res.json({
-      ok: true,
-      product: updated
-    });
-  } catch (error) {
-    addLog("Failed to update product: " + error.message, "error");
-    res.status(500).json({
-      ok: false,
-      error: "Failed to update product"
-    });
-  }
+  return productPersistenceDisabledResponse(res);
 });
 
 app.delete("/api/products/:id", async (req, res) => {
-  try {
-    const id = req.params.id;
-    const products = await readProducts();
-    const index = products.findIndex((p) => String(p.id) === String(id));
-
-    if (index === -1) {
-      return res.status(404).json({
-        ok: false,
-        error: "Product not found"
-      });
-    }
-
-    const deleted = products[index];
-    products.splice(index, 1);
-    await writeProducts(products);
-
-    addLog(`Product deleted: ${deleted.productName} (${deleted.productSize})`, "warn");
-
-    res.json({
-      ok: true,
-      deletedId: id
-    });
-  } catch (error) {
-    addLog("Failed to delete product: " + error.message, "error");
-    res.status(500).json({
-      ok: false,
-      error: "Failed to delete product"
-    });
-  }
+  return productPersistenceDisabledResponse(res);
 });
 
 app.post("/api/pricing/run", async (req, res) => {
-  try {
-    const products = await readProducts();
-    const updatedProducts = products.map((product) => normalizeProduct(product, product));
-    await writeProducts(updatedProducts);
-    addLog("AI pricing run completed for all products", "success");
-
-    res.json({
-      ok: true,
-      count: updatedProducts.length,
-      products: updatedProducts
-    });
-  } catch (error) {
-    addLog("AI pricing run failed: " + error.message, "error");
-    res.status(500).json({
-      ok: false,
-      error: "Failed to run AI pricing"
-    });
-  }
+  return res.status(410).json({
+    ok: false,
+    error: "Legacy backend pricing write disabled. Recalculate Firestore products in the frontend."
+  });
 });
 
 app.post("/api/products/:id/recalculate", async (req, res) => {
-  try {
-    const id = req.params.id;
-    const products = await readProducts();
-    const index = products.findIndex((p) => String(p.id) === String(id));
-
-    if (index === -1) {
-      return res.status(404).json({
-        ok: false,
-        error: "Product not found"
-      });
-    }
-
-    products[index] = normalizeProduct(products[index], products[index]);
-    await writeProducts(products);
-
-    addLog(`Single product recalculated: ${products[index].productName}`, "success");
-
-    res.json({
-      ok: true,
-      product: products[index]
-    });
-  } catch (error) {
-    addLog("Single product recalculation failed: " + error.message, "error");
-    res.status(500).json({
-      ok: false,
-      error: "Failed to recalculate product"
-    });
-  }
+  return res.status(410).json({
+    ok: false,
+    error: "Legacy backend product recalculation disabled. Recalculate Firestore products in the frontend."
+  });
 });
 
 app.post("/api/pricing/fetch-competitor-prices", async (req, res) => {
@@ -1948,19 +1761,14 @@ app.post("/api/pricing/search-by-product-name", async (req, res) => {
   let browser;
   try {
     const payload = req.body || {};
-    const products = await readProducts();
-
-    let productsToProcess = [];
     const incomingProducts = Array.isArray(payload.products) ? payload.products : [];
-
-    if (incomingProducts.length) {
-      productsToProcess = incomingProducts.map((product) => {
-        const existing = products.find((p) => String(p.id) === String(product.id));
-        return normalizeProduct(product, existing || null);
+    if (!incomingProducts.length) {
+      return res.status(400).json({
+        ok: false,
+        error: "Explicit products payload is required. Legacy backend product database is disabled."
       });
-    } else {
-      productsToProcess = products.map((product) => normalizeProduct(product, product));
     }
+    const productsToProcess = incomingProducts.map((product) => normalizeProduct(product, product));
 
     browser = await createBrowser();
     const updatedProducts = [];
@@ -1973,21 +1781,12 @@ app.post("/api/pricing/search-by-product-name", async (req, res) => {
 
       updatedProducts.push(result.product);
     }
-
-    const updatedMap = new Map(products.map((p) => [String(p.id), p]));
-    updatedProducts.forEach((product) => {
-      updatedMap.set(String(product.id), product);
-    });
-
-    const nextProducts = Array.from(updatedMap.values());
-    await writeProducts(nextProducts);
-
-    addLog(`Product-name auto search completed for ${updatedProducts.length} products`, "success");
+    addLog(`Product-name auto search completed for ${updatedProducts.length} products without persistence`, "success");
 
     res.json({
       ok: true,
       count: updatedProducts.length,
-      products: nextProducts
+      products: updatedProducts
     });
   } catch (error) {
     addLog("Product-name auto search failed: " + error.message, "error");
@@ -2004,7 +1803,13 @@ app.post("/api/pricing/fetch-all-competitor-prices", async (req, res) => {
   let browser;
   try {
     const payload = req.body || {};
-    const products = await readProducts();
+    const products = Array.isArray(payload.products) ? payload.products.map((product) => normalizeProduct(product, product)) : [];
+    if (!products.length) {
+      return res.status(400).json({
+        ok: false,
+        error: "Explicit products payload is required. Legacy backend product database is disabled."
+      });
+    }
     const updatedProducts = [];
 
     browser = await createBrowser();
@@ -2016,9 +1821,7 @@ app.post("/api/pricing/fetch-all-competitor-prices", async (req, res) => {
       }, browser);
       updatedProducts.push(result.product);
     }
-
-    await writeProducts(updatedProducts);
-    addLog(`Bulk competitor price sync completed for ${updatedProducts.length} products`, "success");
+    addLog(`Bulk competitor price sync completed for ${updatedProducts.length} products without persistence`, "success");
 
     res.json({
       ok: true,
@@ -2196,17 +1999,17 @@ const ROOT_HTML = `<!doctype html>
       <p>Available endpoints:</p>
       <ul>
         <li><code>GET /health</code></li>
-        <li><code>GET /api/products</code></li>
-        <li><code>POST /api/products</code></li>
-        <li><code>PUT /api/products/:id</code></li>
-        <li><code>DELETE /api/products/:id</code></li>
+<li><code>GET /api/products</code> (disabled; products are Firestore-only)</li>
+<li><code>POST /api/products</code> (disabled; products are Firestore-only)</li>
+<li><code>PUT /api/products/:id</code> (disabled; products are Firestore-only)</li>
+<li><code>DELETE /api/products/:id</code> (disabled; products are Firestore-only)</li>
         <li><code>GET /api/logs</code></li>
         <li><code>POST /api/payments/create-order</code></li>
         <li><code>POST /api/payments/verify</code></li>
         <li><code>POST /api/payments/attempts</code></li>
         <li><code>GET /api/payments/attempts</code></li>
         <li><code>POST /api/pricing/run</code></li>
-        <li><code>POST /api/products/:id/recalculate</code></li>
+<li><code>POST /api/products/:id/recalculate</code> (disabled; products are Firestore-only)</li>
         <li><code>POST /api/pricing/fetch-competitor-prices</code></li>
         <li><code>POST /api/pricing/search-by-product-name</code></li>
         <li><code>POST /api/pricing/fetch-all-competitor-prices</code></li>

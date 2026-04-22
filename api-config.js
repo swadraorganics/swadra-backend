@@ -42,12 +42,9 @@
 
   base = String(base || "").replace(/\/$/, "");
   window.SWADRA_API_BASE = base;
-  window.SWADRA_PRODUCTS_API_URLS = window.SWADRA_PRODUCTS_API_URLS || [
-    base + "/api/products"
-  ];
-  if(isLocal){
-    window.SWADRA_PRODUCTS_API_URLS.push("http://localhost:3000/api/products");
-  }
+  // Product master data is intentionally not routed through legacy backend endpoints.
+  // Firestore is the only authoritative product database and Cloudinary is the only image store.
+  window.SWADRA_PRODUCTS_API_URLS = [];
   window.SWADRA_ADMIN_LOGIN_URL = base + "/api/admin/login";
   window.SWADRA_ADMIN_CONFIG_URL = base + "/api/admin/config";
   window.SWADRA_ADMIN_CREDENTIALS_URL = base + "/api/admin/credentials";
@@ -247,4 +244,173 @@
 
   bootstrapRemoteState();
   wrapLocalStorage();
+
+  var firebaseConfig = {
+    apiKey: "AIzaSyCJbp-RNZTeV0u0k1UzDL2DCXvVkq4Az5I",
+    authDomain: "swadra-organics-db127.firebaseapp.com",
+    projectId: "swadra-organics-db127",
+    storageBucket: "swadra-organics-db127.appspot.com",
+    messagingSenderId: "830329896896",
+    appId: "1:830329896896:web:b5c36aa527f3d04439d225"
+  };
+  var firestoreDb = null;
+  var firebaseInitError = null;
+  var cloudinaryEndpoint = "https://api.cloudinary.com/v1_1/djimhrjf/image/upload";
+  var cloudinaryPreset = "swadra_products";
+
+  function initFirebaseIfNeeded(){
+    if(firestoreDb || firebaseInitError) return firestoreDb;
+    try{
+      if(!window.firebase || typeof window.firebase.initializeApp !== "function" || typeof window.firebase.firestore !== "function"){
+        throw new Error("Firebase scripts not loaded");
+      }
+      if(!window.firebase.apps || !window.firebase.apps.length){
+        window.firebase.initializeApp(firebaseConfig);
+      }
+      firestoreDb = window.firebase.firestore();
+    }catch(error){
+      firebaseInitError = error;
+      console.error("firebase init failed", error);
+    }
+    return firestoreDb;
+  }
+
+  function normalizeProductRecord(product, fallbackId){
+    var item = product && typeof product === "object" ? product : {};
+    var rawImages = Array.isArray(item.images) ? item.images : [];
+    var imageUrl = String(item.imageUrl || item.image || rawImages[0] || "").trim();
+    var images = rawImages
+      .map(function(value){ return String(value || "").trim(); })
+      .filter(Boolean)
+      .slice(0,4);
+    if(!images.length && imageUrl){
+      images = [imageUrl];
+    }
+    if(images.length && !imageUrl){
+      imageUrl = images[0];
+    }
+    var summary = String(item.summary || item.productSummary || item.description || item.desc || "").trim();
+    var normalizedId = item.id !== undefined && item.id !== null && String(item.id).trim() ? item.id : fallbackId;
+    return {
+      id: normalizedId,
+      docId: String(item.docId || normalizedId || fallbackId || "").trim(),
+      name: String(item.name || item.productName || "").trim(),
+      price: Number(item.price ?? item.sellingPrice ?? 0) || 0,
+      mrp: Number(item.mrp ?? item.price ?? item.sellingPrice ?? 0) || 0,
+      category: String(item.category || "").trim(),
+      size: String(item.size || item.productSize || "").trim(),
+      stockQty: Number(item.stockQty ?? item.stock ?? 0) || 0,
+      availability: String(item.availability || (item.outOfStock ? "Out of Stock" : "Available") || "Available"),
+      summary: summary,
+      productSummary: summary,
+      description: summary,
+      image: imageUrl,
+      imageUrl: imageUrl,
+      images: images,
+      bestseller: !!item.bestseller,
+      combo: !!item.combo,
+      special: !!item.special,
+      createdAt: item.createdAt || null,
+      updatedAt: item.updatedAt || null
+    };
+  }
+
+  async function fetchFirestoreProducts(){
+    var db = initFirebaseIfNeeded();
+    if(!db) throw firebaseInitError || new Error("Firestore unavailable");
+    var snapshot = await db.collection("products").get();
+    var products = [];
+    snapshot.forEach(function(doc){
+      products.push(normalizeProductRecord(doc.data(), doc.id));
+    });
+    return products;
+  }
+
+  async function uploadImagesToCloudinary(files){
+    var list = Array.isArray(files) ? files.filter(Boolean) : [];
+    var uploaded = [];
+    for(var i=0;i<list.length;i++){
+      var file = list[i];
+      var formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", cloudinaryPreset);
+      var response = await fetch(cloudinaryEndpoint, {
+        method: "POST",
+        body: formData
+      });
+      var data = await response.json().catch(function(){ return {}; });
+      if(!response.ok || !data.secure_url){
+        throw new Error((data && data.error && data.error.message) || "Cloudinary upload failed");
+      }
+      uploaded.push(String(data.secure_url).trim());
+    }
+    return uploaded;
+  }
+
+  async function saveFirestoreProduct(product){
+    var db = initFirebaseIfNeeded();
+    if(!db) throw firebaseInitError || new Error("Firestore unavailable");
+    var normalized = normalizeProductRecord(product, product && product.id);
+    if(/^data:image\//i.test(String(normalized.image || ""))){
+      throw new Error("Base64 product images are blocked. Upload to Cloudinary first.");
+    }
+    if((normalized.images || []).some(function(image){ return /^data:image\//i.test(String(image || "")); })){
+      throw new Error("Base64 product images are blocked. Upload to Cloudinary first.");
+    }
+    if(normalized.id === undefined || normalized.id === null || String(normalized.id).trim() === ""){
+      normalized.id = Date.now();
+    }
+    normalized.docId = String(normalized.docId || normalized.id);
+    normalized.image = String(normalized.imageUrl || normalized.image || "").trim();
+    normalized.imageUrl = normalized.image;
+    normalized.images = Array.isArray(normalized.images) && normalized.images.length ? normalized.images.slice(0,4) : (normalized.image ? [normalized.image] : []);
+    var nowIso = new Date().toISOString();
+    var payload = {
+      id: normalized.id,
+      name: normalized.name,
+      price: normalized.price,
+      mrp: normalized.mrp,
+      category: normalized.category,
+      size: normalized.size,
+      stockQty: normalized.stockQty,
+      availability: normalized.availability,
+      summary: normalized.summary,
+      productSummary: normalized.productSummary,
+      description: normalized.description,
+      image: normalized.image,
+      imageUrl: normalized.imageUrl,
+      images: normalized.images,
+      bestseller: normalized.bestseller,
+      combo: normalized.combo,
+      special: normalized.special,
+      updatedAt: nowIso
+    };
+    if(normalized.createdAt){
+      payload.createdAt = normalized.createdAt;
+    }else{
+      payload.createdAt = nowIso;
+    }
+    await db.collection("products").doc(normalized.docId).set(payload, { merge:true });
+    return normalizeProductRecord(payload, normalized.docId);
+  }
+
+  async function deleteFirestoreProduct(id){
+    var db = initFirebaseIfNeeded();
+    if(!db) throw firebaseInitError || new Error("Firestore unavailable");
+    await db.collection("products").doc(String(id)).delete();
+    return true;
+  }
+
+  window.SWADRA_PRODUCT_DATA = {
+    firebaseConfig: firebaseConfig,
+    normalizeProduct: normalizeProductRecord,
+    initFirebaseIfNeeded: initFirebaseIfNeeded,
+    uploadImagesToCloudinary: uploadImagesToCloudinary,
+    fetchFirestoreProducts: fetchFirestoreProducts,
+    fetchProducts: async function(){
+      return fetchFirestoreProducts();
+    },
+    saveProduct: saveFirestoreProduct,
+    deleteProduct: deleteFirestoreProduct
+  };
 })();

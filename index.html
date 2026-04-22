@@ -25,6 +25,8 @@ window.installSwadraPageStorageSync({
   ]
 });
 </script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="api-config.js"></script></head>
 
 <body>
@@ -5804,32 +5806,15 @@ function getHomeArray(key){
 }
 
 async function getAdminProducts(){
-  const backendProductUrls = window.SWADRA_PRODUCTS_API_URLS || ["/api/products"];
-  for(const url of backendProductUrls){
-    try{
-      const response = await fetch(url,{ cache:"no-store" });
-      if(response.ok){
-        const data = await response.json();
-        if(Array.isArray(data?.products)){
-          const products = data.products.map(product=>({
-            ...product,
-            name: String(product.name || product.productName || "").trim(),
-            size: String(product.size || product.productSize || "").trim(),
-            summary: String(product.summary || product.productSummary || "").trim(),
-            productSummary: String(product.summary || product.productSummary || "").trim(),
-            price: Number(product.price ?? product.sellingPrice ?? 0) || 0,
-            mrp: Number(product.mrp ?? product.price ?? product.sellingPrice ?? 0) || 0,
-            stockQty: Number(product.stockQty ?? 0) || 0,
-            availability: String(product.availability || (product.outOfStock ? "Out of Stock" : "Available")),
-            category: String(product.category || "").trim(),
-            image: product.image || ""
-          }));
-          return products;
-        }
-      }
-    }catch(error){
-      console.error("adminProducts fetch failed", url, error);
+  try{
+    const productDataApi = window.SWADRA_PRODUCT_DATA || {};
+    if(typeof productDataApi.fetchProducts === "function"){
+      return (await productDataApi.fetchProducts()).map(product=>{
+        return typeof productDataApi.normalizeProduct === "function" ? productDataApi.normalizeProduct(product, product && product.id) : product;
+      });
     }
+  }catch(error){
+    console.error("adminProducts fetch failed", error);
   }
   return [];
 }
@@ -7305,30 +7290,15 @@ if(window.location.hash === "#allProductsSection"){
   }
 
   async function getAllProductsSafe(){
-    const backendProductUrls = window.SWADRA_PRODUCTS_API_URLS || ["/api/products"];
-    for(const url of backendProductUrls){
-      try{
-      const response = await fetch(url,{ cache:"no-store" });
-        if(response.ok){
-          const data = await response.json();
-          if(Array.isArray(data?.products)){
-            const products = data.products.map(product=>({
-              ...product,
-              name: String(product.name || product.productName || "").trim(),
-              size: String(product.size || product.productSize || "").trim(),
-              price: Number(product.price ?? product.sellingPrice ?? 0) || 0,
-              mrp: Number(product.mrp ?? product.price ?? product.sellingPrice ?? 0) || 0,
-              stockQty: Number(product.stockQty ?? 0) || 0,
-              availability: String(product.availability || (product.outOfStock ? "Out of Stock" : "Available")),
-              category: String(product.category || "").trim(),
-              image: product.image || ""
-            }));
-            return products;
-          }
-        }
-      }catch(error){
-        console.error("index recovery: backend products fetch failed", url, error);
+    try{
+      const productDataApi = window.SWADRA_PRODUCT_DATA || {};
+      if(typeof productDataApi.fetchProducts === "function"){
+        return (await productDataApi.fetchProducts()).map(product=>{
+          return typeof productDataApi.normalizeProduct === "function" ? productDataApi.normalizeProduct(product, product && product.id) : product;
+        });
       }
+    }catch(error){
+      console.error("index recovery: backend products fetch failed", error);
     }
     return [];
   }

@@ -187,6 +187,8 @@ input:focus,select:focus,textarea:focus{border-color:#7a3d3d;box-shadow:0 0 0 4p
 }
 </style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="api-config.js"></script></head>
 <body>
 <div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
@@ -318,80 +320,32 @@ input:focus,select:focus,textarea:focus{border-color:#7a3d3d;box-shadow:0 0 0 4p
 </div>
 
 <script>
-const PRODUCT_API_URLS = window.SWADRA_PRODUCTS_API_URLS || ["/api/products"];
+const productDataApi = window.SWADRA_PRODUCT_DATA || {};
 
 function normalizeFrontendProduct(product){
-const images = Array.isArray(product.images) ? product.images.filter(Boolean).slice(0,4) : [];
-const primaryImage = product.image || images[0] || "";
+const normalized = typeof productDataApi.normalizeProduct === "function"
+? productDataApi.normalizeProduct(product, product && product.id)
+: (product || {});
+const images = Array.isArray(normalized.images) ? normalized.images.filter(Boolean).slice(0,4) : [];
+const primaryImage = normalized.image || normalized.imageUrl || images[0] || "";
 return {
-...product,
-id: product.id,
-name: String(product.name || product.productName || "").trim(),
-size: String(product.size || product.productSize || "").trim(),
-summary: String(product.summary || product.productSummary || "").trim(),
-productSummary: String(product.summary || product.productSummary || "").trim(),
-category: String(product.category || "").trim(),
-price: Number(product.price ?? product.sellingPrice ?? 0) || 0,
-mrp: Number(product.mrp ?? product.price ?? product.sellingPrice ?? 0) || 0,
-stockQty: Number(product.stockQty ?? 0) || 0,
-availability: String(product.availability || (product.outOfStock ? "Out of Stock" : "Available")),
+...normalized,
+id: normalized.id,
+docId: String(normalized.docId || normalized.id || ""),
+name: String(normalized.name || normalized.productName || "").trim(),
+size: String(normalized.size || normalized.productSize || "").trim(),
+summary: String(normalized.summary || normalized.productSummary || "").trim(),
+productSummary: String(normalized.summary || normalized.productSummary || "").trim(),
+category: String(normalized.category || "").trim(),
+price: Number(normalized.price ?? normalized.sellingPrice ?? 0) || 0,
+mrp: Number(normalized.mrp ?? normalized.price ?? normalized.sellingPrice ?? 0) || 0,
+stockQty: Number(normalized.stockQty ?? 0) || 0,
+availability: String(normalized.availability || (normalized.outOfStock ? "Out of Stock" : "Available")),
 image: primaryImage,
+imageUrl: primaryImage,
 images: images.length ? images : (primaryImage ? [primaryImage] : []),
-offPercent: Number(product.offPercent ?? 0) || 0
+offPercent: Number(normalized.offPercent ?? 0) || 0
 };
-}
-
-async function fetchBackendProducts(){
-for(const url of PRODUCT_API_URLS){
-try{
-const response = await fetch(url,{cache:"no-store"});
-const data = await response.json().catch(()=>({}));
-if(!response.ok) throw new Error(data?.error || data?.message || ("HTTP " + response.status));
-const products = Array.isArray(data?.products) ? data.products.map(normalizeFrontendProduct) : [];
-if(products.length || data?.ok){
-return products;
-}
-}catch(error){}
-}
-throw new Error("Backend products fetch failed");
-}
-
-async function saveBackendProduct(product){
-let lastError = null;
-for(const baseUrl of PRODUCT_API_URLS){
-try{
-const response = await fetch(baseUrl,{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body: JSON.stringify(product)
-});
-const data = await response.json().catch(()=>({}));
-if(!response.ok){
-lastError = new Error(data?.error || data?.message || `Backend save failed (${response.status})`);
-continue;
-}
-if(data?.product) return normalizeFrontendProduct(data.product);
-lastError = new Error("Backend save response missing product");
-}catch(error){
-lastError = error;
-}
-}
-throw lastError || new Error("Backend save failed");
-}
-
-async function deleteBackendProduct(id){
-let lastError = null;
-for(const baseUrl of PRODUCT_API_URLS){
-try{
-const response = await fetch(`${baseUrl}/${encodeURIComponent(id)}`,{method:"DELETE"});
-const data = await response.json().catch(()=>({}));
-if(response.ok) return true;
-lastError = new Error(data?.error || data?.message || `Backend delete failed (${response.status})`);
-}catch(error){
-lastError = error;
-}
-}
-throw lastError || new Error("Backend delete failed");
 }
 
 function normalizeCategoryKey(value){
@@ -406,15 +360,24 @@ return "spices";
 }
 
 async function getProducts(){
-return await fetchBackendProducts();
+if(typeof productDataApi.fetchProducts !== "function"){
+throw new Error("Product data service unavailable");
+}
+return (await productDataApi.fetchProducts()).map(normalizeFrontendProduct);
 }
 
 async function putProduct(product){
-return await saveBackendProduct(normalizeFrontendProduct(product));
+if(typeof productDataApi.saveProduct !== "function"){
+throw new Error("Product save service unavailable");
+}
+return await productDataApi.saveProduct(normalizeFrontendProduct(product));
 }
 
 async function deleteProductRecord(id){
-await deleteBackendProduct(id);
+if(typeof productDataApi.deleteProduct !== "function"){
+throw new Error("Product delete service unavailable");
+}
+await productDataApi.deleteProduct(id);
 return true;
 }
 
@@ -480,6 +443,7 @@ return `<div class="price">â‚¹${price}</div>`;
 }
 
 async function migrateLegacyProductsIfNeeded(){
+// Product master data is Firestore-only now; legacy backend/db fallback migration is disabled.
 return true;
 }
 
@@ -576,12 +540,8 @@ return;
 }
 }
 
-Promise.all(files.map(file=>new Promise((resolve,reject)=>{
-const reader = new FileReader();
-reader.onload = e=>resolve(e.target.result);
-reader.onerror = ()=>reject(new Error("Image read failed"));
-reader.readAsDataURL(file);
-}))).then(async uploadedImages=>{
+try{
+const uploadedImages = await productDataApi.uploadImagesToCloudinary(files);
 let products = await getProducts();
 const hasSameName = products.some(p => normalizeProductName(p.name) === normalizeProductName(name));
 
@@ -604,23 +564,19 @@ summary,
 productSummary: summary,
 availability: productAvailability.value || "Available",
 image: uploadedImages[0],
+imageUrl: uploadedImages[0],
 images: uploadedImages
 });
 
-try{
 await putProduct(product);
 await renderProducts();
 closeModal();
 clearForm();
 alert("Product saved successfully");
-}catch(saveError){
-alert(saveError.message || "Product save failed");
-console.error("Product save failed", saveError);
+}catch(error){
+alert(error.message || "Product save failed");
+console.error("Product save failed", error);
 }
-}).catch(error=>{
-alert("Image upload failed");
-console.error(error);
-});
 }
 
 async function deleteProduct(id){
@@ -635,12 +591,29 @@ console.error("Delete failed", e);
 
 async function updateProduct(id){
 let products = await getProducts();
-const index = products.findIndex(p=>p.id===id);
+const index = products.findIndex(p=>String(p.id)===String(id));
 if(index === -1) return;
 
 const name = String(document.getElementById("name-"+id).value || "").trim();
 const size = String(document.getElementById("size-"+id).value || "").trim();
 const summary = String(document.getElementById("summary-"+id)?.value || "").trim();
+const nextFiles = Array.from((document.getElementById("image-"+id)?.files) || []);
+
+if(nextFiles.length > 4){
+alert("You can upload maximum 4 product images");
+return;
+}
+
+for(const file of nextFiles){
+if(!file.type.startsWith("image/")){
+alert("Please upload valid image files only");
+return;
+}
+if(file.size > 10 * 1024 * 1024){
+alert("Each image size must be 10MB or less");
+return;
+}
+}
 
 products[index] = buildProductRecord({
 ...products[index],
@@ -675,8 +648,15 @@ return;
 }
 
 try{
+if(nextFiles.length){
+const uploadedImages = await productDataApi.uploadImagesToCloudinary(nextFiles);
+products[index].image = uploadedImages[0] || products[index].image || "";
+products[index].imageUrl = products[index].image;
+products[index].images = uploadedImages.length ? uploadedImages : (products[index].image ? [products[index].image] : []);
+}
 await putProduct(products[index]);
 await renderProducts();
+alert("Product updated successfully");
 }catch(e){
 alert(e.message || "Update failed");
 console.error("Update failed", e);
@@ -884,6 +864,10 @@ ${stockStatus==="Out of Stock"
 <option ${stockStatus==="Available"?"selected":""}>Available</option>
 <option ${stockStatus==="Out of Stock"?"selected":""}>Out of Stock</option>
 </select>
+</div>
+<div class="field full">
+<label for="image-${item.id}">Replace Product Images (optional, max 4)</label>
+<input id="image-${item.id}" type="file" accept="image/*" multiple>
 </div>
 </div>
 </div>

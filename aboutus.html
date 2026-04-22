@@ -119,7 +119,7 @@
   </section>
 
   <script>
-    const PRODUCT_API_URLS = window.SWADRA_PRODUCTS_API_URLS || ["/api/products"];
+    const productDataApi = window.SWADRA_PRODUCT_DATA || {};
     function swadraHeaderAccountMenu(userLabel, userEmail){
       return `<span class="account-menu-wrap"><a class="account-link" href="${userEmail ? "dashboard.html" : "account.html"}" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">${userLabel}</div><div class="account-hover-copy">${userEmail || "Access your account, orders and saved details from one place."}</div>${userEmail ? `<a class="account-hover-cta" href="#" onclick="return swadraLogout(event)" style="color:#fff !important">LOGOUT</a>` : `<a class="account-hover-cta" href="account.html" style="color:#fff !important">LOGIN / SIGNUP</a>`}</div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="dashboard.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V5"></path><path d="M17 16v-3"></path></svg></span><span>Product Summary</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span>`;
     }
@@ -146,26 +146,16 @@
       }
     }
     function normalizeBackendProduct(product){
-      return {
-        ...product,
-        name:String(product.name || product.productName || "").trim(),
-        size:String(product.size || product.productSize || "").trim(),
-        category:String(product.category || "").trim(),
-        image:String(product.image || product.productImage || "").trim()
-      };
+      return typeof productDataApi.normalizeProduct === "function"
+        ? productDataApi.normalizeProduct(product, product && product.id)
+        : product;
     }
     async function getHeaderSearchProducts(){
-      for(const url of PRODUCT_API_URLS){
-        try{
-          const response=await fetch(url,{cache:"no-store"});
-          if(response.ok){
-            const data=await response.json();
-            if(Array.isArray(data?.products)){
-              return data.products.map(normalizeBackendProduct);
-            }
-          }
-        }catch(error){}
-      }
+      try{
+        if(typeof productDataApi.fetchProducts === "function"){
+          return (await productDataApi.fetchProducts()).map(normalizeBackendProduct);
+        }
+      }catch(error){}
       return [];
     }
     const headerSearchInput=document.getElementById("searchInput");

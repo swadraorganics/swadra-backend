@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Saved Products - Swadra Backend</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="../api-config.js"></script>
   <style>
     *{box-sizing:border-box}
     :root{
@@ -531,12 +534,7 @@
   </div>
 
   <script>
-    const DEFAULT_REMOTE_BASE = "https://swadra-backend-production.up.railway.app";
-    const PRODUCT_API_URLS = [
-      DEFAULT_REMOTE_BASE + "/api/products",
-      "http://127.0.0.1:3000/api/products",
-      "http://localhost:3000/api/products"
-    ];
+    const productDataApi = window.SWADRA_PRODUCT_DATA || {};
     let state = { products: [], editingId: null };
     const IMAGE_SLOT_LABELS = ["Hero Image","2nd Image","3rd Image","4th Image"];
 
@@ -636,15 +634,6 @@
       return ["editProductImage","editProductImage2","editProductImage3","editProductImage4"];
     }
 
-    function readSavedProductImage(file){
-      return new Promise((resolve,reject)=>{
-        const reader = new FileReader();
-        reader.onload = e=>resolve(e.target.result);
-        reader.onerror = ()=>reject(reader.error || new Error("Image read failed"));
-        reader.readAsDataURL(file);
-      });
-    }
-
     async function collectEditedImages(product){
       const inputIds = getEditImageInputIds();
       const existingImages = Array.isArray(product?.images) && product.images.length
@@ -659,7 +648,16 @@
           if(!file.type.startsWith("image/")){
             throw new Error(`Valid image file choose karo for image ${index + 1}.`);
           }
-          nextImages.push(await readSavedProductImage(file));
+          if(file.size > 10 * 1024 * 1024){
+            throw new Error(`Image ${index + 1} size must be 10MB or less.`);
+          }
+          if(typeof productDataApi.uploadImagesToCloudinary !== "function"){
+            throw new Error("Cloudinary upload helper unavailable.");
+          }
+          const uploaded = await productDataApi.uploadImagesToCloudinary([file]);
+          if(uploaded[0]){
+            nextImages.push(uploaded[0]);
+          }
         }else if(existingImages[index]){
           nextImages.push(existingImages[index]);
         }
@@ -711,58 +709,29 @@ return "spices";
     }
 
     async function apiGetProducts(){
-      let lastError = null;
-      for(const url of PRODUCT_API_URLS){
-        try{
-          const response = await fetch(url,{ cache:"no-store" });
-          const data = await response.json().catch(()=>({}));
-          if(!response.ok) throw new Error(data?.error || data?.message || ("HTTP " + response.status));
-          return data;
-        }catch(error){
-          lastError = error;
+      try{
+        if(typeof productDataApi.fetchProducts === "function"){
+          return { ok:true, products: await productDataApi.fetchProducts() };
         }
+      }catch(error){
+        throw error;
       }
-      throw lastError || new Error("Backend unavailable");
+      throw new Error("Firestore products unavailable");
     }
 
     async function apiUpdateProduct(id, payload){
-      let lastError = null;
-      for(const url of PRODUCT_API_URLS){
-        try{
-          const response = await fetch(`${url}/${encodeURIComponent(id)}`,{
-            method:"PUT",
-            headers:{"Content-Type":"application/json"},
-            body: JSON.stringify(payload)
-          });
-          if(!response.ok){
-            const text = await response.text();
-            throw new Error(text || ("HTTP " + response.status));
-          }
-          return await response.json();
-        }catch(error){
-          lastError = error;
-        }
+      if(typeof productDataApi.saveProduct !== "function"){
+        throw new Error("Firestore product save unavailable");
       }
-      throw lastError || new Error("Update failed");
+      return { ok:true, product: await productDataApi.saveProduct({ ...payload, docId: String(id) }) };
     }
 
     async function apiDeleteProduct(id){
-      let lastError = null;
-      for(const url of PRODUCT_API_URLS){
-        try{
-          const response = await fetch(`${url}/${encodeURIComponent(id)}`,{
-            method:"DELETE"
-          });
-          if(!response.ok){
-            const text = await response.text();
-            throw new Error(text || ("HTTP " + response.status));
-          }
-          return await response.json();
-        }catch(error){
-          lastError = error;
-        }
+      if(typeof productDataApi.deleteProduct !== "function"){
+        throw new Error("Firestore product delete unavailable");
       }
-      throw lastError || new Error("Delete failed");
+      await productDataApi.deleteProduct(id);
+      return { ok:true, deletedId:id };
     }
 
     function renderSummary(products){
