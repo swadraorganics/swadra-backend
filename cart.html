@@ -143,7 +143,7 @@ font-family:Arial,sans-serif !important;
 margin:0 !important;
 }
 .top-bar{position:sticky !important;top:0 !important;z-index:7002 !important;border-bottom:1px solid #efe3df !important;margin:0 !important}
-.navbar{position:sticky !important;top:calc(var(--top-bar-height) - 2px) !important;z-index:7001 !important;background:#7a3d3d !important}
+.navbar{position:sticky !important;top:calc(var(--top-bar-height) - 1px) !important;z-index:7001 !important;background:#7a3d3d !important}
 .nav-search{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);flex:0 0 300px;max-width:300px;width:300px;margin:0;z-index:2}
 .nav-search input{width:100%;height:38px;border:none;outline:none;border-radius:8px;padding:0 14px 0 40px;background:#f5f5f6;color:#282c3f;font-size:13px;font-weight:500;box-sizing:border-box;text-overflow:ellipsis}
 .nav-search input::placeholder{color:#b98f8f;opacity:1}
@@ -161,7 +161,7 @@ margin:0 !important;
 .nav-search-copy strong{color:#282c3f;font-size:14px}
 .nav-search-copy span{color:#7a7f8a;font-size:12px;margin-top:3px}
 .nav-search-item button{border:none;border-radius:999px;background:#7a3d3d;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0}
-.sale-bar{display:block;position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height));z-index:7000;overflow:hidden;white-space:nowrap;padding:10px 0;background:#ffffff;color:#c62828;font-size:18px;font-weight:700;line-height:1;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif}
+.sale-bar{display:block;position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height) - 1px);z-index:7000;overflow:hidden;white-space:nowrap;padding:10px 0;background:#ffffff;color:#c62828;font-size:18px;font-weight:700;line-height:1;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif}
 .sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;padding-left:0;animation:offerTicker 26s linear infinite;will-change:transform}
 .sale-bar-item{display:inline-flex;align-items:center;flex:0 0 auto;margin-right:84px}
 @keyframes offerTicker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
@@ -338,18 +338,8 @@ function syncUserCart(){
 let currentUser = localStorage.getItem("currentUser");
 if(!currentUser) return;
 let users = JSON.parse(localStorage.getItem("users")) || {};
-let localCart = compactCart(JSON.parse(localStorage.getItem("cart")) || []);
 if(!users[currentUser]) users[currentUser] = {cart:[],orders:[]};
-let userCart = compactCart(users[currentUser].cart || []);
-localCart.forEach(item=>{
-let existing = userCart.find(userItem=>String(userItem.id)===String(item.id));
-if(existing){
-Object.assign(existing,item);
-}else{
-userCart.push(item);
-}
-});
-let merged = compactCart(userCart);
+let merged = compactCart(users[currentUser].cart || []);
 try{
 users[currentUser].cart = merged;
 localStorage.setItem("users", JSON.stringify(users));

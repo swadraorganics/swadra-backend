@@ -116,11 +116,11 @@ font-family:Arial,sans-serif !important;
 margin:0 !important;
 }
 .top-bar{position:sticky !important;top:0 !important;z-index:7002 !important;border-bottom:1px solid #efe3df !important;margin:0 !important}
-.navbar{position:sticky !important;top:calc(var(--top-bar-height) - 2px) !important;z-index:7001 !important;display:grid !important;grid-template-columns:auto minmax(240px,380px) auto !important;gap:20px !important;padding:16px 30px !important}
+.navbar{position:sticky !important;top:calc(var(--top-bar-height) - 1px) !important;z-index:7001 !important;display:grid !important;grid-template-columns:auto minmax(240px,380px) auto !important;gap:20px !important;padding:16px 30px !important}
 .nav-search{display:flex;align-items:center;min-height:46px;padding:0 14px;background:#fff;border-radius:14px}
 .nav-search input{width:100%;border:none;outline:none;background:transparent;color:#7a3d3d;font-size:13px}
 .nav-search-icon{font-size:22px;color:#8d929c;margin-right:10px;line-height:1}
-.sale-bar{position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height));z-index:7000;min-height:var(--sale-bar-height);display:flex;align-items:center;justify-content:center;text-align:center;padding:10px 16px;background:#fff;color:#d73832;font-size:17px;font-weight:800;border-bottom:1px solid #efe3df;font-family:Arial,sans-serif;overflow:hidden;white-space:nowrap}
+.sale-bar{position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height) - 1px);z-index:7000;min-height:var(--sale-bar-height);display:flex;align-items:center;justify-content:center;text-align:center;padding:10px 16px;background:#fff;color:#d73832;font-size:17px;font-weight:800;border-bottom:1px solid #efe3df;font-family:Arial,sans-serif;overflow:hidden;white-space:nowrap}
 .sale-bar span{display:inline-block;padding-left:100%;animation:swadraTicker 18s linear infinite}
 @keyframes swadraTicker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 .account-link{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,0.28);background:rgba(255,255,255,0.06);color:#fff;text-decoration:none;transition:background .2s ease,border-color .2s ease,transform .2s ease}

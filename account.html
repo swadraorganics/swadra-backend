@@ -851,6 +851,39 @@ window.installSwadraPageStorageSync({
       window.location.href = redirectTo;
     }
 
+    function compactCartItems(cart){
+      return (Array.isArray(cart) ? cart : []).map(item=>({
+        ...item,
+        id: item && item.id != null ? String(item.id) : String(item?.name || Date.now()),
+        qty: Math.max(1, Number(item?.qty || 1)),
+        price: Number(item?.price || 0),
+        mrp: Number(item?.mrp || item?.price || 0)
+      }));
+    }
+
+    function mergeGuestCartIntoUser(email){
+      const users = JSON.parse(localStorage.getItem("users")) || {};
+      if(!email || !users[email]) return [];
+      const guestCart = compactCartItems(JSON.parse(localStorage.getItem("cart")) || []);
+      const userCart = compactCartItems(users[email].cart || []);
+      guestCart.forEach(item=>{
+        const existing = userCart.find(userItem => String(userItem.id) === String(item.id));
+        if(existing){
+          existing.qty = Number(existing.qty || 0) + Number(item.qty || 0);
+          if(item.price) existing.price = Number(item.price);
+          if(item.mrp) existing.mrp = Number(item.mrp);
+          if(item.image) existing.image = item.image;
+          if(Array.isArray(item.images) && item.images.length) existing.images = item.images;
+        }else{
+          userCart.push(item);
+        }
+      });
+      users[email].cart = compactCartItems(userCart);
+      localStorage.setItem("users", JSON.stringify(users));
+      localStorage.setItem("cart", JSON.stringify(users[email].cart));
+      return users[email].cart;
+    }
+
     function startFlow(){
       let email = document.getElementById("email").value.trim().toLowerCase();
       let phone = document.getElementById("phone").value.trim();
@@ -978,7 +1011,7 @@ window.installSwadraPageStorageSync({
       localStorage.setItem("users", JSON.stringify(users));
       localStorage.setItem("currentUser", temp.email);
       localStorage.setItem("userPhone", temp.phone);
-      localStorage.setItem("cart", JSON.stringify(users[temp.email].cart || []));
+      mergeGuestCartIntoUser(temp.email);
       localStorage.removeItem("tempUser");
 
       showMsg(
@@ -1006,7 +1039,7 @@ window.installSwadraPageStorageSync({
       if(users[currentEmail] && users[currentEmail].password === pass){
         localStorage.setItem("currentUser", currentEmail);
         localStorage.setItem("userPhone", users[currentEmail].phone);
-        localStorage.setItem("cart", JSON.stringify(users[currentEmail].cart || []));
+        mergeGuestCartIntoUser(currentEmail);
 
         showMsg("Login successful.", "success");
 

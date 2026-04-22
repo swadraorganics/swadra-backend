@@ -147,11 +147,17 @@ margin-top: -20px;
 min-height:500px;
 }
 
+.swadra-aboutus-founder-img{
+  flex:0 0 420px;
+  width:420px;
+}
 
 .swadra-aboutus-founder-img img {
-  width: 350px;
+  width: 100%;
+  max-width: 420px;
   border-radius: 10px;
 margin-top:30px;
+  display:block;
 }
 
 .highlight {

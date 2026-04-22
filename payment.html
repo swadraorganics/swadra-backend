@@ -264,24 +264,30 @@ function nowIso(){ return new Date().toISOString(); }
 
 const placeholderImage = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><rect width="120" height="120" rx="22" fill="#f5e8e8"/><text x="60" y="54" text-anchor="middle" font-family="Arial" font-size="13" font-weight="700" fill="#7a3d3d">Swadra</text><text x="60" y="73" text-anchor="middle" font-family="Arial" font-size="11" fill="#7a3d3d">Product</text></svg>`);
 
-function productCatalog(){
-  return [
-    ...safeJson("adminProducts", []),
-    ...safeJson("swadraBackendProductsCache", []),
-    ...Object.values(safeJson("adminProductsByCategory", {})).flat()
-  ];
+let backendProductCatalogCache = null;
+async function productCatalog(){
+  if(Array.isArray(backendProductCatalogCache)) return backendProductCatalogCache;
+  try{
+    const response = await fetch((window.SWADRA_API_BASE || "") + "/api/products", { cache:"no-store" });
+    const data = await response.json();
+    backendProductCatalogCache = Array.isArray(data?.products) ? data.products : [];
+    return backendProductCatalogCache;
+  }catch(error){
+    return [];
+  }
 }
 function firstImage(product){
   if(!product) return "";
   if(Array.isArray(product.images) && product.images.filter(Boolean)[0]) return product.images.filter(Boolean)[0];
   return product.image || product.productImage || "";
 }
-function resolveItemImage(item){
+async function resolveItemImage(item){
   const direct = firstImage(item);
   if(direct && !String(direct).includes("[object Object]")) return direct;
   const id = String(item.id || item.productId || "");
   const name = String(item.name || item.productName || "").trim().toLowerCase();
-  const match = productCatalog().find(product=>{
+  const catalog = await productCatalog();
+  const match = catalog.find(product=>{
     const productId = String(product.id || product.productId || "");
     const productName = String(product.name || product.productName || "").trim().toLowerCase();
     return (id && productId && id === productId) || (name && productName && name === productName);
@@ -491,7 +497,7 @@ function renderOrderSummary(){
     const qty = Number(item.qty) || 1;
     const originalLineTotal = Math.round((Number(item.price)||0) * qty);
     const lineTotal = Math.round(Number(item.discountedLineTotal || item.displayLineTotal || originalLineTotal));
-    const image = resolveItemImage(item);
+    const image = await resolveItemImage(item);
     box.innerHTML += `
       <div class="order-row">
         <img src="${escapeHtml(image)}" alt="${escapeHtml(item.name || "Product")}" onerror="imageError(this)">

@@ -1935,7 +1935,7 @@ padding-top:0px;
 .sale-bar{
   display:none;
   position:sticky;
-  top:calc(var(--top-bar-height) + var(--navbar-height));
+  top:calc(var(--top-bar-height) + var(--navbar-height) - 1px);
   z-index:7000;
   overflow:hidden;
   white-space:nowrap;
@@ -2163,7 +2163,7 @@ padding-top:0px;
 
 .navbar{
   position:sticky !important;
-  top:calc(var(--top-bar-height) - 2px);
+  top:calc(var(--top-bar-height) - 1px);
   z-index:7001 !important;
   background:#7a3d3d !important;
 }
@@ -4071,7 +4071,7 @@ margin:0 !important;
 }
 
 .family-counter-subtitle{
-  margin:2px 0 34px;
+  margin:12px 0 34px;
   color:#17100c;
   font-size:35px;
   line-height:1.08;
@@ -4180,6 +4180,7 @@ margin:0 !important;
   #bestsellersGrid,
   #specialProductsGrid,
   #comboContainer,
+  #pickleGrid,
   #allProductsGrid{
     grid-template-columns:repeat(2,1fr);
   }
@@ -4374,7 +4375,7 @@ margin:0 !important;
 }
 
 #familyCounterBanner .family-counter-subtitle{
-  margin:0 0 58px !important;
+  margin:12px 0 58px !important;
   color:#17100c !important;
   font-size:38px !important;
   line-height:1.08 !important;
@@ -4440,7 +4441,7 @@ margin:0 !important;
 <div id="stickyCart" style="position:fixed;bottom:20px;right:20px;display:none;align-items:center;gap:15px;padding:12px 18px;background:linear-gradient(135deg,#7a3d3d,#b76e79);color:#fff;border-radius:50px;z-index:9999;font-family:Arial,sans-serif;box-shadow:none;border:none;"><span id="cartCount" style="color:#fff;font-size:18px;font-weight:500;line-height:1;">0</span><a href="cart.html" class="cta-cart-btn" data-cta-size="small" style="display:inline-block;text-decoration:none;font-family:Arial,sans-serif;padding:8px 16px;border-radius:30px;font-size:15px;font-weight:600;line-height:1;text-align:center;background:#fff;color:#7a3d3d;border:none;cursor:pointer;transition:all 0.35s ease;position:relative;overflow:hidden;box-shadow:none;" onmouseenter="window.setCtaCartHover && window.setCtaCartHover(this, true)" onmouseleave="window.setCtaCartHover && window.setCtaCartHover(this, false)" onfocus="window.setCtaCartHover && window.setCtaCartHover(this, true)" onblur="window.setCtaCartHover && window.setCtaCartHover(this, false)">View Cart &rarr;</a></div>
 <div class="top-bar" style="text-align:center;padding:12px;font-weight:600;font-size:16px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;">Eat Healthy &bull; Be Swadra Family</div>
 <header class="navbar" style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:#7a3d3d;">
-<div class="logo" style="color:#fff;font-size:26px;font-weight:900;font-family:Arial,sans-serif;"><a href="index.html" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);color:#fff;text-decoration:none;font:inherit;line-height:1;">Swadra Organics</a></div>
+<div class="logo" style="color:#fff;font-size:26px;font-weight:900;font-family:Arial,sans-serif;"><a href="index.html" style="color:#fff;text-decoration:none;font:inherit;">Swadra Organics</a></div>
 <div class="nav-search">
 <input id="searchInput" type="search" placeholder="Search for products, categories and more">
 <div id="searchResults" class="nav-search-results"></div>
@@ -4558,6 +4559,11 @@ Pure Quality. Honest Food. Swadra Promise.
 <div class="product-grid" id="comboContainer"></div>
 </section>
 
+<section class="combo-section">
+<h2 class="title">Pickle / Achar</h2>
+<div class="product-grid" id="pickleGrid"></div>
+</section>
+
 <section class="family-counter-banner" id="familyCounterBanner" style="width:100%;max-width:none;min-height:498px;margin:44px 0 86px;border-radius:0;overflow:hidden;position:relative;display:grid;grid-template-columns:48.5% 51.5%;align-items:stretch;background:#fff;color:#19110d;box-shadow:none;">
 <div class="family-counter-image" id="familyCounterImage" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;background:url('images/background.jpg') left center/cover no-repeat;filter:saturate(.92) sepia(.06) contrast(.95);"></div>
 <div class="family-counter-content" style="position:relative;z-index:2;grid-column:2;width:100%;padding:48px 44px 38px 14px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;">
@@ -4571,7 +4577,7 @@ Pure Quality. Honest Food. Swadra Promise.
 
 <section class="hero-video">
 
-<video id="heroVideo" autoplay muted loop playsinline></video>
+<video id="heroVideo" autoplay muted loop playsinline preload="none"></video>
 
 <button class="mute-btn" onclick="toggleMute()" aria-label="Unmute video" title="Unmute video">&#128263;</button>
 
@@ -5113,26 +5119,33 @@ async function loadCustomerAssets(){
 // VIDEO FIX (GLOBAL)
 let vdb;
 let lastVideoUpdate = localStorage.getItem("heroVideoUpdatedAt") || "";
+let heroVideoDbRequested = false;
+let heroVideoReady = false;
 
-let vreq = indexedDB.open("swadraVideoDB",2);
+function initHeroVideoDb(){
+  if(heroVideoDbRequested) return;
+  heroVideoDbRequested = true;
+  let vreq = indexedDB.open("swadraVideoDB",2);
 
-vreq.onupgradeneeded = e=>{
-  vdb = e.target.result;
-  if(!vdb.objectStoreNames.contains("videos")){
-    vdb.createObjectStore("videos",{keyPath:"id"});
-  }
-};
+  vreq.onupgradeneeded = e=>{
+    vdb = e.target.result;
+    if(!vdb.objectStoreNames.contains("videos")){
+      vdb.createObjectStore("videos",{keyPath:"id"});
+    }
+  };
 
-vreq.onsuccess = e=>{
-  vdb = e.target.result;
-  loadVideo();
-};
+  vreq.onsuccess = e=>{
+    vdb = e.target.result;
+    loadVideo();
+  };
 
-vreq.onerror = e=>{
-  console.error("Video DB error", e.target.error);
-};
+  vreq.onerror = e=>{
+    console.error("Video DB error", e.target.error);
+  };
+}
 
 function loadVideo(){
+  if(heroVideoReady) return;
   let homeContent = getHomeContent();
   let remoteSrc = String(homeContent.heroVideoSrc || "").trim();
   if(remoteSrc){
@@ -5140,11 +5153,15 @@ function loadVideo(){
     if(video){
       video.src = remoteSrc;
       video.load();
+      heroVideoReady = true;
     }
     return;
   }
 
-  if(!vdb) return;
+  if(!vdb){
+    initHeroVideoDb();
+    return;
+  }
 
   let tx = vdb.transaction("videos","readonly");
   let r = tx.objectStore("videos").get("heroVideo");
@@ -5156,11 +5173,13 @@ function loadVideo(){
       let url = URL.createObjectURL(r.result.data);
       video.src = url;
       video.load();
+      heroVideoReady = true;
       return;
     }
     if(!video.getAttribute("src")){
       video.src = "video/swadra1.mp4";
       video.load();
+      heroVideoReady = true;
     }
   };
 
@@ -5169,9 +5188,16 @@ function loadVideo(){
     if(video && !video.getAttribute("src")){
       video.src = "video/swadra1.mp4";
       video.load();
+      heroVideoReady = true;
     }
   };
 }
+
+function ensureHeroVideoReady(){
+  if(heroVideoReady) return;
+  loadVideo();
+}
+window.ensureHeroVideoReady = ensureHeroVideoReady;
 
 const allProducts = [
   {
@@ -5216,9 +5242,12 @@ function toggleMute(){
 
 let index = 0;
 const track = document.getElementById("familyTrack");
-const cards = document.querySelectorAll(".family-card");
+function getFamilyCards(){
+  return track ? Array.from(track.querySelectorAll(".family-card")) : [];
+}
 
 function getFamilyCardMetrics(){
+  const cards = getFamilyCards();
   if(!track || !cards.length){
     return { cardWidth: 0, visibleCards: 1, maxIndex: 0 };
   }
@@ -5257,6 +5286,7 @@ function autoslide(){
 }
 
 function startAutoSlide(){
+  clearInterval(autoSlideInterval);
   autoSlideInterval = setInterval(autoslide,2500);
 }
 
@@ -5287,7 +5317,58 @@ function slideRight(){
   track.style.transform = "translateX(-" + (index * cardWidth) + "px)";
 }
 
-startAutoSlide();
+function getDefaultFamilyCards(){
+  if(!track) return [];
+  return Array.from(track.querySelectorAll(".family-card")).map(card=>({
+    name: card.querySelector("p")?.innerText?.trim() || "",
+    image: card.querySelector("img")?.getAttribute("src") || ""
+  })).filter(item=>item.name && item.image);
+}
+
+const staticFamilyCards = getDefaultFamilyCards();
+
+function escapeFamilyText(value){
+  return String(value || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function escapeFamilyAttr(value){
+  return String(value || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function renderFamilyCards(cardsData){
+  if(!track) return;
+  const finalCards = Array.isArray(cardsData) && cardsData.length ? cardsData : staticFamilyCards;
+  track.innerHTML = finalCards.map(item=>`
+<div class="family-card">
+<img src="${escapeFamilyAttr(item.image || "")}" alt="${escapeFamilyAttr(item.name || "Family Card")}">
+<p>${escapeFamilyText(item.name || "Swadra Family")}</p>
+</div>`).join("");
+  index = 0;
+  const metrics = getFamilyCardMetrics();
+  cardWidth = metrics.cardWidth;
+  track.style.transition = "transform 0.35s ease";
+  track.style.transform = "translateX(0)";
+  startAutoSlide();
+}
+
+function updateFamilySection(){
+  let familyCards = [];
+  try{
+    const homeContent = JSON.parse(localStorage.getItem("homeContent")) || {};
+    if(Array.isArray(homeContent.familyCards)){
+      familyCards = homeContent.familyCards;
+    }
+  }catch(e){}
+  if(!familyCards.length){
+    try{
+      const legacyCards = JSON.parse(localStorage.getItem("familyCards")) || [];
+      if(Array.isArray(legacyCards)) familyCards = legacyCards;
+    }catch(e){}
+  }
+  renderFamilyCards(familyCards);
+}
+
+updateFamilySection();
 
 window.addEventListener("resize", function(){
   const metrics = getFamilyCardMetrics();
@@ -5347,30 +5428,12 @@ function getCart(){
   let localCart = compactCartItems(JSON.parse(localStorage.getItem("cart")) || []);
 
   if(currentUser && users[currentUser]){
-    let userCart = compactCartItems(users[currentUser].cart || []);
-
-    localCart.forEach(item=>{
-      let existing = userCart.find(userItem => String(userItem.id) === String(item.id));
-      if(existing){
-        Object.assign(existing, item);
-      }else{
-        userCart.push(item);
-      }
-    });
-
-    let mergedCart = compactCartItems(userCart);
     try{
-      users[currentUser].cart = mergedCart;
-      localStorage.setItem("users", JSON.stringify(users));
-    }catch(error){
-      console.warn("cart user sync skipped", error);
-    }
-    try{
-      localStorage.setItem("cart", JSON.stringify(mergedCart));
+      localStorage.setItem("cart", JSON.stringify(compactCartItems(users[currentUser].cart || [])));
     }catch(error){
       console.warn("cart local sync skipped", error);
     }
-    return mergedCart;
+    return compactCartItems(users[currentUser].cart || []);
   }
 
   return localCart;
@@ -5752,6 +5815,8 @@ async function getAdminProducts(){
             ...product,
             name: String(product.name || product.productName || "").trim(),
             size: String(product.size || product.productSize || "").trim(),
+            summary: String(product.summary || product.productSummary || "").trim(),
+            productSummary: String(product.summary || product.productSummary || "").trim(),
             price: Number(product.price ?? product.sellingPrice ?? 0) || 0,
             mrp: Number(product.mrp ?? product.price ?? product.sellingPrice ?? 0) || 0,
             stockQty: Number(product.stockQty ?? 0) || 0,
@@ -5821,6 +5886,7 @@ async function toggleBestsellerCart(id){
 const defaultSectionProducts = {
   bestseller: [],
   combos: [],
+  achar: [],
   special: []
 };
 
@@ -5876,7 +5942,7 @@ async function addNamedHomeProductToCart(name, button){
 }
 
 function bindStaticHomeCartButtons(){
-  document.querySelectorAll("#bestsellersGrid .product-card .cart-btn, #specialProductsGrid .product-card .cart-btn, #comboContainer .product-card .cart-btn").forEach(button=>{
+  document.querySelectorAll("#bestsellersGrid .product-card .cart-btn, #specialProductsGrid .product-card .cart-btn, #comboContainer .product-card .cart-btn, #pickleGrid .product-card .cart-btn").forEach(button=>{
     if(button.dataset.boundCart === "true") return;
     if(button.dataset.adminProduct === "true" || button.closest("[data-admin-product='true']")) return;
     button.dataset.boundCart = "true";
@@ -5959,6 +6025,12 @@ function cleanUiText(value, fallback){
   return repairMojibake(base).trim() || String(fallback || "");
 }
 
+function normalizeHexColor(value, fallback){
+  const color = String(value || "").trim();
+  if(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color)) return color;
+  return fallback;
+}
+
 function renderFamilyCounterBanner(){
   const banner = document.getElementById("familyCounterBanner");
   if(!banner) return;
@@ -5971,6 +6043,9 @@ function renderFamilyCounterBanner(){
   if(titleEl) titleEl.innerText = cleanUiText(data.title, "More Than a Brand, A Family");
   if(subtitleEl) subtitleEl.innerText = cleanUiText(data.subtitle, "जड़ों से जुड़े लोग, असली बदलाव");
   if(captionEl) captionEl.innerText = cleanUiText(data.caption, "Every Number Tells a Story");
+  if(titleEl) titleEl.style.color = normalizeHexColor(data.titleColor, "#17100c");
+  if(subtitleEl) subtitleEl.style.color = normalizeHexColor(data.subtitleColor, "#17100c");
+  if(captionEl) captionEl.style.color = normalizeHexColor(data.captionColor, "#17100c");
   if(numberEl){
     const digits = String(getFamilyCounterTotal(data)).padStart(5,"0").split("");
     numberEl.innerHTML = digits.map(digit=>`<span class="family-counter-digit" style="display:inline-flex;align-items:center;justify-content:center;width:54px;height:70px;border-radius:10px;background:#a56413;color:#fff;font-size:48px;line-height:1;font-weight:500;">${digit}</span>`).join("");
@@ -6529,6 +6604,13 @@ async function renderSpecialProducts(){
   await renderSectionProducts("specialProductsGrid", "Special Products", "special");
 }
 
+async function renderAcharProducts(){
+  if(window.__swadraRenderAcharProducts){
+    return window.__swadraRenderAcharProducts();
+  }
+  await renderSectionProducts("pickleGrid", "Achar / Pickle", "achar");
+}
+
 function toggleCatalogCart(id){
   let cart = getCart();
   let index = cart.findIndex(item => String(item.id) === String(id));
@@ -6557,6 +6639,7 @@ function toggleCatalogCart(id){
   renderAllProductsCatalog();
   renderBestsellerProducts();
   renderComboProducts();
+  renderAcharProducts();
   renderSpecialProducts();
 }
 
@@ -6724,31 +6807,23 @@ function legacyUpdateCustomers(){
 let customers = getHomeArray("customers");
 let track = document.getElementById("customersTrack");
 let pager = document.getElementById("customersPager");
+let controls = document.querySelector(".customers-controls");
 
 if(!track) return;
 
 if(customers.length === 0){
 track.innerHTML = "";
 if(pager) pager.innerText = "0 â€” 0";
+if(controls) controls.style.display = "none";
 customerSlides = [];
 customerSlideIndex = 0;
 return;
 }
 
-let perSlide = window.innerWidth <= 1100 ? 1 : 2;
-customerSlides = [];
+customerSlides = [customers.slice()];
+if(controls) controls.style.display = "none";
 
-for(let i=0;i<customers.length;i+=perSlide){
-customerSlides.push(customers.slice(i,i+perSlide));
-}
-
-if(customerSlideIndex >= customerSlides.length){
-customerSlideIndex = 0;
-}
-
-let currentSlide = customerSlides[customerSlideIndex] || [];
-
-track.innerHTML = currentSlide.map(c=>`
+track.innerHTML = customers.map(c=>`
 <div class="customer-card-wrapper">
 <div class="customer-product-card">
 <img src="${c.productImg}" alt="${c.product}">
@@ -6766,41 +6841,18 @@ track.innerHTML = currentSlide.map(c=>`
 `).join("");
 
 if(pager){
-pager.innerText = `${customerSlideIndex + 1} â€” ${customerSlides.length}`;
+pager.innerText = `${customers.length} Reviews`;
 }
 }
 
 function legacySlideCustomers(direction){
-if(customerSlides.length <= 1){
 legacyUpdateCustomers();
-return;
-}
-
-customerSlideIndex += direction;
-
-if(customerSlideIndex < 0){
-customerSlideIndex = customerSlides.length - 1;
-}
-
-if(customerSlideIndex >= customerSlides.length){
-customerSlideIndex = 0;
-}
-
-legacyUpdateCustomers();
-legacyRestartCustomerAutoSlide();
 }
 
 function legacyRestartCustomerAutoSlide(){
 if(customerAutoTimer){
 clearInterval(customerAutoTimer);
 }
-
-customerAutoTimer = setInterval(()=>{
-if(customerSlides.length > 1){
-customerSlideIndex = (customerSlideIndex + 1) % customerSlides.length;
-legacyUpdateCustomers();
-}
-}, 4500);
 }
 // HERO
 let heroImgs = [];
@@ -6924,6 +6976,7 @@ function syncVideo(){
 
   if(currentVideoUpdate && currentVideoUpdate !== lastVideoUpdate){
     lastVideoUpdate = currentVideoUpdate;
+    heroVideoReady = false;
     loadVideo();
   }
 }
@@ -6940,31 +6993,23 @@ function updateOffer(){
 function legacyRenderCustomerSlides(customers){
   let track = document.getElementById("customersTrack");
   let pager = document.getElementById("customersPager");
+  let controls = document.querySelector(".customers-controls");
 
   if(!track) return;
 
   if(customers.length === 0){
     track.innerHTML = "";
     if(pager) pager.innerText = "0 Ã¢â‚¬â€ 0";
+    if(controls) controls.style.display = "none";
     customerSlides = [];
     customerSlideIndex = 0;
     return;
   }
 
-  let perSlide = window.innerWidth <= 1100 ? 1 : 2;
-  customerSlides = [];
+  customerSlides = [customers.slice()];
+  if(controls) controls.style.display = "none";
 
-  for(let i=0;i<customers.length;i+=perSlide){
-    customerSlides.push(customers.slice(i,i+perSlide));
-  }
-
-  if(customerSlideIndex >= customerSlides.length){
-    customerSlideIndex = 0;
-  }
-
-  let currentSlide = customerSlides[customerSlideIndex] || [];
-
-  track.innerHTML = currentSlide.map(c=>`
+  track.innerHTML = customers.map(c=>`
 <div class="customer-card-wrapper">
 <div class="customer-product-card">
 <img src="${c.productImg}" alt="${c.product}">
@@ -6982,38 +7027,30 @@ function legacyRenderCustomerSlides(customers){
 `).join("");
 
   if(pager){
-    pager.innerText = `${customerSlideIndex + 1} Ã¢â‚¬â€ ${customerSlides.length}`;
+    pager.innerText = `${customers.length} Reviews`;
   }
 }
 
 renderCustomerSlides = function(customers){
   let track = document.getElementById("customersTrack");
   let pager = document.getElementById("customersPager");
+  let controls = document.querySelector(".customers-controls");
 
   if(!track) return;
 
   if(customers.length === 0){
     track.innerHTML = "";
     if(pager) pager.innerText = "0 / 0";
+    if(controls) controls.style.display = "none";
     customerSlides = [];
     customerSlideIndex = 0;
     return;
   }
 
-  let perSlide = window.innerWidth <= 1100 ? 1 : 2;
-  customerSlides = [];
+  customerSlides = [customers.slice()];
+  if(controls) controls.style.display = "none";
 
-  for(let i=0;i<customers.length;i+=perSlide){
-    customerSlides.push(customers.slice(i,i+perSlide));
-  }
-
-  if(customerSlideIndex >= customerSlides.length){
-    customerSlideIndex = 0;
-  }
-
-  let currentSlide = customerSlides[customerSlideIndex] || [];
-
-  track.innerHTML = currentSlide.map(c=>`
+  track.innerHTML = customers.map(c=>`
 <div class="customer-card-wrapper">
 <div class="customer-product-card">
 <img src="${c.productImg}" alt="${c.product}">
@@ -7031,7 +7068,7 @@ renderCustomerSlides = function(customers){
 `).join("");
 
   if(pager){
-    pager.innerText = `${customerSlideIndex + 1} / ${customerSlides.length}`;
+    pager.innerText = `${customers.length} Reviews`;
   }
 }
 
@@ -7115,8 +7152,39 @@ async function syncHero(){
 }
 
 // RUN
-setInterval(syncVideo,2000);
-setInterval(()=>{ updateCustomers(); },2000);
+let swadraSyncVideoTimer = null;
+let swadraCustomersTimer = null;
+function startIndexBackgroundSync(){
+  if(swadraSyncVideoTimer || swadraCustomersTimer) return;
+  swadraSyncVideoTimer = setInterval(()=>{
+    if(document.visibilityState === "visible") syncVideo();
+  },30000);
+  swadraCustomersTimer = setInterval(()=>{
+    if(document.visibilityState === "visible") updateCustomers();
+  },30000);
+}
+function stopIndexBackgroundSync(){
+  if(swadraSyncVideoTimer){
+    clearInterval(swadraSyncVideoTimer);
+    swadraSyncVideoTimer = null;
+  }
+  if(swadraCustomersTimer){
+    clearInterval(swadraCustomersTimer);
+    swadraCustomersTimer = null;
+  }
+}
+if(document.visibilityState === "visible"){
+  startIndexBackgroundSync();
+}
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState === "visible"){
+    syncVideo();
+    updateCustomers();
+    startIndexBackgroundSync();
+  }else{
+    stopIndexBackgroundSync();
+  }
+});
 
 window.addEventListener("storage", function(e){
   if(e.key === "heroImages" || e.key === "heroImagesUpdatedAt"){
@@ -7180,6 +7248,7 @@ if(window.location.hash === "#allProductsSection"){
   const INDEX_HOME_VERSION = 1;
   const homeSectionConfig = {
     combos: { containerId:"comboContainer", aliases:["combos","combo","gift combo","gift combos"] },
+    achar: { containerId:"pickleGrid", aliases:["achar / pickle","achar","pickle","pickles"] },
     bestseller: { containerId:"bestsellersGrid", aliases:["bestseller","bestsellers","best seller","best sellers"] },
     special: { containerId:"specialProductsGrid", aliases:["special products","special product","special","featured products"] }
   };
@@ -7239,7 +7308,7 @@ if(window.location.hash === "#allProductsSection"){
     const backendProductUrls = window.SWADRA_PRODUCTS_API_URLS || ["/api/products"];
     for(const url of backendProductUrls){
       try{
-        const response = await fetch(url,{ cache:"no-store" });
+      const response = await fetch(url,{ cache:"no-store" });
         if(response.ok){
           const data = await response.json();
           if(Array.isArray(data?.products)){
@@ -7502,6 +7571,11 @@ window.changeHomeQty = function(sectionKey, id, delta){
   };
   window.__swadraRenderComboProducts = renderComboProducts;
 
+  renderAcharProducts = window.renderAcharProducts = async function(){
+    await window.renderSectionProducts("pickleGrid", "Achar / Pickle", "achar");
+  };
+  window.__swadraRenderAcharProducts = renderAcharProducts;
+
   renderBestsellerProducts = window.renderBestsellerProducts = async function(){
     await window.renderSectionProducts("bestsellersGrid", "Bestseller", "bestseller");
   };
@@ -7544,12 +7618,63 @@ window.changeHomeQty = function(sectionKey, id, delta){
       updateCartUI();
     }
     await Promise.all([
+      window.renderAcharProducts(),
       window.renderComboProducts(),
       window.renderBestsellerProducts(),
       window.renderSpecialProducts()
     ]);
   };
   window.__swadraToggleSectionCart = toggleSectionCart;
+
+  let homeSectionsRenderQueued = false;
+  let homeSectionsRendered = false;
+
+  function renderHomeSectionsNow(){
+    homeSectionsRenderQueued = false;
+    homeSectionsRendered = true;
+    return Promise.all([
+      window.renderAcharProducts(),
+      window.renderComboProducts(),
+      window.renderBestsellerProducts(),
+      window.renderSpecialProducts()
+    ]);
+  }
+
+  function scheduleHomeSectionsRender(priority){
+    if(homeSectionsRendered || homeSectionsRenderQueued) return;
+    homeSectionsRenderQueued = true;
+    const run = function(){
+      renderHomeSectionsNow().catch(function(error){
+        console.error("home sections render failed", error);
+      });
+    };
+    if(priority === "immediate"){
+      setTimeout(run, 0);
+      return;
+    }
+    if("requestIdleCallback" in window){
+      window.requestIdleCallback(run, { timeout: 1500 });
+    }else{
+      setTimeout(run, 180);
+    }
+  }
+
+  function installHomeSectionObserver(){
+    if(!("IntersectionObserver" in window)) return;
+    const targets = ["pickleGrid","comboContainer","bestsellersGrid","specialProductsGrid"]
+      .map(id=>document.getElementById(id))
+      .filter(Boolean);
+    if(!targets.length) return;
+    const observer = new IntersectionObserver(function(entries){
+      if(entries.some(entry=>entry.isIntersecting)){
+        observer.disconnect();
+        scheduleHomeSectionsRender("immediate");
+      }
+    }, { rootMargin: "220px 0px" });
+    targets.forEach(target=>observer.observe(target));
+  }
+
+  window.scheduleHomeSectionsRender = scheduleHomeSectionsRender;
 
   toggleBestsellerCart = window.toggleBestsellerCart = function(id){
     return window.toggleSectionCart("bestseller", id);
@@ -7587,6 +7712,7 @@ window.changeHomeQty = function(sectionKey, id, delta){
   function renderCustomersFallback(customers){
     const track = document.getElementById("customersTrack");
     const pager = document.getElementById("customersPager");
+    const controls = document.querySelector(".customers-controls");
     if(!track){
       return;
     }
@@ -7596,13 +7722,13 @@ window.changeHomeQty = function(sectionKey, id, delta){
       if(pager){
         pager.innerText = "0 / 0";
       }
+      if(controls) controls.style.display = "none";
       return;
     }
 
-    const perSlide = window.innerWidth <= 1100 ? 1 : 2;
-    const visible = customers.slice(0, perSlide);
+    if(controls) controls.style.display = "none";
 
-    track.innerHTML = visible.map(item=>`
+    track.innerHTML = customers.map(item=>`
 <div class="customer-card-wrapper">
 <div class="customer-product-card">
 <img src="${item.productImg}" alt="${item.product || item.name || "Product"}">
@@ -7619,7 +7745,7 @@ window.changeHomeQty = function(sectionKey, id, delta){
 </div>`).join("");
 
     if(pager){
-      pager.innerText = `1 / ${Math.max(1, Math.ceil(customers.length / perSlide))}`;
+      pager.innerText = `${customers.length} Reviews`;
     }
   }
 
@@ -7632,15 +7758,16 @@ window.changeHomeQty = function(sectionKey, id, delta){
     }
   };
 
+  window.updateFamilySection = updateFamilySection;
+
   async function refreshIndexFromAdmin(){
     try{
       await Promise.all([
         window.syncHero(),
-        window.renderComboProducts(),
-        window.renderBestsellerProducts(),
-        window.renderSpecialProducts(),
         window.updateCustomers()
       ]);
+      updateFamilySection();
+      scheduleHomeSectionsRender("idle");
 
       if(typeof syncVideo === "function"){
         syncVideo();
@@ -7665,13 +7792,28 @@ window.changeHomeQty = function(sectionKey, id, delta){
   window.refreshIndexFromAdmin = refreshIndexFromAdmin;
 
   if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", ()=>setTimeout(refreshIndexFromAdmin, 50));
+    document.addEventListener("DOMContentLoaded", ()=>{
+      setTimeout(refreshIndexFromAdmin, 50);
+      installHomeSectionObserver();
+      setTimeout(scheduleHomeSectionsRender, 900);
+    });
   }else{
     setTimeout(refreshIndexFromAdmin, 50);
+    installHomeSectionObserver();
+    setTimeout(scheduleHomeSectionsRender, 900);
   }
 
-  window.addEventListener("focus", refreshIndexFromAdmin);
-  window.addEventListener("pageshow", refreshIndexFromAdmin);
+  window.addEventListener("pageshow", function(event){
+    if(event && event.persisted){
+      refreshIndexFromAdmin();
+    }
+  });
+
+  window.addEventListener("storage", function(event){
+    if(["familyCards","familyCardsUpdatedAt","homeContent"].includes(event.key)){
+      updateFamilySection();
+    }
+  });
   window.addEventListener("storage", event=>{
     if(["heroImagesUpdatedAt","customersUpdatedAt","heroVideoUpdatedAt","offers","homeContent"].includes(event.key)){
       refreshIndexFromAdmin();
@@ -7718,7 +7860,7 @@ window.addEventListener("storage", function(event){
     swadraHeaderUpdateAccountNav();
   }
 });
-setInterval(swadraHeaderUpdateStickyCart, 1000);
+window.addEventListener("focus", swadraHeaderUpdateStickyCart);
 </script>
 <script>
 (function(){
@@ -7730,11 +7872,11 @@ setInterval(swadraHeaderUpdateStickyCart, 1000);
     const style = document.createElement("style");
     style.id = "swadra-spices-clone-style";
     style.textContent = `
-#bestsellersGrid,#comboContainer,#specialProductsGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;max-width:1400px;margin:10px auto 90px;padding:0 10px}
+#bestsellersGrid,#comboContainer,#pickleGrid,#specialProductsGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;max-width:1400px;margin:10px auto 90px;padding:0 10px}
 .spices-card-final,.spices-card-final *{box-sizing:border-box}
-.spices-card-final{background:#fff;height:458px;min-height:458px;padding:1px 1px 0;border:1px solid #7a3d3d;border-radius:15px;display:flex;flex-direction:column;box-shadow:0 8px 25px rgba(0,0,0,0.08);transition:all 0.35s ease;overflow:hidden;position:relative}
+.spices-card-final{background:#fff;height:auto;min-height:458px;padding:1px 1px 0;border:1px solid #7a3d3d;border-radius:15px;display:flex;flex-direction:column;box-shadow:0 8px 25px rgba(0,0,0,0.08);transition:all 0.35s ease;overflow:hidden;position:relative}
 .spices-card-final:hover{transform:translateY(-6px) scale(1.03);box-shadow:0 15px 40px rgba(0,0,0,0.15)}
-.spices-card-final .spices-img-wrap{height:350px;min-height:350px;max-height:350px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:28px 1px 0;flex:0 0 350px;position:relative;width:100%;border-radius:14px 14px 8px 8px}
+.spices-card-final .spices-img-wrap{height:334px;min-height:334px;max-height:334px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:20px 1px 0;flex:0 0 334px;position:relative;width:100%;border-radius:14px 14px 8px 8px}
 .spices-card-final .spices-img-wrap img{width:122%;height:100%;max-width:none;max-height:none;object-fit:contain;transition:transform .4s ease;border-radius:12px;display:block}
 .spices-card-final:hover .spices-img-wrap img{transform:scale(1.08)}
 .spices-card-final .gallery-nav{position:absolute;top:50%;transform:translateY(-50%);width:22px;height:22px;border:none;border-radius:50%;background:rgba(122,61,61,.86);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:4}
@@ -7744,16 +7886,16 @@ setInterval(swadraHeaderUpdateStickyCart, 1000);
 .spices-card-final .spices-img-wrap .gallery-nav{display:none !important}
 .spices-card-final > .gallery-nav{display:flex !important}
 .spices-card-final .gallery-dots{display:none}
-.spices-card-final .spices-info-wrap{margin-top:26px;padding-top:0;position:relative;z-index:3;background:#fff}
+.spices-card-final .spices-info-wrap{margin-top:18px;padding-top:0;position:relative;z-index:3;background:#fff;display:flex;flex-direction:column;flex:1}
 .spices-card-final .product-title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:0 14px 0;min-height:28px}
 .spices-card-final h3{margin:0;font-size:17px;font-weight:700;line-height:1.2;flex:1 1 auto;min-width:0;padding-top:6px;color:#000}
 .spices-card-final .size{font-size:15px;color:#7a3d3d;margin:0;line-height:1.2;white-space:nowrap;text-align:right;flex:0 0 auto;transform:translateY(-4px)}
-.spices-card-final .bottom{display:flex;justify-content:space-between;align-items:center;margin:-4px 14px 0}
+.spices-card-final .bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:8px 14px 0}
 .spices-card-final > .spices-info-wrap > h3,
 .spices-card-final > .spices-info-wrap > .size{margin-left:0 !important}
 .spices-card-final > .spices-info-wrap > h3{padding-left:14px;padding-right:14px}
 .spices-card-final > .spices-info-wrap > .size{padding-left:14px;padding-right:14px;text-align:right;display:block}
-.spices-card-final .left{display:flex;align-items:center;gap:8px}
+.spices-card-final .left{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
 .spices-card-final .price{font-size:20px;color:#7a3d3d;font-weight:900}
 .spices-card-final .price-stack{display:flex;flex-direction:column;gap:4px}
 .spices-card-final .price-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -7762,13 +7904,13 @@ setInterval(swadraHeaderUpdateStickyCart, 1000);
 .spices-card-final .out{font-size:14px;color:#c62828;font-weight:700;white-space:nowrap}
 .spices-card-final .qty{display:flex;align-items:center;gap:2px;font-size:14px}
 .spices-card-final .qty button{background:#eee;border:none;width:16px;height:16px;border-radius:50%;cursor:pointer;font-size:10px;line-height:16px;padding:0}
-.spices-card-final .cart{background:linear-gradient(135deg,#7a3d3d,#b76e79,#d4af37);color:#fff;border:none;padding:10px 18px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:700;transition:all .35s ease;position:relative;overflow:hidden;transform:translateY(-3px)}
+.spices-card-final .cart{background:linear-gradient(135deg,#7a3d3d,#b76e79,#d4af37);color:#fff;border:none;padding:10px 18px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:700;transition:all .35s ease;position:relative;overflow:hidden;transform:translateY(-3px);flex:0 0 auto;white-space:nowrap}
 .spices-card-final .cart:hover{background:linear-gradient(135deg,#d4af37,#f7e7a9,#ffd700);color:#000;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 4px 15px rgba(212,175,55,0.6),inset 0 0 10px rgba(255,255,255,0.4);transform:translateY(-3px) scale(1.05)}
 .spices-card-final .cart::before{content:"";position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.6),transparent);transition:.6s}
 .spices-card-final .cart:hover::before{left:100%}
 .spices-card-final .cart.added{background:#0c831f}
 .spices-card-final .cart.disabled{background:#c62828;cursor:not-allowed}
-@media(max-width:900px){#bestsellersGrid,#comboContainer,#specialProductsGrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){#bestsellersGrid,#comboContainer,#pickleGrid,#specialProductsGrid{grid-template-columns:repeat(2,1fr)}}
 `;
     document.head.appendChild(style);
   }
@@ -7788,6 +7930,7 @@ setInterval(swadraHeaderUpdateStickyCart, 1000);
   }
 
   function getSectionAliases(sectionKey){
+    if(sectionKey === "achar") return ["achar / pickle","achar","pickle","pickles"];
     if(sectionKey === "bestseller") return ["bestseller","bestsellers","best seller","best sellers"];
     if(sectionKey === "combos") return ["combos","combo","gift combo","gift combos"];
     return ["special","special products","special product","featured products"];
@@ -7856,6 +7999,7 @@ setInterval(swadraHeaderUpdateStickyCart, 1000);
     ensureCloneStyle();
     try{
       await Promise.all([
+        renderCloneSection("pickleGrid", "achar", "Pickle / Achar"),
         renderCloneSection("bestsellersGrid", "bestseller", "Bestseller"),
         renderCloneSection("comboContainer", "combos", "Combos"),
         renderCloneSection("specialProductsGrid", "special", "Special Products")
@@ -7902,19 +8046,21 @@ setInterval(swadraHeaderUpdateStickyCart, 1000);
   }
   watchSection("bestsellersGrid");
   watchSection("comboContainer");
+  watchSection("pickleGrid");
   watchSection("specialProductsGrid");
   window.addEventListener("storage", forceSpicesClone);
-  window.addEventListener("focus", forceSpicesClone);
 })();
 </script>
 <style id="swadra-gallery-arrow-visibility-fix">
 #bestsellersGrid .spices-card-final,
 #comboContainer .spices-card-final,
+#pickleGrid .spices-card-final,
 #specialProductsGrid .spices-card-final{
   overflow:hidden !important;
 }
 #bestsellersGrid .spices-card-final > .gallery-nav,
 #comboContainer .spices-card-final > .gallery-nav,
+#pickleGrid .spices-card-final > .gallery-nav,
 #specialProductsGrid .spices-card-final > .gallery-nav{
   display:flex !important;
   visibility:visible !important;
@@ -7941,11 +8087,13 @@ setInterval(swadraHeaderUpdateStickyCart, 1000);
 }
 #bestsellersGrid .spices-card-final .gallery-prev,
 #comboContainer .spices-card-final .gallery-prev,
+#pickleGrid .spices-card-final .gallery-prev,
 #specialProductsGrid .spices-card-final .gallery-prev{
   left:12px !important;
 }
 #bestsellersGrid .spices-card-final .gallery-next,
 #comboContainer .spices-card-final .gallery-next,
+#pickleGrid .spices-card-final .gallery-next,
 #specialProductsGrid .spices-card-final .gallery-next{
   right:12px !important;
 }
@@ -8105,6 +8253,9 @@ setInterval(swadraHeaderUpdateStickyCart, 1000);
   window.renderSectionProducts = async function(containerId, label, sectionKey){
     return finalRenderSection(containerId, label, sectionKey);
   };
+  window.renderAcharProducts = async function(){
+    return finalRenderSection("pickleGrid", "Achar / Pickle", "achar");
+  };
   window.renderComboProducts = async function(){
     return finalRenderSection("comboContainer", "Combos", "combos");
   };
@@ -8121,12 +8272,14 @@ setInterval(swadraHeaderUpdateStickyCart, 1000);
       await originalToggle(sectionKey, id);
     }
     await Promise.all([
+      window.renderAcharProducts(),
       window.renderComboProducts(),
       window.renderBestsellerProducts(),
       window.renderSpecialProducts()
     ]);
   };
   window.__swadraRenderSectionProducts = window.renderSectionProducts;
+  window.__swadraRenderAcharProducts = window.renderAcharProducts;
   window.__swadraRenderComboProducts = window.renderComboProducts;
   window.__swadraRenderBestsellerProducts = window.renderBestsellerProducts;
   window.__swadraRenderSpecialProducts = window.renderSpecialProducts;
@@ -8163,18 +8316,42 @@ setInterval(swadraHeaderUpdateStickyCart, 1000);
 
   if(document.readyState === "loading"){
     document.addEventListener("DOMContentLoaded", ()=>{
-      Promise.all([
-        window.renderComboProducts(),
-        window.renderBestsellerProducts(),
-        window.renderSpecialProducts()
-      ]);
+      if(typeof window.scheduleHomeSectionsRender === "function"){
+        window.scheduleHomeSectionsRender("idle");
+      }
+      if(typeof window.ensureHeroVideoReady === "function"){
+        const heroVideoSection = document.querySelector(".hero-video");
+        if("IntersectionObserver" in window && heroVideoSection){
+          const videoObserver = new IntersectionObserver(function(entries){
+            if(entries.some(entry=>entry.isIntersecting)){
+              videoObserver.disconnect();
+              window.ensureHeroVideoReady();
+            }
+          }, { rootMargin: "180px 0px" });
+          videoObserver.observe(heroVideoSection);
+        }else{
+          setTimeout(window.ensureHeroVideoReady, 1800);
+        }
+      }
     });
   }else{
-    Promise.all([
-      window.renderComboProducts(),
-      window.renderBestsellerProducts(),
-      window.renderSpecialProducts()
-    ]);
+    if(typeof window.scheduleHomeSectionsRender === "function"){
+      window.scheduleHomeSectionsRender("idle");
+    }
+    if(typeof window.ensureHeroVideoReady === "function"){
+      const heroVideoSection = document.querySelector(".hero-video");
+      if("IntersectionObserver" in window && heroVideoSection){
+        const videoObserver = new IntersectionObserver(function(entries){
+          if(entries.some(entry=>entry.isIntersecting)){
+            videoObserver.disconnect();
+            window.ensureHeroVideoReady();
+          }
+        }, { rootMargin: "180px 0px" });
+        videoObserver.observe(heroVideoSection);
+      }else{
+        setTimeout(window.ensureHeroVideoReady, 1800);
+      }
+    }
   }
 })();
 </script>

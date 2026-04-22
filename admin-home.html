@@ -240,6 +240,37 @@ select:focus{
   margin-bottom:12px;
 }
 
+.color-control-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin-bottom:12px;
+}
+
+.color-control{
+  display:grid;
+  gap:8px;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#fffdfa;
+}
+
+.color-control span{
+  font-size:13px;
+  font-weight:700;
+  color:var(--text);
+}
+
+.color-control input[type="color"]{
+  width:100%;
+  min-height:46px;
+  margin:0;
+  padding:4px;
+  border-radius:12px;
+  cursor:pointer;
+}
+
 .hero-toggle{
   display:flex;
   align-items:center;
@@ -442,6 +473,20 @@ textarea{
         <input id="storySubtitleInput" placeholder="à¤œà¤¡à¤¼à¥‹à¤‚ à¤¸à¥‡ à¤œà¥à¤¡à¤¼à¥‡ à¤²à¥‹à¤—, à¤…à¤¸à¤²à¥€ à¤¬à¤¦à¤²à¤¾à¤µ">
         <input id="storyBaseCountInput" type="number" min="0" step="1" placeholder="5978">
         <input id="storyCaptionInput" placeholder="Every Number Tells a Story">
+        <div class="color-control-grid">
+          <label class="color-control">
+            <span>Brand line color</span>
+            <input id="storyTitleColorInput" type="color" value="#17100c">
+          </label>
+          <label class="color-control">
+            <span>Hindi line color</span>
+            <input id="storySubtitleColorInput" type="color" value="#17100c">
+          </label>
+          <label class="color-control">
+            <span>Caption color</span>
+            <input id="storyCaptionColorInput" type="color" value="#17100c">
+          </label>
+        </div>
         <button class="main" onclick="saveStoryCounterSettings()">Save Family Counter Banner</button>
       </div>
 
@@ -495,6 +540,16 @@ textarea{
         <div id="customerList" class="preview"></div>
       </div>
 
+      <div class="panel">
+        <div class="title">Family Cards</div>
+        <div class="sub">Homepage ke "Be Swadra Organics Family" slider ke cards yahin se manage honge. Har card ke liye image aur name add karo.</div>
+        <input id="familyCardName" placeholder="Card Name">
+        <div class="file-input-label">Card Image</div>
+        <input type="file" id="familyCardImg" accept="image/*">
+        <button class="main" onclick="addFamilyCard()">Add Family Card</button>
+        <div id="familyCardPreview" class="preview"></div>
+      </div>
+
     </div>
 
     <div class="right-col">
@@ -517,6 +572,11 @@ textarea{
         <div class="title">Customer Data</div>
         <div id="customerAssets"></div>
       </div>
+
+      <div class="panel">
+        <div class="title">Family Cards Data</div>
+        <div id="familyCardAssets"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -534,6 +594,9 @@ const storyTitleInput = document.getElementById("storyTitleInput");
 const storySubtitleInput = document.getElementById("storySubtitleInput");
 const storyBaseCountInput = document.getElementById("storyBaseCountInput");
 const storyCaptionInput = document.getElementById("storyCaptionInput");
+const storyTitleColorInput = document.getElementById("storyTitleColorInput");
+const storySubtitleColorInput = document.getElementById("storySubtitleColorInput");
+const storyCaptionColorInput = document.getElementById("storyCaptionColorInput");
 const heroTitleLine1Input = document.getElementById("heroTitleLine1Input");
 const heroTitleLine2Input = document.getElementById("heroTitleLine2Input");
 const heroSublineInput = document.getElementById("heroSublineInput");
@@ -550,6 +613,8 @@ const cProduct = document.getElementById("cProduct");
 const cReview = document.getElementById("cReview");
 const cImg = document.getElementById("cImg");
 const pImg = document.getElementById("pImg");
+const familyCardName = document.getElementById("familyCardName");
+const familyCardImg = document.getElementById("familyCardImg");
 
 const heroPreview = document.getElementById("heroPreview");
 const videoPreview = document.getElementById("videoPreview");
@@ -562,6 +627,8 @@ const offerPreview = document.getElementById("offerPreview");
 const offerAssets = document.getElementById("offerAssets");
 const customerList = document.getElementById("customerList");
 const customerAssets = document.getElementById("customerAssets");
+const familyCardPreview = document.getElementById("familyCardPreview");
+const familyCardAssets = document.getElementById("familyCardAssets");
 const heroCount = document.getElementById("heroCount");
 const customerCount = document.getElementById("customerCount");
 const saveStatus = document.getElementById("saveStatus");
@@ -588,6 +655,12 @@ let base = raw || String(fallback || "");
 return repairMojibake(base).trim() || String(fallback || "");
 }
 
+function normalizeHexColor(value,fallback){
+let color = String(value || "").trim();
+if(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color)) return color;
+return fallback;
+}
+
 function setStatus(message,isError){
 saveStatus.textContent = message;
 saveStatus.style.background = isError ? "#fee2e2" : "#ecfdf3";
@@ -600,7 +673,8 @@ users: {},
 homeContent: {},
 offers: [],
 heroImages: [],
-customers: []
+customers: [],
+familyCards: []
 };
 
 function getAppStateUrl(keys){
@@ -644,6 +718,7 @@ const content = remoteState.homeContent && typeof remoteState.homeContent === "o
 remoteState.offers = Array.isArray(content.offers) ? content.offers.slice() : [];
 remoteState.heroImages = Array.isArray(content.heroImages) ? content.heroImages.slice() : [];
 remoteState.customers = Array.isArray(content.customers) ? content.customers.slice() : [];
+remoteState.familyCards = Array.isArray(content.familyCards) ? content.familyCards.slice() : [];
 }
 
 async function reloadRemoteState(){
@@ -653,6 +728,7 @@ const state = await fetchAppState([
 "offers",
 "heroImages",
 "customers",
+"familyCards",
 STORY_COUNTER_KEY
 ]);
 remoteState.users = state.users && typeof state.users === "object" ? state.users : {};
@@ -671,6 +747,10 @@ remoteState.homeContent.heroImages = remoteState.heroImages.slice();
 if(remoteState.customers.length === 0 && Array.isArray(state.customers)){
 remoteState.customers = state.customers.slice();
 remoteState.homeContent.customers = remoteState.customers.slice();
+}
+if(remoteState.familyCards.length === 0 && Array.isArray(state.familyCards)){
+remoteState.familyCards = state.familyCards.slice();
+remoteState.homeContent.familyCards = remoteState.familyCards.slice();
 }
 }
 
@@ -697,6 +777,14 @@ customersUpdatedAt: Date.now()
 });
 return true;
 }
+if(key === "familyCards"){
+remoteState.familyCards = Array.isArray(data) ? data.slice() : [];
+await saveHomeContent({
+familyCards: remoteState.familyCards.slice(),
+familyCardsUpdatedAt: Date.now()
+});
+return true;
+}
 if(key === STORY_COUNTER_KEY){
 remoteState.storyCounter = data && typeof data === "object" ? { ...data } : {};
 await persistAppState({ [STORY_COUNTER_KEY]: data }, []);
@@ -717,6 +805,7 @@ function safeParse(key){
 if(key === "offers") return remoteState.offers.slice();
 if(key === "heroImages") return remoteState.heroImages.slice();
 if(key === "customers") return remoteState.customers.slice();
+if(key === "familyCards") return remoteState.familyCards.slice();
 if(key === STORY_COUNTER_KEY){
 return remoteState.storyCounter ? { ...remoteState.storyCounter } : {};
 }
@@ -793,8 +882,12 @@ storyTitleInput.value = cleanUiText(data.title, "More Than a Brand, A Family");
 storySubtitleInput.value = cleanUiText(data.subtitle, "जड़ों से जुड़े लोग, असली बदलाव");
 storyBaseCountInput.value = Number(data.baseCount || 5978);
 storyCaptionInput.value = cleanUiText(data.caption, "Every Number Tells a Story");
+storyTitleColorInput.value = normalizeHexColor(data.titleColor, "#17100c");
+storySubtitleColorInput.value = normalizeHexColor(data.subtitleColor, "#17100c");
+storyCaptionColorInput.value = normalizeHexColor(data.captionColor, "#17100c");
 storyPreviewImage.src = data.image || STORY_DEFAULT_IMAGE;
 storyPreviewTitle.textContent = cleanUiText(data.title, "More Than a Brand, A Family");
+storyPreviewTitle.style.color = normalizeHexColor(data.titleColor, "#17100c");
 storyPreviewMeta.textContent = `Live count: ${getStoryCurrentCount(data).toLocaleString("en-IN")} = base + orders + customers. Image full background me show hogi.`;
 }
 
@@ -873,6 +966,9 @@ title: cleanUiText(storyTitleInput.value, "More Than a Brand, A Family"),
 subtitle: cleanUiText(storySubtitleInput.value, "जड़ों से जुड़े लोग, असली बदलाव"),
 baseCount: Math.max(0, Number(storyBaseCountInput.value) || 5978),
 caption: cleanUiText(storyCaptionInput.value, "Every Number Tells a Story"),
+titleColor: normalizeHexColor(storyTitleColorInput.value, "#17100c"),
+subtitleColor: normalizeHexColor(storySubtitleColorInput.value, "#17100c"),
+captionColor: normalizeHexColor(storyCaptionColorInput.value, "#17100c"),
 updatedAt: Date.now()
 };
 if(safeSet(STORY_COUNTER_KEY, settings)){
@@ -1036,6 +1132,43 @@ await safeSet("offers",o);
 await renderAll();
 }
 
+async function addFamilyCard(){
+if(!familyCardName.value.trim()) return alert("Enter card name");
+if(!familyCardImg.files[0]){
+alert("Upload card image");
+return;
+}
+if(!familyCardImg.files[0].type.startsWith("image/")){
+alert("Please upload valid image");
+return;
+}
+if(familyCardImg.files[0].size > 3*1024*1024){
+alert("Max 3MB image");
+return;
+}
+
+try{
+let familyCards = remoteState.familyCards.slice();
+familyCards.push({
+id: makeAssetId("family-card"),
+name: familyCardName.value.trim(),
+image: await readFile(familyCardImg.files[0]),
+createdAt: Date.now()
+});
+await safeSet("familyCards", familyCards);
+setStatus("Family card saved successfully", false);
+}catch(e){
+setStatus(`Family card save failed: ${e.message}`, true);
+console.error(e);
+alert("Family card save failed. Please try again.");
+return;
+}
+
+familyCardName.value = "";
+familyCardImg.value = "";
+await renderAll();
+}
+
 async function delCustomer(id){
 try{
 let customers = remoteState.customers.slice().filter((item,index)=>String(index) !== String(id) && String(item.id || "") !== String(id));
@@ -1048,6 +1181,18 @@ console.error(e);
 }
 }
 
+async function delFamilyCard(id){
+try{
+let familyCards = remoteState.familyCards.slice().filter((item,index)=>String(index) !== String(id) && String(item.id || "") !== String(id));
+await safeSet("familyCards", familyCards);
+setStatus("Family card deleted", false);
+await renderAll();
+}catch(e){
+setStatus(`Family card delete failed: ${e.message}`, true);
+console.error(e);
+}
+}
+
 // RENDER
 async function renderAll(){
 revokePreviewUrls();
@@ -1055,6 +1200,7 @@ renderStoryCounterAdmin();
 renderHeroTextAdmin();
 let hero = remoteState.heroImages.slice();
 let customers = remoteState.customers.slice();
+let familyCards = remoteState.familyCards.slice();
 
 heroCount.innerText=hero.length;
 
@@ -1095,6 +1241,17 @@ customerAssets.innerHTML=customers.map((x)=>`
 <button class="asset-delete" onclick="delCustomer('${x.id}')">Delete</button>
 </div>
 `).join("") || "<p class='empty-note'>No customer reviews added.</p>";
+
+familyCardPreview.innerHTML=familyCards.map(item=>{
+return `<img src="${item.image}" width="80" alt="${item.name}">`;
+}).join("") || "<p class='empty-note'>No family cards added.</p>";
+
+familyCardAssets.innerHTML=familyCards.map((item)=>`
+<div class="asset-row">
+<span>${item.name}</span>
+<button class="asset-delete" onclick="delFamilyCard('${item.id}')">Delete</button>
+</div>
+`).join("") || "<p class='empty-note'>No family cards added.</p>";
 
 videoAssets.innerHTML=videoPreview.innerHTML || "<p class='empty-note'>No video uploaded.</p>";
 

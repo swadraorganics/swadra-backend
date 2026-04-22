@@ -150,11 +150,12 @@ body{
 .small-btn:hover{transform:translateY(-1px)}
 .save-btn{background:#111827;color:#fff}
 .delete-btn{background:#fff1f1;color:var(--danger)}
-input,select{
+input,select,textarea{
   width:100%;padding:15px;border-radius:16px;border:1px solid #ddd;background:#fff;
   margin-bottom:0;font-size:14px;outline:none;transition:border-color .2s, box-shadow .2s
 }
-input:focus,select:focus{border-color:#7a3d3d;box-shadow:0 0 0 4px rgba(122,61,61,.12)}
+textarea{resize:vertical;min-height:120px;line-height:1.6}
+input:focus,select:focus,textarea:focus{border-color:#7a3d3d;box-shadow:0 0 0 4px rgba(122,61,61,.12)}
 .hidden{display:none}
 .modal{
   position:fixed;inset:0;background:rgba(17,24,39,.58);display:none;justify-content:center;align-items:center;
@@ -305,6 +306,11 @@ input:focus,select:focus{border-color:#7a3d3d;box-shadow:0 0 0 4px rgba(122,61,6
 </div>
 
 <div class="field full">
+<label for="productSummary">Product Summary</label>
+<textarea id="productSummary" placeholder="Short summary jo website ke product popup me show hoga"></textarea>
+</div>
+
+<div class="field full">
 <button class="primary-btn" onclick="saveProduct()">Save Product</button>
 </div>
 </div>
@@ -322,6 +328,8 @@ return {
 id: product.id,
 name: String(product.name || product.productName || "").trim(),
 size: String(product.size || product.productSize || "").trim(),
+summary: String(product.summary || product.productSummary || "").trim(),
+productSummary: String(product.summary || product.productSummary || "").trim(),
 category: String(product.category || "").trim(),
 price: Number(product.price ?? product.sellingPrice ?? 0) || 0,
 mrp: Number(product.mrp ?? product.price ?? product.sellingPrice ?? 0) || 0,
@@ -420,6 +428,7 @@ const price = Number(base.price || 0);
 const offPercent = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
 const images = Array.isArray(base.images) ? base.images.filter(Boolean).slice(0,4) : [];
 const primaryImage = base.image || images[0] || "";
+const summary = String(base.summary || base.productSummary || "").trim();
 
 return {
 ...base,
@@ -427,6 +436,8 @@ mrp,
 price,
 image: primaryImage,
 images: images.length ? images : (primaryImage ? [primaryImage] : []),
+summary,
+productSummary: summary,
 offPercent
 };
 }
@@ -488,6 +499,7 @@ productStockQty.value = "";
 productImages.value = "";
 productSize.value = "100gm";
 productCustomSize.value = "";
+productSummary.value = "";
 customSizeWrap.classList.add("hidden");
 }
 
@@ -516,6 +528,7 @@ const mrp = Number(productMRP.value) || 0;
 const price = Number(productSellingPrice.value) || 0;
 const stockQty = Number(productStockQty.value) || 0;
 const size = getSelectedProductSize();
+const summary = String(productSummary.value || "").trim();
 
 if(!name){
 alert("Please enter product name");
@@ -587,6 +600,8 @@ price,
 stockQty,
 category: productCategory.value,
 size,
+summary,
+productSummary: summary,
 availability: productAvailability.value || "Available",
 image: uploadedImages[0],
 images: uploadedImages
@@ -625,11 +640,14 @@ if(index === -1) return;
 
 const name = String(document.getElementById("name-"+id).value || "").trim();
 const size = String(document.getElementById("size-"+id).value || "").trim();
+const summary = String(document.getElementById("summary-"+id)?.value || "").trim();
 
 products[index] = buildProductRecord({
 ...products[index],
 name,
 size,
+summary,
+productSummary: summary,
 mrp: Number(document.getElementById("mrp-"+id).value),
 price: Number(document.getElementById("price-"+id).value),
 stockQty: Number(document.getElementById("stock-"+id).value),
@@ -713,6 +731,9 @@ ${getProductImages(item).length > 1 ? `<div class="thumb-dots">${buildAdminImage
 
 <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:6px;">Edit Stock Qty</label>
 <input id="stock-${item.id}" type="number" value="${item.stockQty}">
+
+<label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:6px;">Product Summary</label>
+<textarea id="summary-${item.id}">${item.summary || item.productSummary || ""}</textarea>
 
 <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:6px;">Availability</label>
 <select id="availability-${item.id}">

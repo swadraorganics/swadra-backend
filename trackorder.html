@@ -18,6 +18,11 @@ window.installSwadraPageStorageSync({
 
 <style>
 
+:root{
+--top-bar-height:43px;
+--navbar-height:62px;
+}
+
 /* TOP BAR */
 .top-bar{
 text-align:center;
@@ -39,7 +44,8 @@ align-items:center;
 padding:12px 25px;
 background:#7a3d3d;
 position:sticky;
-top:45px;
+top:calc(var(--top-bar-height) - 1px);
+z-index:1000;
 color:#fff;
 }
 
