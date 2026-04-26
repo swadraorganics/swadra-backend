@@ -774,8 +774,8 @@ function restoreAdminSession(){
     const data = await response.json().catch(()=>({ ok:false, message:"Login failed" }));
     if(response.ok && data.ok){
       persistAdminSession({ username: enteredUsername });
-      setAdminLoginStatus("Login successful. Opening dashboard...", "success");
-      window.location.href = data.redirectTo || "admin-dashboard.html";
+      setAdminLoginStatus("Login successful. Opening admin panel...", "success");
+      window.location.href = data.redirectTo || "admin-index.html";
       return;
     }
     setAdminLoginStatus(data.message || data.error || "Wrong credentials", "error");
@@ -787,8 +787,8 @@ function restoreAdminSession(){
             enteredPassword === String(adminConfig.password || "")
           ){
             persistAdminSession({ username: enteredUsername });
-            setAdminLoginStatus("Login successful. Opening dashboard...", "success");
-            window.location.href = "admin-dashboard.html";
+            setAdminLoginStatus("Login successful. Opening admin panel...", "success");
+            window.location.href = "admin-index.html";
             return;
           }
           setAdminLoginStatus("Wrong credentials", "error");

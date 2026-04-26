@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>About Us - Swadra Organics</title>
+  <title>About Swadra Organics | Indian Food Brand, Support & Compliance</title>
+  <meta name="description" content="Learn about Swadra Organics, a premium Indian food brand focused on spices, dry fruits, ghee, customer support and transparent business compliance information.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <link rel="canonical" href="https://swadraorganics.com/aboutus.html">
   <link rel="stylesheet" href="aboutus.css">
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
   <style>
@@ -56,8 +59,30 @@
     .swadra-category-footer{margin:40px 0 0;padding:34px 20px 38px;background:#7a3d3d;color:#fff;text-align:center;font-family:Arial,sans-serif}
     .swadra-category-footer h2{margin:0 0 10px;font-size:28px;line-height:1.2;font-weight:900;letter-spacing:.2px}
     .swadra-category-footer p{margin:0;font-size:18px;line-height:1.5;font-weight:700;color:#f7e7a9}
+    .about-legal-section{max-width:1360px;margin:0 auto 28px;padding:0 24px;font-family:Arial,sans-serif}
+    .about-legal-shell{background:#fff;border:1px solid #eadfdd;border-radius:28px;box-shadow:0 18px 42px rgba(122,61,61,.08);padding:26px 24px}
+    .about-legal-head h2{margin:0;font-size:30px;line-height:1.2;color:#7a3d3d;font-weight:900}
+    .about-legal-head p{margin:10px 0 0;font-size:14px;line-height:1.65;color:#6f6363;max-width:920px}
+    .about-legal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:22px}
+    .about-legal-card{background:#fcf8f6;border:1px solid #efe2de;border-radius:22px;padding:18px}
+    .about-legal-card-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+    .about-legal-badge{min-width:58px;height:34px;padding:0 12px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:#7a3d3d;color:#fff;font-size:12px;font-weight:900;letter-spacing:.5px}
+    .about-legal-card-head h3{margin:0;font-size:20px;line-height:1.2;color:#2b2222;font-weight:800}
+    .about-legal-reg{margin:0 0 12px;font-size:13px;line-height:1.55;color:#7a3d3d;font-weight:800;word-break:break-word}
+    .about-legal-list{display:grid;gap:8px}
+    .about-legal-item{font-size:13px;line-height:1.55;color:#4f4343}
+    .about-legal-item strong{color:#2b2222}
+    .about-legal-policies{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+    .about-legal-policy,.about-legal-note{background:#fff8f4;border:1px solid #f0e2dc;border-radius:18px;padding:15px 16px}
+    .about-legal-policy h4,.about-legal-note h4{margin:0 0 8px;font-size:15px;line-height:1.3;color:#7a3d3d;font-weight:900}
+    .about-legal-policy p,.about-legal-note p{margin:0;font-size:13px;line-height:1.65;color:#5f5252}
+    .about-legal-note{grid-column:1 / -1;background:#f9f2ef}
+    .admin-footer-btn{margin:0 auto 24px;display:inline-flex;align-items:center;gap:12px;padding:10px 14px;border-radius:999px;background:rgba(122,61,61,.08);font-family:Arial,sans-serif}
+    .admin-footer-btn span{font-size:14px;opacity:.9;color:#7a3d3d}
+    .admin-footer-btn a{background:#f5e6a8;color:#7a3d3d;padding:6px 14px;border-radius:30px;text-decoration:none;font-weight:800}
     @media(max-width:1180px){.navbar{flex-wrap:wrap;gap:12px}.nav-search{position:relative;left:auto;top:auto;transform:none;order:3;flex:1 1 100%;max-width:none;margin:4px 0 0;width:auto}.account-hover-menu{right:0;width:230px}}
     @media(max-width:900px){.nav-buttons{justify-content:center}}
+    @media(max-width:980px){.about-legal-grid{grid-template-columns:1fr}.about-legal-policies{grid-template-columns:1fr}}
     .contact-support-section{max-width:1360px;margin:70px auto 90px;padding:0 24px}
     .contact-support-shell{background:#fff;border:1px solid #eadfdd;border-radius:30px;box-shadow:0 20px 48px rgba(122,61,61,.08);overflow:hidden}
     .contact-support-head{padding:28px 30px 18px;background:linear-gradient(135deg,#7a3d3d,#9b5a5a);color:#fff}
@@ -100,7 +125,8 @@
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="api-config.js"></script></head>
+<script src="api-config.js"></script>
+<script src="seo-aeo.js"></script></head>
 <body>
   <div class="top-bar" style="text-align:center;padding:12px;font-weight:600;font-size:16px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;">Eat Healthy &bull; Be Swadra Family</div>
   <header class="navbar" style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:#7a3d3d;">
@@ -334,6 +360,86 @@
     </div>
   </section>
 
+  <section class="about-legal-section" aria-labelledby="legalComplianceTitle">
+    <div class="about-legal-shell">
+      <div class="about-legal-head">
+        <h2 id="legalComplianceTitle">Legal &amp; Compliance Information</h2>
+        <p>Swadra Organics maintains the following business registrations and compliance references for customer transparency and operational verification.</p>
+      </div>
+
+      <div class="about-legal-grid">
+        <article class="about-legal-card">
+          <div class="about-legal-card-head">
+            <div class="about-legal-badge" aria-hidden="true">GST</div>
+            <h3>GST Registration</h3>
+          </div>
+          <p class="about-legal-reg">Registration Number: 06KUAPS6728H1Z5</p>
+          <div class="about-legal-list">
+            <div class="about-legal-item"><strong>Legal Name:</strong> Ajay Singh</div>
+            <div class="about-legal-item"><strong>Trade Name:</strong> Swadra Enterprise</div>
+            <div class="about-legal-item"><strong>Constitution of Business:</strong> Proprietorship</div>
+            <div class="about-legal-item"><strong>State:</strong> Haryana</div>
+          </div>
+        </article>
+
+        <article class="about-legal-card">
+          <div class="about-legal-card-head">
+            <div class="about-legal-badge" aria-hidden="true">MSME</div>
+            <h3>MSME / Udyam Registration</h3>
+          </div>
+          <p class="about-legal-reg">Udyam Registration Number: UDYAM-HR-08-0056106</p>
+          <div class="about-legal-list">
+            <div class="about-legal-item"><strong>Enterprise Name:</strong> Swadra Enterprise</div>
+            <div class="about-legal-item"><strong>Enterprise Type:</strong> Micro</div>
+            <div class="about-legal-item"><strong>Classification Year:</strong> 2025–26</div>
+            <div class="about-legal-item"><strong>Activity:</strong> Manufacturing</div>
+            <div class="about-legal-item"><strong>Classification Date:</strong> 06/03/2026</div>
+          </div>
+        </article>
+
+        <article class="about-legal-card">
+          <div class="about-legal-card-head">
+            <div class="about-legal-badge" aria-hidden="true">FSSAI</div>
+            <h3>FSSAI Registration</h3>
+          </div>
+          <p class="about-legal-reg">Registration ID: 20826008000171</p>
+          <div class="about-legal-list">
+            <div class="about-legal-item"><strong>Valid Upto:</strong> 13-03-2027</div>
+            <div class="about-legal-item"><strong>Name:</strong> Swadra Enterprise</div>
+            <div class="about-legal-item"><strong>Issuing Authority:</strong> Jind</div>
+            <div class="about-legal-item"><strong>Activity:</strong> General Manufacturing, Retailer</div>
+          </div>
+        </article>
+      </div>
+
+      <div class="about-legal-policies">
+        <div class="about-legal-policy">
+          <h4>Refund Policy</h4>
+          <p>We ensure high-quality products. If there is any issue with your order, customers may request a refund within 3 days of delivery. Refunds are processed after verification.</p>
+        </div>
+        <div class="about-legal-policy">
+          <h4>Return Policy</h4>
+          <p>Returns are accepted only for damaged, defective, or incorrect items. Clear image or video proof is required for verification.</p>
+        </div>
+        <div class="about-legal-policy">
+          <h4>Shipping Policy</h4>
+          <p>Orders are processed within 1–3 working days and delivered as per location timelines.</p>
+        </div>
+        <div class="about-legal-policy">
+          <h4>Customer Support</h4>
+          <p>For order, refund, return, or product-related support, customers may contact Swadra Organics through the official contact details provided on the website.</p>
+        </div>
+        <div class="about-legal-note">
+          <h4>Brand Compliance Note</h4>
+          <p>Swadra Organics is a brand/trade name. Product claims, certifications, and regulatory details apply as per applicable licenses, product category, and official registrations.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div style="text-align:center;padding:0 24px;">
+    <div class="admin-footer-btn"><span>Need backend access?</span><a href="admin-index.html">Admin Login</a></div>
+  </div>
   <footer class="swadra-category-footer">
     <h2>Swadra Organics - Crafted for Global Standards</h2>
     <p>Experience the Difference - Order Today</p>

@@ -564,11 +564,33 @@
         throw new Error("Backend URL missing");
       }
 
-      const response = await fetch(base + path, options);
+      const response = await fetch(base + path, {
+        cache: "no-store",
+        ...options
+      });
       if (!response.ok) {
         throw new Error("HTTP " + response.status);
       }
       return await response.json();
+    }
+
+    async function tryHealthEndpoints() {
+      const attempts = [
+        { path: "/health", isHealth: true },
+        { path: "/api/logs", isHealth: false },
+        { path: "/api/app-state?keys=" + encodeURIComponent(SETTINGS_STATE_KEY), isHealth: false }
+      ];
+
+      let lastError = null;
+      for (const attempt of attempts) {
+        try {
+          const data = await fetchJson(attempt.path);
+          return { path: attempt.path, data, isHealth: attempt.isHealth };
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      throw lastError || new Error("Backend unreachable");
     }
 
     async function tryPost(paths, body) {
@@ -640,13 +662,16 @@
     async function checkBackendHealth() {
       setServerStatusButton("checking", "Server Status: Checking...");
       try {
-        const data = await fetchJson("/health");
+        const result = await tryHealthEndpoints();
+        const data = result.data || {};
         document.getElementById("backendStatusText").textContent = "Online";
         document.getElementById("backendStatusText").className = "v success";
         setServerStatusButton("online");
-        addLocalLog("Backend connected successfully.", "success");
+        addLocalLog(`Backend connected successfully via ${result.path}.`, "success");
         if (data && data.time) {
           document.getElementById("lastRunText").textContent = new Date(data.time).toLocaleString();
+        } else {
+          document.getElementById("lastRunText").textContent = new Date().toLocaleString();
         }
       } catch (error) {
         document.getElementById("backendStatusText").textContent = "Offline";

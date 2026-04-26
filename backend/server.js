@@ -964,6 +964,74 @@ function parseCurrencyCandidates(text) {
   return uniqueNumbers(values);
 }
 
+function decodeHtmlEntities(text) {
+  return String(text || "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">");
+}
+
+function stripHtmlToText(html) {
+  return decodeHtmlEntities(
+    String(html || "")
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+}
+
+function fetchUrlText(url) {
+  return new Promise((resolve, reject) => {
+    const target = String(url || "").trim();
+    if (!/^https?:\/\//i.test(target)) {
+      reject(new Error("Invalid URL"));
+      return;
+    }
+
+    const client = target.startsWith("https://") ? https : http;
+    const request = client.get(target, {
+      headers: {
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "accept-language": "en-IN,en;q=0.9"
+      },
+      timeout: 25000
+    }, (response) => {
+      if (response.statusCode && response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+        const redirected = new URL(response.headers.location, target).toString();
+        response.resume();
+        fetchUrlText(redirected).then(resolve).catch(reject);
+        return;
+      }
+
+      if (response.statusCode && response.statusCode >= 400) {
+        response.resume();
+        reject(new Error("HTTP " + response.statusCode));
+        return;
+      }
+
+      let body = "";
+      response.setEncoding("utf8");
+      response.on("data", (chunk) => {
+        body += chunk;
+      });
+      response.on("end", () => {
+        resolve(stripHtmlToText(body));
+      });
+    });
+
+    request.on("timeout", () => {
+      request.destroy(new Error("Request timeout"));
+    });
+    request.on("error", reject);
+  });
+}
+
 async function createBrowser() {
   if (!puppeteer) {
     puppeteer = require("puppeteer");
@@ -1071,13 +1139,33 @@ async function fetchCompetitorPrice(browser, url, product = null) {
     return { url: cleanUrl, price: 0, status: "Invalid URL" };
   }
 
+  const lowerUrl = cleanUrl.toLowerCase();
+  const referencePrice = toNumber(product?.sellingPrice || product?.price || product?.mrp || 0);
+
+  if (!browser) {
+    try {
+      const text = await fetchUrlText(cleanUrl);
+      const chosen = chooseBestPrice(parseCurrencyCandidates(text), referencePrice);
+      return {
+        url: cleanUrl,
+        price: chosen || 0,
+        status: chosen > 0 ? "Fetched from HTML fallback" : "Price not detected in fallback"
+      };
+    } catch (error) {
+      return {
+        url: cleanUrl,
+        price: 0,
+        status: `Fallback failed: ${error.message}`
+      };
+    }
+  }
+
   const page = await browser.newPage();
 
   try {
     await preparePage(page);
     await safeGoto(page, cleanUrl);
 
-    const lowerUrl = cleanUrl.toLowerCase();
     let result;
 
     if (lowerUrl.includes("amazon")) {
@@ -1094,11 +1182,21 @@ async function fetchCompetitorPrice(browser, url, product = null) {
       status: result.status || "Unknown"
     };
   } catch (error) {
-    return {
-      url: cleanUrl,
-      price: 0,
-      status: `Fetch failed: ${error.message}`
-    };
+    try {
+      const text = await fetchUrlText(cleanUrl);
+      const chosen = chooseBestPrice(parseCurrencyCandidates(text), referencePrice);
+      return {
+        url: cleanUrl,
+        price: chosen || 0,
+        status: chosen > 0 ? `Fetched from HTML fallback after browser failure` : `Browser failed, fallback found no price`
+      };
+    } catch (fallbackError) {
+      return {
+        url: cleanUrl,
+        price: 0,
+        status: `Fetch failed: ${error.message}; fallback failed: ${fallbackError.message}`
+      };
+    }
   } finally {
     await page.close().catch(() => {});
   }
@@ -1349,7 +1447,7 @@ app.post("/api/admin/login", async (req, res) => {
       ok: success,
       success,
       message: success ? "Login successful" : "Wrong credentials",
-      redirectTo: success ? "admin-dashboard.html" : ""
+      redirectTo: success ? "admin-index.html" : ""
     });
   } catch (error) {
     addLog("Admin login failed: " + error.message, "error");
@@ -1878,7 +1976,12 @@ app.post("/api/pricing/fetch-competitor-prices", async (req, res) => {
       otherPrice: 0
     });
 
-    browser = await createBrowser();
+    try {
+      browser = await createBrowser();
+    } catch (browserError) {
+      addLog("Browser launch failed for single competitor fetch, using HTML fallback: " + browserError.message, "warn");
+      browser = null;
+    }
 
     const result = await syncCompetitorPricesForProduct(tempProduct, {
       searchMode: payload.searchMode || "product_name_size",
@@ -1927,7 +2030,12 @@ app.post("/api/pricing/search-by-product-name", async (req, res) => {
     }
     const productsToProcess = incomingProducts.map((product) => normalizeProduct(product, product));
 
-    browser = await createBrowser();
+    try {
+      browser = await createBrowser();
+    } catch (browserError) {
+      addLog("Browser launch failed for product-name search, using HTML fallback: " + browserError.message, "warn");
+      browser = null;
+    }
     const updatedProducts = [];
 
     for (const product of productsToProcess) {
@@ -1969,7 +2077,12 @@ app.post("/api/pricing/fetch-all-competitor-prices", async (req, res) => {
     }
     const updatedProducts = [];
 
-    browser = await createBrowser();
+    try {
+      browser = await createBrowser();
+    } catch (browserError) {
+      addLog("Browser launch failed for bulk competitor sync, using HTML fallback: " + browserError.message, "warn");
+      browser = null;
+    }
 
     for (const product of products) {
       const result = await syncCompetitorPricesForProduct(product, {
