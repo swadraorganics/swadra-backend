@@ -893,7 +893,11 @@
     var storyCounter = source.swadra_home_family_story_v1 && typeof source.swadra_home_family_story_v1 === "object"
       ? cloneValue(source.swadra_home_family_story_v1)
       : {};
-    var websiteOffline = !!(source.websiteOffline || homeContent.websiteOffline);
+    var hasTopLevelWebsiteOffline = source.websiteOffline !== undefined;
+    var hasHomeContentWebsiteOffline = homeContent.websiteOffline !== undefined;
+    var websiteOffline = hasTopLevelWebsiteOffline
+      ? !!source.websiteOffline
+      : (hasHomeContentWebsiteOffline ? !!homeContent.websiteOffline : false);
 
     homeContent.offers = offers.slice();
     homeContent.heroImages = heroImages.slice();
@@ -948,8 +952,12 @@
     var db = initFirebaseIfNeeded();
     if(!db) throw firebaseInitError || new Error("Firestore unavailable");
     var current = await fetchSiteContent(true).catch(function(){ return createEmptySiteContent(); });
+    var mergedHomeContent = Object.assign({}, current.homeContent || {}, partial && partial.homeContent || {});
+    if(partial && partial.websiteOffline !== undefined){
+      mergedHomeContent.websiteOffline = !!partial.websiteOffline;
+    }
     var merged = normalizeSiteContentPayload({
-      homeContent: Object.assign({}, current.homeContent || {}, partial && partial.homeContent || {}),
+      homeContent: mergedHomeContent,
       offers: partial && partial.offers !== undefined ? partial.offers : current.offers,
       heroImages: partial && partial.heroImages !== undefined ? partial.heroImages : current.heroImages,
       customers: partial && partial.customers !== undefined ? partial.customers : current.customers,
@@ -986,11 +994,14 @@
     var normalizedId = item.id !== undefined && item.id !== null && String(item.id).trim() ? item.id : fallbackId;
     var websiteSellingPrice = resolveWebsiteSellingPrice(item);
     var websiteMrp = resolveWebsiteMrp(item, websiteSellingPrice);
+    var hasExplicitStockQty = item.stockQty !== undefined && item.stockQty !== null && String(item.stockQty).trim() !== "";
+    var hasExplicitStock = item.stock !== undefined && item.stock !== null && String(item.stock).trim() !== "";
     var baseStockQty = Number(item.stockQty ?? item.stock ?? 0) || 0;
     var baseAvailability = String(item.availability || (item.outOfStock ? "Out of Stock" : "Available") || "Available");
     var siteOffline = !!(siteContentCache && siteContentCache.websiteOffline);
     var effectiveAvailability = siteOffline ? "Out of Stock" : baseAvailability;
-    var effectiveOutOfStock = siteOffline ? true : (baseAvailability === "Out of Stock" || baseStockQty <= 0);
+    var quantityImpliesOutOfStock = (hasExplicitStockQty || hasExplicitStock) ? baseStockQty <= 0 : false;
+    var effectiveOutOfStock = siteOffline ? true : (baseAvailability === "Out of Stock" || quantityImpliesOutOfStock);
     return {
       id: normalizedId,
       docId: String(item.docId || normalizedId || fallbackId || "").trim(),
@@ -1006,7 +1017,7 @@
       availability: effectiveAvailability,
       outOfStock: effectiveOutOfStock,
       originalAvailability: baseAvailability,
-      originalOutOfStock: baseAvailability === "Out of Stock" || baseStockQty <= 0,
+      originalOutOfStock: baseAvailability === "Out of Stock" || quantityImpliesOutOfStock,
       websiteOffline: siteOffline,
       summary: summary,
       productSummary: summary,

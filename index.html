@@ -6179,7 +6179,7 @@ function buildSpicesStyleCards(products, sectionKey, cartItems){
     const qtyState = typeof window.getHomeQtyState === "function" ? window.getHomeQtyState() : {};
     const qtyKey = `${sectionKey}:${id}`;
     const qty = existing ? Number(existing.qty || 1) : Number(qtyState[qtyKey] || 1);
-    const isOut = product.availability === "Out of Stock" || Number(product.stockQty || 0) <= 0;
+    const isOut = product.availability === "Out of Stock" || product.outOfStock === true;
     const galleryImages = Array.isArray(product?.images) && product.images.length ? product.images.filter(Boolean).slice(0,4) : (product?.image ? [product.image] : []);
     const galleryMarkup = typeof window.buildStoreGalleryMarkup === "function"
       ? window.buildStoreGalleryMarkup(product, `${sectionKey}-${id}`)
@@ -6221,7 +6221,7 @@ function buildExploreProductsCards(products){
     const id = String(product.id);
     const existing = cart.find(item => String(item.id) === id);
     const qty = existing ? Number(existing.qty || 1) : 1;
-    const isOut = product.availability === "Out of Stock" || Number(product.stockQty || 0) <= 0;
+    const isOut = product.availability === "Out of Stock" || product.outOfStock === true;
     const pricing = getProductPricing(product);
 
     return `
@@ -7760,7 +7760,7 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
     const qtyState = typeof window.getHomeQtyState === "function" ? window.getHomeQtyState() : {};
     const qtyKey = `${sectionKey}:${id}`;
     const qty = existing ? Number(existing.qty || 1) : Number(qtyState[qtyKey] || 1);
-    const isOut = p.availability === "Out of Stock" || Number(p.stockQty || 0) <= 0;
+    const isOut = p.availability === "Out of Stock" || p.outOfStock === true;
     const pr = getPricing(p);
     const priceBlock = pr.off > 0
       ? `<div class="price-stack"><div class="price-line"><span class="old">&#8377;${pr.mrp.toLocaleString()}</span><span class="price">&#8377;${pr.price.toLocaleString()}</span></div><div class="off">${pr.off}% OFF</div></div>`
@@ -8012,7 +8012,7 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
     const qtyState = getHomeQtyState();
     const qtyKey = `${sectionKey}:${id}`;
     const qty = existing ? Number(existing.qty || 1) : Number(qtyState[qtyKey] || 1);
-    const isOut = product.availability === "Out of Stock" || Number(product.stockQty || 0) <= 0;
+    const isOut = product.availability === "Out of Stock" || product.outOfStock === true;
     const galleryId = `${sectionKey}-${id}`;
     const galleryImages = getStoreProductImages(product);
     const gallery = window.buildStoreGalleryMarkup(product, galleryId);

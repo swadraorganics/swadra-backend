@@ -264,8 +264,11 @@ function normalizeBackendProduct(product){
   const sellingPrice = preferPositiveNumber(merged.sellingPrice, merged.price, merged.offlinePrice);
   const price = preferPositiveNumber(merged.price, merged.sellingPrice, merged.offlinePrice);
   const mrp = preferPositiveNumber(merged.mrp, merged.price, merged.sellingPrice);
+  const hasExplicitStockQty = merged.stockQty !== undefined && merged.stockQty !== null && `${merged.stockQty}`.trim() !== "";
+  const hasExplicitStock = merged.stock !== undefined && merged.stock !== null && `${merged.stock}`.trim() !== "";
   const stockQty = Number(merged.stockQty ?? merged.stock ?? 0) || 0;
-  const availability = String(merged.availability || ((merged.outOfStock || stockQty <= 0) ? "Out of Stock" : "Available"));
+  const quantityImpliesOutOfStock = (hasExplicitStockQty || hasExplicitStock) ? stockQty <= 0 : false;
+  const availability = String(merged.availability || ((merged.outOfStock || quantityImpliesOutOfStock) ? "Out of Stock" : "Available"));
   return {
     ...merged,
     id: merged.id || `${name}-${size}`.replace(/\s+/g,"-").toLowerCase(),
@@ -284,7 +287,7 @@ function normalizeBackendProduct(product){
     mrp,
     stockQty,
     availability,
-    outOfStock: availability === "Out of Stock" || stockQty <= 0,
+    outOfStock: availability === "Out of Stock" || quantityImpliesOutOfStock,
     offPercent: Number(merged.offPercent || 0) || (mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0),
     isBestseller: Boolean(merged.isBestseller || merged.bestseller),
     isSpecialProduct: Boolean(merged.isSpecialProduct || merged.special)
@@ -459,7 +462,7 @@ filtered.forEach(p=>{
 let id=String(p.id);
 let existing=cart.find(i=>String(i.id)===id);
 let qty=existing?existing.qty:1;
-let isOut=p.availability==="Out of Stock" || Number(p.stockQty||0)<=0;
+    let isOut=p.availability==="Out of Stock" || p.outOfStock===true;
 
 html+=`
 <div class="product-card" data-gallery-id="${id}" data-current-image="0" data-images='${JSON.stringify(getProductImages(p))}' data-product-name="${escapeAttr(p.name)}" data-product-size="${escapeAttr(p.size || "100gm")}" data-product-summary="${escapeAttr(getProductSummary(p))}">

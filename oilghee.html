@@ -176,8 +176,11 @@ function normalizeBackendProduct(product){
   const sellingPrice = preferPositiveNumber(merged.sellingPrice, merged.price, merged.offlinePrice);
   const price = preferPositiveNumber(merged.price, merged.sellingPrice, merged.offlinePrice);
   const mrp = preferPositiveNumber(merged.mrp, merged.price, merged.sellingPrice);
+  const hasExplicitStockQty = merged.stockQty !== undefined && merged.stockQty !== null && `${merged.stockQty}`.trim() !== "";
+  const hasExplicitStock = merged.stock !== undefined && merged.stock !== null && `${merged.stock}`.trim() !== "";
   const stockQty = Number(merged.stockQty ?? merged.stock ?? 0) || 0;
-  const availability = String(merged.availability || ((merged.outOfStock || stockQty <= 0) ? "Out of Stock" : "Available"));
+  const quantityImpliesOutOfStock = (hasExplicitStockQty || hasExplicitStock) ? stockQty <= 0 : false;
+  const availability = String(merged.availability || ((merged.outOfStock || quantityImpliesOutOfStock) ? "Out of Stock" : "Available"));
   return {
     ...merged,
     id: merged.id || `${name}-${size}`.replace(/\s+/g,"-").toLowerCase(),
@@ -196,7 +199,7 @@ function normalizeBackendProduct(product){
     mrp,
     stockQty,
     availability,
-    outOfStock: availability === "Out of Stock" || stockQty <= 0,
+    outOfStock: availability === "Out of Stock" || quantityImpliesOutOfStock,
     offPercent: Number(merged.offPercent || 0) || (mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0),
     isBestseller: Boolean(merged.isBestseller || merged.bestseller),
     isSpecialProduct: Boolean(merged.isSpecialProduct || merged.special)
@@ -219,7 +222,7 @@ async function getProducts(forceRefresh){ if(!forceRefresh && productsCache && D
 async function loadSiteContent(){ if(!siteContentApi || typeof siteContentApi.fetch !== "function") return siteContentState; try{ siteContentState = await siteContentApi.fetch(true); }catch(error){ console.error("oilghee site content fetch failed", error); } return siteContentState; }
 function getProductPricing(product){ let mrp=preferPositiveNumber(product?.mrp, product?.price, product?.sellingPrice); let price=preferPositiveNumber(product?.price, product?.sellingPrice, product?.offlinePrice); let offPercent=mrp>price && mrp>0 ? Math.round(((mrp-price)/mrp)*100) : 0; return {mrp,price,offPercent}; }
 function buildPriceMarkup(product){ let pricing=getProductPricing(product); if(pricing.offPercent>0){ return `<div class="price-stack"><div class="price-line"><span class="old-price">&#8377;${pricing.mrp}</span><div class="price">&#8377;${pricing.price}</div></div><div class="discount-badge">${pricing.offPercent}% OFF</div></div>`; } return `<div class="price">&#8377;${pricing.price}</div>`; }
-async function loadProducts(){ let products=await getProducts(); let cart=getCart(); let filtered=products.filter(p=>productMatchesCategory(p,"oilghee")); let html=""; filtered.forEach(p=>{ let id=String(p.id); let existing=cart.find(i=>String(i.id)===id); let isOut=p.availability==="Out of Stock" || Number(p.stockQty||0)<=0; html+=`<div class="product-card" data-gallery-id="${id}" data-current-image="0" data-images='${JSON.stringify(getProductImages(p))}' data-product-name="${escapeAttr(p.name)}" data-product-size="${escapeAttr(p.size || "100gm")}" data-product-summary="${escapeAttr(getProductSummary(p))}"><div class="product-img">${buildGalleryMarkup(p,id)}</div><div class="product-info"><div class="product-title-row"><h3>${p.name}</h3><div class="size">${p.size || "100gm"}</div></div><div class="product-bottom"><div class="left">${isOut ? `<div class="out-stock-text">Out Of Stock</div>` : `${buildPriceMarkup(p)}`}</div><button class="cart-btn ${existing?'added':''} ${isOut?'disabled':''}" onclick="${isOut?'':'toggleCart(\''+id+'\')'}" ${isOut?"disabled":""}>${existing?"ADDED ✓":"ADD TO CART"}</button></div></div></div>`; }); document.getElementById("productsContainer").innerHTML=html; }
+async function loadProducts(){ let products=await getProducts(); let cart=getCart(); let filtered=products.filter(p=>productMatchesCategory(p,"oilghee")); let html=""; filtered.forEach(p=>{ let id=String(p.id); let existing=cart.find(i=>String(i.id)===id); let isOut=p.availability==="Out of Stock" || p.outOfStock===true; html+=`<div class="product-card" data-gallery-id="${id}" data-current-image="0" data-images='${JSON.stringify(getProductImages(p))}' data-product-name="${escapeAttr(p.name)}" data-product-size="${escapeAttr(p.size || "100gm")}" data-product-summary="${escapeAttr(getProductSummary(p))}"><div class="product-img">${buildGalleryMarkup(p,id)}</div><div class="product-info"><div class="product-title-row"><h3>${p.name}</h3><div class="size">${p.size || "100gm"}</div></div><div class="product-bottom"><div class="left">${isOut ? `<div class="out-stock-text">Out Of Stock</div>` : `${buildPriceMarkup(p)}`}</div><button class="cart-btn ${existing?'added':''} ${isOut?'disabled':''}" onclick="${isOut?'':'toggleCart(\''+id+'\')'}" ${isOut?"disabled":""}>${existing?"ADDED ✓":"ADD TO CART"}</button></div></div></div>`; }); document.getElementById("productsContainer").innerHTML=html; }
 async function toggleCart(id){ let cart=getCart(); let products=await getProducts(); let item=products.find(p=>String(p.id)===String(id)); if(!item) return; let qty=1; let existingIndex=cart.findIndex(i=>String(i.id)===String(id)); if(existingIndex>-1){ cart.splice(existingIndex,1); }else{ cart.push({id:String(item.id),name:item.name,price:Number(item.price)||0,mrp:Number(item.mrp || item.price)||0,image:getSafeCartImage(item.image),images:getProductImages(item),qty:qty}); } saveCart(cart); loadProducts(); }
 function changeQty(id,val){}
 function updateCartUI(){ let cart=getCart(); let totalItems=0,totalPrice=0; cart.forEach(i=>{ totalItems+=i.qty; totalPrice+=i.qty*i.price; }); let bar=document.getElementById("stickyCart"); if(totalItems>0){ bar.style.display="flex"; document.getElementById("cartCount").innerText=totalItems+" item ₹"+totalPrice; }else{ bar.style.display="none"; } }
