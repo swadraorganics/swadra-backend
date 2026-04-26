@@ -459,6 +459,12 @@
             <button class="btn-dark" onclick="goTo('admin-orders.html')">Open Orders</button>
           </div>
 
+          <div class="section-title">Website Availability</div>
+          <div class="actions">
+            <button id="websiteOfflineToggleBtn" type="button" onclick="toggleWebsiteAvailability()">Put Website Offline</button>
+          </div>
+          <div class="coupon-status" id="websiteOfflineStatusText">Website is currently live for customers.</div>
+
           <div class="section-title">Change Username & Password</div>
           <div class="setting-box hidden" id="settingsBox">
             <div class="row one">
@@ -653,6 +659,130 @@ function getApiBase(){
     function getAdminConfigUrl(){ return getApiBase() + "/api/admin/config"; }
     function getAdminCredentialsUrl(){ return getApiBase() + "/api/admin/credentials"; }
     function getCouponsApiUrl(){ return getApiBase() + "/api/coupons"; }
+    function getWebsiteOfflineToggleBtn(){ return document.getElementById("websiteOfflineToggleBtn"); }
+    function getWebsiteOfflineStatusText(){ return document.getElementById("websiteOfflineStatusText"); }
+
+    function getSiteContentApi(){
+      return window.SWADRA_SITE_CONTENT || null;
+    }
+
+    function renderWebsiteAvailabilityState(isOffline){
+      const button = getWebsiteOfflineToggleBtn();
+      const status = getWebsiteOfflineStatusText();
+      const offline = !!isOffline;
+      if(button){
+        button.textContent = offline ? "Bring Website Online" : "Put Website Offline";
+      }
+      if(status){
+        status.textContent = offline
+          ? "Website is offline. All customer-side products are showing Out of Stock."
+          : "Website is currently live for customers.";
+      }
+    }
+
+    async function loadWebsiteAvailability(){
+      try{
+        const siteContentApi = getSiteContentApi();
+        if(!siteContentApi || typeof siteContentApi.fetch !== "function"){
+          renderWebsiteAvailabilityState(false);
+          return;
+        }
+        const state = await siteContentApi.fetch(true);
+        renderWebsiteAvailabilityState(!!(state && state.websiteOffline));
+      }catch(error){
+        renderWebsiteAvailabilityState(false);
+      }
+    }
+
+    async function toggleWebsiteAvailability(){
+      const button = getWebsiteOfflineToggleBtn();
+      try{
+        if(button) button.disabled = true;
+        const siteContentApi = getSiteContentApi();
+        if(!siteContentApi || typeof siteContentApi.fetch !== "function" || typeof siteContentApi.save !== "function"){
+          throw new Error("Website availability control unavailable");
+        }
+        const state = await siteContentApi.fetch(true);
+        const nextOffline = !(state && state.websiteOffline);
+        await siteContentApi.save({ websiteOffline: nextOffline });
+        renderWebsiteAvailabilityState(nextOffline);
+        alert(nextOffline ? "Website offline mode enabled." : "Website live mode restored.");
+      }catch(error){
+        alert(error.message || "Failed to update website availability");
+      }finally{
+        if(button) button.disabled = false;
+      }
+    }
+
+    async function loadCouponsFromSiteContent(){
+      const siteContentApi = getSiteContentApi();
+      if(!siteContentApi || typeof siteContentApi.fetch !== "function"){
+        throw new Error("Coupon storage unavailable");
+      }
+      const state = await siteContentApi.fetch(true);
+      const coupons = Array.isArray(state && state.coupons) ? state.coupons.slice() : [];
+      return {
+        ok: true,
+        coupons,
+        primaryCoupon: coupons.find(function(coupon){
+          return String(coupon && coupon.status || "").toLowerCase() === "active";
+        }) || coupons[0] || null
+      };
+    }
+
+    async function saveCouponToSiteContent(couponData){
+      const siteContentApi = getSiteContentApi();
+      if(!siteContentApi || typeof siteContentApi.fetch !== "function" || typeof siteContentApi.save !== "function"){
+        throw new Error("Coupon storage unavailable");
+      }
+      const state = await siteContentApi.fetch(true);
+      const coupons = Array.isArray(state && state.coupons) ? state.coupons.slice() : [];
+      const nextCoupon = {
+        id: String(couponData.id || ("coupon_" + Date.now())),
+        code: String(couponData.code || "").trim().toUpperCase(),
+        discount: Math.max(0, Math.round(Number(couponData.discount || 0) || 0)),
+        minimumAmount: Math.max(0, Math.round(Number(couponData.minimumAmount || couponData.minAmount || 0) || 0)),
+        status: String(couponData.status || "active").toLowerCase() === "inactive" ? "inactive" : "active",
+        updatedAt: new Date().toISOString()
+      };
+      const existingIndex = coupons.findIndex(function(item){
+        return String(item && item.code || "").trim().toUpperCase() === nextCoupon.code;
+      });
+      if(existingIndex > -1){
+        coupons[existingIndex] = Object.assign({}, coupons[existingIndex], nextCoupon);
+      }else{
+        coupons.unshift(nextCoupon);
+      }
+      await siteContentApi.save({ coupons: coupons.slice(0, 50) });
+      return {
+        ok: true,
+        coupons: coupons.slice(0, 50),
+        primaryCoupon: coupons.find(function(coupon){
+          return String(coupon && coupon.status || "").toLowerCase() === "active";
+        }) || null
+      };
+    }
+
+    async function clearCouponFromSiteContent(code){
+      const siteContentApi = getSiteContentApi();
+      if(!siteContentApi || typeof siteContentApi.fetch !== "function" || typeof siteContentApi.save !== "function"){
+        throw new Error("Coupon storage unavailable");
+      }
+      const targetCode = String(code || "").trim().toUpperCase();
+      const state = await siteContentApi.fetch(true);
+      const coupons = Array.isArray(state && state.coupons) ? state.coupons.slice() : [];
+      const nextCoupons = coupons.filter(function(coupon){
+        return String(coupon && coupon.code || "").trim().toUpperCase() !== targetCode;
+      });
+      await siteContentApi.save({ coupons: nextCoupons });
+      return {
+        ok: true,
+        coupons: nextCoupons,
+        primaryCoupon: nextCoupons.find(function(coupon){
+          return String(coupon && coupon.status || "").toLowerCase() === "active";
+        }) || null
+      };
+    }
 
     function ensureAdminLoginStatus(){
       const els = getAdminElements();
@@ -945,7 +1075,13 @@ window.addEventListener("pageshow", restoreAdminSession);
         adminCouponCache = Array.isArray(data.coupons) ? data.coupons : [];
         setCouponFormValues(data.primaryCoupon || adminCouponCache[0] || null);
       }catch(error){
-        setCouponFormValues(null);
+        try{
+          const data = await loadCouponsFromSiteContent();
+          adminCouponCache = Array.isArray(data.coupons) ? data.coupons : [];
+          setCouponFormValues(data.primaryCoupon || adminCouponCache[0] || null);
+        }catch(fallbackError){
+          setCouponFormValues(null);
+        }
       }
     }
 
@@ -987,7 +1123,14 @@ window.addEventListener("pageshow", restoreAdminSession);
         setCouponFormValues(data.primaryCoupon || couponData);
         alert("Coupon saved successfully");
       }catch(error){
-        alert(error.message || "Failed to save coupon");
+        try{
+          const data = await saveCouponToSiteContent(couponData);
+          adminCouponCache = Array.isArray(data.coupons) ? data.coupons : [];
+          setCouponFormValues(data.primaryCoupon || couponData);
+          alert("Coupon saved successfully");
+        }catch(fallbackError){
+          alert((fallbackError && fallbackError.message) || error.message || "Failed to save coupon");
+        }
       }
     }
 
@@ -1008,7 +1151,14 @@ window.addEventListener("pageshow", restoreAdminSession);
         setCouponFormValues(data.primaryCoupon || null);
         alert("Coupon cleared");
       }catch(error){
-        alert(error.message || "Failed to clear coupon");
+        try{
+          const data = await clearCouponFromSiteContent(code);
+          adminCouponCache = Array.isArray(data.coupons) ? data.coupons : [];
+          setCouponFormValues(data.primaryCoupon || null);
+          alert("Coupon cleared");
+        }catch(fallbackError){
+          alert((fallbackError && fallbackError.message) || error.message || "Failed to clear coupon");
+        }
       }
     }
 
@@ -1035,6 +1185,7 @@ window.addEventListener("pageshow", restoreAdminSession);
         }catch(fallbackError){}
       }
       loadCoupon();
+      loadWebsiteAvailability();
     });
 
     window.loginAdmin = loginAdmin;

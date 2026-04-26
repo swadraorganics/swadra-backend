@@ -55,7 +55,7 @@
   window.SWADRA_ADMIN_CONFIG_URL = base + "/api/admin/config";
   window.SWADRA_ADMIN_CREDENTIALS_URL = base + "/api/admin/credentials";
   window.SWADRA_COUPONS_API_URL = base + "/api/coupons";
-  window.SWADRA_APP_STATE_URL = "";
+  window.SWADRA_APP_STATE_URL = base + "/api/app-state";
 
   var storageProto = window.Storage && window.Storage.prototype;
   var rawGetItem = storageProto && storageProto.getItem;
