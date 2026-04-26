@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swadra Organics - Shiprocket Orders</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:#f8f5f2;color:#1f1f1f}
+    :root{
+      --primary:#7a3d3d;
+      --primary-dark:#5f2f2f;
+      --card:#fff;
+      --line:#e7dfd7;
+      --muted:#6c6c6c;
+      --success:#137a43;
+      --warn:#b36b00;
+      --danger:#c62828;
+      --shadow:0 10px 30px rgba(0,0,0,.08);
+    }
+    .wrap{padding:22px;display:grid;gap:18px}
+    .topbar,.panel,.stat-card,.ship-card{background:var(--card);border-radius:22px;box-shadow:var(--shadow)}
+    .topbar{padding:24px 28px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff}
+    .topbar h1{margin:0;font-size:32px}
+    .topbar p{margin:8px 0 0;opacity:.92;font-size:15px;line-height:1.6}
+    .toolbar,.filters,.stats-grid,.meta-grid,.ship-actions{display:flex;gap:12px;flex-wrap:wrap}
+    .toolbar a,.toolbar button,.ship-actions a,.ship-actions button{
+      border:none;text-decoration:none;cursor:pointer;border-radius:12px;padding:12px 18px;font-weight:700;font-size:14px;display:inline-flex;align-items:center;justify-content:center
+    }
+    .btn-primary{background:var(--primary);color:#fff}
+    .btn-dark{background:#333;color:#fff}
+    .btn-light{background:#eee7df;color:#3a2b2b}
+    .btn-success{background:#e8f8ee;color:var(--success)}
+    .panel{padding:22px 24px}
+    .panel h2{margin:0 0 14px;color:var(--primary)}
+    .filters input,.filters select{
+      flex:1 1 220px;padding:12px 13px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:14px
+    }
+    .stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+    .stat-card{padding:16px}
+    .stat-card .label{font-size:12px;color:var(--muted);font-weight:700}
+    .stat-card .value{font-size:28px;font-weight:800;margin-top:8px;color:var(--primary)}
+    .ship-list{display:grid;gap:14px}
+    .ship-card{padding:18px 20px;border:1px solid #efe5dc}
+    .head-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+    .title{font-size:22px;font-weight:800;color:#2f2020}
+    .muted{color:var(--muted);font-size:14px}
+    .badge{display:inline-flex;align-items:center;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800}
+    .badge.shipped{background:#fdf0d8;color:var(--warn)}
+    .badge.delivered{background:#e8f8ee;color:var(--success)}
+    .badge.cancelled{background:#fde8e8;color:var(--danger)}
+    .badge.pending{background:#f3ece7;color:#7a3d3d}
+    .meta-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
+    .meta-box{border:1px solid var(--line);border-radius:16px;padding:12px 14px;background:#fffdfa}
+    .meta-box .k{font-size:11px;font-weight:800;color:#8a7468;text-transform:uppercase;letter-spacing:.08em}
+    .meta-box .v{margin-top:6px;font-size:17px;font-weight:700;color:#2a2020;word-break:break-word}
+    .empty{padding:34px;text-align:center;color:var(--muted);border:1px dashed #d8cdc2;border-radius:18px;background:#fffdfa}
+    @media (max-width:1100px){
+      .stats-grid,.meta-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width:720px){
+      .wrap{padding:16px}
+      .topbar h1{font-size:24px}
+      .stats-grid,.meta-grid{grid-template-columns:1fr}
+    }
+  </style>
+  <script src="api-config.js"></script>
+<link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;">
+  <a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a>
+  <a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a>
+  <a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a>
+  <a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a>
+  <a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a>
+  <a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Shiprocket</a>
+  <a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a>
+  <a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a>
+  <a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a>
+  <a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a>
+</div>
+<div class="wrap">
+  <div class="topbar">
+    <h1>Shiprocket Orders</h1>
+    <p>Jin orders me AWB, shipment ID ya courier details aa chuki hain, woh yahan alag se show honge. Yahin se aap shipment status dekh sakte ho, tracking page khol sakte ho aur label print kar sakte ho.</p>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn-primary" onclick="renderShiprocketOrders()">Refresh Shiprocket</button>
+    <a class="btn-light" href="admin-orders.html">Open Orders</a>
+    <a class="btn-dark" href="trackorder.html">Open Tracking Page</a>
+    <a class="btn-light" href="admin-index.html">Back to Admin</a>
+  </div>
+
+  <div class="stats-grid" id="statsGrid"></div>
+
+  <div class="panel">
+    <h2>Filters</h2>
+    <div class="filters">
+      <input id="searchInput" placeholder="Search by order id, customer, AWB, courier, shipment" oninput="renderShiprocketOrders()">
+      <select id="statusFilter" onchange="renderShiprocketOrders()">
+        <option value="">All Statuses</option>
+        <option value="pending">Pending</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="shipped">Shipped</option>
+        <option value="delivered">Delivered</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Shiprocket Synced Orders</h2>
+    <div class="ship-list" id="shipList"></div>
+  </div>
+</div>
+
+<script>
+const ORDER_SOURCE_KEYS = ["adminOrders","orders","swadraOrders","customerOrders","allOrders"];
+
+function safeJsonParse(value, fallback){
+  try{
+    const parsed = JSON.parse(value);
+    return parsed == null ? fallback : parsed;
+  }catch(error){
+    return fallback;
+  }
+}
+
+function getUsersMap(){
+  const authApi = window.SWADRA_AUTH || null;
+  if(authApi && typeof authApi.getUsers === "function"){
+    return authApi.getUsers() || {};
+  }
+  return safeJsonParse(localStorage.getItem("users"), {});
+}
+
+function normalizeText(value){
+  return String(value || "").trim().toLowerCase();
+}
+
+function getValueByPossibleKeys(source, keys){
+  for(const key of keys){
+    const value = source && source[key];
+    if(value !== undefined && value !== null && String(value).trim()){
+      return value;
+    }
+  }
+  return "";
+}
+
+function buildShippingAddress(raw){
+  const shipping = raw && typeof raw.shipping === "object" ? raw.shipping : {};
+  const address = getValueByPossibleKeys(raw, ["shippingAddress","address","fullAddress"]);
+  if(address) return String(address).trim();
+  return [
+    shipping.house,
+    shipping.area,
+    shipping.nearby,
+    shipping.city,
+    shipping.pincode,
+    shipping.postOffice,
+    shipping.district,
+    shipping.state
+  ].map(item=>String(item || "").trim()).filter(Boolean).join(", ");
+}
+
+function normalizeOrderStatus(raw){
+  const value = normalizeText(raw);
+  if(!value) return "pending";
+  if(value.includes("deliver")) return "delivered";
+  if(value.includes("cancel")) return "cancelled";
+  if(value.includes("ship")) return "shipped";
+  if(value.includes("confirm")) return "confirmed";
+  return "pending";
+}
+
+function extractAmount(raw){
+  const possible = [
+    raw.amount, raw.totalAmount, raw.grandTotal, raw.total, raw.finalAmount, raw.payableAmount
+  ];
+  for(const value of possible){
+    const numeric = Number(value);
+    if(Number.isFinite(numeric) && numeric > 0){
+      return numeric;
+    }
+  }
+  return 0;
+}
+
+function normalizeOrder(raw, sourceKey, index){
+  const id = String(getValueByPossibleKeys(raw, ["id","orderId","orderID","razorpayOrderId"]) || `${sourceKey}-${index + 1}`).trim();
+  const status = normalizeOrderStatus(getValueByPossibleKeys(raw, ["orderStatus","status","deliveryStatus"]));
+  const customerName = String(getValueByPossibleKeys(raw, ["shippingName","customerName","name","fullName","username"])).trim() || "Unknown Customer";
+  const email = String(getValueByPossibleKeys(raw, ["email","emailId","mail"])).trim();
+  const mobile = String(getValueByPossibleKeys(raw, ["shippingPhone","mobile","phone","phoneNumber","mobileNumber","contactNumber"])).trim();
+  const awb = String(getValueByPossibleKeys(raw, ["awb","trackingId","awbCode"])).trim();
+  const shipmentId = String(getValueByPossibleKeys(raw, ["shipment_id","shipmentId"])).trim();
+  const courierName = String(getValueByPossibleKeys(raw, ["courierName","courier","courier_company_name"])).trim();
+  const expectedDelivery = String(getValueByPossibleKeys(raw, ["expectedDelivery","edd","estimatedDeliveryDate"])).trim();
+  const trackingUpdatedAt = String(getValueByPossibleKeys(raw, ["trackingUpdatedAt","updatedAt","date","createdAt"])).trim();
+  const shippingAddress = buildShippingAddress(raw);
+  return {
+    id,
+    status,
+    customerName,
+    email,
+    mobile,
+    amount: extractAmount(raw),
+    awb,
+    shipmentId,
+    courierName,
+    expectedDelivery,
+    trackingUpdatedAt,
+    shippingAddress,
+    searchText: normalizeText([id, customerName, email, mobile, awb, shipmentId, courierName, shippingAddress].join(" "))
+  };
+}
+
+function getAllOrders(){
+  const merged = [];
+  const seen = new Set();
+  ORDER_SOURCE_KEYS.forEach((key)=>{
+    const list = safeJsonParse(localStorage.getItem(key), []);
+    if(!Array.isArray(list)) return;
+    list.forEach((item, index)=>{
+      const normalized = normalizeOrder(item, key, index);
+      const dedupeKey = `${normalized.id}::${normalized.awb}::${normalized.shipmentId}`;
+      if(seen.has(dedupeKey)) return;
+      seen.add(dedupeKey);
+      merged.push(normalized);
+    });
+  });
+
+  const users = getUsersMap();
+  Object.entries(users).forEach(([email, user])=>{
+    const list = Array.isArray(user && user.orders) ? user.orders : [];
+    list.forEach((item, index)=>{
+      const normalized = normalizeOrder(Object.assign({ email }, item), "users", index);
+      const dedupeKey = `${normalized.id}::${normalized.awb}::${normalized.shipmentId}`;
+      if(seen.has(dedupeKey)) return;
+      seen.add(dedupeKey);
+      merged.push(normalized);
+    });
+  });
+
+  return merged;
+}
+
+function getShiprocketOrders(){
+  return getAllOrders().filter(order=>order.awb || order.shipmentId || order.courierName);
+}
+
+function rupee(value){
+  return `₹${Math.round(Number(value || 0))}`;
+}
+
+function escapeHtml(value){
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function openPrintLabel(order){
+  const labelWindow = window.open("", "_blank", "width=900,height=700");
+  if(!labelWindow) return;
+  const qrText = encodeURIComponent([order.id, order.shipmentId || "-", order.awb || "-", order.customerName, order.mobile, order.shippingAddress].join(" | "));
+  const qrUrl = `https://chart.googleapis.com/chart?cht=qr&chs=180x180&chl=${qrText}`;
+  labelWindow.document.write(`<!DOCTYPE html><html><head><title>Print Label</title><style>
+    body{font-family:Arial,sans-serif;padding:24px;color:#1f1f1f}
+    .box{border:2px solid #7a3d3d;border-radius:18px;padding:22px}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:20px;align-items:start}
+    .brand{font-size:28px;font-weight:800;color:#7a3d3d}
+    .muted{color:#6c6c6c}
+    .section{margin-top:18px;padding:16px;border:1px solid #e7dfd7;border-radius:14px}
+    .label{font-size:12px;font-weight:800;color:#8a7468;text-transform:uppercase;letter-spacing:.08em}
+    .value{margin-top:6px;font-size:18px;font-weight:700}
+    img{max-width:180px}
+  </style></head><body onload="window.print()"><div class="box"><div class="grid"><div><div class="brand">Swadra Organics</div><div class="muted">Shiprocket shipment label</div><div class="section"><div class="label">Ship To</div><div class="value">${escapeHtml(order.customerName)}</div><div>${escapeHtml(order.mobile || "-")}</div><div>${escapeHtml(order.shippingAddress || "Address not available")}</div></div><div class="section"><div class="label">Shipment</div><div class="value">Shipment ID: ${escapeHtml(order.shipmentId || "-")}</div><div>AWB: ${escapeHtml(order.awb || "-")}</div><div>Courier: ${escapeHtml(order.courierName || "Shiprocket")}</div><div>Order: ${escapeHtml(order.id)}</div></div></div><div><img src="${qrUrl}" alt="QR"><div class="section"><div class="label">Ship From</div><div class="value">Swadra Organics</div><div>Dispatch Team</div></div></div></div></div></body></html>`);
+  labelWindow.document.close();
+}
+
+function renderStats(orders){
+  const shipped = orders.filter(item=>item.status === "shipped").length;
+  const delivered = orders.filter(item=>item.status === "delivered").length;
+  const pending = orders.filter(item=>item.status === "pending" || item.status === "confirmed").length;
+  const totalAmount = orders.reduce((sum, item)=>sum + Number(item.amount || 0), 0);
+  document.getElementById("statsGrid").innerHTML = `
+    <div class="stat-card"><div class="label">Shiprocket Orders</div><div class="value">${orders.length}</div></div>
+    <div class="stat-card"><div class="label">In Transit</div><div class="value">${shipped}</div></div>
+    <div class="stat-card"><div class="label">Delivered</div><div class="value">${delivered}</div></div>
+    <div class="stat-card"><div class="label">Shipment Value</div><div class="value">${rupee(totalAmount)}</div></div>
+  `;
+}
+
+function renderShiprocketOrders(){
+  const query = normalizeText(document.getElementById("searchInput").value);
+  const statusFilter = normalizeText(document.getElementById("statusFilter").value);
+  const all = getShiprocketOrders();
+  const filtered = all.filter(order=>{
+    const queryMatch = !query || order.searchText.includes(query);
+    const statusMatch = !statusFilter || order.status === statusFilter;
+    return queryMatch && statusMatch;
+  });
+  renderStats(filtered);
+  const list = document.getElementById("shipList");
+  if(!filtered.length){
+    list.innerHTML = `<div class="empty">No Shiprocket synced orders found yet. AWB / shipment ID aate hi yahan show ho jayenge.</div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(order=>{
+    const badgeClass = ["delivered","cancelled","shipped"].includes(order.status) ? order.status : "pending";
+    return `
+      <div class="ship-card">
+        <div class="head-row">
+          <div>
+            <div class="title">${escapeHtml(order.customerName)}</div>
+            <div class="muted">Order ID: ${escapeHtml(order.id)}${order.email ? ` • ${escapeHtml(order.email)}` : ""}</div>
+          </div>
+          <span class="badge ${badgeClass}">${escapeHtml(order.status)}</span>
+        </div>
+        <div class="meta-grid">
+          <div class="meta-box"><div class="k">Shipment ID</div><div class="v">${escapeHtml(order.shipmentId || "-")}</div></div>
+          <div class="meta-box"><div class="k">AWB</div><div class="v">${escapeHtml(order.awb || "-")}</div></div>
+          <div class="meta-box"><div class="k">Courier</div><div class="v">${escapeHtml(order.courierName || "Shiprocket")}</div></div>
+          <div class="meta-box"><div class="k">Amount</div><div class="v">${rupee(order.amount)}</div></div>
+          <div class="meta-box"><div class="k">Mobile</div><div class="v">${escapeHtml(order.mobile || "-")}</div></div>
+          <div class="meta-box"><div class="k">Expected Delivery</div><div class="v">${escapeHtml(order.expectedDelivery || "-")}</div></div>
+          <div class="meta-box"><div class="k">Tracking Updated</div><div class="v">${escapeHtml(order.trackingUpdatedAt || "-")}</div></div>
+          <div class="meta-box"><div class="k">Address</div><div class="v">${escapeHtml(order.shippingAddress || "Address not available")}</div></div>
+        </div>
+        <div class="ship-actions" style="margin-top:16px">
+          <a class="btn-primary" href="trackorder.html">Open Tracking</a>
+          <a class="btn-light" href="admin-orders.html">Open Order</a>
+          <button class="btn-success" onclick='openPrintLabel(${JSON.stringify(order)})'>Print Label</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+window.addEventListener("storage", function(event){
+  if(ORDER_SOURCE_KEYS.includes(event.key) || event.key === "users"){
+    renderShiprocketOrders();
+  }
+});
+
+renderShiprocketOrders();
+</script>
+</body>
+</html>

@@ -329,9 +329,10 @@
     }
   </style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<link rel="stylesheet" href="mobile.css">
 <script src="api-config.js"></script></head>
 <body>
-<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
+<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Callback Requests</a></div>
   <div class="wrap">
     <div class="topbar">
       <h1>Swadra Organics Admin Payments</h1>
@@ -395,11 +396,11 @@
             </div>
             <div class="summary-card green">
               <div class="label">Paid Amount</div>
-              <div class="value" id="paidAmountView">â‚¹0</div>
+              <div class="value" id="paidAmountView">₹0</div>
             </div>
             <div class="summary-card gold">
               <div class="label">Pending Amount</div>
-              <div class="value" id="pendingAmountView">â‚¹0</div>
+              <div class="value" id="pendingAmountView">₹0</div>
             </div>
             <div class="summary-card red">
               <div class="label">Reviewed</div>
@@ -410,11 +411,11 @@
           <div class="hint">
             Page common payment and order storage keys read karta hai.<br>
             Reviewed status alag localStorage map me save hota hai, original payment data break nahi hota.<br>
-            Agar order/payment data localStorage me save ho raha hai to yahan auto show hoga.
+            Backend payment attempts aur saved orders se verified Razorpay method details bhi yahan show hongi.
           </div>
 
           <div class="small-note">
-            Keys checked: <b>payments, adminPayments, swadraPayments, orders, adminOrders, swadraOrders, customerOrders, allOrders</b>
+            Keys checked: <b>backend payment attempts, backend orders, payments, adminPayments, swadraPayments, orders, adminOrders, swadraOrders, customerOrders, allOrders</b>
           </div>
         </div>
       </div>
@@ -449,8 +450,10 @@
       }
     }
 
+    const API_BASE = window.SWADRA_API_BASE || "";
+
     function rupee(value){
-      return "â‚¹" + Number(value || 0).toFixed(0);
+      return "₹" + Number(value || 0).toFixed(0);
     }
 
     function escapeHtml(str){
@@ -527,6 +530,27 @@
       return 0;
     }
 
+    function getInstrumentLabel(raw){
+      const instrument = raw && raw.paymentInstrument && typeof raw.paymentInstrument === "object" ? raw.paymentInstrument : {};
+      const method = String(getValueByPossibleKeys(raw, ["paymentMethod","method","mode"]) || instrument.method || "").trim().toLowerCase();
+      if(method === "upi"){
+        return instrument.vpa ? "UPI • " + instrument.vpa : "UPI";
+      }
+      if(method === "card"){
+        const parts = ["Card"];
+        if(instrument.network) parts.push(String(instrument.network).toUpperCase());
+        if(instrument.last4) parts.push("xxxx " + instrument.last4);
+        return parts.join(" • ");
+      }
+      if(method === "netbanking"){
+        return instrument.bank ? "Netbanking • " + instrument.bank : "Netbanking";
+      }
+      if(method === "wallet"){
+        return instrument.wallet ? "Wallet • " + instrument.wallet : "Wallet";
+      }
+      return String(raw.paymentInstrumentLabel || "").trim();
+    }
+
     function normalizePayment(raw, sourceKey, index){
       const reviewMap = getReviewMap();
       const id = buildPaymentId(raw, sourceKey, index);
@@ -551,6 +575,7 @@
         email,
         mobile,
         method,
+        instrumentLabel: getInstrumentLabel(raw),
         status,
         amount,
         reviewed,
@@ -590,8 +615,34 @@
       return merged;
     }
 
-    function getFilteredPayments(){
-      const payments = getPaymentsFromStorage();
+    async function getBackendPayments(){
+      const merged = [];
+      try{
+        const [attemptsResponse, ordersResponse] = await Promise.all([
+          fetch(API_BASE + "/api/payments/attempts", { cache:"no-store" }),
+          fetch(API_BASE + "/api/orders", { cache:"no-store" }).catch(()=>null)
+        ]);
+
+        if(attemptsResponse && attemptsResponse.ok){
+          const attemptsData = await attemptsResponse.json().catch(()=>({ ok:false, attempts:[] }));
+          (Array.isArray(attemptsData.attempts) ? attemptsData.attempts : []).forEach((item, index)=>{
+            merged.push(normalizePayment(item, "backendPaymentAttempts", index));
+          });
+        }
+
+        if(ordersResponse && ordersResponse.ok){
+          const ordersData = await ordersResponse.json().catch(()=>({ ok:false, orders:[] }));
+          (Array.isArray(ordersData.orders) ? ordersData.orders : []).forEach((item, index)=>{
+            merged.push(normalizePayment(item, "backendOrders", index));
+          });
+        }
+      }catch(error){
+        console.error("backend payments fetch failed", error);
+      }
+      return merged;
+    }
+
+    function getFilteredPayments(payments){
       const query = normalizeText(document.getElementById("searchInput").value);
       const statusFilter = document.getElementById("statusFilter").value;
       const reviewFilter = document.getElementById("reviewFilter").value;
@@ -653,9 +704,17 @@
       document.getElementById("reviewedPaymentsView").textContent = reviewedCount;
     }
 
-    function renderPayments(){
-      const allPayments = getPaymentsFromStorage();
-      const payments = getFilteredPayments();
+    async function renderPayments(){
+      const storagePayments = getPaymentsFromStorage();
+      const backendPayments = await getBackendPayments();
+      const seen = new Set();
+      const allPayments = [...backendPayments, ...storagePayments].filter((payment)=>{
+        const key = [payment.paymentId, payment.orderId, payment.amount, payment.sourceKey].join("|");
+        if(seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      const payments = getFilteredPayments(allPayments);
       const paymentsList = document.getElementById("paymentsList");
 
       renderStats(allPayments, payments);
@@ -680,6 +739,7 @@
                   <span class="badge ${statusClass}">${escapeHtml(payment.status)}</span>
                   <span class="badge">${payment.reviewed ? "Reviewed" : "Unreviewed"}</span>
                   <span class="badge gold">Method: ${escapeHtml(payment.method)}</span>
+                  ${payment.instrumentLabel ? `<span class="badge green">${escapeHtml(payment.instrumentLabel)}</span>` : ""}
                 </div>
               </div>
               <div class="badge-wrap">

@@ -5,22 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Account - Swadra Organics</title>
 
-<script src="page-storage-sync.js"></script>
-<script>
-window.installSwadraPageStorageSync({
-  pageName: "account page",
-  persistedKeys: [
-    "currentUser",
-    "users",
-    "cart",
-    "redirectAfterLogin",
-    "tempUser",
-    "otp",
-    "dashboardPasswordOtp",
-    "userPhone"
-  ]
-});
-</script>
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -39,6 +23,9 @@ window.installSwadraPageStorageSync({
       --success:#198754;
       --danger:#b42345;
       --bg:#f1e3e3;
+      --top-bar-height:43px;
+      --navbar-height:62px;
+      --sale-bar-height:44px;
     }
 
     *{
@@ -54,11 +41,64 @@ window.installSwadraPageStorageSync({
         radial-gradient(circle at top left, rgba(122,61,61,0.08), transparent 22%),
         radial-gradient(circle at bottom right, rgba(122,61,61,0.08), transparent 20%),
         linear-gradient(135deg,#f1e3e3,#f7eeee,#f1e3e3);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:24px;
+      display:block;
+      padding:0;
       color:var(--text);
+    }
+
+    .top-bar{
+      position:sticky !important;
+      top:0 !important;
+      z-index:7002 !important;
+      text-align:center;
+      padding:12px;
+      font-weight:600;
+      font-size:16px;
+      background:#fff;
+      color:#7a3d3d;
+      font-family:Arial,sans-serif;
+      border-bottom:1px solid rgba(198,40,40,0.08);
+    }
+
+    .navbar{
+      position:sticky !important;
+      top:calc(var(--top-bar-height) - 1px) !important;
+      z-index:7001 !important;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:18px;
+      padding:14px 24px;
+      background:#7a3d3d;
+      font-family:Arial,sans-serif;
+    }
+
+    .logo{
+      color:#fff;
+      font-size:26px;
+      font-weight:900;
+      white-space:nowrap;
+    }
+
+    .logo a{
+      color:#fff;
+      text-decoration:none;
+      font:inherit;
+    }
+
+    .nav-links{
+      display:flex;
+      gap:18px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .nav-links a{
+      color:#fff;
+      text-decoration:none;
+      font-size:16px;
+      font-weight:700;
     }
 
     .auth-overlay{
@@ -66,7 +106,8 @@ window.installSwadraPageStorageSync({
       display:flex;
       align-items:center;
       justify-content:center;
-      min-height:calc(100vh - 48px);
+      min-height:calc(100vh - var(--top-bar-height) - var(--navbar-height) - var(--sale-bar-height) - 24px);
+      padding:24px;
     }
 
     .auth-modal{
@@ -608,6 +649,11 @@ window.installSwadraPageStorageSync({
     }
 
     @media (max-width: 900px){
+      .navbar{
+        flex-wrap:wrap;
+        justify-content:center;
+      }
+
       .auth-right{
         padding:18px;
       }
@@ -622,7 +668,20 @@ window.installSwadraPageStorageSync({
     }
 
     @media (max-width: 560px){
-      body{
+      .navbar{
+        padding:14px 16px;
+      }
+
+      .logo{
+        font-size:22px;
+      }
+
+      .nav-links{
+        gap:12px;
+        justify-content:center;
+      }
+
+      .auth-overlay{
         padding:12px;
       }
 
@@ -658,8 +717,24 @@ window.installSwadraPageStorageSync({
   </style>
 <style>html,body{background:#f1e3e3 !important;}</style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<link rel="stylesheet" href="mobile.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="api-config.js"></script></head>
 <body>
+
+  <div class="top-bar">Eat Healthy &bull; Be Swadra Family</div>
+  <header class="navbar">
+    <div class="logo"><a href="index.html">Swadra Organics</a></div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="spices.html">Spices</a>
+      <a href="dryfruits.html">Dry Fruits</a>
+      <a href="oilghee.html">Oil Ghee &amp; More</a>
+      <a href="aboutus.html">About Us</a>
+    </div>
+  </header>
+  <div class="sale-bar"><div class="sale-bar-track" id="saleBarTrack"></div></div>
 
   <div class="auth-overlay">
     <div class="auth-modal">
@@ -823,10 +898,12 @@ window.installSwadraPageStorageSync({
 
   <script>
     emailjs.init("uqdnXG18txM1DBF6j");
+    const authApi = window.SWADRA_AUTH || null;
 
     let currentEmail = "";
     let currentPhone = "";
     let isPasswordResetFlow = false;
+    let hasHandledAuthenticatedEntry = false;
 
     function updateProgress(stepNumber){
       const pills = document.querySelectorAll('.step-pill');
@@ -845,9 +922,35 @@ window.installSwadraPageStorageSync({
       }
     }
 
-    function redirectAfterAuth(){
-      const redirectTo = localStorage.getItem("redirectAfterLogin") || "index.html";
-      localStorage.removeItem("redirectAfterLogin");
+    function getUsers(){
+      if(authApi && typeof authApi.getUsers === "function"){
+        return authApi.getUsers();
+      }
+      return JSON.parse(localStorage.getItem("users")) || {};
+    }
+
+    function saveUsers(users){
+      if(authApi && typeof authApi.saveUsers === "function"){
+        return authApi.saveUsers(users);
+      }
+      localStorage.setItem("users", JSON.stringify(users));
+      return users;
+    }
+
+    function getCurrentUserEmail(){
+      if(authApi && typeof authApi.getCurrentUserEmail === "function"){
+        return authApi.getCurrentUserEmail();
+      }
+      return String(localStorage.getItem("currentUser") || "").trim().toLowerCase();
+    }
+
+    function redirectAfterAuth(defaultPath){
+      const redirectTo = authApi && typeof authApi.consumeRedirectAfterLogin === "function"
+        ? authApi.consumeRedirectAfterLogin(defaultPath || "dashboard.html")
+        : (localStorage.getItem("redirectAfterLogin") || defaultPath || "dashboard.html");
+      if(!authApi || typeof authApi.consumeRedirectAfterLogin !== "function"){
+        localStorage.removeItem("redirectAfterLogin");
+      }
       window.location.href = redirectTo;
     }
 
@@ -862,7 +965,10 @@ window.installSwadraPageStorageSync({
     }
 
     function mergeGuestCartIntoUser(email){
-      const users = JSON.parse(localStorage.getItem("users")) || {};
+      if(authApi && typeof authApi.mergeGuestCartIntoUser === "function"){
+        return authApi.mergeGuestCartIntoUser(email);
+      }
+      const users = getUsers();
       if(!email || !users[email]) return [];
       const guestCart = compactCartItems(JSON.parse(localStorage.getItem("cart")) || []);
       const userCart = compactCartItems(users[email].cart || []);
@@ -870,21 +976,33 @@ window.installSwadraPageStorageSync({
         const existing = userCart.find(userItem => String(userItem.id) === String(item.id));
         if(existing){
           existing.qty = Number(existing.qty || 0) + Number(item.qty || 0);
-          if(item.price) existing.price = Number(item.price);
-          if(item.mrp) existing.mrp = Number(item.mrp);
-          if(item.image) existing.image = item.image;
-          if(Array.isArray(item.images) && item.images.length) existing.images = item.images;
         }else{
           userCart.push(item);
         }
       });
       users[email].cart = compactCartItems(userCart);
-      localStorage.setItem("users", JSON.stringify(users));
+      saveUsers(users);
       localStorage.setItem("cart", JSON.stringify(users[email].cart));
       return users[email].cart;
     }
 
-    function startFlow(){
+    function handleExistingAuthenticatedUser(){
+      if(hasHandledAuthenticatedEntry) return true;
+      const currentUser = getCurrentUserEmail();
+      const users = getUsers();
+      if(currentUser && users[currentUser]){
+        hasHandledAuthenticatedEntry = true;
+        showMsg("You are already signed in.", "success");
+        setTimeout(function(){
+          redirectAfterAuth("dashboard.html");
+        }, 120);
+        return true;
+      }
+      return false;
+    }
+
+    async function startFlow(){
+      if(handleExistingAuthenticatedUser()) return;
       let email = document.getElementById("email").value.trim().toLowerCase();
       let phone = document.getElementById("phone").value.trim();
 
@@ -899,14 +1017,34 @@ window.installSwadraPageStorageSync({
       currentEmail = email;
       currentPhone = phone;
 
-      localStorage.setItem("tempUser", JSON.stringify({
+      sessionStorage.setItem("tempUser", JSON.stringify({
         email: email,
         phone: phone
       }));
 
-      let users = JSON.parse(localStorage.getItem("users")) || {};
+      if(authApi && typeof authApi.refreshUsers === "function"){
+        try{
+          await authApi.refreshUsers();
+        }catch(error){
+          console.error("account refresh before start flow failed", error);
+        }
+      }
 
-      if(users[email] && users[email].phone !== phone){
+      let users = getUsers();
+      let existingAccount = users[email] || null;
+      if(authApi && typeof authApi.findUserByEmailOrPhone === "function"){
+        try{
+          existingAccount = await authApi.findUserByEmailOrPhone(email, phone, { forceRefresh:true });
+        }catch(error){
+          console.error("account lookup failed", error);
+        }
+      }
+
+      if(existingAccount && existingAccount.email && existingAccount.email !== email){
+        return showMsg("This mobile number is already linked with another account. Please login.", "error");
+      }
+
+      if(existingAccount && existingAccount.phone && existingAccount.phone !== phone){
         return showMsg("This email is already registered with a different mobile number.", "error");
       }
 
@@ -916,17 +1054,19 @@ window.installSwadraPageStorageSync({
         }
       }
 
-      if(users[email] && users[email].password){
+      if(existingAccount && existingAccount.password){
+        currentEmail = existingAccount.email || email;
+        currentPhone = existingAccount.phone || phone;
         isPasswordResetFlow = false;
         document.getElementById("loginPass").value = "";
-        showMsg("Account found. Please enter your password.", "success");
+        showMsg("Account already exists. Please login.", "success");
         showStep("step4");
         updateProgress(4);
         return;
       }
 
       let otp = String(Math.floor(1000 + Math.random()*9000));
-      localStorage.setItem("otp", otp);
+      sessionStorage.setItem("otp", otp);
 
       emailjs.send(
         "service_12k6w9q",
@@ -948,10 +1088,10 @@ window.installSwadraPageStorageSync({
 
     function verifyOTP(){
       let entered = document.getElementById("otp").value.trim();
-      let saved = localStorage.getItem("otp");
+      let saved = sessionStorage.getItem("otp");
 
       if(entered === saved){
-        localStorage.removeItem("otp");
+        sessionStorage.removeItem("otp");
         showMsg(
           isPasswordResetFlow
             ? "OTP verified. Set your new password."
@@ -971,15 +1111,15 @@ window.installSwadraPageStorageSync({
       }
     }
 
-    function createAccount(){
+    async function createAccount(){
       let pass = document.getElementById("password").value;
 
       if(pass.length < 6){
         return showMsg("Password must be at least 6 characters.", "error");
       }
 
-      let temp = JSON.parse(localStorage.getItem("tempUser"));
-      let users = JSON.parse(localStorage.getItem("users")) || {};
+      let temp = JSON.parse(sessionStorage.getItem("tempUser") || "null");
+      let users = getUsers();
 
       if(!temp){
         if(isPasswordResetFlow && currentEmail && users[currentEmail]){
@@ -994,25 +1134,53 @@ window.installSwadraPageStorageSync({
 
       const existingUser = users[temp.email] || {};
 
-      users[temp.email] = {
-        email: temp.email,
-        phone: temp.phone,
-        password: pass,
-        cart: existingUser.cart || [],
-        orders: existingUser.orders || [],
-        address: existingUser.address || {},
-        profile: {
-          name: existingUser.profile?.name || temp.email.split("@")[0],
+      if(authApi && typeof authApi.createOrUpdateUserAccount === "function"){
+        const result = await authApi.createOrUpdateUserAccount({
           email: temp.email,
-          phone: temp.phone
+          phone: temp.phone,
+          password: pass,
+          cart: existingUser.cart || [],
+          orders: existingUser.orders || [],
+          address: existingUser.address || {},
+          addresses: existingUser.addresses || [],
+          defaultAddressId: existingUser.defaultAddressId || "",
+          profile: {
+            name: existingUser.profile?.name || temp.email.split("@")[0]
+          },
+          status: existingUser.status || "active"
+        });
+        if(result && result.existed && !isPasswordResetFlow && result.record && result.record.password && result.record.password !== pass){
+          document.getElementById("loginPass").value = "";
+          sessionStorage.removeItem("tempUser");
+          currentEmail = result.record.email || temp.email;
+          currentPhone = result.record.phone || temp.phone;
+          showMsg("Account already exists. Please login.", "error");
+          showStep("step4");
+          updateProgress(4);
+          return;
         }
-      };
-
-      localStorage.setItem("users", JSON.stringify(users));
-      localStorage.setItem("currentUser", temp.email);
-      localStorage.setItem("userPhone", temp.phone);
-      mergeGuestCartIntoUser(temp.email);
-      localStorage.removeItem("tempUser");
+        await authApi.refreshUsers();
+        authApi.signInUser((result && result.record && result.record.email) || temp.email);
+      }else{
+        users[temp.email] = {
+          email: temp.email,
+          phone: temp.phone,
+          password: pass,
+          cart: existingUser.cart || [],
+          orders: existingUser.orders || [],
+          address: existingUser.address || {},
+          profile: {
+            name: existingUser.profile?.name || temp.email.split("@")[0],
+            email: temp.email,
+            phone: temp.phone
+          }
+        };
+        await saveUsers(users);
+        localStorage.setItem("currentUser", temp.email);
+        localStorage.setItem("userPhone", temp.phone);
+        mergeGuestCartIntoUser(temp.email);
+      }
+      sessionStorage.removeItem("tempUser");
 
       showMsg(
         isPasswordResetFlow
@@ -1028,39 +1196,57 @@ window.installSwadraPageStorageSync({
       document.getElementById("passwordHeading").innerText = "Set password";
 
       setTimeout(()=>{
-        redirectAfterAuth();
+        redirectAfterAuth("dashboard.html");
       },1000);
     }
 
-    function login(){
+    async function login(){
       let pass = document.getElementById("loginPass").value;
-      let users = JSON.parse(localStorage.getItem("users")) || {};
+      if(authApi && typeof authApi.refreshUsers === "function"){
+        try{
+          await authApi.refreshUsers();
+        }catch(error){
+          console.error("login refresh failed", error);
+        }
+      }
+      let users = getUsers();
 
       if(users[currentEmail] && users[currentEmail].password === pass){
-        localStorage.setItem("currentUser", currentEmail);
-        localStorage.setItem("userPhone", users[currentEmail].phone);
-        mergeGuestCartIntoUser(currentEmail);
+        if(authApi && typeof authApi.signInUser === "function"){
+          authApi.signInUser(currentEmail);
+        }else{
+          localStorage.setItem("currentUser", currentEmail);
+          localStorage.setItem("userPhone", users[currentEmail].phone);
+          mergeGuestCartIntoUser(currentEmail);
+        }
 
         showMsg("Login successful.", "success");
 
         setTimeout(()=>{
-          redirectAfterAuth();
+          redirectAfterAuth("dashboard.html");
         },1000);
       }else{
         showMsg("Incorrect password.", "error");
       }
     }
 
-    function forgotPassword(){
-      let users = JSON.parse(localStorage.getItem("users")) || {};
+    async function forgotPassword(){
+      if(authApi && typeof authApi.refreshUsers === "function"){
+        try{
+          await authApi.refreshUsers();
+        }catch(error){
+          console.error("forgot password refresh failed", error);
+        }
+      }
+      let users = getUsers();
 
       if(!currentEmail || !users[currentEmail]){
         return showMsg("Enter your email and mobile number first, then continue.", "error");
       }
 
       let otp = String(Math.floor(1000 + Math.random()*9000));
-      localStorage.setItem("otp", otp);
-      localStorage.setItem("tempUser", JSON.stringify({
+      sessionStorage.setItem("otp", otp);
+      sessionStorage.setItem("tempUser", JSON.stringify({
         email: currentEmail,
         phone: users[currentEmail].phone
       }));
@@ -1118,7 +1304,23 @@ window.installSwadraPageStorageSync({
       }
     });
 
-    updateProgress(1);
+    async function initializeAccountPage(){
+      if(authApi && typeof authApi.ready === "function"){
+        try{
+          await authApi.ready();
+        }catch(error){
+          console.error("account auth bootstrap failed", error);
+        }
+      }
+      updateProgress(1);
+      if(!handleExistingAuthenticatedUser()){
+        if(authApi && typeof authApi.getRedirectAfterLogin === "function" && authApi.getRedirectAfterLogin()){
+          showMsg("Please continue login or signup to complete your previous action.", "success");
+        }
+      }
+    }
+
+    initializeAccountPage();
   </script>
 </body>
 </html>

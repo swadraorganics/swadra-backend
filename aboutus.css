@@ -86,7 +86,7 @@ padding:10px 20px;
   font-size:36px;
 color:#000;
 max-width:700px;
-margin:-70px auto 20px;
+margin:-35px auto 28px;
 white-space:nowrap;
 overflow:hidden;
 text-overflow:ellipsis;
@@ -126,14 +126,14 @@ margin-top: 30px;
     text-align: center;
     color: #7a3d3d;
     font-weight: 800;
-    margin: 15px 0;
+    margin: 4px 0 8px;
 }
 
 /* Signature */
 .story-sign {
     text-align: center;
     font-size: 28px;
-    margin-top: 15px;
+    margin-top: 6px;
     font-family: 'great vibes', cursive;
 }
 

@@ -88,6 +88,10 @@
       color:#fff;
       font-weight:800;
       cursor:pointer;
+      position:relative;
+      z-index:2;
+      pointer-events:auto;
+      touch-action:manipulation;
       transition:0.2s ease;
     }
 
@@ -371,19 +375,22 @@
     }
   </style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="api-config.js"></script></head>
 <body>
-<div class="admin-global-nav" id="adminGlobalNav" style="position:sticky;top:0;z-index:99999;display:none;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
+<div class="admin-global-nav" id="adminGlobalNav" style="position:sticky;top:0;z-index:99999;display:none;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Shiprocket</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Callback Requests</a></div>
 
   <!-- LOGIN -->
   <div class="login-wrap" id="adminLoginScreen">
     <div class="login-card">
       <h2>Admin Login</h2>
       <p>Secure admin access for Swadra Organics control hub.</p>
-
-      <input id="adminUser" placeholder="Username (admin)">
-      <input id="adminPass" type="password" placeholder="Password">
-      <button onclick="loginAdmin()">Login</button>
+      <form id="adminLoginForm" onsubmit="return false;">
+        <input id="adminUser" placeholder="Username (admin)">
+        <input id="adminPass" type="password" placeholder="Password">
+        <button id="adminLoginButton" type="submit" onclick="loginAdmin(event)">Login</button>
+      </form>
     </div>
   </div>
 
@@ -400,11 +407,12 @@
       <button onclick="goTo('admin-products.html')">Products</button>
       <button onclick="goTo('backend/ai.html')">Products Control</button>
       <button onclick="goTo('admin-orders.html')">Orders Control</button>
+      <button onclick="goTo('admin-shiprocket.html')">Shiprocket Orders</button>
       <button onclick="goTo('admin-customers.html')">Customers</button>
       <button onclick="goTo('admin-payments.html')">Payments</button>
       <button onclick="goTo('admin-coupons.html')">Coupons</button>
       <button onclick="goTo('admin-profit.html')">Profit Tracker</button>
-      <button onclick="goTo('admin-extra.html')">Extra</button>
+      <button onclick="goTo('admin-callbacks.html')">Callback Requests</button>
       <button onclick="showSettings()">Settings</button>
       <button onclick="logout()">Logout</button>
       <button onclick="goToHome()">Home</button>
@@ -545,6 +553,7 @@
 
 let adminCouponCache = [];
 let currentAdminSession = false;
+const ADMIN_SESSION_KEY = "swadra_admin_session_v1";
 
     function normalizeBackendUrl(url){
       return String(url || "").trim().replace(/\/+$/, "");
@@ -566,35 +575,172 @@ let currentAdminSession = false;
 
 function getApiBase(){
   const resolved = normalizeBackendUrl(window.SWADRA_API_BASE);
+  const sessionConfigured = (()=>{
+    try{
+      const saved = JSON.parse(sessionStorage.getItem("swadra_backend_panel_settings_v2") || "{}");
+      return normalizeBackendUrl(saved.backendUrl || "");
+    }catch(error){
+      return "";
+    }
+  })();
+  const isLocalPreview = /^(localhost|127\.0\.0\.1)$/i.test(String(window.location.hostname || ""));
+  if(isLocalPreview && !sessionConfigured){
+    return "https://swadra-backend-production.up.railway.app";
+  }
   return resolved && !isUnsafeProductionBackendUrl(resolved)
     ? resolved
     : "https://swadra-backend-production.up.railway.app";
 }
+
+    function getAdminFirestoreRoot(){
+      const productApi = window.SWADRA_PRODUCT_DATA || null;
+      if(!productApi || typeof productApi.initFirebaseIfNeeded !== "function"){
+        throw new Error("Firestore helper unavailable");
+      }
+      const db = productApi.initFirebaseIfNeeded();
+      if(!db){
+        throw new Error("Firestore unavailable");
+      }
+      return db.collection("appData").doc("swadra");
+    }
+
+    async function fetchAdminConfigFromFirestore(){
+      const snap = await getAdminFirestoreRoot().get();
+      const data = snap && snap.exists ? (snap.data() || {}) : {};
+      const admin = data.admin && typeof data.admin === "object" ? data.admin : {};
+      return {
+        username: String(admin.username || "admin").trim() || "admin",
+        password: String(admin.password || "1234")
+      };
+    }
+
+    async function updateAdminConfigInFirestore(username, password){
+      const safeUsername = String(username || "").trim();
+      const safePassword = String(password || "");
+      if(!safeUsername || !safePassword){
+        throw new Error("Username and password are required");
+      }
+      await getAdminFirestoreRoot().set({
+        admin: {
+          username: safeUsername,
+          password: safePassword
+        },
+        meta: {
+          updatedAt: new Date().toISOString()
+        }
+      }, { merge: true });
+      return { username: safeUsername };
+    }
+
+    function getAdminElements(){
+      return {
+        adminLoginScreen: document.getElementById("adminLoginScreen"),
+        appShell: document.getElementById("appShell"),
+        sidebar: document.getElementById("sidebar"),
+        mainPanel: document.getElementById("mainPanel"),
+        adminUser: document.getElementById("adminUser"),
+        adminPass: document.getElementById("adminPass"),
+        adminLoginButton: document.getElementById("adminLoginButton"),
+        adminLoginForm: document.getElementById("adminLoginForm"),
+        settingsBox: document.getElementById("settingsBox"),
+        newUser: document.getElementById("newUser"),
+        newPass: document.getElementById("newPass"),
+        otpInput: document.getElementById("otpInput")
+      };
+    }
 
     function getAdminLoginUrl(){ return getApiBase() + "/api/admin/login"; }
     function getAdminConfigUrl(){ return getApiBase() + "/api/admin/config"; }
     function getAdminCredentialsUrl(){ return getApiBase() + "/api/admin/credentials"; }
     function getCouponsApiUrl(){ return getApiBase() + "/api/coupons"; }
 
+    function ensureAdminLoginStatus(){
+      const els = getAdminElements();
+      if(!els.adminLoginForm) return null;
+      let statusEl = document.getElementById("adminLoginStatus");
+      if(!statusEl){
+        statusEl = document.createElement("div");
+        statusEl.id = "adminLoginStatus";
+        statusEl.style.minHeight = "18px";
+        statusEl.style.marginTop = "2px";
+        statusEl.style.marginBottom = "8px";
+        statusEl.style.fontSize = "13px";
+        statusEl.style.fontWeight = "600";
+        statusEl.style.lineHeight = "1.4";
+        statusEl.style.color = "#6b7280";
+        els.adminLoginForm.appendChild(statusEl);
+      }
+      return statusEl;
+    }
+
+    function setAdminLoginStatus(message, tone){
+      const statusEl = ensureAdminLoginStatus();
+      if(!statusEl) return;
+      statusEl.textContent = String(message || "").trim();
+      statusEl.style.color = tone === "error"
+        ? "#c62828"
+        : tone === "success"
+          ? "#1f7a1f"
+          : "#6b7280";
+    }
+
+    function setAdminLoginLoading(isLoading){
+      const els = getAdminElements();
+      if(els.adminLoginButton){
+        els.adminLoginButton.disabled = !!isLoading;
+        els.adminLoginButton.textContent = isLoading ? "Logging in..." : "Login";
+        els.adminLoginButton.style.opacity = isLoading ? "0.78" : "1";
+        els.adminLoginButton.style.cursor = isLoading ? "wait" : "pointer";
+      }
+    }
+
+    function persistAdminSession(payload){
+      currentAdminSession = true;
+      try{
+        sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+          ok: true,
+          username: String(payload && payload.username || "").trim(),
+          loginAt: Date.now()
+        }));
+      }catch(error){}
+    }
+
+    function clearAdminSession(){
+      currentAdminSession = false;
+      try{
+        sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      }catch(error){}
+    }
+
 function showAdminPanel(){
+  const els = getAdminElements();
   const nav = document.getElementById("adminGlobalNav");
   if(nav) nav.style.display = "flex";
-      adminLoginScreen.style.display = "none";
-      appShell.style.display = "block";
-      sidebar.style.display = "block";
-      mainPanel.style.display = "block";
+      if(els.adminLoginScreen) els.adminLoginScreen.style.display = "none";
+      if(els.appShell) els.appShell.style.display = "block";
+      if(els.sidebar) els.sidebar.style.display = "block";
+      if(els.mainPanel) els.mainPanel.style.display = "block";
     }
 
     function showAdminLogin(){
+      const els = getAdminElements();
       const nav = document.getElementById("adminGlobalNav");
       if(nav) nav.style.display = "none";
-      adminLoginScreen.style.display = "flex";
-      appShell.style.display = "none";
-      sidebar.style.display = "none";
-      mainPanel.style.display = "none";
+      if(els.adminLoginScreen) els.adminLoginScreen.style.display = "flex";
+      if(els.appShell) els.appShell.style.display = "none";
+      if(els.sidebar) els.sidebar.style.display = "none";
+      if(els.mainPanel) els.mainPanel.style.display = "none";
 }
 
 function restoreAdminSession(){
+  if(!currentAdminSession){
+    try{
+      const saved = JSON.parse(sessionStorage.getItem(ADMIN_SESSION_KEY) || "null");
+      currentAdminSession = !!(saved && saved.ok);
+    }catch(error){
+      currentAdminSession = false;
+    }
+  }
   if(currentAdminSession){
     showAdminPanel();
   }else{
@@ -602,10 +748,20 @@ function restoreAdminSession(){
       }
     }
 
-    async function loginAdmin(){
-      const enteredUsername = String(adminUser.value || "").trim();
-      const enteredPassword = String(adminPass.value || "");
+    async function loginAdmin(event){
+      if(event && typeof event.preventDefault === "function"){
+        event.preventDefault();
+      }
+      const els = getAdminElements();
+      const enteredUsername = String(els.adminUser && els.adminUser.value || "").trim();
+      const enteredPassword = String(els.adminPass && els.adminPass.value || "");
       const adminLoginUrl = getAdminLoginUrl();
+      if(!enteredUsername || !enteredPassword){
+        setAdminLoginStatus("Username aur password enter karo.", "error");
+        return;
+      }
+      setAdminLoginLoading(true);
+      setAdminLoginStatus("Logging in...", "info");
       try{
         const response = await fetch(adminLoginUrl,{
           method:"POST",
@@ -617,14 +773,31 @@ function restoreAdminSession(){
     });
     const data = await response.json().catch(()=>({ ok:false, message:"Login failed" }));
     if(response.ok && data.ok){
-      currentAdminSession = true;
-      showAdminPanel();
+      persistAdminSession({ username: enteredUsername });
+      setAdminLoginStatus("Login successful. Opening dashboard...", "success");
+      window.location.href = data.redirectTo || "admin-dashboard.html";
       return;
     }
-    alert((data.message || data.error || "Wrong credentials") + " | URL: " + adminLoginUrl + " | Status: " + response.status);
-  }catch(error){
-    alert("Admin login failed. Backend connection issue hai.");
-  }
+    setAdminLoginStatus(data.message || data.error || "Wrong credentials", "error");
+      }catch(error){
+        try{
+          const adminConfig = await fetchAdminConfigFromFirestore();
+          if(
+            enteredUsername === String(adminConfig.username || "").trim() &&
+            enteredPassword === String(adminConfig.password || "")
+          ){
+            persistAdminSession({ username: enteredUsername });
+            setAdminLoginStatus("Login successful. Opening dashboard...", "success");
+            window.location.href = "admin-dashboard.html";
+            return;
+          }
+          setAdminLoginStatus("Wrong credentials", "error");
+        }catch(fallbackError){
+          setAdminLoginStatus("Admin login failed. Backend ya Firestore connection issue hai.", "error");
+        }
+      }finally{
+        setAdminLoginLoading(false);
+      }
 }
 
     function goTo(page){
@@ -636,17 +809,38 @@ function restoreAdminSession(){
     }
 
 function logout(){
-  currentAdminSession = false;
+  clearAdminSession();
   window.location.href = "index.html";
 }
 
 window.addEventListener("DOMContentLoaded", ()=>{
   restoreAdminSession();
+  const els = getAdminElements();
+  if(els.adminLoginButton && !els.adminLoginButton.__swadraBound){
+    els.adminLoginButton.__swadraBound = true;
+    els.adminLoginButton.addEventListener("click", loginAdmin);
+  }
+  if(els.adminLoginForm && !els.adminLoginForm.__swadraSubmitBound){
+    els.adminLoginForm.__swadraSubmitBound = true;
+    els.adminLoginForm.addEventListener("submit", loginAdmin);
+  }
+  if(els.adminPass && !els.adminPass.__swadraEnterBound){
+    els.adminPass.__swadraEnterBound = true;
+    els.adminPass.addEventListener("keydown", function(event){
+      if(event.key === "Enter"){
+        event.preventDefault();
+        loginAdmin();
+      }
+    });
+  }
 });
 window.addEventListener("pageshow", restoreAdminSession);
 
     function showSettings(){
-      settingsBox.classList.toggle("hidden");
+      const els = getAdminElements();
+      if(els.settingsBox){
+        els.settingsBox.classList.toggle("hidden");
+      }
     }
 
     let generatedOTP = "";
@@ -667,7 +861,8 @@ window.addEventListener("pageshow", restoreAdminSession);
     }
 
     async function verifyOTP(){
-      if(otpInput.value != generatedOTP){
+      const els = getAdminElements();
+      if(!els.otpInput || els.otpInput.value != generatedOTP){
         alert("Wrong OTP");
         return;
       }
@@ -676,8 +871,8 @@ window.addEventListener("pageshow", restoreAdminSession);
           method:"POST",
           headers:{ "Content-Type":"application/json" },
           body:JSON.stringify({
-            username:String(newUser.value || "").trim(),
-            password:String(newPass.value || "")
+            username:String(els.newUser && els.newUser.value || "").trim(),
+            password:String(els.newPass && els.newPass.value || "")
           })
         });
     const data = await response.json().catch(()=>({ ok:false }));
@@ -686,7 +881,15 @@ window.addEventListener("pageshow", restoreAdminSession);
     }
     alert("Credentials updated successfully");
   }catch(error){
-    alert(error.message || "Failed to update credentials");
+    try{
+      await updateAdminConfigInFirestore(
+        String(els.newUser && els.newUser.value || "").trim(),
+        String(els.newPass && els.newPass.value || "")
+      );
+      alert("Credentials updated successfully");
+    }catch(fallbackError){
+      alert((fallbackError && fallbackError.message) || error.message || "Failed to update credentials");
+    }
   }
 }
 
@@ -809,20 +1012,32 @@ window.addEventListener("pageshow", restoreAdminSession);
       }
     }
 
-    sidebar.style.display = "none";
-    mainPanel.style.display = "none";
-    appShell.style.display = "none";
+    const adminEls = getAdminElements();
+    if(adminEls.sidebar) adminEls.sidebar.style.display = "none";
+    if(adminEls.mainPanel) adminEls.mainPanel.style.display = "none";
+    if(adminEls.appShell) adminEls.appShell.style.display = "none";
 
     window.addEventListener("DOMContentLoaded", async ()=>{
       try{
         const response = await fetch(getAdminConfigUrl(),{ cache:"no-store" });
         const data = await response.json().catch(()=>({}));
-        if(data.username && !adminUser.value){
-          adminUser.value = data.username;
+        const els = getAdminElements();
+        if(data.username && els.adminUser && !els.adminUser.value){
+          els.adminUser.value = data.username;
         }
-      }catch(error){}
+      }catch(error){
+        try{
+          const adminConfig = await fetchAdminConfigFromFirestore();
+          const els = getAdminElements();
+          if(adminConfig.username && els.adminUser && !els.adminUser.value){
+            els.adminUser.value = adminConfig.username;
+          }
+        }catch(fallbackError){}
+      }
       loadCoupon();
     });
+
+    window.loginAdmin = loginAdmin;
   </script>
 </body>
 </html>

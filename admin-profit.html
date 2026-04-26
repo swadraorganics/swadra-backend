@@ -339,9 +339,12 @@
     }
   </style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<link rel="stylesheet" href="mobile.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="api-config.js"></script></head>
 <body>
-<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
+<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Callback Requests</a></div>
   <div class="wrap">
     <div class="topbar">
       <h1>Swadra Organics Profit Tracker</h1>
@@ -410,12 +413,12 @@
 
           <div class="hint">
             Realized profit = order items Ã— (selling price - total cost).<br>
-            Snapshot profit fallback = ai.html me saved products ke margin records by updated date.<br>
-            Page ai.html ke keys aur IndexedDB dono se product data read karne ki koshish karta hai.
+            Snapshot profit fallback = Firestore products ke margin records by updated date.<br>
+            Product source ab live Firestore collection hai, legacy local cache nahi.
           </div>
 
           <div class="small-note">
-            Product keys checked: <b>swadraBackendProductsCache, adminProducts</b><br>
+            Product source: <b>Firestore products collection</b><br>
             Order keys checked: <b>adminOrders, orders, swadraOrders, customerOrders, allOrders</b>
           </div>
         </div>
@@ -429,9 +432,6 @@
   </div>
 
   <script>
-    const PRODUCTS_DB_NAME = "swadraProductsDB";
-    const PRODUCTS_STORE_NAME = "products";
-    const PRODUCT_KEYS = ["swadraBackendProductsCache", "adminProducts"];
     const ORDER_KEYS = ["adminOrders", "orders", "swadraOrders", "customerOrders", "allOrders"];
 
     function safeJsonParse(value, fallback){
@@ -519,42 +519,19 @@
       };
     }
 
-    async function openProductsDb(){
-      return new Promise((resolve,reject)=>{
-        const request = indexedDB.open(PRODUCTS_DB_NAME,1);
-        request.onsuccess = ()=>resolve(request.result);
-        request.onerror = ()=>reject(request.error);
-      });
-    }
-
-    async function getProductsFromIndexedDb(){
-      try{
-        const db = await openProductsDb();
-        return await new Promise((resolve,reject)=>{
-          const tx = db.transaction(PRODUCTS_STORE_NAME, "readonly");
-          const store = tx.objectStore(PRODUCTS_STORE_NAME);
-          const request = store.getAll();
-          request.onsuccess = ()=>resolve(request.result || []);
-          request.onerror = ()=>reject(request.error);
-        });
-      }catch(error){
+    async function getAiProducts(){
+      const productDataApi = window.SWADRA_PRODUCT_DATA;
+      if(!productDataApi || typeof productDataApi.fetchProducts !== "function"){
+        console.error("Firestore product helper unavailable");
         return [];
       }
-    }
 
-    async function getAiProducts(){
       let merged = [];
-
-      PRODUCT_KEYS.forEach((key)=>{
-        const parsed = safeJsonParse(localStorage.getItem(key), []);
-        if(Array.isArray(parsed)){
-          merged = merged.concat(parsed);
-        }
-      });
-
-      const indexedProducts = await getProductsFromIndexedDb();
-      if(Array.isArray(indexedProducts) && indexedProducts.length){
-        merged = merged.concat(indexedProducts);
+      try{
+        merged = await productDataApi.fetchProducts();
+      }catch(error){
+        console.error("profit product fetch failed", error);
+        return [];
       }
 
       const uniqueMap = new Map();
@@ -825,7 +802,7 @@
       renderStats(days);
 
       if(!days.length){
-        profitList.innerHTML = `<div class="empty">No profit data found. Pehle ai.html me products save karo ya orders storage available hone do.</div>`;
+        profitList.innerHTML = `<div class="empty">No profit data found. Firestore products ya orders storage available hone do.</div>`;
         return;
       }
 
@@ -902,7 +879,7 @@
     }
 
     window.addEventListener("storage", function(event){
-      if(PRODUCT_KEYS.includes(event.key) || ORDER_KEYS.includes(event.key)){
+      if(ORDER_KEYS.includes(event.key)){
         refreshProfitData();
       }
     });

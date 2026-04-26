@@ -4,26 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spices - Swadra Organics</title>
-<script src="page-storage-sync.js"></script>
-<script>
-window.installSwadraPageStorageSync({
-  pageName: "spices page",
-  persistedKeys: [
-    "currentUser",
-    "users",
-    "cart",
-    "redirectAfterLogin",
-    "homeContent",
-    "offers",
-    "swadraHeaderSearch"
-  ]
-});
-</script>
 <style>
 body{margin:0;font-family:Arial;background:#f1e3e3;}
-:root{--top-bar-height:43px;--navbar-height:62px;}
-.top-bar{position:sticky;top:0;z-index:7002;margin:0 !important;}
-.navbar{position:sticky !important;top:calc(var(--top-bar-height) - 1px);z-index:7001 !important;background:#7a3d3d !important;}
+:root{--top-bar-height:43px;--navbar-height:62px;--sale-bar-height:44px;}
+.top-bar{position:sticky !important;top:0 !important;z-index:7002 !important;margin:0 !important;}
+.navbar{position:sticky !important;top:calc(var(--top-bar-height) - 1px) !important;z-index:7001 !important;background:#7a3d3d !important;}
 .logo{display:block;color:#fff;font-size:26px;font-weight:900;white-space:nowrap;}
 .nav-search{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);flex:0 0 300px;max-width:300px;width:300px;margin:0;z-index:2;}
 .nav-search input{width:100%;height:38px;border:none;outline:none;border-radius:8px;padding:0 14px 0 40px;background:#f5f5f6;color:#282c3f;font-size:13px;font-weight:500;box-sizing:border-box;text-overflow:ellipsis;}
@@ -67,8 +52,8 @@ body{margin:0;font-family:Arial;background:#f1e3e3;}
 .account-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .account-menu-icon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;color:#7a3d3d}
 .account-menu-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.sale-bar{display:block;position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height) - 1px);z-index:7000;overflow:hidden;white-space:nowrap;padding:10px 0;background:#ffffff;color:#c62828;font-size:18px;font-weight:700;line-height:1;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);}
-.sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;padding-left:0;animation:offerTicker 26s linear infinite;will-change:transform;}
+.sale-bar{display:block;position:sticky !important;top:calc(var(--top-bar-height) + var(--navbar-height) - 1px) !important;z-index:7000 !important;overflow:hidden;white-space:nowrap;min-height:44px;padding:10px 0;background:#ffffff;color:#7a3d3d;font-size:16px;font-weight:700;line-height:20px;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif;}
+.sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;min-height:44px;padding-left:0;animation:offerTicker 52s linear infinite;will-change:transform;}
 .sale-bar-item{display:inline-flex;align-items:center;flex:0 0 auto;margin-right:84px;}
 @keyframes offerTicker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 .page-title{text-align:center;font-size:40px;font-weight:900;margin:25px 0 48px;color:#7a3d3d;}
@@ -96,7 +81,7 @@ body{margin:0;font-family:Arial;background:#f1e3e3;}
 .out-stock-text{font-size:14px;color:#c62828;font-weight:700;white-space:nowrap;}
 .qty-box{display:flex;align-items:center;gap:2px;font-size:14px;}
 .qty-btn{background:#eee;border:none;width:16px;height:16px;border-radius:50%;cursor:pointer;font-size:10px;line-height:16px;padding:0;}
-.cart-btn{background:linear-gradient(135deg,#7a3d3d,#b76e79,#d4af37);color:#fff;border:none;padding:10px 18px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:700;transition:all 0.35s ease;position:relative;overflow:hidden;transform:translateY(-3px);}
+.cart-btn{background:linear-gradient(135deg,#7a3d3d,#b76e79,#d4af37);color:#fff;border:none;padding:10px 18px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:700;transition:all 0.35s ease;position:relative;overflow:hidden;transform:translateY(-3px);display:inline-flex;align-items:center;justify-content:center;gap:6px;line-height:1;white-space:nowrap;}
 .cart-btn:hover{background:linear-gradient(135deg,#d4af37,#f7e7a9,#ffd700);color:#000;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 4px 15px rgba(212,175,55,0.6),inset 0 0 10px rgba(255,255,255,0.4);transform:translateY(-3px) scale(1.05);}
 .cart-btn::before{content:"";position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.6),transparent);transition:0.6s;}
 .cart-btn:hover::before{left:100%;}
@@ -117,17 +102,19 @@ body{margin:0;font-family:Arial;background:#f1e3e3;}
 .product-summary-body{color:#382d2d;font-size:15px;line-height:1.7;white-space:pre-wrap}
 .product-summary-trigger{cursor:pointer}
 @media(max-width:1180px){.navbar{flex-wrap:wrap;gap:12px;}.nav-search{position:relative;left:auto;top:auto;transform:none;order:3;flex:1 1 100%;max-width:none;margin:4px 0 0;width:auto;}.account-hover-menu{right:0;width:230px;}}
+@media(min-width:901px){.product-img{height:330px !important;padding-top:20px !important;}.product-info{margin-top:4px !important;}.product-title-row{align-items:flex-start !important;min-height:unset !important;}.product-card h3{padding-top:0 !important;min-height:unset !important;}.size{transform:none !important;padding-top:1px !important;}.product-bottom{margin:-14px 14px 0 !important;}}
 @media(max-width:900px){.product-grid{grid-template-columns:repeat(2,1fr);}}
 </style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<link rel="stylesheet" href="mobile.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="api-config.js"></script></head>
+<script src="api-config.js?v=20260423-2"></script></head>
 <body>
 
 <div id="stickyCart">
 <span id="cartCount">0</span>
-<a href="cart.html">View Cart â†’</a>
+<a href="cart.html">View Cart &rarr;</a>
 </div>
 
 <div id="productSummaryModal" class="product-summary-modal" onclick="closeProductSummary(event)">
@@ -154,7 +141,18 @@ body{margin:0;font-family:Arial;background:#f1e3e3;}
 <a href="aboutus.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">About Us</a>
 <span id="accountNavSlot"><span class="account-menu-wrap"><a href="account.html" aria-label="Account" title="Account" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;"><span class="account-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></span></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">Welcome</div><div class="account-hover-copy">Access your account, orders and saved details from one place.</div><a class="account-hover-cta" href="account.html">LOGIN / SIGNUP</a></div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span></span>
 </div>
-</header><div class="sale-bar"><div class="sale-bar-track" id="saleBarTrack"><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span></div></div>
+<details class="mobile-nav-menu" style="display:none;">
+<summary aria-label="Open navigation menu"><span></span><span></span><span></span></summary>
+<div class="mobile-nav-panel">
+<a href="index.html">Home</a>
+<a href="spices.html">Spices</a>
+<a href="dryfruits.html">Dry Fruits</a>
+<a href="oilghee.html">Oil Ghee &amp; More</a>
+<a href="aboutus.html">About Us</a>
+<a href="account.html">Account</a>
+</div>
+</details>
+</header><div class="sale-bar"><div class="sale-bar-track" id="saleBarTrack"></div></div>
 
 <h2 class="page-title">Spices</h2>
 <div class="product-grid" id="productsContainer"></div>
@@ -164,8 +162,19 @@ body{margin:0;font-family:Arial;background:#f1e3e3;}
 </footer>
 
 <script>
-function getCurrentUser(){ return localStorage.getItem("currentUser"); }
-function getUsers(){ return JSON.parse(localStorage.getItem("users")) || {}; }
+function getCurrentUser(){
+  const authApi = window.SWADRA_AUTH || null;
+  return authApi && typeof authApi.getCurrentUserEmail === "function"
+    ? authApi.getCurrentUserEmail()
+    : localStorage.getItem("currentUser");
+}
+function getUsers(){
+  const authApi = window.SWADRA_AUTH || null;
+  if(authApi && typeof authApi.getUsers === "function"){
+    return authApi.getUsers() || {};
+  }
+  return JSON.parse(localStorage.getItem("users")) || {};
+}
 
 function getSafeCartImage(image){
 if(typeof image !== "string") return "";
@@ -212,24 +221,70 @@ let safeCart=compactCart(cart);
 let user=getCurrentUser();
 let users=getUsers();
 if(user && users[user]){
-try{
-users[user].cart=safeCart;
-localStorage.setItem("users",JSON.stringify(users));
-}catch(e){}
+  try{
+    users[user].cart=safeCart;
+    const authApi = window.SWADRA_AUTH || null;
+    if(authApi && typeof authApi.saveUsers === "function"){
+      authApi.saveUsers(users);
+    }else{
+      localStorage.setItem("users",JSON.stringify(users));
+    }
+  }catch(e){}
 }
 localStorage.setItem("cart",JSON.stringify(safeCart));
 updateCartUI();
 }
 
 const productDataApi = window.SWADRA_PRODUCT_DATA || {};
+const siteContentApi = window.SWADRA_SITE_CONTENT || null;
+let siteContentState = siteContentApi && typeof siteContentApi.createEmptyState === "function"
+? siteContentApi.createEmptyState()
+: { homeContent:{}, offers:[], heroImages:[], customers:[], familyCards:[], swadra_home_family_story_v1:{} };
 let productsCache = null;
 let productsCacheLoadedAt = 0;
 const RUPEE = "\u20b9";
 
+function preferPositiveNumber(){ for(let i=0;i<arguments.length;i+=1){ const value=Number(arguments[i]); if(Number.isFinite(value) && value>0) return value; } return 0; }
+function sanitizeImageUrl(value){ const url=String(value || "").trim(); if(!url || /^data:/i.test(url)) return ""; return url; }
 function normalizeBackendProduct(product){
-return typeof productDataApi.normalizeProduct === "function"
-? productDataApi.normalizeProduct(product, product && product.id)
-: product;
+  const source = product && typeof product === "object" ? product : {};
+  const shared = typeof productDataApi.normalizeProduct === "function" ? productDataApi.normalizeProduct(source, source && source.id) : source;
+  const merged = { ...source, ...shared };
+  const name = String(merged.name || merged.productName || "").trim();
+  const size = String(merged.size || merged.productSize || "").trim();
+  const rawImages = Array.isArray(merged.images) ? merged.images : [];
+  const images = rawImages.map(sanitizeImageUrl).filter(Boolean).slice(0,4);
+  const primaryImage = sanitizeImageUrl(merged.image) || sanitizeImageUrl(merged.imageUrl) || images[0] || "";
+  const finalImages = images.length ? images : (primaryImage ? [primaryImage] : []);
+  const summary = String(merged.summary || merged.productSummary || merged.description || merged.desc || "").trim();
+  const sellingPrice = preferPositiveNumber(merged.sellingPrice, merged.price, merged.offlinePrice);
+  const price = preferPositiveNumber(merged.price, merged.sellingPrice, merged.offlinePrice);
+  const mrp = preferPositiveNumber(merged.mrp, merged.price, merged.sellingPrice);
+  const stockQty = Number(merged.stockQty ?? merged.stock ?? 0) || 0;
+  const availability = String(merged.availability || ((merged.outOfStock || stockQty <= 0) ? "Out of Stock" : "Available"));
+  return {
+    ...merged,
+    id: merged.id || `${name}-${size}`.replace(/\s+/g,"-").toLowerCase(),
+    name,
+    productName: name,
+    size,
+    productSize: size,
+    image: primaryImage,
+    imageUrl: primaryImage,
+    images: finalImages,
+    summary,
+    productSummary: summary,
+    description: summary,
+    price,
+    sellingPrice,
+    mrp,
+    stockQty,
+    availability,
+    outOfStock: availability === "Out of Stock" || stockQty <= 0,
+    offPercent: Number(merged.offPercent || 0) || (mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0),
+    isBestseller: Boolean(merged.isBestseller || merged.bestseller),
+    isSpecialProduct: Boolean(merged.isSpecialProduct || merged.special)
+  };
 }
 function normalizeCategoryName(value){
 const normalized=String(value || "").toLowerCase().replace(/&/g,"and").replace(/,/g," ").replace(/\s+/g," ").trim();
@@ -242,16 +297,26 @@ if(["oil ghee and more","oil ghee more","oil ghee","oil, ghee & more","oil ghee 
 return normalized;
 }
 function productMatchesCategory(product, categoryKey){
-return normalizeCategoryName(product?.category)===String(categoryKey || "").trim().toLowerCase();
+const targetCategory = normalizeCategoryName(categoryKey);
+const productCategory = normalizeCategoryName(product?.category);
+if(productCategory === targetCategory){
+return true;
+}
+if(targetCategory === "spices"){
+return !["achar","bestseller","combos","special","dryfruits","oilghee"].includes(productCategory);
+}
+return false;
 }
 
 function getProductImages(product){
 const renderableImages = getRenderableImages(product?.images);
 if(renderableImages.length) return renderableImages;
 const primaryImage = typeof product?.image === "string" ? product.image.trim() : "";
-return primaryImage ? [primaryImage] : [];
+const fallbackImage = typeof product?.imageUrl === "string" ? product.imageUrl.trim() : "";
+const finalImage = primaryImage || fallbackImage;
+return finalImage ? [finalImage] : [];
 }
-function getProductSummary(product){ return String(product?.summary || product?.productSummary || "").trim(); }
+function getProductSummary(product){ return String(product?.summary || product?.productSummary || product?.description || "").trim(); }
 function escapeAttr(value){ return String(value || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
 function buildGalleryMarkup(product,id){
@@ -290,22 +355,24 @@ setProductImage(id,next);
 }
 function openProductSummary(id){
 const card=document.querySelector(`[data-gallery-id="${id}"]`);
-if(!card) return;
-document.getElementById("productSummaryTitle").innerText=card.dataset.productName || "Product Summary";
-document.getElementById("productSummaryMeta").innerText=card.dataset.productSize || "";
-document.getElementById("productSummaryBody").innerText=(card.dataset.productSummary || "").trim() || "Summary not added yet.";
-document.getElementById("productSummaryModal").classList.add("show");
+const modal=document.getElementById("productSummaryModal");
+if(!card || !modal) return;
+document.getElementById("productSummaryTitle").textContent=card.dataset.productName || "Product Summary";
+document.getElementById("productSummaryMeta").textContent=card.dataset.productSize || "";
+document.getElementById("productSummaryBody").textContent=(card.dataset.productSummary || "").trim() || "Summary not available for this product yet.";
+modal.classList.add("show");
+document.body.style.overflow="hidden";
 }
-function closeProductSummary(){
-document.getElementById("productSummaryModal").classList.remove("show");
+function closeProductSummary(event){
+if(event && event.target && event.target.id!=="productSummaryModal") return;
+const modal=document.getElementById("productSummaryModal");
+if(!modal) return;
+modal.classList.remove("show");
+document.body.style.overflow="";
 }
 
 function getHomeContent(){
-try{
-return JSON.parse(localStorage.getItem("homeContent")) || {};
-}catch(e){
-return {};
-}
+return siteContentState.homeContent || {};
 }
 
 function getHomeArray(key){
@@ -313,22 +380,16 @@ const content = getHomeContent();
 if(Array.isArray(content[key])){
 return content[key];
 }
-try{
-return JSON.parse(localStorage.getItem(key)) || [];
-}catch(e){
-return [];
-}
+return Array.isArray(siteContentState[key]) ? siteContentState[key] : [];
 }
 
-function renderOfferBar(){
+async function renderOfferBar(forceRefresh){
+if(window.SWADRA_OFFERS && typeof window.SWADRA_OFFERS.renderSaleBar === "function"){
+await window.SWADRA_OFFERS.renderSaleBar("saleBarTrack", !!forceRefresh);
+return;
+}
 const track = document.getElementById("saleBarTrack");
-if(!track) return;
-const offers = getHomeArray("offers")
-  .map(item=>String(item || "").trim())
-  .filter(Boolean);
-const finalOffers = offers.length ? offers : ["Free Delivery on orders above ₹699"];
-const repeated = [...finalOffers, ...finalOffers, ...finalOffers];
-track.innerHTML = repeated.map(item=>`<span class="sale-bar-item">${item}</span>`).join("");
+if(track) track.innerHTML = "";
 }
 
 async function getProducts(forceRefresh){
@@ -347,6 +408,18 @@ console.error("spices products fetch failed", error);
 productsCache = [];
 productsCacheLoadedAt = Date.now();
 return productsCache;
+}
+
+async function loadSiteContent(){
+if(!siteContentApi || typeof siteContentApi.fetch !== "function"){
+return siteContentState;
+}
+try{
+siteContentState = await siteContentApi.fetch(true);
+}catch(error){
+console.error("spices site content fetch failed", error);
+}
+return siteContentState;
 }
 
 function getProductPricing(product){
@@ -394,14 +467,9 @@ ${buildGalleryMarkup(p,id)}
 <div class="product-bottom">
 <div class="left">
 ${isOut ? `<div class="out-stock-text">Out Of Stock</div>` : `
-${buildPriceMarkup(p)}
-<div class="qty-box">
-<button type="button" class="qty-btn" onclick="changeQty('${id}',-1)">-</button>
-<span id="qty-${id}">${qty}</span>
-<button type="button" class="qty-btn" onclick="changeQty('${id}',1)">+</button>
-</div>`}
+${buildPriceMarkup(p)}`}
 </div>
-<button type="button" class="cart-btn ${existing?'added':''} ${isOut?'disabled':''}" data-product-id="${id}" onclick="${isOut?'':'toggleCart(\''+id+'\')'}" ${isOut?"disabled":""}>${existing?"ADDED âœ“":"ADD TO CART"}</button>
+<button type="button" class="cart-btn ${existing?'added':''} ${isOut?'disabled':''}" data-product-id="${id}" ${isOut?"disabled":""}>${existing?"ADDED &#10003;":"ADD TO CART"}</button>
 </div>
 </div>
 </div>`;
@@ -415,9 +483,7 @@ let cart=getCart();
 let products=await getProducts();
 let item=products.find(p=>String(p.id)===String(id));
 if(!item) return;
-let qtyEl=document.getElementById(`qty-${id}`);
-let qty=qtyEl?Number(qtyEl.innerText):1;
-if(qty<1) qty=1;
+let qty=1;
 
 let existingIndex=cart.findIndex(i=>String(i.id)===String(id));
 if(existingIndex>-1){
@@ -439,18 +505,7 @@ loadProducts();
 }
 
 function changeQty(id,val){
-let qtyEl=document.getElementById(`qty-${id}`);
-if(!qtyEl) return;
-let qty=Number(qtyEl.innerText);
-qty+=val;
-if(qty<1) qty=1;
-qtyEl.innerText=qty;
-let cart=getCart();
-let item=cart.find(i=>String(i.id)===String(id));
-if(item){
-item.qty=qty;
-saveCart(cart);
-}
+return;
 }
 
 function updateCartUI(){
@@ -566,17 +621,24 @@ e.preventDefault();
 toggleCart(cartButton.dataset.productId);
 return;
 }
-const qtyButton=e.target.closest(".qty-btn");
-if(qtyButton){
-e.preventDefault();
-}
 });
 
-window.onload=()=>{ renderOfferBar(); loadProducts(); updateCartUI(); updateAccountNavigation(); };
-window.addEventListener("pageshow", ()=>{ renderOfferBar(); loadProducts(); });
-window.addEventListener("storage", e=>{
-if(e.key==="homeContent" || e.key==="offers"){
-renderOfferBar();
+window.onload=async ()=>{
+await loadSiteContent();
+await renderOfferBar(true);
+loadProducts();
+updateCartUI();
+updateAccountNavigation();
+};
+window.addEventListener("pageshow", async ()=>{
+await loadSiteContent();
+await renderOfferBar(true);
+loadProducts();
+});
+window.addEventListener("storage", async function(event){
+if(["offers","homeContent"].includes(event.key)){
+await loadSiteContent();
+await renderOfferBar(true);
 }
 });
 </script>

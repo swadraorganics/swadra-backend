@@ -4,36 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Track Order</title>
-<script src="page-storage-sync.js"></script>
-<script>
-window.installSwadraPageStorageSync({
-  pageName: "trackorder page",
-  persistedKeys: [
-    "currentUser",
-    "users",
-    "currentOrderId"
-  ]
-});
-</script>
-
 <style>
 
 :root{
 --top-bar-height:43px;
 --navbar-height:62px;
+--sale-bar-height:44px;
 }
 
 /* TOP BAR */
 .top-bar{
 text-align:center;
 padding:12px;
-font-size:18px;
+font-size:16px;
 font-weight:600;
 color:#7a3d3d;
 background:#fff;
-position:sticky;
+position:sticky !important;
 top:0;
-z-index:1001;
+z-index:7002;
+margin:0 !important;
 }
 
 /* NAVBAR */
@@ -41,18 +31,155 @@ z-index:1001;
 display:flex;
 justify-content:space-between;
 align-items:center;
-padding:12px 25px;
+padding:14px 24px;
 background:#7a3d3d;
 position:sticky;
-top:calc(var(--top-bar-height) - 1px);
-z-index:1000;
+top:calc(var(--top-bar-height) - 1px) !important;
+z-index:7001;
 color:#fff;
+}
+
+.logo{
+display:block;
+color:#fff;
+font-size:26px;
+font-weight:900;
+white-space:nowrap;
+font-family:Arial,sans-serif;
+}
+
+.logo a{
+color:#fff;
+text-decoration:none;
+font:inherit;
+}
+
+.nav-search{
+position:absolute;
+left:50%;
+top:50%;
+transform:translate(-50%,-50%);
+flex:0 0 300px;
+max-width:300px;
+width:300px;
+margin:0;
+z-index:2;
+}
+
+.nav-search input{
+width:100%;
+height:38px;
+border:none;
+outline:none;
+border-radius:8px;
+padding:0 14px 0 40px;
+background:#f5f5f6;
+color:#282c3f;
+font-size:13px;
+font-weight:500;
+box-sizing:border-box;
+text-overflow:ellipsis;
+}
+
+.nav-search::before{
+content:"";
+position:absolute;
+left:16px;
+top:50%;
+width:14px;
+height:14px;
+border:2px solid #696e79;
+border-radius:50%;
+transform:translateY(-60%);
+opacity:.85;
+}
+
+.nav-search::after{
+content:"";
+position:absolute;
+left:28px;
+top:21px;
+width:7px;
+height:2px;
+background:#696e79;
+transform:rotate(45deg);
+border-radius:2px;
+opacity:.85;
+}
+
+.nav-search-results{
+position:absolute;
+top:calc(100% + 10px);
+left:0;
+width:100%;
+background:#ffffff;
+border-radius:14px;
+box-shadow:0 18px 45px rgba(0,0,0,0.15);
+border:1px solid #ececec;
+display:none;
+max-height:320px;
+overflow:auto;
+overflow-x:hidden;
+z-index:5000;
+}
+
+.nav-links{
+display:flex;
+gap:18px;
+align-items:center;
+justify-content:flex-end;
+flex-wrap:wrap;
 }
 
 .navbar a{
 color:#fff;
 text-decoration:none;
-margin-left:15px;
+font-weight:700;
+font-size:16px;
+margin-left:0;
+font-family:Arial,sans-serif;
+}
+
+.sale-bar{
+display:block;
+position:sticky !important;
+top:calc(var(--top-bar-height) + var(--navbar-height) - 1px) !important;
+z-index:7000;
+overflow:hidden;
+white-space:nowrap;
+min-height:44px;
+padding:10px 0;
+background:#ffffff;
+color:#7a3d3d;
+font-size:16px;
+font-weight:700;
+line-height:20px;
+border-top:1px solid rgba(198,40,40,0.12);
+border-bottom:1px solid rgba(198,40,40,0.18);
+font-family:Arial,sans-serif;
+}
+
+.sale-bar-track{
+display:flex;
+align-items:center;
+width:max-content;
+min-width:max-content;
+min-height:44px;
+padding-left:0;
+animation:offerTicker 52s linear infinite;
+will-change:transform;
+}
+
+.sale-bar-item{
+display:inline-flex;
+align-items:center;
+flex:0 0 auto;
+margin-right:84px;
+}
+
+@keyframes offerTicker{
+from{transform:translateX(0)}
+to{transform:translateX(-100%)}
 }
 
 /* MAIN */
@@ -174,10 +301,18 @@ background:#fafafa;
 border-radius:10px;
 text-align:center;
 }
+
+@media(max-width:1180px){
+.navbar{flex-wrap:wrap;gap:12px}
+.nav-search{position:relative;left:auto;top:auto;transform:none;order:3;flex:1 1 100%;max-width:none;margin:4px 0 0;width:auto}
+}
 </style>
 
 <style>html,body{background:#f1e3e3 !important;}</style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<link rel="stylesheet" href="mobile.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="api-config.js"></script></head>
 
 <body>
@@ -187,13 +322,20 @@ Eat Healthy â€¢ Be Swadra Family
 </div>
 
 <div class="navbar">
-<div><b>Swadra Organics</b></div>
-<div>
+<div class="logo"><a href="index.html">Swadra Organics</a></div>
+<div class="nav-search"><input type="search" class="header-search-input" placeholder="Search for products, categories and more"><div id="searchResults" class="nav-search-results"></div></div>
+<div class="nav-links">
 <a href="index.html">Home</a>
+<a href="spices.html">Spices</a>
+<a href="dryfruits.html">Dry Fruits</a>
+<a href="oilghee.html">Oil Ghee &amp; More</a>
+<a href="aboutus.html">About Us</a>
 <a href="cart.html">Cart</a>
 <a href="order.html">My Orders</a>
 </div>
 </div>
+
+<div class="sale-bar"><div class="sale-bar-track" id="saleBarTrack"></div></div>
 
 <div class="container">
 
@@ -221,6 +363,10 @@ function getUsers(){
   return JSON.parse(localStorage.getItem("users")) || {};
 }
 
+function saveUsers(users){
+  localStorage.setItem("users", JSON.stringify(users));
+}
+
 function safe(v){
   return v ? v : "";
 }
@@ -231,10 +377,17 @@ function money(value){
 
 const API_BASE = window.SWADRA_API_BASE || "";
 
+async function renderOfferBar(forceRefresh){
+  if(window.SWADRA_OFFERS && typeof window.SWADRA_OFFERS.renderSaleBar === "function"){
+    await window.SWADRA_OFFERS.renderSaleBar("saleBarTrack", !!forceRefresh);
+  }
+}
+
 /* =====================================================
    AUTO LOAD LAST ORDER
 ===================================================== */
 window.onload = function(){
+  renderOfferBar(true);
 
   let last = localStorage.getItem("currentOrderId");
 
@@ -266,12 +419,24 @@ function findUserOrder(id){
   if(found){
     return found;
   }
+  return null;
+}
 
-  /* legacy fallback */
-  let legacyOrders =
-    JSON.parse(localStorage.getItem("orders")) || [];
-
-  return legacyOrders.find(o => o.id === id);
+function persistOrderUpdate(order){
+  if(!order || !order.id) return;
+  const currentUser = getCurrentUser();
+  if(!currentUser) return;
+  const users = getUsers();
+  users[currentUser] = users[currentUser] || { cart: [], orders: [] };
+  const existingOrders = Array.isArray(users[currentUser].orders) ? users[currentUser].orders : [];
+  const orderIndex = existingOrders.findIndex(item => String(item.id) === String(order.id));
+  if(orderIndex > -1){
+    existingOrders[orderIndex] = { ...existingOrders[orderIndex], ...order };
+  }else{
+    existingOrders.push(order);
+  }
+  users[currentUser].orders = existingOrders;
+  saveUsers(users);
 }
 
 async function fetchBackendOrder(id){
@@ -293,7 +458,11 @@ async function trackOrder(){
   let id =
     document.getElementById("orderId").value.trim();
 
-  let order = await fetchBackendOrder(id) || findUserOrder(id);
+  let backendOrder = await fetchBackendOrder(id);
+  if(backendOrder){
+    persistOrderUpdate(backendOrder);
+  }
+  let order = backendOrder || findUserOrder(id);
 
   if(!order){
     document.getElementById("result").innerHTML = `
@@ -464,6 +633,17 @@ async function loadShiprocketTracking(order){
     const status = shipment.current_status || shipment.shipment_status || shipment.status || "Tracking updated";
     const courier = shipment.courier_name || shipment.courier || order.courierName || "Shiprocket";
     const eta = shipment.edd || shipment.expected_delivery_date || shipment.estimated_delivery_date || "";
+    persistOrderUpdate({
+      ...order,
+      status,
+      courierName: courier,
+      trackingId: awb,
+      awb,
+      shipment_id: shipment.shipment_id || shipment.shipmentId || order.shipment_id || "",
+      expectedDelivery: eta,
+      trackingActivities: activities,
+      trackingUpdatedAt: new Date().toISOString()
+    });
     const activityHtml = activities.length ? activities.map(item=>`
       <div style="border-top:1px solid #dcecff;padding-top:8px;margin-top:8px;">
         <strong>${safe(item.activity || item.status || item.remark || "Update")}</strong><br>

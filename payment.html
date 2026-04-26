@@ -4,29 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Payment - Swadra Organics</title>
-<script src="page-storage-sync.js"></script>
-<script>
-window.installSwadraPageStorageSync({
-  pageName: "payment page",
-  persistedKeys: [
-    "currentUser",
-    "users",
-    "cart",
-    "redirectAfterLogin",
-    "checkoutData",
-    "cartSummary",
-    "delivery",
-    "couponDiscount",
-    "finalTotal",
-    "checkoutUpiId",
-    "currentOrderId",
-    "swadraPaymentSession",
-    "swadraPaymentAttempts",
-    "swadraPaymentAnalytics",
-    "orderCounts"
-  ]
-});
-</script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,6 +23,9 @@ window.installSwadraPageStorageSync({
   --green:#0f8a3b;
   --red:#b3261e;
   --shadow:0 24px 70px rgba(122,61,61,.17);
+  --top-bar-height:0px;
+  --navbar-height:72px;
+  --sale-bar-height:22px;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{
@@ -108,7 +88,7 @@ body{
 .trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .trust{padding:16px;border-radius:20px;background:#fff;border:1px solid var(--line)}
 .trust strong{display:block;color:var(--wine);font-size:14px;margin-bottom:5px}.trust span{font-size:12px;color:var(--muted);line-height:1.5}
-.summary-panel{position:sticky;top:88px}
+.summary-panel{position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height) + var(--sale-bar-height) + 18px)}
 .summary-list{display:grid;gap:13px;margin-bottom:16px}
 .summary-item{display:flex;justify-content:space-between;gap:16px;font-size:14px;color:#504545}
 .summary-item strong{color:#201717}.summary-item.discount strong{color:var(--green)}
@@ -140,6 +120,9 @@ body{
 </style>
 <style>html,body{background:#f1e3e3 !important;}</style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<link rel="stylesheet" href="mobile.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="api-config.js"></script></head>
 <body>
 <div class="nav">
@@ -248,10 +231,11 @@ const API_BASE = window.SWADRA_API_BASE || "";
 const SESSION_KEY = "swadraPaymentSession";
 const ATTEMPTS_KEY = "swadraPaymentAttempts";
 const ANALYTICS_KEY = "swadraPaymentAnalytics";
+const authApi = window.SWADRA_AUTH || null;
 
-function getCurrentUser(){ return localStorage.getItem("currentUser"); }
-function getUsers(){ try{ return JSON.parse(localStorage.getItem("users")) || {}; }catch(error){ return {}; } }
-function saveUsers(users){ localStorage.setItem("users", JSON.stringify(users)); }
+function getCurrentUser(){ return authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : ""; }
+function getUsers(){ try{ return authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : {}; }catch(error){ return {}; } }
+function saveUsers(users){ return authApi && typeof authApi.saveUsers === "function" ? authApi.saveUsers(users) : users; }
 function money(value){ return "\u20B9" + Math.round(Number(value || 0)).toLocaleString("en-IN"); }
 function getItemDisplayLineTotal(item){
   const qty = Number(item.qty) || 1;
@@ -297,7 +281,11 @@ function imageError(img){ img.onerror = null; img.src = placeholderImage; img.cl
 
 let currentUser = getCurrentUser();
 if(!currentUser){
-  localStorage.setItem("redirectAfterLogin","payment.html");
+  if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
+    authApi.setRedirectAfterLogin("payment.html");
+  }else{
+    localStorage.setItem("redirectAfterLogin","payment.html");
+  }
   location.href = "account.html";
   throw new Error("Redirecting to account");
 }
@@ -500,7 +488,7 @@ async function renderOrderSummary(){
     box.innerHTML += `
       <div class="order-row">
         <img src="${escapeHtml(image)}" alt="${escapeHtml(item.name || "Product")}" onerror="imageError(this)">
-        <div><strong>${escapeHtml(item.name || "Swadra Product")}</strong><span>Qty ${qty} Â· ${escapeHtml(item.size || item.productSize || "")}</span></div>
+        <div><strong>${escapeHtml(item.name || "Swadra Product")}</strong><span>Qty ${qty} • ${escapeHtml(item.size || item.productSize || "")}</span></div>
         <div class="order-price">${lineTotal < originalLineTotal ? `<span style="display:block;font-size:11px;color:#8a7777;text-decoration:line-through;">${money(originalLineTotal)}</span>` : ""}${money(lineTotal)}</div>
       </div>
     `;
@@ -525,9 +513,53 @@ function validateUpiId(){
     return false;
   }
   status.classList.add("valid");
-  status.textContent = "UPI ID saved. Razorpay will verify and collect payment securely.";
+  status.textContent = "UPI format saved. The final UPI, card, bank, or wallet details are verified during secure Razorpay checkout.";
   localStorage.setItem("checkoutUpiId", value);
   return true;
+}
+
+function getInstrumentSummary(verification, fallbackUpiId){
+  const instrument = verification && verification.instrument && typeof verification.instrument === "object"
+    ? verification.instrument
+    : {};
+  const method = String(instrument.method || "").trim().toLowerCase();
+  if(method === "upi"){
+    const vpa = String(instrument.vpa || fallbackUpiId || "").trim();
+    return {
+      paymentModeLabel: vpa ? "UPI (" + vpa + ")" : "UPI",
+      instrumentLabel: vpa ? "Razorpay verified VPA: " + vpa : "Razorpay verified UPI payment"
+    };
+  }
+  if(method === "card"){
+    const network = String(instrument.network || "").trim();
+    const last4 = String(instrument.last4 || "").trim();
+    const issuer = String(instrument.issuer || "").trim();
+    const parts = ["Card"];
+    if(network) parts.push(network.toUpperCase());
+    if(last4) parts.push("ending " + last4);
+    return {
+      paymentModeLabel: parts.join(" "),
+      instrumentLabel: [issuer, network, last4 ? "xxxx " + last4 : ""].filter(Boolean).join(" • ") || "Razorpay verified card payment"
+    };
+  }
+  if(method === "netbanking"){
+    const bank = String(instrument.bank || "").trim();
+    return {
+      paymentModeLabel: bank ? "Netbanking (" + bank + ")" : "Netbanking",
+      instrumentLabel: bank ? "Razorpay verified bank: " + bank : "Razorpay verified netbanking payment"
+    };
+  }
+  if(method === "wallet"){
+    const wallet = String(instrument.wallet || "").trim();
+    return {
+      paymentModeLabel: wallet ? "Wallet (" + wallet + ")" : "Wallet",
+      instrumentLabel: wallet ? "Razorpay verified wallet: " + wallet : "Razorpay verified wallet payment"
+    };
+  }
+  return {
+    paymentModeLabel: fallbackUpiId ? "Online (" + fallbackUpiId + ")" : "Online via Razorpay",
+    instrumentLabel: "Payment instrument verified by Razorpay"
+  };
 }
 
 async function createBackendPaymentOrder(session){
@@ -573,7 +605,7 @@ async function payOnline(){
   const upiValue = String(document.getElementById("upiId")?.value || "").trim();
   if(upiValue && !validateUpiId()) return;
   if(typeof Razorpay === "undefined"){
-    setPaymentState("failed","Razorpay not loaded","Internet ya Razorpay script load nahi hua. Page refresh karke retry karo.");
+    setPaymentState("failed","Razorpay not loaded","The internet connection or Razorpay script did not load. Please refresh the page and try again.");
     return;
   }
 
@@ -582,7 +614,7 @@ async function payOnline(){
   updatePaymentSession({ retryCount: session.retryCount, status:"initiated", startedAt: nowIso() });
   trackPaymentEvent("payment_initiated", { retryCount: session.retryCount });
   saveAttempt("initiated", { retryCount: session.retryCount });
-  setPaymentState("processing","Opening secure payment","Razorpay checkout open ho raha hai. Payment complete hone tak refresh mat karna.");
+  setPaymentState("processing","Opening secure payment","Razorpay checkout is opening. Please do not refresh until the payment is complete.");
   setPayButtonLoading(true);
 
   const backendOrder = await createBackendPaymentOrder(session);
@@ -594,7 +626,7 @@ async function payOnline(){
     description: "Order Payment",
     order_id: String(backendOrder?.id || "").startsWith("order_") ? backendOrder.id : undefined,
     handler: async function(response){
-      setPaymentState("processing","Verifying payment","Payment receive ho gaya, ab order safely verify aur save ho raha hai.");
+      setPaymentState("processing","Verifying payment","Payment received. Your order is now being securely verified and saved.");
       trackPaymentEvent("payment_handler_success", { paymentId: response.razorpay_payment_id || "" });
       const verified = await verifyPaymentIfPossible(response);
       if(!verified.ok){
@@ -612,7 +644,7 @@ async function payOnline(){
         updatePaymentSession({ status:"cancelled" });
         saveAttempt("cancelled", { reason:"popup_closed" });
         trackPaymentEvent("razorpay_popup_closed");
-        setPaymentState("cancelled","Payment cancelled","Payment popup close ho gaya. Same order ko duplicate banaye bina retry kar sakte ho.");
+        setPaymentState("cancelled","Payment cancelled","The payment window was closed. You can retry the same order without creating a duplicate.");
         setPayButtonLoading(false, "Retry Payment");
       }
     },
@@ -638,17 +670,18 @@ async function payOnline(){
     updatePaymentSession({ status:"failed", failure: response.error || {} });
     saveAttempt("failed", response.error || {});
     trackPaymentEvent("payment_failed", response.error || {});
-    setPaymentState("failed","Payment failed", response.error?.description || "Payment fail ho gaya. Retry button se same order dobara try kar sakte ho.");
+    setPaymentState("failed","Payment failed", response.error?.description || "Payment failed. You can retry the same order using the retry button.");
     setPayButtonLoading(false, "Retry Payment");
   });
   trackPaymentEvent("razorpay_popup_opened");
-  setPaymentState("processing","Payment popup opened","Secure Razorpay popup me payment complete karo.");
+  setPaymentState("processing","Payment popup opened","Please complete your payment in the secure Razorpay popup.");
   rzp.open();
 }
 
 function saveOrder(paymentResponse, verification){
   const session = paymentSession || getOrCreatePaymentSession();
   const paymentId = paymentResponse.razorpay_payment_id || paymentResponse || "";
+  const instrumentSummary = getInstrumentSummary(verification, localStorage.getItem("checkoutUpiId") || document.getElementById("upiId")?.value || "");
   const order = {
     id: session.orderId,
     payment: "Paid Successfully",
@@ -672,6 +705,9 @@ function saveOrder(paymentResponse, verification){
     refundAmount: 0,
     refundDate: "",
     refundMessage: "",
+    paymentMethod: verification?.instrument?.method || "online",
+    paymentInstrument: verification?.instrument || null,
+    paymentInstrumentLabel: instrumentSummary.instrumentLabel,
     shipping: checkoutData,
     upiId: localStorage.getItem("checkoutUpiId") || document.getElementById("upiId")?.value || "",
     paymentStartedAt: session.startedAt || "",
@@ -763,7 +799,8 @@ function showSuccess(order){
     <p><strong>Status:</strong> ${escapeHtml(order.payment)}</p>
     <p><strong>Date:</strong> ${escapeHtml(order.date)}</p>
     <p><strong>Total paid:</strong> ${money(order.total)}</p>
-    <p><strong>Payment mode:</strong> Online ${order.upiId ? "UPI (" + escapeHtml(order.upiId) + ")" : "via Razorpay"}</p>
+    <p><strong>Payment mode:</strong> ${escapeHtml(getInstrumentSummary(order.verification || {}, order.upiId).paymentModeLabel)}</p>
+    <p><strong>Verified by Razorpay:</strong> ${escapeHtml(order.paymentInstrumentLabel || getInstrumentSummary(order.verification || {}, order.upiId).instrumentLabel)}</p>
     <p><strong>Delivery:</strong> ${escapeHtml(order.shipping.name || "Customer")}, ${escapeHtml(order.shipping.phone || "No phone")}, ${escapeHtml(getShippingAddress())}</p>
     <div class="success-actions">
       <a class="link-btn link-primary" href="order.html">Track Order</a>

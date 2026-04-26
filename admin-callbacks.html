@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swadra Callbacks</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f8f5f2;color:#1f1f1f}
+:root{--primary:#7a3d3d;--primary-dark:#5f2f2f;--card:#fff;--line:#e7dfd7;--muted:#6c6c6c;--success:#137a43;--warn:#b36b00;--danger:#c62828;--shadow:0 10px 30px rgba(0,0,0,.08)}
+.wrap{width:min(100%,1800px);margin:0 auto;padding:20px 24px 28px}
+.topbar{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;padding:24px 28px;border-radius:22px;box-shadow:var(--shadow);margin-bottom:18px}
+.topbar h1{margin:0;font-size:30px;line-height:1.2}
+.topbar p{margin:8px 0 0;opacity:.92;font-size:15px;line-height:1.6}
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+button,a{border:none;outline:none;cursor:pointer;border-radius:12px;padding:12px 18px;font-size:14px;font-weight:700;transition:.2s ease;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-dark{background:#333;color:#fff}
+.btn-light{background:#eee7df;color:#3a2b2b}
+.btn-success{background:#e7f5ec;color:var(--success)}
+.btn-warn{background:#fff3dc;color:var(--warn)}
+.btn-danger{background:#fdeceb;color:var(--danger)}
+.btn-secondary{background:#f4ece8;color:#7a3d3d}
+.stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.stat-card{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:16px}
+.stat-card .label{font-size:12px;color:var(--muted);font-weight:700}
+.stat-card .value{font-size:28px;font-weight:800;margin-top:8px;color:var(--primary)}
+.panel{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:22px 24px}
+.panel h2{margin:0 0 16px;font-size:24px}
+.filters{display:grid;grid-template-columns:1.1fr .7fr .7fr;gap:12px;margin-bottom:18px}
+.filters input,.filters select{width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 13px;font-size:14px;color:var(--text);outline:none}
+.request-list{display:grid;gap:14px}
+.request-card{border:1px solid var(--line);border-radius:18px;background:#fffdfa;padding:16px;display:grid;gap:12px}
+.request-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.request-head h3{margin:0;font-size:20px;line-height:1.3}
+.badge-wrap{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.badge{padding:7px 11px;border-radius:999px;font-size:12px;font-weight:700;background:#f2ebe4;color:#433}
+.badge.green{background:#e7f5ec;color:var(--success)}
+.badge.gold{background:#fff3dc;color:var(--warn)}
+.badge.red{background:#fdeceb;color:var(--danger)}
+.card-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.mini{background:#faf6f2;border:1px solid var(--line);border-radius:14px;padding:12px}
+.mini .k{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:5px}
+.mini .v{font-size:16px;font-weight:800;word-break:break-word}
+.issue-box{padding:14px;border-radius:16px;background:#fcf8f6;border:1px solid var(--line);line-height:1.6;color:#3d3131}
+.card-actions{display:flex;gap:10px;flex-wrap:wrap}
+.empty{padding:20px;border:1px dashed #d8cdc2;border-radius:16px;color:var(--muted);text-align:center;background:#fffdfa}
+.tab-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.tab-btn{background:#f4ece8;color:#7a3d3d}
+.tab-btn.active{background:#7a3d3d;color:#fff}
+.shiprocket-actions{display:flex;gap:10px;flex-wrap:wrap}
+@media (max-width:1200px){.stats-grid,.card-grid{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr}}
+@media (max-width:700px){.stats-grid,.card-grid{grid-template-columns:1fr}.wrap{padding:16px}.topbar h1{font-size:24px}}
+</style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<link rel="stylesheet" href="mobile.css">
+<script src="api-config.js"></script></head>
+<body>
+<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Callback Requests</a></div>
+<div class="wrap">
+  <div class="topbar">
+    <h1>Callback & Contact Requests</h1>
+    <p>About us contact section se aayi hui verified support requests yahan visible hongi. Callback, email support, issue detail, attached order aur preferred time sab yahin manage hoga.</p>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn-primary" onclick="renderRequests()">Refresh Requests</button>
+    <a class="btn-dark" href="admin-index.html">Back to Admin</a>
+    <a class="btn-light" href="aboutus.html#contact">Open Contact Page</a>
+  </div>
+
+  <div class="stats-grid" id="requestStats"></div>
+
+  <div class="panel">
+    <h2>Request Inbox</h2>
+    <div class="filters">
+      <input id="searchInput" placeholder="Search by name, email, mobile, issue or order" oninput="renderRequests()">
+      <select id="typeFilter" onchange="renderRequests()">
+        <option value="">All Request Types</option>
+        <option value="Email Support">Email Support</option>
+        <option value="Request Callback">Request Callback</option>
+      </select>
+      <select id="statusFilter" onchange="renderRequests()">
+        <option value="">All Statuses</option>
+        <option value="Open">Open</option>
+        <option value="Contacted">Contacted</option>
+        <option value="Resolved">Resolved</option>
+      </select>
+    </div>
+    <div class="request-list" id="requestList"></div>
+  </div>
+</div>
+
+<script>
+const SUPPORT_REQUESTS_KEY = "supportRequests";
+const APP_STATE_URL = window.SWADRA_APP_STATE_URL || "";
+async function readRequests(){
+  if(!APP_STATE_URL) return [];
+  try{
+    const response = await fetch(APP_STATE_URL + "?keys=" + encodeURIComponent(SUPPORT_REQUESTS_KEY), { cache:"no-store" });
+    const data = await response.json().catch(()=>({ ok:false }));
+    const list = data && data.ok && data.state ? data.state[SUPPORT_REQUESTS_KEY] : [];
+    return Array.isArray(list) ? list : [];
+  }catch(error){
+    console.error("callback requests fetch failed", error);
+    return [];
+  }
+}
+async function saveRequests(list){
+  if(!APP_STATE_URL) throw new Error("Support request storage unavailable");
+  const next = Array.isArray(list) ? list : [];
+  const response = await fetch(APP_STATE_URL, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ state: { [SUPPORT_REQUESTS_KEY]: next } })
+  });
+  const data = await response.json().catch(()=>({ ok:false }));
+  if(!response.ok || !data.ok){
+    throw new Error((data && data.error) || "Support request save failed");
+  }
+  return next;
+}
+function escapeHtml(value){
+  return String(value == null ? "" : value).replace(/[&<>"']/g, function(char){
+    return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[char];
+  });
+}
+function formatDate(value){
+  if(!value) return "-";
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString("en-IN", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" });
+}
+function normalizeMobile(value){
+  return String(value || "").replace(/\D/g, "").slice(-10);
+}
+function getRequestBadgeClass(status){
+  if(status === "Resolved") return "green";
+  if(status === "Contacted") return "gold";
+  return "red";
+}
+function filterRequests(requests){
+  const query = String(document.getElementById("searchInput").value || "").trim().toLowerCase();
+  const typeFilter = String(document.getElementById("typeFilter").value || "");
+  const statusFilter = String(document.getElementById("statusFilter").value || "");
+  return (Array.isArray(requests) ? requests : []).filter(request=>{
+    if(typeFilter && request.requestType !== typeFilter) return false;
+    if(statusFilter && String(request.status || "Open") !== statusFilter) return false;
+    if(!query) return true;
+    const haystack = [
+      request.name,
+      request.email,
+      request.mobile,
+      request.issueType,
+      request.issue,
+      request.orderId,
+      request.subject,
+      request.preferredTime
+    ].join(" ").toLowerCase();
+    return haystack.includes(query) || normalizeMobile(request.mobile).includes(query.replace(/\D/g, ""));
+  });
+}
+function renderStats(list){
+  const requests = Array.isArray(list) ? list : [];
+  const openCount = requests.filter(item=>String(item.status || "Open") === "Open").length;
+  const contactedCount = requests.filter(item=>String(item.status || "") === "Contacted").length;
+  const resolvedCount = requests.filter(item=>String(item.status || "") === "Resolved").length;
+  const callbackCount = requests.filter(item=>String(item.requestType || "") === "Request Callback").length;
+  document.getElementById("requestStats").innerHTML = `
+    <div class="stat-card"><div class="label">Total Requests</div><div class="value">${requests.length}</div></div>
+    <div class="stat-card"><div class="label">Open</div><div class="value">${openCount}</div></div>
+    <div class="stat-card"><div class="label">Contacted</div><div class="value">${contactedCount}</div></div>
+    <div class="stat-card"><div class="label">Callback Requests</div><div class="value">${callbackCount}</div></div>
+  `;
+}
+async function updateRequestStatus(id, nextStatus){
+  const requests = (await readRequests()).map(request=>{
+    if(String(request.id) !== String(id)) return request;
+    return Object.assign({}, request, { status: nextStatus, updatedAt: new Date().toISOString() });
+  });
+  await saveRequests(requests);
+  await renderRequests();
+}
+async function deleteRequest(id){
+  const requests = (await readRequests()).filter(request=>String(request.id) !== String(id));
+  await saveRequests(requests);
+  await renderRequests();
+}
+async function renderRequests(){
+  const allRequests = await readRequests();
+  renderStats(allRequests);
+  const list = filterRequests(allRequests);
+  const container = document.getElementById("requestList");
+  if(!list.length){
+    container.innerHTML = `<div class="empty">No verified contact or callback requests found.</div>`;
+    return;
+  }
+  container.innerHTML = list.map(request=>`
+    <div class="request-card">
+      <div class="request-head">
+        <div>
+          <h3>${escapeHtml(request.name || "Support Request")}</h3>
+          <div class="badge-wrap">
+            <span class="badge">${escapeHtml(request.requestType || "Request")}</span>
+            <span class="badge ${getRequestBadgeClass(String(request.status || "Open"))}">${escapeHtml(request.status || "Open")}</span>
+            <span class="badge gold">${escapeHtml(request.issueType || "General Support")}</span>
+            ${request.orderId ? `<span class="badge">Order: ${escapeHtml(request.orderId)}</span>` : ``}
+          </div>
+        </div>
+        <div class="badge-wrap">
+          <span class="badge">${formatDate(request.createdAt)}</span>
+        </div>
+      </div>
+
+      <div class="card-grid">
+        <div class="mini"><div class="k">Email</div><div class="v">${escapeHtml(request.email || "-")}</div></div>
+        <div class="mini"><div class="k">Mobile</div><div class="v">${escapeHtml(request.mobile || "-")}</div></div>
+        <div class="mini"><div class="k">Preferred Time</div><div class="v">${escapeHtml(request.preferredTime || "-")}</div></div>
+        <div class="mini"><div class="k">Subject</div><div class="v">${escapeHtml(request.subject || "-")}</div></div>
+      </div>
+
+      <div class="issue-box">
+        <strong style="display:block;margin-bottom:8px;color:#7a3d3d;">Issue Details</strong>
+        ${escapeHtml(request.issue || "-")}
+      </div>
+
+      <div class="card-actions">
+        <button class="btn-warn" onclick="updateRequestStatus('${escapeHtml(request.id)}','Contacted')">Mark Contacted</button>
+        <button class="btn-success" onclick="updateRequestStatus('${escapeHtml(request.id)}','Resolved')">Mark Resolved</button>
+        <button class="btn-danger" onclick="deleteRequest('${escapeHtml(request.id)}')">Delete</button>
+      </div>
+    </div>
+  `).join("");
+}
+renderRequests();
+window.addEventListener("focus", function(){ renderRequests(); });
+</script>
+</body>
+</html>

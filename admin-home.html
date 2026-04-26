@@ -6,6 +6,9 @@
 <title>Swadra Organics Home Panel</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="api-config.js"></script>
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter','Nirmala UI','Mangal','Noto Sans Devanagari',sans-serif}
@@ -400,15 +403,16 @@ textarea{
 }
 </style>
 <link rel="stylesheet" href="swadra-responsive.css">
-<script src="api-config.js"></script></head>
+<link rel="stylesheet" href="mobile.css">
+</head>
 
 <body>
-<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
+<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Callback Requests</a></div>
 <div class="wrap">
 
   <div class="topbar">
     <h1>Swadra Organics Home Panel</h1>
-    <p>Hero images, homepage video, offers aur customer reviews yahin se manage honge. Existing save, delete aur sync functions same working rahenge.</p>
+    <p>Manage hero images, homepage video, offers, and customer reviews from here. Existing save, delete, and sync functions remain unchanged.</p>
   </div>
 
   <div id="saveStatus" class="status">Panel ready. Add data to save it.</div>
@@ -434,7 +438,7 @@ textarea{
     </div>
     <div class="stat-card">
       <div class="label">Storage Mode</div>
-      <div class="value">Hybrid</div>
+      <div class="value">Firestore</div>
     </div>
   </div>
 
@@ -443,7 +447,7 @@ textarea{
 
       <div class="panel">
         <div class="title">Hero Images</div>
-        <div class="sub">Homepage slider ke liye hero images upload karo. Existing IndexedDB + legacy storage sync same rahega.</div>
+<div class="sub">Upload hero images for the homepage slider. Saves directly to Cloudinary and Firestore.</div>
         <div class="upload" onclick="heroInput.click()">Upload Hero Images</div>
         <input type="file" id="heroInput" multiple hidden>
         <div id="heroPreview" class="preview"></div>
@@ -451,7 +455,7 @@ textarea{
 
       <div class="panel">
         <div class="title">Homepage Video</div>
-        <div class="sub">Main homepage section ke liye video upload karo. Video DB logic same working rahega.</div>
+        <div class="sub">Upload the video for the main homepage section. Video database logic remains unchanged.</div>
         <div class="upload" onclick="videoInput.click()">Upload Video</div>
         <input type="file" id="videoInput" hidden>
         <div id="videoPreview" class="preview"></div>
@@ -459,7 +463,7 @@ textarea{
 
       <div class="panel">
         <div class="title">Family Counter Banner</div>
-        <div class="sub">Index page par combo section ke niche full background banner yahin se manage hoga. Number = base number + every order + every customer.</div>
+        <div class="sub">Manage the full background banner below the combo section on the index page from here. Number = base number + every order + every customer.</div>
         <div class="story-admin-preview">
           <img id="storyPreviewImage" alt="Family counter preview">
           <div>
@@ -492,7 +496,7 @@ textarea{
 
       <div class="panel">
         <div class="title">Hero Text Control</div>
-        <div class="sub">Index page ke main hero section ka heading, subtitle, trust line, badges aur button text yahin se control hoga.</div>
+        <div class="sub">Control the heading, subtitle, trust line, badges, and button text for the main hero section on the index page from here.</div>
         <div class="hero-control-row">
           <label class="hero-toggle">
             <input type="checkbox" id="heroTextEnabledInput">
@@ -512,19 +516,27 @@ textarea{
         <input id="heroBadge3Input" placeholder="âœ“ Farm Direct">
         <input id="heroButtonInput" placeholder="Explore Products â†’">
         <button class="main" onclick="saveHeroTextSettings()">Save Hero Text</button>
+        <button class="ghost" onclick="disableHeroText()">Disable Hero Text</button>
       </div>
 
       <div class="panel">
         <div class="title">Offers</div>
-        <div class="sub">Homepage offer lines yahin add hongi.</div>
+        <div class="sub">Add homepage offer lines here.</div>
         <input id="offerText" placeholder="Enter offer text">
         <button class="main" onclick="addOffer()">Add Offer</button>
         <div id="offerPreview" class="preview" style="display:grid;gap:8px;"></div>
       </div>
 
       <div class="panel">
+        <div class="title">Free Delivery Control</div>
+        <div class="sub">Control the minimum cart amount for free delivery across the website.</div>
+        <input id="freeDeliveryThresholdInput" type="number" min="0" step="1" placeholder="399">
+        <button class="main" onclick="saveFreeDeliverySettings()">Save Free Delivery Amount</button>
+      </div>
+
+      <div class="panel">
         <div class="title">Customers</div>
-        <div class="sub">Customer name, product, review aur dono images upload karke homepage review section banao.</div>
+        <div class="sub">Create the homepage review section by adding the customer name, product, review, and both images.</div>
 
         <input id="cName" placeholder="Name">
         <input id="cProduct" placeholder="Product">
@@ -542,7 +554,7 @@ textarea{
 
       <div class="panel">
         <div class="title">Family Cards</div>
-        <div class="sub">Homepage ke "Be Swadra Organics Family" slider ke cards yahin se manage honge. Har card ke liye image aur name add karo.</div>
+        <div class="sub">Manage the cards for the "Be Swadra Organics Family" slider here. Add an image and name for each card.</div>
         <input id="familyCardName" placeholder="Card Name">
         <div class="file-input-label">Card Image</div>
         <input type="file" id="familyCardImg" accept="image/*">
@@ -608,6 +620,7 @@ const heroButtonInput = document.getElementById("heroButtonInput");
 const heroTextEnabledInput = document.getElementById("heroTextEnabledInput");
 const heroTextPositionInput = document.getElementById("heroTextPositionInput");
 const offerText = document.getElementById("offerText");
+const freeDeliveryThresholdInput = document.getElementById("freeDeliveryThresholdInput");
 const cName = document.getElementById("cName");
 const cProduct = document.getElementById("cProduct");
 const cReview = document.getElementById("cReview");
@@ -667,51 +680,16 @@ saveStatus.style.background = isError ? "#fee2e2" : "#ecfdf3";
 saveStatus.style.color = isError ? "#991b1b" : "#166534";
 }
 
-const APP_STATE_ENDPOINT = (window.SWADRA_APP_STATE_URL || "/api/app-state");
+const siteContentApi = window.SWADRA_SITE_CONTENT || null;
+const productDataApi = window.SWADRA_PRODUCT_DATA || {};
 const remoteState = {
-users: {},
 homeContent: {},
 offers: [],
 heroImages: [],
 customers: [],
-familyCards: []
+familyCards: [],
+storyCounter: {}
 };
-
-function getAppStateUrl(keys){
-let url = APP_STATE_ENDPOINT;
-if(Array.isArray(keys) && keys.length){
-url += `?keys=${encodeURIComponent(keys.join(","))}`;
-}
-return url;
-}
-
-async function fetchAppState(keys){
-const response = await fetch(getAppStateUrl(keys), { cache:"no-store" });
-if(!response.ok){
-throw new Error(`Request failed with ${response.status}`);
-}
-const data = await response.json();
-if(!data || !data.ok){
-throw new Error(data?.error || "Failed to fetch app state");
-}
-return data.state || {};
-}
-
-async function persistAppState(state, removeKeys){
-const response = await fetch(APP_STATE_ENDPOINT,{
-method:"POST",
-headers:{ "Content-Type":"application/json" },
-body: JSON.stringify({
-state: state && typeof state === "object" ? state : {},
-removeKeys: Array.isArray(removeKeys) ? removeKeys : []
-})
-});
-const data = await response.json().catch(()=>({}));
-if(!response.ok || !data?.ok){
-throw new Error(data?.error || `Save failed with ${response.status}`);
-}
-return data.state || {};
-}
 
 function syncRemoteCollectionsFromHomeContent(){
 const content = remoteState.homeContent && typeof remoteState.homeContent === "object" ? remoteState.homeContent : {};
@@ -722,36 +700,17 @@ remoteState.familyCards = Array.isArray(content.familyCards) ? content.familyCar
 }
 
 async function reloadRemoteState(){
-const state = await fetchAppState([
-"users",
-"homeContent",
-"offers",
-"heroImages",
-"customers",
-"familyCards",
-STORY_COUNTER_KEY
-]);
-remoteState.users = state.users && typeof state.users === "object" ? state.users : {};
+if(!siteContentApi || typeof siteContentApi.fetch !== "function"){
+throw new Error("Site content API unavailable");
+}
+const state = await siteContentApi.fetch(true);
 remoteState.homeContent = state.homeContent && typeof state.homeContent === "object" ? state.homeContent : {};
+remoteState.offers = Array.isArray(state.offers) ? state.offers.slice() : [];
+remoteState.heroImages = Array.isArray(state.heroImages) ? state.heroImages.slice() : [];
+remoteState.customers = Array.isArray(state.customers) ? state.customers.slice() : [];
+remoteState.familyCards = Array.isArray(state.familyCards) ? state.familyCards.slice() : [];
 remoteState.storyCounter = state[STORY_COUNTER_KEY] && typeof state[STORY_COUNTER_KEY] === "object" ? state[STORY_COUNTER_KEY] : {};
 syncRemoteCollectionsFromHomeContent();
-
-if(remoteState.offers.length === 0 && Array.isArray(state.offers)){
-remoteState.offers = state.offers.slice();
-remoteState.homeContent.offers = remoteState.offers.slice();
-}
-if(remoteState.heroImages.length === 0 && Array.isArray(state.heroImages)){
-remoteState.heroImages = state.heroImages.slice();
-remoteState.homeContent.heroImages = remoteState.heroImages.slice();
-}
-if(remoteState.customers.length === 0 && Array.isArray(state.customers)){
-remoteState.customers = state.customers.slice();
-remoteState.homeContent.customers = remoteState.customers.slice();
-}
-if(remoteState.familyCards.length === 0 && Array.isArray(state.familyCards)){
-remoteState.familyCards = state.familyCards.slice();
-remoteState.homeContent.familyCards = remoteState.familyCards.slice();
-}
 }
 
 async function safeSet(key,data){
@@ -787,11 +746,11 @@ return true;
 }
 if(key === STORY_COUNTER_KEY){
 remoteState.storyCounter = data && typeof data === "object" ? { ...data } : {};
-await persistAppState({ [STORY_COUNTER_KEY]: data }, []);
+await siteContentApi.save({ [STORY_COUNTER_KEY]: remoteState.storyCounter });
 setStatus(`${key} saved successfully`, false);
 return true;
 }
-await persistAppState({ [key]: data }, []);
+await siteContentApi.save({ [key]: data });
 setStatus(`${key} saved successfully`, false);
 return true;
 }catch(e){
@@ -823,20 +782,36 @@ next.offers = remoteState.offers.slice();
 }
 remoteState.homeContent = next;
 syncRemoteCollectionsFromHomeContent();
-await persistAppState({ homeContent: next }, []);
+await siteContentApi.save({
+homeContent: next,
+offers: remoteState.offers.slice(),
+heroImages: remoteState.heroImages.slice(),
+customers: remoteState.customers.slice(),
+familyCards: remoteState.familyCards.slice(),
+[STORY_COUNTER_KEY]: remoteState.storyCounter ? { ...remoteState.storyCounter } : {}
+});
+await reloadRemoteState();
 }
 
 function canUseStorage(){
 return true;
 }
 
-// FILE READ
-function readFile(file){
-return new Promise((res)=>{
-let r=new FileReader();
-r.onload=e=>res(e.target.result);
-r.readAsDataURL(file);
-});
+async function uploadMediaFile(file, options){
+if(!file) return "";
+if(file.type && file.type.startsWith("image/") && typeof productDataApi.uploadImagesToCloudinary === "function"){
+const urls = await productDataApi.uploadImagesToCloudinary([file], options);
+return urls[0] || "";
+}
+if(file.type && file.type.startsWith("video/") && typeof productDataApi.uploadVideosToCloudinary === "function"){
+const urls = await productDataApi.uploadVideosToCloudinary([file]);
+return urls[0] || "";
+}
+if(typeof productDataApi.uploadImagesToCloudinary === "function" && file.type.startsWith("image/")){
+const urls = await productDataApi.uploadImagesToCloudinary([file], options);
+return urls[0] || "";
+}
+throw new Error("Cloudinary upload helper unavailable");
 }
 
 function safeObjectParse(key){
@@ -847,24 +822,11 @@ return {};
 }
 
 function getRegisteredCustomerCount(){
-try{
-let users = remoteState.users || {};
-return Object.keys(users).filter(Boolean).length;
-}catch(e){
 return 0;
-}
 }
 
 function getPaidOrderCount(){
-try{
-let users = remoteState.users || {};
-return Object.values(users).reduce((sum,user)=>{
-let orders = Array.isArray(user && user.orders) ? user.orders : [];
-return sum + orders.filter(order => String(order.payment || order.status || "").toLowerCase().includes("paid") || String(order.status || "").toLowerCase().includes("confirmed")).length;
-},0);
-}catch(e){
 return 0;
-}
 }
 
 function getStoryReviewCustomerCount(){
@@ -888,7 +850,7 @@ storyCaptionColorInput.value = normalizeHexColor(data.captionColor, "#17100c");
 storyPreviewImage.src = data.image || STORY_DEFAULT_IMAGE;
 storyPreviewTitle.textContent = cleanUiText(data.title, "More Than a Brand, A Family");
 storyPreviewTitle.style.color = normalizeHexColor(data.titleColor, "#17100c");
-storyPreviewMeta.textContent = `Live count: ${getStoryCurrentCount(data).toLocaleString("en-IN")} = base + orders + customers. Image full background me show hogi.`;
+    storyPreviewMeta.textContent = `Live count: ${getStoryCurrentCount(data).toLocaleString("en-IN")} = base + orders + customers. The image will appear as the full background.`;
 }
 
 function getHeroTextSettings(){
@@ -905,6 +867,13 @@ button: cleanUiText(content.heroButton, "Explore Products →")
 };
 }
 
+function getFreeDeliverySettings(){
+let content = remoteState.homeContent || {};
+return {
+threshold: Math.max(0, Number(content.freeDeliveryThreshold ?? 399) || 399)
+};
+}
+
 function renderHeroTextAdmin(){
 let data = getHeroTextSettings();
 heroTitleLine1Input.value = data.titleLine1;
@@ -918,6 +887,11 @@ heroButtonInput.value = data.button;
 let content = remoteState.homeContent || {};
 heroTextEnabledInput.checked = content.heroTextEnabled !== false;
 heroTextPositionInput.value = content.heroTextPosition === "left" ? "left" : "right";
+}
+
+function renderFreeDeliveryAdmin(){
+let data = getFreeDeliverySettings();
+freeDeliveryThresholdInput.value = data.threshold;
 }
 
 async function saveHeroTextSettings(){
@@ -938,6 +912,25 @@ renderHeroTextAdmin();
 setStatus("Hero text saved successfully", false);
 }
 
+async function disableHeroText(){
+heroTextEnabledInput.checked = false;
+await saveHomeContent({
+heroTextEnabled: false,
+heroTextUpdatedAt: Date.now()
+});
+renderHeroTextAdmin();
+setStatus("Hero text disabled successfully", false);
+}
+
+async function saveFreeDeliverySettings(){
+await saveHomeContent({
+freeDeliveryThreshold: Math.max(0, Number(freeDeliveryThresholdInput.value || 0) || 399),
+freeDeliveryUpdatedAt: Date.now()
+});
+renderFreeDeliveryAdmin();
+setStatus("Free delivery amount saved successfully", false);
+}
+
 storyImageInput.onchange = async function(){
 let file = storyImageInput.files[0];
 if(!file) return renderStoryCounterAdmin();
@@ -946,7 +939,7 @@ alert("Please upload valid image file");
 storyImageInput.value = "";
 return;
 }
-storyPreviewImage.src = await readFile(file);
+storyPreviewImage.src = URL.createObjectURL(file);
 };
 
 async function saveStoryCounterSettings(){
@@ -958,7 +951,7 @@ if(!file.type.startsWith("image/")){
 alert("Please upload valid image file");
 return;
 }
-image = await readFile(file);
+ image = await uploadMediaFile(file, { preserveQuality: true });
 }
 let settings = {
 image,
@@ -971,15 +964,15 @@ subtitleColor: normalizeHexColor(storySubtitleColorInput.value, "#17100c"),
 captionColor: normalizeHexColor(storyCaptionColorInput.value, "#17100c"),
 updatedAt: Date.now()
 };
-if(safeSet(STORY_COUNTER_KEY, settings)){
+if(await safeSet(STORY_COUNTER_KEY, settings)){
 storyImageInput.value = "";
-saveHomeContent({storyCounterUpdatedAt: Date.now()});
+await saveHomeContent({storyCounterUpdatedAt: Date.now()});
 renderStoryCounterAdmin();
 setStatus("Family counter banner saved successfully", false);
 }
 }
 
-// HOME ASSETS (IndexedDB)
+// HOME ASSETS
 let activePreviewUrls = [];
 
 function revokePreviewUrls(){
@@ -1007,7 +1000,7 @@ if(f.size > 5*1024*1024){
 alert("Max 5MB allowed");
 continue;
 }
-nextHero.push(await readFile(f));
+ nextHero.push(await uploadMediaFile(f, { preserveQuality: true }));
 }
 await safeSet("heroImages", nextHero);
 setStatus("Hero images saved successfully", false);
@@ -1020,9 +1013,9 @@ heroInput.value="";
 await renderAll();
 };
 
-// VIDEO (IndexedDB)
+// VIDEO
 async function saveVideo(file){
-const dataUrl = await readFile(file);
+const dataUrl = await uploadMediaFile(file);
 const stamp = Date.now();
 await saveHomeContent({
 heroVideoSrc: dataUrl,
@@ -1058,7 +1051,7 @@ saveVideo(file);
 async function addOffer(){
 if(!canUseStorage()) return;
 let val=offerText.value.trim();
-if(!val) return alert("Enter offer");
+if(!val) return alert("Enter offer text");
 
 let o=safeParse("offers");
 o.push(val);
@@ -1090,8 +1083,8 @@ id: makeAssetId("customer"),
 name:cName.value,
 product:cProduct.value,
 review:cReview.value,
-customerImg: await readFile(cImg.files[0]),
-productImg: await readFile(pImg.files[0]),
+customerImg: await uploadMediaFile(cImg.files[0]),
+productImg: await uploadMediaFile(pImg.files[0]),
 createdAt: Date.now()
 });
 await safeSet("customers", customers);
@@ -1152,7 +1145,7 @@ let familyCards = remoteState.familyCards.slice();
 familyCards.push({
 id: makeAssetId("family-card"),
 name: familyCardName.value.trim(),
-image: await readFile(familyCardImg.files[0]),
+image: await uploadMediaFile(familyCardImg.files[0]),
 createdAt: Date.now()
 });
 await safeSet("familyCards", familyCards);
@@ -1198,6 +1191,7 @@ async function renderAll(){
 revokePreviewUrls();
 renderStoryCounterAdmin();
 renderHeroTextAdmin();
+renderFreeDeliveryAdmin();
 let hero = remoteState.heroImages.slice();
 let customers = remoteState.customers.slice();
 let familyCards = remoteState.familyCards.slice();
@@ -1263,10 +1257,10 @@ loadVideo();
 return renderAll();
 })
 .then(()=>{
-setStatus("Panel ready. Data backend se load ho gaya.", false);
+    setStatus("Panel ready. Data loaded from Firestore.", false);
 })
 .catch(e=>{
-setStatus(`Backend sync unavailable: ${e.message}`, true);
+setStatus(`Firestore sync unavailable: ${e.message}`, true);
 console.error(e);
 renderAll();
 });

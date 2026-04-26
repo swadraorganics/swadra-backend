@@ -4,30 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Swadra Cart</title>
-<script src="page-storage-sync.js"></script>
-<script>
-window.installSwadraPageStorageSync({
-  pageName: "cart page",
-  persistedKeys: [
-    "currentUser",
-    "users",
-    "cart",
-    "redirectAfterLogin",
-    "homeContent",
-    "offers",
-    "swadraHeaderSearch",
-    "cartSummary",
-    "subtotal",
-    "delivery",
-    "discount",
-    "couponDiscount",
-    "mrpTotal",
-    "gstTotal",
-    "finalTotal",
-    "couponAdjustedCart"
-  ]
-});
-</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -43,6 +19,7 @@ body{background:#f1e3e3;color:#1f1f1f;overflow:auto}
 .page{max-width:1360px;height:auto;margin:18px auto 0;padding:0 18px 30px;display:flex;flex-direction:column;overflow:visible}
 .page-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:16px;flex-shrink:0}
 .page-title h1{font-size:34px;font-weight:800}
+.cart-notice{display:none;margin:-2px 0 16px;background:#eaf7ef;border:1px solid #cfe8d8;color:#176c3b;padding:14px 16px;border-radius:18px;font-size:14px;font-weight:700}
 .free-badge{background:#fff;color:#8a2d4a;padding:12px 18px;border-radius:18px;font-size:13px;font-weight:700;border:1px solid #f0d7df}
 .cart-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,360px);gap:18px;align-items:start}
 .cart-items-panel,.summary-panel{background:#fff;border-radius:30px;padding:20px;box-shadow:0 14px 35px rgba(0,0,0,.05)}
@@ -161,8 +138,8 @@ margin:0 !important;
 .nav-search-copy strong{color:#282c3f;font-size:14px}
 .nav-search-copy span{color:#7a7f8a;font-size:12px;margin-top:3px}
 .nav-search-item button{border:none;border-radius:999px;background:#7a3d3d;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0}
-.sale-bar{display:block;position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height) - 1px);z-index:7000;overflow:hidden;white-space:nowrap;padding:10px 0;background:#ffffff;color:#c62828;font-size:18px;font-weight:700;line-height:1;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif}
-.sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;padding-left:0;animation:offerTicker 26s linear infinite;will-change:transform}
+.sale-bar{display:block;position:sticky !important;top:calc(var(--top-bar-height) + var(--navbar-height) - 1px) !important;z-index:7000 !important;overflow:hidden;white-space:nowrap;min-height:44px;padding:10px 0;background:#ffffff;color:#7a3d3d;font-size:16px;font-weight:700;line-height:20px;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif}
+.sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;min-height:44px;padding-left:0;animation:offerTicker 52s linear infinite;will-change:transform}
 .sale-bar-item{display:inline-flex;align-items:center;flex:0 0 auto;margin-right:84px}
 @keyframes offerTicker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 .account-link{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;color:#fff;text-decoration:none}
@@ -180,13 +157,17 @@ margin:0 !important;
 .account-hover-list + .account-hover-list{margin-top:10px;padding-top:10px;border-top:1px solid #f4ece9}
 .account-hover-list a{display:flex !important;align-items:center;gap:12px;padding:10px 18px;color:#7a3d3d !important;text-decoration:none !important;font-size:14px;font-weight:700}
 .account-hover-list a span,.account-hover-list a:visited span,.account-hover-list a:hover span,.account-hover-list a:active span{color:#7a3d3d !important}
-.account-hover-menu a,.account-hover-menu a:visited{color:#7a3d3d !important}
+.account-hover-menu a:not(.account-hover-cta),.account-hover-menu a:not(.account-hover-cta):visited{color:#7a3d3d !important}
+.account-hover-cta,.account-hover-cta:visited,.account-hover-cta:hover,.account-hover-cta:active{color:#fff !important;background:#7a3d3d !important;border-color:#7a3d3d !important}
 .account-hover-list a:hover{background:#fbf4f2;color:#7a3d3d !important}
 .account-menu-icon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;color:#7a3d3d}
 .account-menu-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 </style>
 <style>html,body{background:#f1e3e3 !important;}</style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<link rel="stylesheet" href="mobile.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="api-config.js"></script></head>
 <body>
 <div class="top-bar" style="text-align:center;padding:12px;font-weight:600;font-size:16px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;">Eat Healthy &bull; Be Swadra Family</div>
@@ -201,13 +182,25 @@ margin:0 !important;
 <a href="aboutus.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">About Us</a>
 <span id="accountNavSlot"><a class="account-link" href="account.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a></span>
 </div>
-</header><div class="sale-bar"><div class="sale-bar-track" id="saleBarTrack"><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span></div></div><div class="page">
+<details class="mobile-nav-menu" style="display:none;">
+<summary aria-label="Open navigation menu"><span></span><span></span><span></span></summary>
+<div class="mobile-nav-panel">
+<a href="index.html">Home</a>
+<a href="spices.html">Spices</a>
+<a href="dryfruits.html">Dry Fruits</a>
+<a href="oilghee.html">Oil Ghee &amp; More</a>
+<a href="aboutus.html">About Us</a>
+<a href="account.html">Account</a>
+</div>
+</details>
+</header><div class="sale-bar"><div class="sale-bar-track" id="saleBarTrack"></div></div><div class="page">
 <div class="page-title">
 <h1>Your Shopping Bag</h1>
-<span class="free-badge">Free Delivery Above ₹399</span>
+<span class="free-badge" id="freeDeliveryBadge">Free Delivery Above ₹399</span>
 </div>
+<div class="cart-notice" id="cartNotice"></div>
 <div class="cart-layout">
-<div class="cart-items-panel"><div class="cart-items" id="cartItems"></div><button class="checkout-btn" onclick="goToCheckout()">Proceed to Checkout &rarr;</button></div>
+<div class="cart-items-panel"><div class="cart-items" id="cartItems"></div></div>
 <div class="summary-panel">
 <h2>Order Summary</h2>
 <div class="summary-row"><p>Total MRP</p><span class="mrp-total">₹0</span></div>
@@ -228,6 +221,7 @@ margin:0 !important;
 </div>
 <div class="summary-row"><strong>Total Amount</strong><strong class="total">₹0</strong></div>
 <p class="save-text" id="saveText">Total Save ₹0</p>
+<button class="checkout-btn" onclick="goToCheckout()">Proceed to Checkout &rarr;</button>
 <p class="gst-note" id="gstNote">GST is included in product prices and shown here for clarity.</p>
 </div>
 </div>
@@ -249,8 +243,8 @@ function getSafeCartImage(image){
 if(typeof image !== "string") return "";
 let cleanImage = image.trim();
 if(!cleanImage) return "";
-if(cleanImage.startsWith("data:image/")) return cleanImage;
-if(cleanImage.startsWith("blob:")) return cleanImage;
+if(cleanImage.startsWith("data:image/")) return "";
+if(cleanImage.startsWith("blob:")) return "";
 if(/^https?:\/\//i.test(cleanImage)) return cleanImage;
 cleanImage = cleanImage.replace(/\\/g,"/");
 if(cleanImage.startsWith("./")) return cleanImage.slice(2);
@@ -271,6 +265,11 @@ image:getSafeCartImage(item.image)
 }
 
 const productDataApi = window.SWADRA_PRODUCT_DATA || {};
+const siteContentApi = window.SWADRA_SITE_CONTENT || null;
+const authApi = window.SWADRA_AUTH || null;
+let siteContentState = siteContentApi && typeof siteContentApi.createEmptyState === "function"
+? siteContentApi.createEmptyState()
+: { homeContent:{}, offers:[], heroImages:[], customers:[], familyCards:[], swadra_home_family_story_v1:{} };
 const COUPONS_API_URL = window.SWADRA_COUPONS_API_URL || "/api/coupons";
 let availableCoupons = [];
 
@@ -291,30 +290,33 @@ image: normalizedImage
 }
 
 function getHomeContent(){
-try{
-return JSON.parse(localStorage.getItem("homeContent")) || {};
-}catch(e){
-return {};
-}
+return siteContentState.homeContent || {};
 }
 
 function getHomeArray(key){
 const content = getHomeContent();
 if(Array.isArray(content[key])) return content[key];
-try{
-return JSON.parse(localStorage.getItem(key)) || [];
-}catch(e){
-return [];
-}
+return Array.isArray(siteContentState[key]) ? siteContentState[key] : [];
 }
 
-function renderOfferBar(){
+function getFreeDeliveryThreshold(){
+const content = getHomeContent();
+return Math.max(0, Number(content.freeDeliveryThreshold ?? siteContentState.freeDeliveryThreshold ?? 399) || 399);
+}
+
+function updateFreeDeliveryBadge(){
+const badge = document.getElementById("freeDeliveryBadge");
+if(!badge) return;
+badge.innerText = "Free Delivery Above ₹" + Math.round(getFreeDeliveryThreshold()).toLocaleString("en-IN");
+}
+
+async function renderOfferBar(forceRefresh){
+if(window.SWADRA_OFFERS && typeof window.SWADRA_OFFERS.renderSaleBar === "function"){
+await window.SWADRA_OFFERS.renderSaleBar("saleBarTrack", !!forceRefresh);
+return;
+}
 const track = document.getElementById("saleBarTrack");
-if(!track) return;
-const offers = getHomeArray("offers").map(item=>String(item || "").trim()).filter(Boolean);
-const finalOffers = offers.length ? offers : ["Free Delivery on orders above ₹699"];
-const repeated = [...finalOffers, ...finalOffers, ...finalOffers];
-track.innerHTML = repeated.map(item=>`<span class="sale-bar-item">${item}</span>`).join("");
+if(track) track.innerHTML = "";
 }
 
 async function getProducts(){
@@ -328,15 +330,31 @@ console.error("cart products fetch failed", error);
 return [];
 }
 
+async function loadSiteContent(){
+if(!siteContentApi || typeof siteContentApi.fetch !== "function"){
+return siteContentState;
+}
+try{
+siteContentState = await siteContentApi.fetch(true);
+}catch(error){
+console.error("cart site content fetch failed", error);
+}
+return siteContentState;
+}
+
 function syncUserCart(){
-let currentUser = localStorage.getItem("currentUser");
+let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : localStorage.getItem("currentUser");
 if(!currentUser) return;
-let users = JSON.parse(localStorage.getItem("users")) || {};
+let users = authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : (JSON.parse(localStorage.getItem("users")) || {});
 if(!users[currentUser]) users[currentUser] = {cart:[],orders:[]};
 let merged = compactCart(users[currentUser].cart || []);
 try{
 users[currentUser].cart = merged;
+if(authApi && typeof authApi.saveUsers === "function"){
+authApi.saveUsers(users);
+}else{
 localStorage.setItem("users", JSON.stringify(users));
+}
 }catch(e){}
 if(merged){
 localStorage.setItem("cart", JSON.stringify(merged));
@@ -346,18 +364,37 @@ localStorage.setItem("cart", JSON.stringify(merged));
 function saveUserCart(cart){
 let safeCart = compactCart(cart);
 localStorage.setItem("cart", JSON.stringify(safeCart));
-let currentUser = localStorage.getItem("currentUser");
+let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : localStorage.getItem("currentUser");
 if(!currentUser) return;
-let users = JSON.parse(localStorage.getItem("users")) || {};
+let users = authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : (JSON.parse(localStorage.getItem("users")) || {});
 if(!users[currentUser]) users[currentUser] = {cart:[],orders:[]};
 try{
 users[currentUser].cart = safeCart;
+if(authApi && typeof authApi.saveUsers === "function"){
+authApi.saveUsers(users);
+}else{
 localStorage.setItem("users", JSON.stringify(users));
+}
 }catch(e){}
 }
 
 function getCart(){
+let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : localStorage.getItem("currentUser");
+let users = authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : null;
+if(currentUser && users && users[currentUser]){
+let userCart = compactCart(users[currentUser].cart || []);
+try{ localStorage.setItem("cart", JSON.stringify(userCart)); }catch(e){}
+return userCart;
+}
 return compactCart(JSON.parse(localStorage.getItem("cart")) || []);
+}
+
+function showCartNotice(message){
+let notice = document.getElementById("cartNotice");
+if(!notice) return;
+let text = String(message || "").trim();
+notice.innerText = text;
+notice.style.display = text ? "block" : "none";
 }
 
 function getCategoryGstRate(category, name){
@@ -433,6 +470,7 @@ function getCartBreakdown(cart){
 let mrpTotal = 0;
 let sellingTotal = 0;
 let gstTotal = 0;
+let freeDeliveryThreshold = getFreeDeliveryThreshold();
 
 cart.forEach(item=>{
 let qty = Number(item.qty || 0);
@@ -443,7 +481,7 @@ sellingTotal += lineSelling;
 gstTotal += getIncludedGstAmount(lineSelling, getItemGstRate(item));
 });
 
-let delivery = sellingTotal >= 399 || sellingTotal === 0 ? 0 : 199;
+let delivery = sellingTotal >= freeDeliveryThreshold || sellingTotal === 0 ? 0 : 199;
 let productDiscount = Math.max(0, mrpTotal - sellingTotal);
 let couponDiscount = 0;
 if(appliedCoupon?.discount){
@@ -621,7 +659,16 @@ let response = await fetch(COUPONS_API_URL,{ cache:"no-store" });
 let data = await response.json().catch(()=>({ ok:false }));
 availableCoupons = Array.isArray(data.coupons) ? data.coupons : [];
 }catch(error){
+try{
+if(!siteContentApi || typeof siteContentApi.fetch !== "function"){
+throw new Error("Firestore coupon helper unavailable");
+}
+let state = await siteContentApi.fetch(true);
+availableCoupons = Array.isArray(state && state.coupons) ? state.coupons : [];
+}catch(innerError){
 availableCoupons = [];
+console.error(innerError);
+}
 }
 }
 
@@ -657,8 +704,16 @@ window.location.href = "checkout.html";
 }
 
 window.onload = async ()=>{
-renderOfferBar();
+await loadSiteContent();
+updateFreeDeliveryBadge();
+await renderOfferBar(true);
 await fetchAvailableCoupons();
+if(authApi && typeof authApi.consumeCartMergeNotice === "function"){
+let notice = authApi.consumeCartMergeNotice();
+if(notice && notice.message){
+showCartNotice(notice.message + (notice.cartCount ? " Your previous pending cart items are also available now." : ""));
+}
+}
 loadCart();
 };
 </script>
@@ -666,9 +721,12 @@ loadCart();
 function swadraHeaderUpdateAccountNav(){
   let slot=document.getElementById("accountNavSlot");
   if(!slot) return;
-  let currentUser=localStorage.getItem("currentUser");
-  let users={};
-  try{ users=JSON.parse(localStorage.getItem("users")) || {}; }catch(e){}
+  const authApi = window.SWADRA_AUTH || null;
+  let currentUser=authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : localStorage.getItem("currentUser");
+  let users=authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : {};
+  if(!authApi){
+    try{ users=JSON.parse(localStorage.getItem("users")) || {}; }catch(e){}
+  }
   if(currentUser && users[currentUser]){
     slot.innerHTML='<span class="account-menu-wrap"><a class="account-link" href="dashboard.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">'+((((users[currentUser]||{}).profile||{}).name) || currentUser.split("@")[0])+'</div><div class="account-hover-copy">'+currentUser+'</div><a class="account-hover-cta" href="dashboard.html">MY ACCOUNT</a></div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="dashboard.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V5"></path><path d="M17 16v-3"></path></svg></span><span>Product Summary</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span>';
   }else{
@@ -746,12 +804,10 @@ window.addEventListener("storage", function(event){
   if(["cart","users","currentUser"].includes(event.key)){
     swadraHeaderUpdateAccountNav();
   }
-  if(event.key === "homeContent" || event.key === "offers"){
-    renderOfferBar();
-  }
 });
-window.addEventListener("focus", function(){ renderOfferBar(); loadCart(); });
-window.addEventListener("pageshow", function(){ renderOfferBar(); loadCart(); });
+window.addEventListener("pageshow", async function(){ await loadSiteContent(); updateFreeDeliveryBadge(); await renderOfferBar(true); loadCart(); });
+window.addEventListener("focus", async function(){ await loadSiteContent(); updateFreeDeliveryBadge(); await renderOfferBar(true); loadCart(); });
+window.addEventListener("storage", async function(event){ if(["offers","homeContent","couponsUpdatedAt"].includes(event.key)){ await loadSiteContent(); updateFreeDeliveryBadge(); await renderOfferBar(true); await fetchAvailableCoupons(); } });
 </script>
 </body>
 </html>

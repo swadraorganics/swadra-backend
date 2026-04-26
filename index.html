@@ -7,27 +7,10 @@
 <title>Swadra Organics</title>
 <style>html,body{background:#f1e3e3 !important;}</style>
 <link rel="stylesheet" href="swadra-responsive.css">
-<script src="page-storage-sync.js"></script>
-<script>
-window.installSwadraPageStorageSync({
-  pageName: "index page",
-  persistedKeys: [
-    "currentUser",
-    "users",
-    "cart",
-    "redirectAfterLogin",
-    "homeContent",
-    "heroImagesUpdatedAt",
-    "customersUpdatedAt",
-    "heroVideoUpdatedAt",
-    "offers",
-    "swadra_home_family_story_v1"
-  ]
-});
-</script>
+<link rel="stylesheet" href="mobile.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="api-config.js"></script></head>
+<script src="api-config.js?v=20260423-2"></script></head>
 
 <body>
 <div id="progressBar"></div>
@@ -666,7 +649,7 @@ padding:1px;
 width:280px;
 height:280px;
 margin-left:-20px;
-object-fit:contain;
+object-fit:fill;
 display:block;
 opacity:0.8;
 border:1px solid black;
@@ -676,8 +659,6 @@ border:1px solid black;
 font-size:14px;
 
 }
-
-
 
 .rating{
 color:#f4b400;
@@ -721,8 +702,9 @@ border:2px solid black;
 
 .mute-btn{
 position:absolute;
-bottom:20px;
-right:20px;
+bottom:108px;
+right:12px;
+z-index:3;
 background:#7a3d3d;
 color:white;
 border:none;
@@ -1021,10 +1003,18 @@ line-height:1;
 color:#2f2a26;
 margin-bottom:8px;
 font-weight:800;
+transform:translateY(-11px);
+}
+
+.customer-review-title-row{
+display:flex;
+align-items:flex-start;
+gap:12px;
+margin-bottom:6px;
 }
 
 .customer-review-card h3{
-margin:0 0 12px 0 !important;
+margin:0 !important;
 top:auto !important;
 position:static !important;
 font-size:18px !important;
@@ -1043,9 +1033,38 @@ font-family:Arial,sans-serif !important;
 word-break:break-word !important;
 overflow-wrap:anywhere !important;
 display:-webkit-box !important;
--webkit-line-clamp:4;
+-webkit-line-clamp:8;
 -webkit-box-orient:vertical;
 overflow:hidden !important;
+}
+
+.customer-review-card p.expanded{
+display:block !important;
+-webkit-line-clamp:unset !important;
+overflow:visible !important;
+}
+
+.customer-card-wrapper.expanded{
+align-items:start;
+}
+
+.customer-card-wrapper.expanded .customer-review-card{
+height:auto !important;
+min-height:295px !important;
+}
+
+.customer-read-more{
+margin-top:10px;
+align-self:flex-start;
+border:none;
+background:none;
+padding:0;
+font-size:14px;
+font-weight:800;
+color:#7a3d3d;
+font-family:Arial,sans-serif;
+cursor:pointer;
+text-decoration:underline;
 }
 
 @media(max-width:1100px){
@@ -1670,9 +1689,9 @@ text-align:right;
 
 .hero{
   position:relative;
-  background:url("images/background.jpg") no-repeat center;
+  background:none;
   background-size:cover;
-background-position:centerr;
+background-position:center;
   align-items:flex-start;
   height:auto;
   min-height:600px;
@@ -1715,13 +1734,13 @@ padding-top:0px;
   height:100%;
   display:block;
   object-fit:cover;
+  transform:translateY(-1mm);
 }
 
 .hero-frame::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:linear-gradient(90deg,rgba(255,248,242,0.08) 0%, rgba(255,248,242,0.42) 52%, rgba(255,248,242,0.82) 100%);
+  content:none;
+  display:none;
+  background:none;
 }
 
 
@@ -1758,6 +1777,16 @@ padding-top:0px;
 
 .hero.hero-text-disabled .hero-content{
   display:none !important;
+  visibility:hidden !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+}
+
+.hero[data-hero-text-enabled="false"] .hero-content{
+  display:none !important;
+  visibility:hidden !important;
+  opacity:0 !important;
+  pointer-events:none !important;
 }
 
 .hero.hero-text-left{
@@ -1936,26 +1965,31 @@ padding-top:0px;
 
 .sale-bar{
   display:none;
-  position:sticky;
-  top:calc(var(--top-bar-height) + var(--navbar-height) - 1px);
-  z-index:7000;
+  position:sticky !important;
+  top:calc(var(--top-bar-height) + var(--navbar-height) - 1px) !important;
+  z-index:7000 !important;
   overflow:hidden;
   white-space:nowrap;
-  padding:10px 0;
-  background:#ffffff;
-  color:#c62828;
-  font-size:18px;
+  min-height:22px;
+  padding:4px 0;
+  background:#f1e3e3;
+  color:#7a3d3d;
+  font-size:14px;
   font-weight:700;
-  line-height:1;
-  border-top:1px solid rgba(198,40,40,0.12);
-  border-bottom:1px solid rgba(198,40,40,0.18);
+  line-height:18px;
+  border-top:1px solid rgba(198,40,40,0.08);
+  border-bottom:1px solid rgba(198,40,40,0.12);
+  align-items:center;
+  justify-content:center;
 }
 
 .sale-bar-track{
   display:flex;
   align-items:center;
+  justify-content:center;
   width:max-content;
   min-width:max-content;
+  min-height:22px;
   padding-left:0;
   animation:offerTicker 52s linear infinite;
   will-change:transform;
@@ -2829,6 +2863,16 @@ section{
 
 .hero.hero-text-disabled .hero-content{
   display:none !important;
+  visibility:hidden !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+}
+
+.hero[data-hero-text-enabled="false"] .hero-content{
+  display:none !important;
+  visibility:hidden !important;
+  opacity:0 !important;
+  pointer-events:none !important;
 }
 
 .hero #heroButtonText.cta-cart-btn{
@@ -3243,7 +3287,7 @@ margin:0 !important;
 #comboContainer > .home-spice-card .home-spice-info,
 #allProductsGrid > .product-card .product-info,
 #allProductsGrid > .home-spice-card .home-spice-info{
-  margin-top:14px !important;
+  margin-top:11px !important;
   display:flex !important;
   flex-direction:column !important;
   gap:0 !important;
@@ -3268,7 +3312,8 @@ margin:0 !important;
   color:#000 !important;
   flex:1 1 auto !important;
   min-width:0 !important;
-  padding-top:6px !important;
+  padding-top:0 !important;
+  min-height:unset !important;
 }
 
 #bestsellersGrid > .product-card .size,
@@ -3286,7 +3331,20 @@ margin:0 !important;
   white-space:nowrap !important;
   text-align:right !important;
   flex:0 0 auto !important;
-  transform:translateY(-4px) !important;
+  transform:none !important;
+  padding-top:1px !important;
+}
+
+#bestsellersGrid > .product-card .product-title-row,
+#bestsellersGrid > .home-spice-card .home-spice-title-row,
+#specialProductsGrid > .product-card .product-title-row,
+#specialProductsGrid > .home-spice-card .home-spice-title-row,
+#comboContainer > .product-card .product-title-row,
+#comboContainer > .home-spice-card .home-spice-title-row,
+#allProductsGrid > .product-card .product-title-row,
+#allProductsGrid > .home-spice-card .home-spice-title-row{
+  align-items:flex-start !important;
+  min-height:unset !important;
 }
 
 #bestsellersGrid > .product-card .product-bottom,
@@ -3300,7 +3358,7 @@ margin:0 !important;
   display:flex !important;
   justify-content:space-between !important;
   align-items:center !important;
-  margin:-4px 14px 0 !important;
+  margin:-6px 14px 0 !important;
 }
 
 #bestsellersGrid > .product-card .left,
@@ -3408,7 +3466,7 @@ margin:0 !important;
   display:flex !important;
   justify-content:space-between !important;
   align-items:center !important;
-  margin-top:6px !important;
+  margin-top:3px !important;
 }
 
 #bestsellersGrid .product-card .left,
@@ -3483,11 +3541,13 @@ margin:0 !important;
 #comboContainer .product-card .qty-btn{
   background:#eee !important;
   border:none !important;
-  width:20px !important;
-  height:20px !important;
+  width:16px !important;
+  height:16px !important;
   border-radius:50% !important;
   cursor:pointer !important;
-  font-size:12px !important;
+  font-size:10px !important;
+  line-height:16px !important;
+  padding:0 !important;
 }
 
 #bestsellersGrid .product-card .cart-btn,
@@ -3874,11 +3934,11 @@ margin:0 !important;
 
 #allProductsGrid .product-title-row{
   display:flex !important;
-  align-items:flex-end !important;
+  align-items:flex-start !important;
   justify-content:space-between !important;
   gap:10px !important;
   margin:0 14px 0 !important;
-  min-height:28px !important;
+  min-height:unset !important;
 }
 
 #allProductsGrid .product-title-row h3{
@@ -3888,7 +3948,8 @@ margin:0 !important;
   line-height:1.2 !important;
   flex:1 1 auto !important;
   min-width:0 !important;
-  padding-top:6px !important;
+  padding-top:0 !important;
+  min-height:unset !important;
   color:#000 !important;
 }
 
@@ -3900,14 +3961,15 @@ margin:0 !important;
   white-space:nowrap !important;
   text-align:right !important;
   flex:0 0 auto !important;
-  transform:translateY(-4px) !important;
+  transform:none !important;
+  padding-top:1px !important;
 }
 
 #allProductsGrid .bottom{
   display:flex !important;
   justify-content:space-between !important;
   align-items:center !important;
-  margin:-4px 14px 0 !important;
+  margin:-6px 14px 0 !important;
 }
 
 #allProductsGrid .left{
@@ -4456,6 +4518,21 @@ margin:0 !important;
 <a href="aboutus.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">About Us</a>
 <span id="accountNavSlot"><span class="account-menu-wrap"><a href="account.html" aria-label="Account" title="Account" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;"><span class="account-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></span></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">Welcome</div><div class="account-hover-copy">Access your account, orders and saved details from one place.</div><a class="account-hover-cta" href="account.html">LOGIN / SIGNUP</a></div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span></span>
 </div>
+<details class="mobile-nav-menu" style="display:none;">
+<summary aria-label="Open navigation menu">
+<span></span>
+<span></span>
+<span></span>
+</summary>
+<div class="mobile-nav-panel">
+<a href="index.html">Home</a>
+<a href="spices.html">Spices</a>
+<a href="dryfruits.html">Dry Fruits</a>
+<a href="oilghee.html">Oil Ghee &amp; More</a>
+<a href="aboutus.html">About Us</a>
+<a href="account.html">Account</a>
+</div>
+</details>
 </header><div class="sale-bar" id="offerBar"></div>
 
 
@@ -4470,32 +4547,28 @@ margin:0 !important;
     </div>
   </div>
 
-  <div class="hero-content">
+  <div class="hero-content" hidden aria-hidden="true" style="display:none;visibility:hidden;opacity:0;pointer-events:none;">
 
     <h1 class="hero-main-title">
-<span id="heroTitleLine1">Crafted For Global</span>
-<span class="food-line" id="heroTitleLine2">Standards</span>
+<span id="heroTitleLine1"></span>
+<span class="food-line" id="heroTitleLine2"></span>
 </h1>
 
-<p class="subline" id="heroSubline">
-Pure Quality. Honest Food. Swadra Promise.
-</p>
+<p class="subline" id="heroSubline"></p>
 
-<p class="trust" id="heroTrustLine">
-&#9733; Packed Fresh When You Order
-</p>
+<p class="trust" id="heroTrustLine"></p>
 <div class="hero-trust-icons">
-  <span id="heroBadge1">&#10003; 100% Natural</span>
-  <span id="heroBadge2">&#10003; Expertly Selected</span>
-  <span id="heroBadge3">&#10003; Farm Direct</span>
+  <span id="heroBadge1"></span>
+  <span id="heroBadge2"></span>
+  <span id="heroBadge3"></span>
 </div>
-<a href="#allProductsSection" class="cta-cart-btn" id="heroButtonText" onclick="showAllProductsCatalog(event)" style="display:inline-block;text-decoration:none;font-family:Arial,sans-serif;padding:14px 30px;border-radius:40px;font-size:16px;font-weight:700;line-height:1;text-align:center;background:#7a3d3d;color:#fff;border:none;cursor:pointer;transition:all 0.35s ease;position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.18);" onmouseenter="window.setCtaCartHover && window.setCtaCartHover(this, true)" onmouseleave="window.setCtaCartHover && window.setCtaCartHover(this, false)" onfocus="window.setCtaCartHover && window.setCtaCartHover(this, true)" onblur="window.setCtaCartHover && window.setCtaCartHover(this, false)">Explore Products &rarr;</a>
+<a href="#allProductsSection" class="cta-cart-btn" id="heroButtonText" onclick="showAllProductsCatalog(event)" style="display:inline-block;text-decoration:none;font-family:Arial,sans-serif;padding:14px 30px;border-radius:40px;font-size:16px;font-weight:700;line-height:1;text-align:center;background:#7a3d3d;color:#fff;border:none;cursor:pointer;transition:all 0.35s ease;position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.18);" onmouseenter="window.setCtaCartHover && window.setCtaCartHover(this, true)" onmouseleave="window.setCtaCartHover && window.setCtaCartHover(this, false)" onfocus="window.setCtaCartHover && window.setCtaCartHover(this, true)" onblur="window.setCtaCartHover && window.setCtaCartHover(this, false)"></a>
 </section>
 
 <section class="all-products-section" id="allProductsSection" style="display:none;">
 <div class="all-products-header" style="text-align:center;margin:25px 0 10px;">
 <h2 style="margin:0;color:#7a3d3d;font-size:40px;font-weight:900;line-height:1.15;">Be Swadra Family</h2>
-<p style="margin:10px 0 0;font-size:15px;color:#444;">Spices, Dry Fruits, Oil Ghee, Bestseller, Combos aur Special Products ek jagah.</p>
+<p style="margin:10px 0 0;font-size:15px;color:#444;">Spices, Dry Fruits, Oil Ghee, Bestseller, Combos, and Special Products in one place.</p>
 </div>
 <div class="product-grid" id="allProductsGrid"></div>
 <footer class="swadra-category-footer"><h2>Swadra Organics - Crafted for Global Standards</h2><p>Experience the Difference - Order Today</p></footer>
@@ -4924,15 +4997,12 @@ We believe in bringing pure, traditional and honest food back to Indian kitchens
 Our products are sourced directly from farmers and processed using authentic
 methods to preserve natural taste and nutrition.
 </p>
-<div class="admin-footer-btn">
-<span>Admin Control</span>
- <a href="admin-index.html">Login &rarr;</a>
-</div>
 </div>
 
 <div class="footer-standard-message">
 <h2 id="footerStandardTitle">Swadra Organics - Crafted for Global Standards</h2>
 <p id="footerStandardSubtitle">Experience the Difference - Order Today</p>
+<div class="admin-footer-btn"><span>Need backend access?</span><a href="admin-index.html">Admin Login</a></div>
 </div>
 
 </div>
@@ -4957,10 +5027,10 @@ let lastCustomerData = "";
 let lastHeroUpdate = "__init__";
 let lastCustomersUpdate = "__init__";
 let homeAssetsDb;
-const HOME_DB_NAME = "swadraHomeAssetsDB";
-const HOME_DB_VERSION = 1;
-const HERO_STORE = "heroImages";
-const CUSTOMER_STORE = "customers";
+const siteContentApi = window.SWADRA_SITE_CONTENT || null;
+let siteContentState = siteContentApi && typeof siteContentApi.createEmptyState === "function"
+  ? siteContentApi.createEmptyState()
+  : { homeContent:{}, offers:[], heroImages:[], customers:[], familyCards:[], swadra_home_family_story_v1:{} };
 let heroObjectUrls = [];
 let customerObjectUrls = [];
 let lastOfferText = "";
@@ -4982,12 +5052,11 @@ function renderOfferTicker(offers){
 
   const items = (Array.isArray(offers) ? offers : [])
     .map(item=>String(item || "").trim())
-    .filter(Boolean)
-    .slice(-4);
+    .filter(Boolean);
 
   if(!items.length){
-    offerBarEl.style.display = "none";
     offerBarEl.innerHTML = "";
+    offerBarEl.style.display = "none";
     lastOfferText = "";
     return;
   }
@@ -5003,7 +5072,7 @@ function renderOfferTicker(offers){
     lastOfferText = nextOfferText;
   }
 
-  offerBarEl.style.display = "block";
+  offerBarEl.style.display = "flex";
 }
 
 function revokeUrls(list){
@@ -5011,66 +5080,8 @@ function revokeUrls(list){
   list.length = 0;
 }
 
-function openHomeAssetsDb(){
-  return new Promise((resolve,reject)=>{
-    let request = indexedDB.open(HOME_DB_NAME, HOME_DB_VERSION);
-
-    request.onupgradeneeded = e=>{
-      let database = e.target.result;
-      if(!database.objectStoreNames.contains(HERO_STORE)){
-        database.createObjectStore(HERO_STORE,{keyPath:"id"});
-      }
-      if(!database.objectStoreNames.contains(CUSTOMER_STORE)){
-        database.createObjectStore(CUSTOMER_STORE,{keyPath:"id"});
-      }
-    };
-
-    request.onsuccess = e=>{
-      homeAssetsDb = e.target.result;
-      resolve(homeAssetsDb);
-    };
-
-    request.onerror = ()=>reject(request.error);
-  });
-}
-
-async function ensureHomeAssetsDb(){
-  if(homeAssetsDb) return homeAssetsDb;
-  return openHomeAssetsDb();
-}
-
-async function getHomeDbItems(storeName){
-  try{
-    let database = await ensureHomeAssetsDb();
-    return await new Promise((resolve,reject)=>{
-      let tx = database.transaction(storeName,"readonly");
-      let request = tx.objectStore(storeName).getAll();
-      request.onsuccess = ()=>resolve(request.result || []);
-      request.onerror = ()=>reject(request.error);
-    });
-  }catch(error){
-    console.error(`home assets read failed for ${storeName}`, error);
-    return [];
-  }
-}
-
 async function loadHeroAssets(){
-  const remoteHero = getHomeArray("heroImages");
-  if(remoteHero.length > 0){
-    revokeUrls(heroObjectUrls);
-    return remoteHero;
-  }
-
-  let dbItems = await getHomeDbItems(HERO_STORE);
-  if(dbItems.length > 0){
-    revokeUrls(heroObjectUrls);
-    return dbItems.map(item=>{
-      let src = URL.createObjectURL(item.data);
-      heroObjectUrls.push(src);
-      return src;
-    });
-  }
-
+  revokeUrls(heroObjectUrls);
   return getHomeArray("heroImages");
 }
 
@@ -5080,71 +5091,13 @@ async function loadCustomerAssets(){
     revokeUrls(customerObjectUrls);
     return storedCustomers;
   }
-
-  let dbItems = await getHomeDbItems(CUSTOMER_STORE);
-  if(dbItems.length > 0){
-    revokeUrls(customerObjectUrls);
-    return dbItems.map(item=>{
-      let customerImg = URL.createObjectURL(item.customerImg);
-      let productImg = URL.createObjectURL(item.productImg);
-      customerObjectUrls.push(customerImg, productImg);
-      return {...item, customerImg, productImg};
-    });
-  }
-
-  return [
-    {
-      name:"Priya Sharma",
-      product:"Swadra Lakadong Turmeric",
-      review:"Fresh aroma, clean taste and premium quality. It feels like a product made with real care.",
-      customerImg:"images/customer1.jpg",
-      productImg:"images/lakadongturmeric.png"
-    },
-    {
-      name:"Rohit Verma",
-      product:"Swadra Premium Dry Fruits",
-      review:"Packaging was neat and the dry fruits were fresh. Ordering again was an easy choice.",
-      customerImg:"images/customer2.jpg",
-      productImg:"images/almonds.png"
-    },
-    {
-      name:"Neha Gupta",
-      product:"Swadra A2 Cow Ghee",
-      review:"Pure taste, good texture and a trustworthy feel. The quality stands out in daily cooking.",
-      customerImg:"images/customer3.jpg",
-      productImg:"images/a2ghee.png"
-    }
-  ];
+  return [];
 }
 
 
 // VIDEO FIX (GLOBAL)
 let vdb;
-let lastVideoUpdate = localStorage.getItem("heroVideoUpdatedAt") || "";
-let heroVideoDbRequested = false;
 let heroVideoReady = false;
-
-function initHeroVideoDb(){
-  if(heroVideoDbRequested) return;
-  heroVideoDbRequested = true;
-  let vreq = indexedDB.open("swadraVideoDB",2);
-
-  vreq.onupgradeneeded = e=>{
-    vdb = e.target.result;
-    if(!vdb.objectStoreNames.contains("videos")){
-      vdb.createObjectStore("videos",{keyPath:"id"});
-    }
-  };
-
-  vreq.onsuccess = e=>{
-    vdb = e.target.result;
-    loadVideo();
-  };
-
-  vreq.onerror = e=>{
-    console.error("Video DB error", e.target.error);
-  };
-}
 
 function loadVideo(){
   if(heroVideoReady) return;
@@ -5159,40 +5112,12 @@ function loadVideo(){
     }
     return;
   }
-
-  if(!vdb){
-    initHeroVideoDb();
-    return;
+  let video = document.getElementById("heroVideo");
+  if(video && !video.getAttribute("src")){
+    video.src = "video/swadra1.mp4";
+    video.load();
+    heroVideoReady = true;
   }
-
-  let tx = vdb.transaction("videos","readonly");
-  let r = tx.objectStore("videos").get("heroVideo");
-
-  r.onsuccess = ()=>{
-    let video = document.getElementById("heroVideo");
-    if(!video) return;
-    if(r.result && r.result.data){
-      let url = URL.createObjectURL(r.result.data);
-      video.src = url;
-      video.load();
-      heroVideoReady = true;
-      return;
-    }
-    if(!video.getAttribute("src")){
-      video.src = "video/swadra1.mp4";
-      video.load();
-      heroVideoReady = true;
-    }
-  };
-
-  r.onerror = ()=>{
-    let video = document.getElementById("heroVideo");
-    if(video && !video.getAttribute("src")){
-      video.src = "video/swadra1.mp4";
-      video.load();
-      heroVideoReady = true;
-    }
-  };
 }
 
 function ensureHeroVideoReady(){
@@ -5339,7 +5264,7 @@ function escapeFamilyAttr(value){
 
 function renderFamilyCards(cardsData){
   if(!track) return;
-  const finalCards = Array.isArray(cardsData) && cardsData.length ? cardsData : staticFamilyCards;
+  const finalCards = Array.isArray(cardsData) ? cardsData : [];
   track.innerHTML = finalCards.map(item=>`
 <div class="family-card">
 <img src="${escapeFamilyAttr(item.image || "")}" alt="${escapeFamilyAttr(item.name || "Family Card")}">
@@ -5354,19 +5279,7 @@ function renderFamilyCards(cardsData){
 }
 
 function updateFamilySection(){
-  let familyCards = [];
-  try{
-    const homeContent = JSON.parse(localStorage.getItem("homeContent")) || {};
-    if(Array.isArray(homeContent.familyCards)){
-      familyCards = homeContent.familyCards;
-    }
-  }catch(e){}
-  if(!familyCards.length){
-    try{
-      const legacyCards = JSON.parse(localStorage.getItem("familyCards")) || [];
-      if(Array.isArray(legacyCards)) familyCards = legacyCards;
-    }catch(e){}
-  }
+  let familyCards = getHomeArray("familyCards");
   renderFamilyCards(familyCards);
 }
 
@@ -5425,8 +5338,13 @@ function compactCartItems(cart){
 }
 
 function getCart(){
-  let currentUser = localStorage.getItem("currentUser");
-  let users = JSON.parse(localStorage.getItem("users")) || {};
+  const authApi = window.SWADRA_AUTH || null;
+  let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function"
+    ? authApi.getCurrentUserEmail()
+    : localStorage.getItem("currentUser");
+  let users = authApi && typeof authApi.getUsers === "function"
+    ? authApi.getUsers()
+    : (JSON.parse(localStorage.getItem("users")) || {});
   let localCart = compactCartItems(JSON.parse(localStorage.getItem("cart")) || []);
 
   if(currentUser && users[currentUser]){
@@ -5443,13 +5361,22 @@ function getCart(){
 
 function saveCart(cart){
   let safeCart = compactCartItems(cart);
-  let currentUser = localStorage.getItem("currentUser");
-  let users = JSON.parse(localStorage.getItem("users")) || {};
+  const authApi = window.SWADRA_AUTH || null;
+  let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function"
+    ? authApi.getCurrentUserEmail()
+    : localStorage.getItem("currentUser");
+  let users = authApi && typeof authApi.getUsers === "function"
+    ? authApi.getUsers()
+    : (JSON.parse(localStorage.getItem("users")) || {});
 
   if(currentUser && users[currentUser]){
     try{
       users[currentUser].cart = safeCart;
-      localStorage.setItem("users", JSON.stringify(users));
+      if(authApi && typeof authApi.saveUsers === "function"){
+        authApi.saveUsers(users);
+      }else{
+        localStorage.setItem("users", JSON.stringify(users));
+      }
     }catch(error){
       console.warn("cart user save skipped", error);
     }
@@ -5613,24 +5540,62 @@ function renderSearchResults(items){
       }
 
       await showAllProductsCatalog();
-
-      requestAnimationFrame(()=>{
-        const matches = Array.from(document.querySelectorAll("#allProductsGrid .product-card[data-admin-product='true'], #allProductsGrid .product-card")).filter(card=>{
-          const heading = card.querySelector("h3")?.innerText?.trim();
-          const product = globalSearchCache.find(item => String(item.id) === String(productId));
-          return product && heading === product.name;
-        });
-
-        if(matches[0]){
-          matches[0].scrollIntoView({ behavior:"smooth", block:"center" });
-          matches[0].style.boxShadow = "0 0 0 3px rgba(183,110,121,0.55), 0 12px 30px rgba(0,0,0,0.12)";
-          setTimeout(()=>{
-            matches[0].style.boxShadow = "";
-          },1800);
-        }
-      });
+      requestAnimationFrame(()=>focusCatalogProduct(productId));
     });
   });
+}
+
+function getCatalogCards(){
+  return Array.from(document.querySelectorAll("#allProductsGrid .product-card, #allProductsGrid .spices-card-final, #allProductsGrid .home-spice-card"));
+}
+
+function getPendingHeaderSearch(){
+  return String(localStorage.getItem("swadraHeaderSearch") || "").trim();
+}
+
+function clearPendingHeaderSearch(){
+  localStorage.removeItem("swadraHeaderSearch");
+}
+
+function focusCatalogProduct(productId, query){
+  const normalizedQuery = normalizeSearchText(query || "");
+  const product = globalSearchCache.find(item => String(item.id) === String(productId))
+    || globalSearchCache.find(item => {
+      const haystack = normalizeSearchText(`${item.name} ${item.category} ${item.size}`);
+      return normalizedQuery ? haystack.includes(normalizedQuery) : false;
+    });
+
+  const cards = getCatalogCards();
+  const match = cards.find(card=>{
+    const heading = normalizeSearchText(card.querySelector("h3")?.innerText || "");
+    const size = normalizeSearchText(card.querySelector(".size")?.innerText || "");
+    if(product){
+      const nameMatch = heading === normalizeSearchText(product.name);
+      const sizeMatch = !product.size || size.includes(normalizeSearchText(product.size));
+      if(nameMatch && sizeMatch) return true;
+    }
+    return normalizedQuery ? normalizeSearchText(card.innerText).includes(normalizedQuery) : false;
+  });
+
+  if(match){
+    match.scrollIntoView({ behavior:"smooth", block:"center" });
+    match.style.boxShadow = "0 0 0 3px rgba(183,110,121,0.55), 0 12px 30px rgba(0,0,0,0.12)";
+    setTimeout(()=>{
+      match.style.boxShadow = "";
+    },1800);
+  }
+}
+
+async function applyPendingHeaderSearch(){
+  const pendingQuery = getPendingHeaderSearch();
+  if(!pendingQuery) return;
+  if(searchInput){
+    searchInput.value = pendingQuery;
+  }
+  await ensureGlobalSearchCache();
+  await showAllProductsCatalog();
+  requestAnimationFrame(()=>focusCatalogProduct("", pendingQuery));
+  clearPendingHeaderSearch();
 }
 
 if(searchInput && searchResults){
@@ -5661,6 +5626,16 @@ if(searchInput && searchResults){
       });
       renderSearchResults(filtered);
     }
+  });
+
+  searchInput.addEventListener("keydown", async function(event){
+    if(event.key !== "Enter") return;
+    event.preventDefault();
+    const query = normalizeSearchText(this.value);
+    if(!query) return;
+    await showAllProductsCatalog();
+    requestAnimationFrame(()=>focusCatalogProduct("", query));
+    searchResults.classList.remove("show");
   });
 }
 
@@ -5750,16 +5725,20 @@ window.addEventListener("scroll", ()=>{
 
 // ORDER FUNCTION (IMPORTANT)
 function placeOrder(product, price){
-
-  let currentUser = localStorage.getItem("currentUser");
+  const authApi = window.SWADRA_AUTH || null;
+  let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function"
+    ? authApi.getCurrentUserEmail()
+    : localStorage.getItem("currentUser");
 
   if(!currentUser){
-    alert("Login First");
+    alert("Please log in first.");
     window.location.href="account.html";
     return;
   }
 
-  let users = JSON.parse(localStorage.getItem("users")) || {};
+  let users = authApi && typeof authApi.getUsers === "function"
+    ? authApi.getUsers()
+    : (JSON.parse(localStorage.getItem("users")) || {});
   users[currentUser] = users[currentUser] || {};
   users[currentUser].orders = users[currentUser].orders || [];
 
@@ -5772,7 +5751,11 @@ function placeOrder(product, price){
 
   users[currentUser].orders.push(order);
 
-  localStorage.setItem("users", JSON.stringify(users));
+  if(authApi && typeof authApi.saveUsers === "function"){
+    authApi.saveUsers(users);
+  }else{
+    localStorage.setItem("users", JSON.stringify(users));
+  }
 
   alert("Order Placed âœ…");
 }
@@ -5783,26 +5766,29 @@ function placeOrder(product, price){
 
 <script>
 function getHomeContent(){
+  return siteContentState.homeContent || {};
+}
+
+async function syncRemoteHomeState(){
+  if(!siteContentApi || typeof siteContentApi.fetch !== "function"){
+    return false;
+  }
   try{
-    return JSON.parse(localStorage.getItem("homeContent")) || {};
-  }catch(e){
-    console.error("homeContent parse failed", e);
-    return {};
+    siteContentState = await siteContentApi.fetch(true);
+    return true;
+  }catch(error){
+    console.error("remote home state sync failed", error);
+    return false;
   }
 }
 
 function getHomeArray(key){
   let homeContent = getHomeContent();
-  if(Array.isArray(homeContent[key])){
-    return homeContent[key];
-  }
-
-  try{
-    return JSON.parse(localStorage.getItem(key)) || [];
-  }catch(e){
-    console.error("storage parse failed", key, e);
-    return [];
-  }
+  let nested = Array.isArray(homeContent[key]) ? homeContent[key] : [];
+  let direct = Array.isArray(siteContentState[key]) ? siteContentState[key] : [];
+  if(nested.length) return nested;
+  if(direct.length) return direct;
+  return nested;
 }
 
 async function getAdminProducts(){
@@ -5868,19 +5854,8 @@ async function toggleBestsellerCart(id){
   renderBestsellerProducts();
 }
 
-const defaultSectionProducts = {
-  bestseller: [],
-  combos: [],
-  achar: [],
-  special: []
-};
-
 function getStaticHomeProducts(){
-  return [
-    ...defaultSectionProducts.bestseller,
-    ...defaultSectionProducts.combos,
-    ...defaultSectionProducts.special
-  ];
+  return [];
 }
 
 async function findCartProductByName(name){
@@ -5945,44 +5920,19 @@ function bindStaticHomeCartButtons(){
 const STORY_COUNTER_KEY = "swadra_home_family_story_v1";
 
 function getFamilyCounterObject(){
-  try{
-    return JSON.parse(localStorage.getItem(STORY_COUNTER_KEY)) || {};
-  }catch(e){
-    return {};
-  }
+  return siteContentState[STORY_COUNTER_KEY] || {};
 }
 
 function getRegisteredCustomerCount(){
-  try{
-    const users = JSON.parse(localStorage.getItem("users") || "{}") || {};
-    return Object.keys(users).filter(Boolean).length;
-  }catch(e){
-    return 0;
-  }
+  return 0;
 }
 
 function getFamilyReviewCustomerCount(){
-  try{
-    return (JSON.parse(localStorage.getItem("customers") || "[]") || []).length;
-  }catch(e){
-    return 0;
-  }
+  return getHomeArray("customers").length;
 }
 
 function getPaidOrderCount(){
-  try{
-    const users = JSON.parse(localStorage.getItem("users") || "{}") || {};
-    return Object.values(users).reduce((sum,user)=>{
-      const orders = Array.isArray(user && user.orders) ? user.orders : [];
-      return sum + orders.filter(order=>{
-        const payment = String(order.payment || "").toLowerCase();
-        const status = String(order.status || "").toLowerCase();
-        return payment.includes("paid") || status.includes("paid") || status.includes("confirmed");
-      }).length;
-    },0);
-  }catch(e){
-    return 0;
-  }
+  return 0;
 }
 
 function getFamilyCounterTotal(settings){
@@ -6052,11 +6002,22 @@ function renderFooterStandardBlock(){
 function renderHeroTextBlock(){
   const content = getHomeContent();
   const hero = document.querySelector(".hero");
+  const heroContent = document.querySelector(".hero .hero-content");
+  const isEnabled = content.heroTextEnabled !== false;
   if(hero){
     const position = content.heroTextPosition === "left" ? "left" : "right";
-    hero.classList.toggle("hero-text-disabled", content.heroTextEnabled === false);
+    hero.classList.toggle("hero-text-disabled", !isEnabled);
     hero.classList.toggle("hero-text-left", position === "left");
     hero.classList.toggle("hero-text-right", position !== "left");
+    hero.setAttribute("data-hero-text-enabled", isEnabled ? "true" : "false");
+  }
+  if(heroContent){
+    heroContent.hidden = !isEnabled;
+    heroContent.setAttribute("aria-hidden", isEnabled ? "false" : "true");
+    heroContent.style.display = isEnabled ? "" : "none";
+    heroContent.style.visibility = isEnabled ? "" : "hidden";
+    heroContent.style.opacity = isEnabled ? "" : "0";
+    heroContent.style.pointerEvents = isEnabled ? "" : "none";
   }
   const pairs = [
     ["heroTitleLine1", cleanUiText(content.heroTitleLine1, "Crafted For Global")],
@@ -6133,11 +6094,11 @@ function lockHeroTextLayout(){
 const catalogCategoryConfig = [
   { key:"spices", label:"Spices", aliases:["spices"] },
   { key:"dryfruits", label:"Dry Fruits", aliases:["dry fruits","dryfruits"] },
-  { key:"achar", label:"Achar / Pickle", aliases:["achar / pickle","achar","pickle","pickles"], fallbackProducts: [] },
+  { key:"achar", label:"Achar / Pickle", aliases:["achar / pickle","achar","pickle","pickles"] },
   { key:"oilghee", label:"Oil, Ghee & More", aliases:["oil, ghee & more","oil ghee & more","oil ghee"] },
-  { key:"bestseller", label:"Bestseller", aliases:["bestseller","bestsellers","best seller","best sellers"], fallbackProducts: defaultSectionProducts.bestseller },
-  { key:"combos", label:"Combos", aliases:["combos","combo","gift combo","gift combos"], fallbackProducts: defaultSectionProducts.combos },
-  { key:"special", label:"Special Products", aliases:["special products","special product","special","featured products"], fallbackProducts: defaultSectionProducts.special }
+  { key:"bestseller", label:"Bestseller", aliases:["bestseller","bestsellers","best seller","best sellers"] },
+  { key:"combos", label:"Combos", aliases:["combos","combo","gift combo","gift combos"] },
+  { key:"special", label:"Special Products", aliases:["special products","special product","special","featured products"] }
 ];
 
 let catalogProductsCache = [];
@@ -6153,11 +6114,31 @@ function normalizeCategoryName(value){
   return normalized;
 }
 
-function productMatchesCategory(product, config){
-  if(config?.key === "bestseller" && product.isBestseller){
-    return true;
+function productMatchesSectionKey(product, sectionKey){
+  const normalizedCategory = normalizeCategoryName(product && product.category);
+  if(sectionKey === "bestseller"){
+    return Boolean(
+      product && (product.isBestseller || product.bestseller)
+      || normalizedCategory === "bestseller"
+      || normalizedCategory === "bestsellers"
+    );
   }
-  if(config?.key === "special" && product.isSpecialProduct){
+  if(sectionKey === "special"){
+    return Boolean(
+      product && (product.isSpecialProduct || product.special)
+      || normalizedCategory === "special"
+      || normalizedCategory === "special product"
+      || normalizedCategory === "special products"
+      || normalizedCategory === "featured product"
+      || normalizedCategory === "featured products"
+    );
+  }
+  return false;
+}
+window.__swadraProductMatchesSectionKey = productMatchesSectionKey;
+
+function productMatchesCategory(product, config){
+  if(productMatchesSectionKey(product, config?.key)){
     return true;
   }
   const normalized = normalizeCategoryName(product.category);
@@ -6217,11 +6198,7 @@ ${isOut
 ? `<div class="out">Out Of Stock</div>`
 : `
 ${buildHomeClonePriceMarkup(product)}
-<div class="qty">
-<button class="qty-btn" type="button" onclick="${sectionKey === 'catalog' ? `changeCatalogQty('${id}',-1)` : `changeHomeQty('${sectionKey}','${id}',-1)`}">-</button>
-<span id="home-qty-${sectionKey}-${id}">${qty}</span>
-<button class="qty-btn" type="button" onclick="${sectionKey === 'catalog' ? `changeCatalogQty('${id}',1)` : `changeHomeQty('${sectionKey}','${id}',1)`}">+</button>
-</div>`}
+`}
 </div>
 <button
 class="cart ${existing ? 'added' : ''} ${isOut ? 'disabled' : ''}"
@@ -6240,9 +6217,7 @@ function buildExploreProductsCards(products){
   return products.map(product=>{
     const id = String(product.id);
     const existing = cart.find(item => String(item.id) === id);
-    const qtyState = typeof window.getHomeQtyState === "function" ? window.getHomeQtyState() : {};
-    const qtyKey = `catalog:${id}`;
-    const qty = existing ? Number(existing.qty || 1) : Number(qtyState[qtyKey] || 1);
+    const qty = existing ? Number(existing.qty || 1) : 1;
     const isOut = product.availability === "Out of Stock" || Number(product.stockQty || 0) <= 0;
     const pricing = getProductPricing(product);
 
@@ -6268,11 +6243,7 @@ ${pricing.offPercent > 0
 <div class="off">${pricing.offPercent}% OFF</div>
 </div>`
 : `<div class="price">₹${pricing.sellingPrice.toLocaleString()}</div>`}
-<div class="qty">
-<button class="qty-btn" type="button" onclick="changeCatalogQty('${id}',-1)">-</button>
-<span id="catalog-qty-${id}">${qty}</span>
-<button class="qty-btn" type="button" onclick="changeCatalogQty('${id}',1)">+</button>
-</div>`}
+`}
 </div>
 <button
 class="cart ${existing ? 'added' : ''} ${isOut ? 'disabled' : ''}"
@@ -6478,6 +6449,22 @@ function applySpicesCardLayout(container){
 async function getAllCatalogProducts(){
   const adminProducts = await getAdminProducts();
   const combined = [];
+  const seen = new Set();
+
+  adminProducts.forEach((product, index)=>{
+    const normalized = {
+      ...product,
+      id: String(product && product.id || `search-${index + 1}`),
+      name: String(product && (product.name || product.productName) || "").trim(),
+      size: String(product && (product.size || product.productSize) || "").trim(),
+      category: product && product.category ? product.category : "Product"
+    };
+
+    if(!normalized.name) return;
+    if(seen.has(normalized.id)) return;
+    seen.add(normalized.id);
+    combined.push(normalized);
+  });
 
   for(const config of catalogCategoryConfig){
     let items = adminProducts.filter(product => productMatchesCategory(product, config));
@@ -6486,11 +6473,20 @@ async function getAllCatalogProducts(){
       items = config.fallbackProducts.map(product=>({ ...product }));
     }
 
-    combined.push(...items.map((product, index)=>({
-      ...product,
-      id: String(product.id || `catalog-${config.key}-${index + 1}`),
-      category: product.category || config.label
-    })));
+    items.forEach((product, index)=>{
+      const normalized = {
+        ...product,
+        id: String(product && product.id || `catalog-${config.key}-${index + 1}`),
+        name: String(product && (product.name || product.productName) || "").trim(),
+        size: String(product && (product.size || product.productSize) || "").trim(),
+        category: product && product.category ? product.category : config.label
+      };
+
+      if(!normalized.name) return;
+      if(seen.has(normalized.id)) return;
+      seen.add(normalized.id);
+      combined.push(normalized);
+    });
   }
 
   return combined;
@@ -6520,13 +6516,13 @@ function lockAllProductsGridLayout(){
     const info = card.querySelector(".spices-info-wrap");
     if(info) info.style.cssText = "margin-top:26px !important;padding-top:0 !important;position:relative !important;z-index:3 !important;background:#fff !important;box-sizing:border-box !important;";
     const row = card.querySelector(".product-title-row");
-    if(row) row.style.cssText = "display:flex !important;align-items:flex-end !important;justify-content:space-between !important;gap:10px !important;margin:0 14px 0 !important;min-height:28px !important;box-sizing:border-box !important;";
+    if(row) row.style.cssText = "display:flex !important;align-items:flex-start !important;justify-content:space-between !important;gap:10px !important;margin:0 14px 0 !important;min-height:unset !important;box-sizing:border-box !important;";
     const title = card.querySelector(".product-title-row h3");
-    if(title) title.style.cssText = "margin:0 !important;font-size:17px !important;font-weight:700 !important;line-height:1.2 !important;flex:1 1 auto !important;min-width:0 !important;padding-top:6px !important;color:#000 !important;";
+    if(title) title.style.cssText = "margin:0 !important;font-size:17px !important;font-weight:700 !important;line-height:1.2 !important;flex:1 1 auto !important;min-width:0 !important;min-height:unset !important;padding-top:0 !important;color:#000 !important;";
     const size = card.querySelector(".product-title-row .size");
-    if(size) size.style.cssText = "font-size:15px !important;color:#7a3d3d !important;margin:0 !important;line-height:1.2 !important;white-space:nowrap !important;text-align:right !important;flex:0 0 auto !important;transform:translateY(-4px) !important;";
+    if(size) size.style.cssText = "font-size:15px !important;color:#7a3d3d !important;margin:0 !important;line-height:1.2 !important;white-space:nowrap !important;text-align:right !important;flex:0 0 auto !important;transform:none !important;padding-top:1px !important;";
     const bottom = card.querySelector(".bottom");
-    if(bottom) bottom.style.cssText = "display:flex !important;justify-content:space-between !important;align-items:center !important;margin:-4px 14px 0 !important;box-sizing:border-box !important;";
+    if(bottom) bottom.style.cssText = "display:flex !important;justify-content:space-between !important;align-items:center !important;margin:-14px 14px 0 !important;box-sizing:border-box !important;";
     const left = card.querySelector(".left");
     if(left) left.style.cssText = "display:flex !important;align-items:center !important;gap:8px !important;";
   });
@@ -6554,7 +6550,7 @@ async function getSectionProducts(categoryName, fallbackKey){
   if(filtered.length){
     return filtered;
   }
-  return products.length === 0 ? defaultSectionProducts[fallbackKey] : [];
+  return [];
 }
 
 async function renderSectionProducts(containerId, categoryName, fallbackKey){
@@ -6605,9 +6601,7 @@ function toggleCatalogCart(id){
   }else{
     let item = catalogProductsCache.find(product => String(product.id) === String(id));
     if(!item) return;
-    const qtyEl = document.getElementById(`catalog-qty-${id}`);
-    const qtyState = typeof window.getHomeQtyState === "function" ? window.getHomeQtyState() : {};
-    const qty = qtyEl ? Number(qtyEl.innerText || 1) : Number(qtyState[`catalog:${id}`] || 1);
+    const qty = 1;
 
     cart.push({
       id: String(item.id),
@@ -6672,8 +6666,13 @@ function updateAccountNavigation(){
   const slot = document.getElementById("accountNavSlot");
   if(!slot) return;
 
-  const currentUser = localStorage.getItem("currentUser");
-  const users = JSON.parse(localStorage.getItem("users")) || {};
+  const authApi = window.SWADRA_AUTH || null;
+  const currentUser = authApi && typeof authApi.getCurrentUserEmail === "function"
+    ? authApi.getCurrentUserEmail()
+    : localStorage.getItem("currentUser");
+  const users = authApi && typeof authApi.getUsers === "function"
+    ? authApi.getUsers()
+    : (JSON.parse(localStorage.getItem("users")) || {});
 
   if(currentUser && users[currentUser]){
 
@@ -6731,9 +6730,14 @@ function updateAccountNavigation(){
 
 function swadraLogout(event){
   if(event) event.preventDefault();
-  localStorage.removeItem("currentUser");
-  localStorage.removeItem("userPhone");
-  localStorage.removeItem("redirectAfterLogin");
+  const authApi = window.SWADRA_AUTH || null;
+  if(authApi && typeof authApi.signOutUser === "function"){
+    authApi.signOutUser({ keepCart:false });
+  }else{
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("userPhone");
+    localStorage.removeItem("redirectAfterLogin");
+  }
   localStorage.setItem("cart", JSON.stringify([]));
   if(typeof updateAccountNavigation === "function") updateAccountNavigation();
   if(typeof swadraHeaderUpdateAccountNav === "function") swadraHeaderUpdateAccountNav();
@@ -6742,44 +6746,23 @@ function swadraLogout(event){
   window.location.href = "index.html";
   return false;
 }
-
 updateAccountNavigation();
-
-
-  // OFFER
-  // OFFER FIX (ARRAY SUPPORT)
-let offers = getHomeArray("offers");
-let offerBarEl = document.getElementById("offerBar");
-
-if(offerBarEl){
-  renderOfferTicker(offers);
-}
 
 </script>
 
 <script>
  
 function getHomeContent(){
-  try{
-    return JSON.parse(localStorage.getItem("homeContent")) || {};
-  }catch(e){
-    console.error("homeContent parse failed", e);
-    return {};
-  }
+  return siteContentState.homeContent || {};
 }
 
 function getHomeArray(key){
   let homeContent = getHomeContent();
-  if(Array.isArray(homeContent[key])){
-    return homeContent[key];
-  }
-
-  try{
-    return JSON.parse(localStorage.getItem(key)) || [];
-  }catch(e){
-    console.error("storage parse failed", key, e);
-    return [];
-  }
+  let nested = Array.isArray(homeContent[key]) ? homeContent[key] : [];
+  let direct = Array.isArray(siteContentState[key]) ? siteContentState[key] : [];
+  if(nested.length) return nested;
+  if(direct.length) return direct;
+  return nested;
 }
 
 // FIX: ensure function exists in same scope
@@ -6787,58 +6770,6 @@ let customerSlideIndex = 0;
 let customerSlides = [];
 let customerAutoTimer = null;
 
-function legacyUpdateCustomers(){
-
-let customers = getHomeArray("customers");
-let track = document.getElementById("customersTrack");
-let pager = document.getElementById("customersPager");
-let controls = document.querySelector(".customers-controls");
-
-if(!track) return;
-
-if(customers.length === 0){
-track.innerHTML = "";
-if(pager) pager.innerText = "0 â€” 0";
-if(controls) controls.style.display = "none";
-customerSlides = [];
-customerSlideIndex = 0;
-return;
-}
-
-customerSlides = [customers.slice()];
-if(controls) controls.style.display = "none";
-
-track.innerHTML = customers.map(c=>`
-<div class="customer-card-wrapper">
-<div class="customer-product-card">
-<img src="${c.productImg}" alt="${c.product}">
-</div>
-<div class="customer-review-card">
-<div class="customer-review-header">
-<img src="${c.customerImg}" alt="${c.name}">
-<h4>${c.name}</h4>
-</div>
-<div class="customer-review-quote">â€œ</div>
-<h3>${c.product}</h3>
-<p>${c.review}</p>
-</div>
-</div>
-`).join("");
-
-if(pager){
-pager.innerText = `${customers.length} Reviews`;
-}
-}
-
-function legacySlideCustomers(direction){
-legacyUpdateCustomers();
-}
-
-function legacyRestartCustomerAutoSlide(){
-if(customerAutoTimer){
-clearInterval(customerAutoTimer);
-}
-}
 // HERO
 let heroImgs = [];
 let heroIndex = 0;
@@ -6858,6 +6789,7 @@ function renderHeroTrack(images){
   if(!visibleImages.length){
     track.innerHTML = "";
     hero.classList.remove("has-dynamic-hero");
+    hero.style.backgroundImage = "none";
     return;
   }
 
@@ -6869,6 +6801,7 @@ function renderHeroTrack(images){
     </div>
   `;
   hero.classList.add("has-dynamic-hero");
+  hero.style.backgroundImage = "none";
 }
 
 function startHeroSlider(){
@@ -6911,9 +6844,32 @@ function updateHero(){
   }
 }
 
+function resolveEffectiveProductPrice(product){
+  const directPrice = Math.max(0, Number(product?.price || product?.sellingPrice || 0));
+  const offlinePrice = Math.max(0, Number(product?.offlinePrice || 0));
+  const floorPrice = Math.max(0, Number(product?.floorPrice || 0));
+  const fallbackPrice = offlinePrice > 0 ? offlinePrice : floorPrice;
+  if(directPrice <= 0){
+    return Math.max(fallbackPrice, floorPrice);
+  }
+  if(floorPrice > 0 && directPrice < floorPrice){
+    return Math.max(fallbackPrice, floorPrice);
+  }
+  return directPrice;
+}
+
+function resolveEffectiveProductMrp(product, sellingPrice){
+  return Math.max(
+    0,
+    Number(product?.mrp || 0),
+    Number(product?.originalPrice || 0),
+    Number(sellingPrice || 0)
+  );
+}
+
 function getProductPricing(product){
-  const mrp = Number(product.mrp || product.price || 0);
-  const sellingPrice = Number(product.price || 0);
+  const sellingPrice = resolveEffectiveProductPrice(product);
+  const mrp = resolveEffectiveProductMrp(product, sellingPrice);
   const offPercent = mrp > sellingPrice && mrp > 0 ? Math.round(((mrp - sellingPrice) / mrp) * 100) : 0;
   return { mrp, sellingPrice, offPercent };
 }
@@ -6956,7 +6912,7 @@ function legacySyncHero(){
 function syncVideo(){
   let homeContent = getHomeContent();
   let currentVideoUpdate = String(
-    homeContent.heroVideoUpdatedAt || localStorage.getItem("heroVideoUpdatedAt") || ""
+    homeContent.heroVideoUpdatedAt || ""
   );
 
   if(currentVideoUpdate && currentVideoUpdate !== lastVideoUpdate){
@@ -6967,53 +6923,19 @@ function syncVideo(){
 }
 
 // OFFER
-function updateOffer(){
-  let offers = getHomeArray("offers");
+async function updateOffer(forceRefresh){
   let bar = document.getElementById("offerBar");
-
   if(!bar) return;
-  renderOfferTicker(offers);
-}
 
-function legacyRenderCustomerSlides(customers){
-  let track = document.getElementById("customersTrack");
-  let pager = document.getElementById("customersPager");
-  let controls = document.querySelector(".customers-controls");
-
-  if(!track) return;
-
-  if(customers.length === 0){
-    track.innerHTML = "";
-    if(pager) pager.innerText = "0 Ã¢â‚¬â€ 0";
-    if(controls) controls.style.display = "none";
-    customerSlides = [];
-    customerSlideIndex = 0;
-    return;
+  if(window.SWADRA_OFFERS && typeof window.SWADRA_OFFERS.renderSaleBar === "function"){
+    try{
+      await window.SWADRA_OFFERS.renderSaleBar(bar, !!forceRefresh);
+      return;
+    }catch(error){
+      console.error("offer refresh failed", error);
+    }
   }
-
-  customerSlides = [customers.slice()];
-  if(controls) controls.style.display = "none";
-
-  track.innerHTML = customers.map(c=>`
-<div class="customer-card-wrapper">
-<div class="customer-product-card">
-<img src="${c.productImg}" alt="${c.product}">
-</div>
-<div class="customer-review-card">
-<div class="customer-review-header">
-<img src="${c.customerImg}" alt="${c.name}">
-<h4>${c.name}</h4>
-</div>
-<div class="customer-review-quote">Ã¢â‚¬Å“</div>
-<h3>${c.product}</h3>
-<p>${c.review}</p>
-</div>
-</div>
-`).join("");
-
-  if(pager){
-    pager.innerText = `${customers.length} Reviews`;
-  }
+  renderOfferTicker([]);
 }
 
 renderCustomerSlides = function(customers){
@@ -7035,22 +6957,7 @@ renderCustomerSlides = function(customers){
   customerSlides = [customers.slice()];
   if(controls) controls.style.display = "none";
 
-  track.innerHTML = customers.map(c=>`
-<div class="customer-card-wrapper">
-<div class="customer-product-card">
-<img src="${c.productImg}" alt="${c.product}">
-</div>
-<div class="customer-review-card">
-<div class="customer-review-header">
-<img src="${c.customerImg}" alt="${c.name}">
-<h4>${c.name}</h4>
-</div>
-<div class="customer-review-quote">&ldquo;</div>
-<h3>${c.product}</h3>
-<p>${c.review}</p>
-</div>
-</div>
-`).join("");
+  track.innerHTML = customers.map(buildCustomerReviewMarkup).join("");
 
   if(pager){
     pager.innerText = `${customers.length} Reviews`;
@@ -7060,7 +6967,7 @@ renderCustomerSlides = function(customers){
 async function updateCustomers(){
   let homeContent = getHomeContent();
   let currentCustomersUpdate = String(
-    homeContent.customersUpdatedAt || localStorage.getItem("customersUpdatedAt") || ""
+    homeContent.customersUpdatedAt || ""
   );
 
   if(currentCustomersUpdate && currentCustomersUpdate === lastCustomersUpdate && lastCustomerData){
@@ -7107,10 +7014,49 @@ function restartCustomerAutoSlide(){
   }, 4500);
 }
 
+function escapeCustomerReviewText(value){
+  return String(value || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function buildCustomerReviewMarkup(item){
+  const review = String(item && item.review || "").trim();
+  const needsToggle = review.length > 140;
+  return `
+<div class="customer-card-wrapper">
+<div class="customer-product-card">
+<img src="${item.productImg}" alt="${item.product || item.name || "Product"}">
+</div>
+<div class="customer-review-card">
+<div class="customer-review-header">
+<img src="${item.customerImg}" alt="${item.name}">
+<h4>${item.name}</h4>
+</div>
+<div class="customer-review-title-row">
+<div class="customer-review-quote">&ldquo;</div>
+<h3>${item.product || "Swadra Product"}</h3>
+</div>
+<p class="customer-review-text">${escapeCustomerReviewText(review)}</p>
+${needsToggle ? '<button type="button" class="customer-read-more" onclick="toggleCustomerReview(this)">Read more</button>' : ''}
+</div>
+</div>`;
+}
+
+function toggleCustomerReview(button){
+  const wrapper = button && button.closest ? button.closest(".customer-card-wrapper") : null;
+  const card = button && button.closest ? button.closest(".customer-review-card") : null;
+  const review = card ? card.querySelector(".customer-review-text") : null;
+  if(!review) return;
+  const expanded = review.classList.toggle("expanded");
+  if(wrapper){
+    wrapper.classList.toggle("expanded", expanded);
+  }
+  button.textContent = expanded ? "Read less" : "Read more";
+}
+
 async function syncHero(){
   let homeContent = getHomeContent();
   let currentHeroUpdate = String(
-    homeContent.heroImagesUpdatedAt || localStorage.getItem("heroImagesUpdatedAt") || ""
+    homeContent.heroImagesUpdatedAt || ""
   );
 
   if(currentHeroUpdate && currentHeroUpdate === lastHeroUpdate){
@@ -7163,39 +7109,19 @@ if(document.visibilityState === "visible"){
 }
 document.addEventListener("visibilitychange", function(){
   if(document.visibilityState === "visible"){
-    syncVideo();
-    updateCustomers();
-    startIndexBackgroundSync();
+    syncRemoteHomeState().finally(function(){
+      syncHero();
+      syncVideo();
+      updateCustomers();
+      updateOffer(true);
+      renderFamilyCounterBanner();
+      renderFooterStandardBlock();
+      renderHeroTextBlock();
+      startIndexBackgroundSync();
+    });
   }else{
     stopIndexBackgroundSync();
   }
-});
-
-window.addEventListener("storage", function(e){
-  if(e.key === "heroImages" || e.key === "heroImagesUpdatedAt"){
-    syncHero();
-  }
-
-  if(e.key === "offers"){
-    updateOffer();
-  }
-
-  if(e.key === "customers" || e.key === "customersUpdatedAt"){
-    updateCustomers();
-    renderFamilyCounterBanner();
-    restartCustomerAutoSlide();
-  }
-
-  if(e.key === STORY_COUNTER_KEY || e.key === "homeContent" || e.key === "users"){
-    renderFamilyCounterBanner();
-    renderFooterStandardBlock();
-    renderHeroTextBlock();
-  }
-
-  if(e.key === "heroVideoUpdatedAt"){
-    syncVideo();
-  }
-
 });
 
 window.addEventListener("resize", function(){
@@ -7207,20 +7133,26 @@ window.addEventListener("resize", function(){
 });
 
 // FIRST LOAD
-syncHero();
-syncVideo();
-updateHero();
-updateCustomers();
-restartCustomerAutoSlide();
-updateOffer();
-renderFamilyCounterBanner();
-renderFooterStandardBlock();
-renderHeroTextBlock();
-bindStaticHomeCartButtons();
+async function bootstrapHomeUi(){
+  await syncRemoteHomeState();
+  await syncHero();
+  syncVideo();
+  updateHero();
+  await updateCustomers();
+  restartCustomerAutoSlide();
+  await updateOffer(true);
+  renderFamilyCounterBanner();
+  renderFooterStandardBlock();
+  renderHeroTextBlock();
+  bindStaticHomeCartButtons();
+  await applyPendingHeaderSearch();
 
-if(window.location.hash === "#allProductsSection"){
-  showAllProductsCatalog();
+  if(window.location.hash === "#allProductsSection"){
+    showAllProductsCatalog();
+  }
 }
+
+bootstrapHomeUi();
 </script>
 <script>
 (function(){
@@ -7243,9 +7175,6 @@ if(window.location.hash === "#allProductsSection"){
   }
 
   function getFallbackProducts(sectionKey){
-    if(typeof defaultSectionProducts === "object" && defaultSectionProducts && Array.isArray(defaultSectionProducts[sectionKey])){
-      return defaultSectionProducts[sectionKey].map(item=>({ ...item }));
-    }
     return [];
   }
 
@@ -7254,76 +7183,42 @@ if(window.location.hash === "#allProductsSection"){
   }
 
   function getSafeHomeContent(){
-    try{
-      return JSON.parse(localStorage.getItem("homeContent")) || {};
-    }catch(error){
-      console.error("index recovery: homeContent parse failed", error);
-      return {};
-    }
+    return siteContentState.homeContent || {};
   }
 
   function getSafeHomeArray(key){
     const content = getSafeHomeContent();
-    if(Array.isArray(content[key])){
-      return content[key];
+    const nested = Array.isArray(content[key]) ? content[key] : [];
+    const direct = Array.isArray(siteContentState[key]) ? siteContentState[key] : [];
+    if(nested.length){
+      return nested;
     }
-
-    try{
-      return JSON.parse(localStorage.getItem(key)) || [];
-    }catch(error){
-      console.error("index recovery: array parse failed", key, error);
-      return [];
+    if(direct.length){
+      return direct;
     }
+    return direct;
   }
 
-  function openIndexDb(name, version, onUpgrade){
-    return new Promise((resolve,reject)=>{
-      const request = indexedDB.open(name, version);
-      request.onupgradeneeded = event=>{
-        if(typeof onUpgrade === "function"){
-          onUpgrade(event.target.result);
-        }
-      };
-      request.onsuccess = ()=>resolve(request.result);
-      request.onerror = ()=>reject(request.error);
-    });
-  }
-
-  async function getAllProductsSafe(){
-    try{
-      const productDataApi = window.SWADRA_PRODUCT_DATA || {};
-      if(typeof productDataApi.fetchProducts === "function"){
-        return (await productDataApi.fetchProducts()).map(product=>{
-          return typeof productDataApi.normalizeProduct === "function" ? productDataApi.normalizeProduct(product, product && product.id) : product;
-        });
-      }
-    }catch(error){
-      console.error("index recovery: backend products fetch failed", error);
+async function getAllProductsSafe(){
+  try{
+    const productDataApi = window.SWADRA_PRODUCT_DATA || {};
+    if(typeof productDataApi.fetchProducts === "function"){
+      return (await productDataApi.fetchProducts()).map(product=>{
+        const normalized = typeof productDataApi.normalizeProduct === "function" ? productDataApi.normalizeProduct(product, product && product.id) : (product || {});
+        return {
+          ...product,
+          ...normalized,
+          isBestseller: Boolean(normalized?.isBestseller || normalized?.bestseller || product?.isBestseller || product?.bestseller),
+          bestseller: Boolean(normalized?.bestseller || normalized?.isBestseller || product?.bestseller || product?.isBestseller),
+          isSpecialProduct: Boolean(normalized?.isSpecialProduct || normalized?.special || product?.isSpecialProduct || product?.special),
+          special: Boolean(normalized?.special || normalized?.isSpecialProduct || product?.special || product?.isSpecialProduct)
+        };
+      });
     }
+  }catch(error){
+    console.error("index recovery: backend products fetch failed", error);
+  }
     return [];
-  }
-
-  async function getHomeStoreItems(storeName){
-    try{
-      const db = await openIndexDb(INDEX_HOME_DB, INDEX_HOME_VERSION, database=>{
-        if(!database.objectStoreNames.contains("heroImages")){
-          database.createObjectStore("heroImages",{ keyPath:"id" });
-        }
-        if(!database.objectStoreNames.contains("customers")){
-          database.createObjectStore("customers",{ keyPath:"id" });
-        }
-      });
-
-      return await new Promise((resolve,reject)=>{
-        const tx = db.transaction(storeName,"readonly");
-        const request = tx.objectStore(storeName).getAll();
-        request.onsuccess = ()=>resolve(request.result || []);
-        request.onerror = ()=>reject(request.error);
-      });
-    }catch(error){
-      console.error("index recovery: home store read failed", storeName, error);
-      return [];
-    }
   }
 
   async function getHeroAssetsSafe(){
@@ -7332,23 +7227,6 @@ if(window.location.hash === "#allProductsSection"){
       safeHeroCacheKey = "";
       revokeUrls(safeHeroCacheUrls);
       return storedHero;
-    }
-
-    const dbItems = await getHomeStoreItems("heroImages");
-    if(dbItems.length){
-      const cacheKey = dbItems.map(item=>{
-        const blob = item.data;
-        return [item.id, blob?.size || 0, blob?.type || ""].join(":");
-      }).join("|");
-
-      if(cacheKey === safeHeroCacheKey && safeHeroCacheUrls.length === dbItems.length){
-        return safeHeroCacheUrls;
-      }
-
-      revokeUrls(safeHeroCacheUrls);
-      safeHeroCacheUrls = dbItems.map(item=>URL.createObjectURL(item.data));
-      safeHeroCacheKey = cacheKey;
-      return safeHeroCacheUrls;
     }
     safeHeroCacheKey = "";
     revokeUrls(safeHeroCacheUrls);
@@ -7361,42 +7239,12 @@ if(window.location.hash === "#allProductsSection"){
       return storedCustomers;
     }
 
-    const dbItems = await getHomeStoreItems("customers");
-    if(dbItems.length){
-      return dbItems.map(item=>({
-        ...item,
-        customerImg: URL.createObjectURL(item.customerImg),
-        productImg: URL.createObjectURL(item.productImg)
-      }));
-    }
-    return [
-      {
-        name:"Priya Sharma",
-        product:"Swadra Lakadong Turmeric",
-        review:"Fresh aroma, clean taste and premium quality. It feels like a product made with real care.",
-        customerImg:"images/customer1.jpg",
-        productImg:"images/lakadongturmeric.png"
-      },
-      {
-        name:"Rohit Verma",
-        product:"Swadra Premium Dry Fruits",
-        review:"Packaging was neat and the dry fruits were fresh. Ordering again was an easy choice.",
-        customerImg:"images/customer2.jpg",
-        productImg:"images/almonds.png"
-      },
-      {
-        name:"Neha Gupta",
-        product:"Swadra A2 Cow Ghee",
-        review:"Pure taste, good texture and a trustworthy feel. The quality stands out in daily cooking.",
-        customerImg:"images/customer3.jpg",
-        productImg:"images/a2ghee.png"
-      }
-    ];
+    return [];
   }
 
   function getPricing(product){
-    const mrp = Number(product.mrp || product.price || 0);
-    const price = Number(product.price || 0);
+    const price = resolveEffectiveProductPrice(product);
+    const mrp = resolveEffectiveProductMrp(product, price);
     const offPercent = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
     return { mrp, price, offPercent };
   }
@@ -7442,10 +7290,7 @@ if(window.location.hash === "#allProductsSection"){
       return [];
     }
     return products.filter(product=>{
-      if(sectionKey === "bestseller" && product.isBestseller){
-        return true;
-      }
-      if(sectionKey === "special" && product.isSpecialProduct){
+      if(productMatchesSectionKey(product, sectionKey)){
         return true;
       }
       const normalized = normalizeIndexCategory(product.category);
@@ -7480,26 +7325,7 @@ window.getHomeQtyState = getHomeQtyState;
 window.saveHomeQtyState = saveHomeQtyState;
 
 window.changeHomeQty = function(sectionKey, id, delta){
-  const qtyEl = document.getElementById(`home-qty-${sectionKey}-${id}`);
-  if(!qtyEl) return;
-
-  let qty = Number(qtyEl.innerText || 1) + Number(delta || 0);
-  if(qty < 1) qty = 1;
-  qtyEl.innerText = qty;
-
-  const qtyState = window.getHomeQtyState();
-  qtyState[`${sectionKey}:${id}`] = qty;
-  window.saveHomeQtyState(qtyState);
-
-  let cart = getSafeCartState();
-  let item = cart.find(product => String(product.id) === String(id));
-  if(item){
-    item.qty = qty;
-    saveSafeCartState(cart);
-    if(typeof updateCartUI === "function"){
-      updateCartUI();
-    }
-  }
+  return;
 };
   getAdminProducts = window.getAdminProducts = getAllProductsSafe;
   window.__swadraGetAdminProducts = getAllProductsSafe;
@@ -7698,21 +7524,7 @@ window.changeHomeQty = function(sectionKey, id, delta){
 
     if(controls) controls.style.display = "none";
 
-    track.innerHTML = customers.map(item=>`
-<div class="customer-card-wrapper">
-<div class="customer-product-card">
-<img src="${item.productImg}" alt="${item.product || item.name || "Product"}">
-</div>
-<div class="customer-review-card">
-<div class="customer-review-header">
-<img src="${item.customerImg}" alt="${item.name || "Customer"}">
-<h4>${item.name || "Customer"}</h4>
-</div>
-<div class="customer-review-quote">&ldquo;</div>
-<h3>${item.product || "Swadra Product"}</h3>
-<p>${item.review || ""}</p>
-</div>
-</div>`).join("");
+    track.innerHTML = customers.map(buildCustomerReviewMarkup).join("");
 
     if(pager){
       pager.innerText = `${customers.length} Reviews`;
@@ -7732,18 +7544,24 @@ window.changeHomeQty = function(sectionKey, id, delta){
 
   async function refreshIndexFromAdmin(){
     try{
+      if(typeof syncRemoteHomeState === "function"){
+        await syncRemoteHomeState();
+      }
       await Promise.all([
         window.syncHero(),
         window.updateCustomers()
       ]);
       updateFamilySection();
+      if(typeof renderFamilyCounterBanner === "function"){
+        renderFamilyCounterBanner();
+      }
       scheduleHomeSectionsRender("idle");
 
       if(typeof syncVideo === "function"){
         syncVideo();
       }
       if(typeof updateOffer === "function"){
-        updateOffer();
+        await updateOffer(true);
       }
       if(typeof bindStaticHomeCartButtons === "function"){
         bindStaticHomeCartButtons();
@@ -7761,10 +7579,10 @@ window.changeHomeQty = function(sectionKey, id, delta){
 
   window.refreshIndexFromAdmin = refreshIndexFromAdmin;
 
-  if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", ()=>{
-      setTimeout(refreshIndexFromAdmin, 50);
-      installHomeSectionObserver();
+if(document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", ()=>{
+    setTimeout(refreshIndexFromAdmin, 50);
+    installHomeSectionObserver();
       setTimeout(scheduleHomeSectionsRender, 900);
     });
   }else{
@@ -7795,7 +7613,21 @@ window.changeHomeQty = function(sectionKey, id, delta){
 </script>
 <script>
 function swadraHeaderGetCart(){
-  try{return JSON.parse(localStorage.getItem("cart")) || [];}catch(e){return [];}
+  try{
+    const authApi = window.SWADRA_AUTH || null;
+    const currentUser = authApi && typeof authApi.getCurrentUserEmail === "function"
+      ? authApi.getCurrentUserEmail()
+      : localStorage.getItem("currentUser");
+    const users = authApi && typeof authApi.getUsers === "function"
+      ? authApi.getUsers()
+      : (JSON.parse(localStorage.getItem("users")) || {});
+    if(currentUser && users[currentUser] && Array.isArray(users[currentUser].cart)){
+      return compactCartItems(users[currentUser].cart || []);
+    }
+    return compactCartItems(JSON.parse(localStorage.getItem("cart")) || []);
+  }catch(e){
+    return [];
+  }
 }
 function swadraHeaderUpdateStickyCart(){
   let bar=document.getElementById("stickyCart");
@@ -7814,9 +7646,12 @@ function swadraHeaderUpdateStickyCart(){
 function swadraHeaderUpdateAccountNav(){
   let slot=document.getElementById("accountNavSlot");
   if(!slot) return;
-  let currentUser=localStorage.getItem("currentUser");
-  let users={};
-  try{ users=JSON.parse(localStorage.getItem("users")) || {}; }catch(e){}
+  const authApi = window.SWADRA_AUTH || null;
+  let currentUser=authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : localStorage.getItem("currentUser");
+  let users=authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : {};
+  if(!authApi){
+    try{ users=JSON.parse(localStorage.getItem("users")) || {}; }catch(e){}
+  }
   if(currentUser && users[currentUser]){
     slot.innerHTML='<span class="account-menu-wrap"><a href="dashboard.html" aria-label="Account" title="Account" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;"><span class="account-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></span></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">'+(((users[currentUser]||{}).profile||{}).name || currentUser.split("@")[0])+'</div><div class="account-hover-copy">'+currentUser+'</div><a class="account-hover-cta" href="#" onclick="return swadraLogout(event)">LOGOUT</a></div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span>';
   }else{
@@ -7857,10 +7692,10 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
 .spices-card-final > .gallery-nav{display:flex !important}
 .spices-card-final .gallery-dots{display:none}
 .spices-card-final .spices-info-wrap{margin-top:18px;padding-top:0;position:relative;z-index:3;background:#fff;display:flex;flex-direction:column;flex:1}
-.spices-card-final .product-title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:0 14px 0;min-height:28px}
-.spices-card-final h3{margin:0;font-size:17px;font-weight:700;line-height:1.2;flex:1 1 auto;min-width:0;padding-top:6px;color:#000}
-.spices-card-final .size{font-size:15px;color:#7a3d3d;margin:0;line-height:1.2;white-space:nowrap;text-align:right;flex:0 0 auto;transform:translateY(-4px)}
-.spices-card-final .bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:8px 14px 0}
+.spices-card-final .product-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 14px 0;min-height:unset}
+.spices-card-final h3{margin:0;font-size:17px;font-weight:700;line-height:1.2;flex:1 1 auto;min-width:0;padding-top:0;color:#000}
+.spices-card-final .size{font-size:15px;color:#7a3d3d;margin:0;line-height:1.2;white-space:nowrap;text-align:right;flex:0 0 auto;transform:none;padding-top:1px}
+.spices-card-final .bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:5px 14px 0}
 .spices-card-final > .spices-info-wrap > h3,
 .spices-card-final > .spices-info-wrap > .size{margin-left:0 !important}
 .spices-card-final > .spices-info-wrap > h3{padding-left:14px;padding-right:14px}
@@ -7873,7 +7708,7 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
 .spices-card-final .off{font-size:11px;color:#0c831f;font-weight:800;margin-top:-5px;margin-bottom:4px}
 .spices-card-final .out{font-size:14px;color:#c62828;font-weight:700;white-space:nowrap}
 .spices-card-final .qty{display:flex;align-items:center;gap:2px;font-size:14px}
-.spices-card-final .qty button{background:#eee;border:none;width:16px;height:16px;border-radius:50%;cursor:pointer;font-size:10px;line-height:16px;padding:0}
+.spices-card-final .qty button{background:#eee;border:none;width:16px;height:16px;min-width:16px;max-width:16px;min-height:16px;max-height:16px;border-radius:50%;cursor:pointer;font-size:10px;line-height:16px;padding:0;display:inline-flex;align-items:center;justify-content:center;flex:0 0 16px;aspect-ratio:1 / 1}
 .spices-card-final .cart{background:linear-gradient(135deg,#7a3d3d,#b76e79,#d4af37);color:#fff;border:none;padding:10px 18px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:700;transition:all .35s ease;position:relative;overflow:hidden;transform:translateY(-3px);flex:0 0 auto;white-space:nowrap}
 .spices-card-final .cart:hover{background:linear-gradient(135deg,#d4af37,#f7e7a9,#ffd700);color:#000;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 4px 15px rgba(212,175,55,0.6),inset 0 0 10px rgba(255,255,255,0.4);transform:translateY(-3px) scale(1.05)}
 .spices-card-final .cart::before{content:"";position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.6),transparent);transition:.6s}
@@ -7893,8 +7728,8 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
   }
 
   function getPricing(p){
-    const mrp = Math.max(0, Number(p.mrp || p.price || 0));
-    const price = Math.max(0, Number(p.price || p.sellingPrice || 0));
+    const price = resolveEffectiveProductPrice(p);
+    const mrp = resolveEffectiveProductMrp(p, price);
     const off = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : (Number(p.offPercent || 0) || 0);
     return { mrp, price, off };
   }
@@ -7942,7 +7777,7 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
     </div>
     <div class="bottom">
       <div class="left">
-        ${isOut ? `<div class="out">Out Of Stock</div>` : `${priceBlock}<div class="qty"><button type="button" onclick="changeHomeQty('${sectionKey}','${id}',-1)">-</button><span id="home-qty-${sectionKey}-${id}">${qty}</span><button type="button" onclick="changeHomeQty('${sectionKey}','${id}',1)">+</button></div>`}
+        ${isOut ? `<div class="out">Out Of Stock</div>` : `${priceBlock}`}
       </div>
       <button class="cart ${existing ? "added" : ""} ${isOut ? "disabled" : ""}" ${isOut ? "disabled" : ""} onclick="${isOut ? "" : `toggleSectionCart('${sectionKey}','${id}')`}">${existing ? "ADDED ✓" : "ADD TO CART"}</button>
     </div>
@@ -7954,7 +7789,11 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
     const container = document.getElementById(containerId);
     if(!container) return;
     const [items, cart] = await Promise.all([getSectionItems(sectionKey, label, container), Promise.resolve(getCartState())]);
-    container.innerHTML = (Array.isArray(items) ? items : []).map(p => cardHtml(p, sectionKey, cart)).join("");
+    const safeItems = Array.isArray(items) ? items : [];
+    if(!safeItems.length && container.children.length){
+      return;
+    }
+    container.innerHTML = safeItems.map(p => cardHtml(p, sectionKey, cart)).join("");
     Array.from(container.children).forEach(node=>{
       if(!node.classList.contains("spices-card-final")){
         node.remove();
@@ -8087,8 +7926,8 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
   }
 
   function finalPriceMarkup(product){
-    const mrp = Math.max(0, Number(product.mrp || product.price || 0));
-    const price = Math.max(0, Number(product.price || product.sellingPrice || 0));
+    const price = resolveEffectiveProductPrice(product);
+    const mrp = resolveEffectiveProductMrp(product, price);
     const off = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
     if(off > 0){
       return `<div class="price-stack"><div class="price-line"><span class="old">&#8377;${mrp.toLocaleString()}</span><span class="price">&#8377;${price.toLocaleString()}</span></div><div class="off">${off}% OFF</div></div>`;
@@ -8143,13 +7982,16 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
     const productSize = (card.dataset.productSize || visibleSize || "").trim();
     titleEl.innerText = productName;
     metaEl.innerText = productSize;
-    bodyEl.innerText = (card.dataset.productSummary || "").trim() || "Summary not added yet.";
+    bodyEl.innerText = (card.dataset.productSummary || "").trim() || "Summary not available for this product yet.";
     modalEl.classList.add("show");
+    document.body.style.overflow = "hidden";
   };
 
-  window.closeProductSummary = function(){
+  window.closeProductSummary = function(event){
+    if(event && event.target && event.target.id !== "productSummaryModal") return;
     const modalEl = document.getElementById("productSummaryModal");
     if(modalEl) modalEl.classList.remove("show");
+    document.body.style.overflow = "";
   };
 
   window.buildStoreGalleryMarkup = function(product, galleryId){
@@ -8187,7 +8029,7 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
     </div>
     <div class="bottom">
       <div class="left">
-        ${isOut ? `<div class="out">Out Of Stock</div>` : `${finalPriceMarkup(product)}<div class="qty"><button type="button" onclick="changeHomeQty('${sectionKey}','${id}',-1)">-</button><span id="home-qty-${sectionKey}-${id}">${qty}</span><button type="button" onclick="changeHomeQty('${sectionKey}','${id}',1)">+</button></div>`}
+        ${isOut ? `<div class="out">Out Of Stock</div>` : `${finalPriceMarkup(product)}`}
       </div>
       <button class="cart ${existing ? 'added' : ''} ${isOut ? 'disabled' : ''}" ${isOut ? 'disabled' : ''} onclick="${isOut ? '' : `toggleSectionCart('${sectionKey}','${id}')`}">${existing ? 'ADDED ✓' : 'ADD TO CART'}</button>
     </div>
@@ -8196,19 +8038,38 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
   }
 
   async function finalGetSectionProducts(sectionKey, label){
-    if(typeof window.getSectionProducts === "function"){
-      try{
-        const items = await window.getSectionProducts(label, sectionKey);
-        if(Array.isArray(items)) return items;
-      }catch(e){}
+    try{
+      const products = await getAllProductsSafe();
+      const config = homeSectionConfig[sectionKey];
+      if(!config){
+        return [];
+      }
+      const filtered = (Array.isArray(products) ? products : []).filter(product=>{
+        if(productMatchesSectionKey(product, sectionKey)){
+          return true;
+        }
+        const normalized = normalizeIndexCategory(product.category);
+        return config.aliases.some(alias=>{
+          const normalizedAlias = normalizeIndexCategory(alias);
+          return normalized === normalizedAlias
+            || normalized.includes(normalizedAlias)
+            || normalizedAlias.includes(normalized);
+        });
+      });
+      return filtered;
+    }catch(e){
+      console.error("final section products failed", e);
+      return [];
     }
-    return [];
   }
 
   async function finalRenderSection(containerId, label, sectionKey){
     const container = document.getElementById(containerId);
     if(!container) return;
     const products = await finalGetSectionProducts(sectionKey, label);
+    if(!products.length && container.children.length){
+      return;
+    }
     const cart = safeCartState();
     container.innerHTML = products.map(product => finalCardMarkup(product, sectionKey, cart)).join("");
     container.querySelectorAll(".spices-card-final").forEach(card=>{
@@ -8255,6 +8116,21 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
   window.__swadraRenderSpecialProducts = window.renderSpecialProducts;
   window.__swadraToggleSectionCart = window.toggleSectionCart;
 
+  async function forceRenderHomeAdminSections(){
+    try{
+      await Promise.all([
+        window.renderAcharProducts(),
+        window.renderComboProducts(),
+        window.renderBestsellerProducts(),
+        window.renderSpecialProducts()
+      ]);
+    }catch(error){
+      console.error("force render home admin sections failed", error);
+    }
+  }
+
+  window.forceRenderHomeAdminSections = forceRenderHomeAdminSections;
+
   window.setCtaCartHover = function(button, isActive){
     if(!button) return;
     if(button.id === "heroButtonText"){
@@ -8289,6 +8165,8 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
       if(typeof window.scheduleHomeSectionsRender === "function"){
         window.scheduleHomeSectionsRender("idle");
       }
+      setTimeout(forceRenderHomeAdminSections, 300);
+      setTimeout(forceRenderHomeAdminSections, 1200);
       if(typeof window.ensureHeroVideoReady === "function"){
         const heroVideoSection = document.querySelector(".hero-video");
         if("IntersectionObserver" in window && heroVideoSection){
@@ -8308,6 +8186,8 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
     if(typeof window.scheduleHomeSectionsRender === "function"){
       window.scheduleHomeSectionsRender("idle");
     }
+    setTimeout(forceRenderHomeAdminSections, 300);
+    setTimeout(forceRenderHomeAdminSections, 1200);
     if(typeof window.ensureHeroVideoReady === "function"){
       const heroVideoSection = document.querySelector(".hero-video");
       if("IntersectionObserver" in window && heroVideoSection){
@@ -8323,6 +8203,9 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
       }
     }
   }
+  window.addEventListener("pageshow", function(){
+    setTimeout(forceRenderHomeAdminSections, 200);
+  });
 })();
 </script>
 </body>

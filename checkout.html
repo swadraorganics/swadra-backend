@@ -4,34 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Swadra Checkout</title>
-<script src="page-storage-sync.js"></script>
-<script>
-window.installSwadraPageStorageSync({
-  pageName: "checkout page",
-  persistedKeys: [
-    "currentUser",
-    "users",
-    "cart",
-    "redirectAfterLogin",
-    "cartSummary",
-    "couponDiscount",
-    "checkoutData",
-    "swadraHeaderSearch"
-  ]
-});
-</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
 body{background:#f1e3e3;color:#1f1f1f}
-:root{--top-bar-height:48px;--navbar-height:78px;--sale-bar-height:44px}
-.top-bar{text-align:center;padding:12px;font-size:16px;font-weight:700;color:#8a2d4a;background:#fff;position:sticky;top:0;z-index:1001;border-bottom:1px solid #eee}
-.navbar{display:flex;justify-content:space-between;align-items:center;padding:18px 32px;background:#ffffffee;position:sticky;top:41px;z-index:1000;border-bottom:1px solid #ececec}
-.logo a{color:#8a2d4a;font-size:24px;font-weight:800;text-decoration:none}
+:root{--top-bar-height:43px;--navbar-height:62px;--sale-bar-height:44px}
 .secure-badge{background:#fff3f6;color:#8a2d4a;padding:12px 18px;border-radius:18px;font-size:13px;font-weight:700}
-.page{max-width:1450px;margin:calc(var(--sale-bar-height) + 34px) auto 40px;padding:0 24px 40px}
+.page{max-width:1450px;margin:34px auto 40px;padding:0 24px 40px}
 .page-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:16px}
 .page-title h1{font-size:34px;font-weight:800}
 .checkout-layout{display:grid;grid-template-columns:.95fr 1.05fr;gap:28px;align-items:start}
@@ -39,6 +20,23 @@ body{background:#f1e3e3;color:#1f1f1f}
 .section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
 .section-title h2{font-size:28px;font-weight:800}
 .mini-note{font-size:13px;color:#777;font-weight:600}
+.address-switcher{margin-bottom:24px;padding:18px 20px;border:1px solid #ece4df;border-radius:24px;background:#fcf8f6}
+.address-switcher-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.address-switcher-copy strong{display:block;font-size:15px;font-weight:800;color:#2c2222}
+.address-switcher-copy span{display:block;margin-top:6px;font-size:13px;line-height:1.55;color:#6f6464}
+.address-switcher-actions{display:flex;gap:10px;flex-wrap:wrap}
+.switch-btn{border:none;border-radius:999px;padding:10px 16px;font-size:12px;font-weight:800;cursor:pointer}
+.switch-btn.primary{background:#7a3d3d;color:#fff}
+.switch-btn.light{background:#f2e7e3;color:#7a3d3d}
+.address-picker{display:none;margin-top:16px;padding-top:16px;border-top:1px solid #efe4de}
+.address-picker.open{display:block}
+.address-picker-grid{display:grid;gap:12px}
+.address-option{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:14px 16px;border:1px solid #eadfd9;border-radius:18px;background:#fff;cursor:pointer}
+.address-option.active{border-color:#7a3d3d;box-shadow:0 0 0 2px rgba(122,61,61,0.08)}
+.address-option-copy strong{display:block;font-size:14px;font-weight:800;color:#2f2323}
+.address-option-copy span{display:block;margin-top:4px;font-size:12px;line-height:1.5;color:#726767}
+.address-option-badge{font-size:11px;font-weight:800;color:#0f8a47;white-space:nowrap}
+.address-picker-note{margin-top:12px;font-size:12px;line-height:1.5;color:#7a6e6a}
 .order-items{display:grid;gap:16px}
 .order-line{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:18px;border:1px solid #f0f0f0;border-radius:22px;background:#fcfcfc}
 .product-name{font-weight:700;line-height:1.5}
@@ -55,86 +53,39 @@ input,select{width:100%;padding:18px;border-radius:20px;border:1px solid #e6e6e6
 .payment-btn{width:100%;margin-top:28px;padding:22px;border:none;border-radius:24px;background:#7a3d3d;color:#fff;font-size:17px;font-weight:800;cursor:pointer;box-shadow:0 14px 28px rgba(122,61,61,0.22)}
 .payment-btn:hover{background:#6a3434}
 @media(max-width:1100px){.checkout-layout{grid-template-columns:1fr}}
-@media(max-width:760px){.navbar,.page-title{flex-direction:column;align-items:flex-start}.navbar{padding:18px}.form-grid{grid-template-columns:1fr}.left-panel,.right-panel{padding:22px;border-radius:24px}.page-title h1{font-size:28px}}
-.top-bar{text-align:center;padding:12px;font-weight:600;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif}
-.navbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:#7a3d3d}
-.logo{color:#fff;font-size:26px;font-weight:900;font-family:Arial,sans-serif}
-.logo a{color:#fff;text-decoration:none}
-.nav-links{display:flex;gap:18px;flex-wrap:wrap}
-.nav-links a,.nav-links span a{color:#fff;text-decoration:none;font-weight:600;font-family:Arial,sans-serif}
+@media(max-width:760px){.page-title{flex-direction:column;align-items:flex-start}.form-grid{grid-template-columns:1fr}.left-panel,.right-panel{padding:22px;border-radius:24px}.page-title h1{font-size:28px}}
+.top-bar{position:sticky;top:0;z-index:7002;margin:0 !important;text-align:center;padding:12px;font-weight:600;font-size:16px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif}
+.navbar{position:sticky !important;top:calc(var(--top-bar-height) - 1px);z-index:7001 !important;background:#7a3d3d !important;display:flex;justify-content:space-between;align-items:center;padding:14px 24px}
+.logo{display:block;color:#fff;font-size:26px;font-weight:900;white-space:nowrap;font-family:Arial,sans-serif}
+.logo a{color:#fff;text-decoration:none;font:inherit}
+.nav-search{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);flex:0 0 300px;max-width:300px;width:300px;margin:0;z-index:2}
+.nav-search input{width:100%;height:38px;border:none;outline:none;border-radius:8px;padding:0 14px 0 40px;background:#f5f5f6;color:#282c3f;font-size:13px;font-weight:500;box-sizing:border-box;text-overflow:ellipsis}
+.nav-search input::placeholder{color:#b98f8f;opacity:1}
+.nav-search::before{content:"";position:absolute;left:16px;top:50%;width:14px;height:14px;border:2px solid #696e79;border-radius:50%;transform:translateY(-60%);opacity:.85}
+.nav-search::after{content:"";position:absolute;left:28px;top:21px;width:7px;height:2px;background:#696e79;transform:rotate(45deg);border-radius:2px;opacity:.85}
+.nav-search-results{position:absolute;top:calc(100% + 10px);left:0;width:100%;background:#ffffff;border-radius:14px;box-shadow:0 18px 45px rgba(0,0,0,0.15);border:1px solid #ececec;display:none;max-height:320px;overflow:auto;overflow-x:hidden;z-index:5000;opacity:1;isolation:isolate;backdrop-filter:none;-webkit-backdrop-filter:none}
+.nav-links{display:flex;gap:18px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.nav-links a{color:#fff;text-decoration:none;font-weight:700;font-size:16px;font-family:Arial,sans-serif}
+.sale-bar{display:block;position:sticky !important;top:calc(var(--top-bar-height) + var(--navbar-height) - 1px) !important;z-index:7000 !important;overflow:hidden;white-space:nowrap;min-height:44px;padding:10px 0;background:#ffffff;color:#7a3d3d;font-size:16px;font-weight:700;line-height:20px;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif}
+.sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;min-height:44px;padding-left:0;animation:offerTicker 52s linear infinite;will-change:transform}
+.sale-bar-item{display:inline-flex;align-items:center;flex:0 0 auto;margin-right:84px}
+@keyframes offerTicker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+.account-link{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;color:#fff;text-decoration:none}
+.account-link svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:1180px){.navbar{flex-wrap:wrap;gap:12px}.nav-search{position:relative;left:auto;top:auto;transform:none;order:3;flex:1 1 100%;max-width:none;margin:4px 0 0;width:auto}}
 @media(max-width:900px){.nav-links{gap:14px}}
-.top-bar{
-text-align:center !important;
-padding:12px !important;
-font-weight:600 !important;
-font-size:16px !important;
-background:#fff !important;
-color:#7a3d3d !important;
-font-family:Arial,sans-serif !important;
-position:static !important;
-top:auto !important;
-border:none !important;
-}
-.navbar{
-display:flex !important;
-justify-content:space-between !important;
-align-items:center !important;
-padding:14px 24px !important;
-background:#7a3d3d !important;
-position:static !important;
-top:auto !important;
-z-index:auto !important;
-border:none !important;
-box-shadow:none !important;
-}
-.logo{
-color:#fff !important;
-font-size:26px !important;
-font-weight:900 !important;
-font-family:Arial,sans-serif !important;
-}
-.logo a{
-color:#fff !important;
-text-decoration:none !important;
-font-size:26px !important;
-font-weight:900 !important;
-font-family:Arial,sans-serif !important;
-}
-.nav-links{
-display:flex !important;
-gap:18px !important;
-align-items:center !important;
-flex-wrap:wrap !important;
-}
-.nav-links a,
-.nav-links span a{
-color:#fff !important;
-text-decoration:none !important;
-font-weight:600 !important;
-font-size:16px !important;
-font-family:Arial,sans-serif !important;
-margin:0 !important;
-}
-.top-bar{position:sticky !important;top:0 !important;z-index:7002 !important;border-bottom:1px solid #efe3df !important;margin:0 !important}
-.navbar{position:sticky !important;top:calc(var(--top-bar-height) - 1px) !important;z-index:7001 !important;display:grid !important;grid-template-columns:auto minmax(240px,380px) auto !important;gap:20px !important;padding:16px 30px !important}
-.nav-search{display:flex;align-items:center;min-height:46px;padding:0 14px;background:#fff;border-radius:14px}
-.nav-search input{width:100%;border:none;outline:none;background:transparent;color:#7a3d3d;font-size:13px}
-.nav-search-icon{font-size:22px;color:#8d929c;margin-right:10px;line-height:1}
-.sale-bar{position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height) - 1px);z-index:7000;min-height:var(--sale-bar-height);display:flex;align-items:center;justify-content:center;text-align:center;padding:10px 16px;background:#fff;color:#d73832;font-size:17px;font-weight:800;border-bottom:1px solid #efe3df;font-family:Arial,sans-serif;overflow:hidden;white-space:nowrap}
-.sale-bar span{display:inline-block;padding-left:100%;animation:swadraTicker 18s linear infinite}
-@keyframes swadraTicker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
-.account-link{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,0.28);background:rgba(255,255,255,0.06);color:#fff;text-decoration:none;transition:background .2s ease,border-color .2s ease,transform .2s ease}
-.account-link:hover{background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.46);transform:translateY(-1px)}
-.account-link svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 </style>
 <style>html,body{background:#f1e3e3 !important;}</style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<link rel="stylesheet" href="mobile.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="api-config.js"></script></head>
 <body>
 <div class="top-bar" style="text-align:center;padding:12px;font-weight:600;font-size:16px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;">Eat Healthy &bull; Be Swadra Family</div>
 <header class="navbar" style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:#7a3d3d;">
 <div class="logo" style="color:#fff;font-size:26px;font-weight:900;font-family:Arial,sans-serif;"><a href="index.html" style="color:#fff;text-decoration:none;font:inherit;">Swadra Organics</a></div>
-<div class="nav-search"><span class="nav-search-icon">&#128269;</span><input type="text" class="header-search-input" placeholder="Search for products, categories and more"></div>
+<div class="nav-search"><input id="searchInput" type="search" class="header-search-input" placeholder="Search for products, categories and more"><div id="searchResults" class="nav-search-results"></div></div>
 <div class="nav-links" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;">
 <a href="index.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Home</a>
 <a href="spices.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Spices</a>
@@ -143,7 +94,18 @@ margin:0 !important;
 <a href="aboutus.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">About Us</a>
 <span id="accountNavSlot"><a class="account-link" href="account.html" aria-label="Account"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 19.5c1.6-3.3 4-5 7-5s5.4 1.7 7 5"></path></svg></a></span>
 </div>
-</header><div class="sale-bar"><span>&#128666; Free Delivery on orders above &#8377;699</span></div><div class="page">
+<details class="mobile-nav-menu" style="display:none;">
+<summary aria-label="Open navigation menu"><span></span><span></span><span></span></summary>
+<div class="mobile-nav-panel">
+<a href="index.html">Home</a>
+<a href="spices.html">Spices</a>
+<a href="dryfruits.html">Dry Fruits</a>
+<a href="oilghee.html">Oil Ghee &amp; More</a>
+<a href="aboutus.html">About Us</a>
+<a href="account.html">Account</a>
+</div>
+</details>
+</header><div class="sale-bar"><div class="sale-bar-track" id="saleBarTrack"></div></div><div class="page">
 <div class="page-title">
 <h1>Checkout & Delivery</h1>
 <span class="secure-badge">Premium Protected Payment Flow</span>
@@ -156,6 +118,22 @@ margin:0 !important;
 </section>
 <section class="right-panel">
 <div class="section-title"><h2>Shipping Details</h2><span class="mini-note">Saved for faster checkout</span></div>
+<div id="addressSwitcher" class="address-switcher" style="display:none;">
+<div class="address-switcher-head">
+<div class="address-switcher-copy">
+<strong id="selectedAddressTitle">Default address selected</strong>
+<span id="selectedAddressText"></span>
+</div>
+<div class="address-switcher-actions">
+<button type="button" class="switch-btn light" onclick="toggleAddressPicker()">Change Address</button>
+<button type="button" class="switch-btn primary" onclick="startNewAddressEntry()">Use New Address</button>
+</div>
+</div>
+<div id="addressPicker" class="address-picker">
+<div id="addressPickerGrid" class="address-picker-grid"></div>
+<div class="address-picker-note">Selecting a saved address updates checkout instantly. A new address entered below will also be saved to your account automatically.</div>
+</div>
+</div>
 <div class="form-grid">
 <div class="input-wrap field-full"><label>Full Name <span class="star">*</span></label><input id="name"></div>
 <div class="input-wrap field-full"><label>Mobile Number <span class="star">*</span></label><input id="phone"></div>
@@ -171,13 +149,18 @@ margin:0 !important;
 </div>
 </div>
 <script>
-function getCurrentUser(){ return localStorage.getItem("currentUser"); }
-function getUsers(){ return JSON.parse(localStorage.getItem("users")) || {}; }
-function saveUsers(users){ localStorage.setItem("users", JSON.stringify(users)); }
+const authApi = window.SWADRA_AUTH || null;
+function getCurrentUser(){ return authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : ""; }
+function getUsers(){ return authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : {}; }
+function saveUsers(users){ return authApi && typeof authApi.saveUsers === "function" ? authApi.saveUsers(users) : users; }
 
 let currentUser = getCurrentUser();
 if(!currentUser){
+if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
+authApi.setRedirectAfterLogin("checkout.html");
+}else{
 localStorage.setItem("redirectAfterLogin","checkout.html");
+}
 location.href = "account.html";
 }else{
 
@@ -194,8 +177,181 @@ saveUsers(users);
 }
 }
 let user = users[currentUser] || {};
-let userAddress = user.address || {};
 let userProfile = user.profile || {};
+let selectedCheckoutAddressId = "";
+let isNewCheckoutAddress = false;
+
+function safeText(value){
+return String(value == null ? "" : value).trim();
+}
+
+function normalizeAddressEntry(address, fallbackId){
+const item = address && typeof address === "object" ? address : {};
+return {
+id: safeText(item.id || fallbackId || ("addr_" + Date.now())),
+house: safeText(item.house),
+area: safeText(item.area),
+nearby: safeText(item.nearby),
+city: safeText(item.city),
+pincode: safeText(item.pincode),
+postoffice: safeText(item.postoffice),
+district: safeText(item.district),
+state: safeText(item.state)
+};
+}
+
+function getAddressBook(user){
+const currentUserData = user && typeof user === "object" ? user : {};
+let addresses = Array.isArray(currentUserData.addresses)
+? currentUserData.addresses.map((address,index)=>normalizeAddressEntry(address, "addr_" + (index + 1))).filter(address=>address.house)
+: [];
+if(!addresses.length && currentUserData.address && currentUserData.address.house){
+addresses = [normalizeAddressEntry(currentUserData.address, currentUserData.defaultAddressId || "addr_1")];
+}
+let defaultAddressId = safeText(currentUserData.defaultAddressId);
+if(!defaultAddressId && addresses.length){
+defaultAddressId = addresses[0].id;
+}
+if(defaultAddressId && !addresses.some(address=>address.id === defaultAddressId) && addresses.length){
+defaultAddressId = addresses[0].id;
+}
+return { addresses, defaultAddressId };
+}
+
+function syncUserAddresses(user){
+const book = getAddressBook(user);
+user.addresses = book.addresses.slice(0,3);
+user.defaultAddressId = book.defaultAddressId || (user.addresses[0] ? user.addresses[0].id : "");
+const defaultAddress = user.addresses.find(address=>address.id === user.defaultAddressId) || user.addresses[0] || {};
+user.address = defaultAddress.house ? Object.assign({}, defaultAddress) : {};
+return user;
+}
+
+function escapeHtml(value){
+return String(value == null ? "" : value)
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#39;");
+}
+
+function buildAddressText(address){
+return [
+safeText(address.house),
+safeText(address.area),
+safeText(address.nearby) ? "Near " + safeText(address.nearby) : "",
+safeText(address.postoffice),
+safeText(address.city),
+safeText(address.district),
+safeText(address.state),
+safeText(address.pincode)
+].filter(Boolean).join(", ");
+}
+
+function fillCheckoutAddress(address){
+const nextAddress = normalizeAddressEntry(address, selectedCheckoutAddressId || "addr_1");
+document.getElementById("house").value = nextAddress.house || "";
+document.getElementById("area").value = nextAddress.area || "";
+document.getElementById("city").value = nextAddress.city || "";
+document.getElementById("pincode").value = nextAddress.pincode || "";
+document.getElementById("state").value = nextAddress.state || "";
+const postofficeField = document.getElementById("postoffice");
+if(nextAddress.postoffice){
+postofficeField.innerHTML = `<option value="${escapeHtml(nextAddress.postoffice)}">${escapeHtml(nextAddress.postoffice)}</option>`;
+postofficeField.value = nextAddress.postoffice;
+}else{
+postofficeField.innerHTML = "<option value=''>Select Post Office</option>";
+}
+}
+
+function renderAddressSelector(){
+const switcher = document.getElementById("addressSwitcher");
+const picker = document.getElementById("addressPicker");
+const pickerGrid = document.getElementById("addressPickerGrid");
+const title = document.getElementById("selectedAddressTitle");
+const text = document.getElementById("selectedAddressText");
+const addressBook = Array.isArray(user.addresses) ? user.addresses : [];
+if(!switcher || !picker || !pickerGrid || !title || !text) return;
+if(!addressBook.length){
+switcher.style.display = "none";
+picker.classList.remove("open");
+return;
+}
+switcher.style.display = "block";
+const activeAddress = addressBook.find(address=>address.id === selectedCheckoutAddressId) || addressBook.find(address=>address.id === user.defaultAddressId) || addressBook[0];
+if(activeAddress){
+title.textContent = activeAddress.id === user.defaultAddressId ? "Default address selected" : "Selected delivery address";
+text.textContent = buildAddressText(activeAddress);
+}
+pickerGrid.innerHTML = addressBook.map(address=>{
+const isDefault = address.id === user.defaultAddressId;
+const isActive = address.id === selectedCheckoutAddressId;
+return `<button type="button" class="address-option ${isActive ? "active" : ""}" onclick="selectCheckoutAddress('${escapeHtml(address.id)}')"><span class="address-option-copy"><strong>${escapeHtml(address.house || "Saved Address")}</strong><span>${escapeHtml(buildAddressText(address) || "Address details missing")}</span></span>${isDefault ? '<span class="address-option-badge">Default</span>' : ""}</button>`;
+}).join("");
+}
+
+function toggleAddressPicker(){
+const picker = document.getElementById("addressPicker");
+if(!picker) return;
+picker.classList.toggle("open");
+}
+
+function selectCheckoutAddress(addressId){
+const addressBook = Array.isArray(user.addresses) ? user.addresses : [];
+const selectedAddress = addressBook.find(address=>address.id === addressId);
+if(!selectedAddress) return;
+selectedCheckoutAddressId = addressId;
+isNewCheckoutAddress = false;
+fillCheckoutAddress(selectedAddress);
+renderAddressSelector();
+const picker = document.getElementById("addressPicker");
+if(picker) picker.classList.remove("open");
+}
+
+function startNewAddressEntry(){
+selectedCheckoutAddressId = "";
+isNewCheckoutAddress = true;
+document.getElementById("house").value = "";
+document.getElementById("area").value = "";
+document.getElementById("city").value = "";
+document.getElementById("pincode").value = "";
+document.getElementById("state").value = "";
+document.getElementById("postoffice").innerHTML = "<option value=''>Select Post Office</option>";
+renderAddressSelector();
+const picker = document.getElementById("addressPicker");
+if(picker) picker.classList.remove("open");
+document.getElementById("house").focus();
+}
+
+function upsertCheckoutAddress(userRecord, address, markDefault){
+let addresses = Array.isArray(userRecord.addresses) ? userRecord.addresses.slice() : [];
+const normalizedAddress = normalizeAddressEntry(address, address.id || ("addr_" + Date.now()));
+const existingIndex = addresses.findIndex(item=>item.id === normalizedAddress.id);
+if(existingIndex >= 0){
+addresses[existingIndex] = normalizedAddress;
+}else if(addresses.length < 3){
+addresses.push(normalizedAddress);
+}else if(markDefault && userRecord.defaultAddressId){
+const defaultIndex = addresses.findIndex(item=>item.id === userRecord.defaultAddressId);
+if(defaultIndex >= 0){
+addresses[defaultIndex] = normalizedAddress;
+}else{
+addresses[0] = normalizedAddress;
+}
+}else{
+addresses[0] = normalizedAddress;
+}
+userRecord.addresses = addresses.slice(0,3);
+if(markDefault || !userRecord.defaultAddressId){
+userRecord.defaultAddressId = normalizedAddress.id;
+}
+return syncUserAddresses(userRecord);
+}
+
+syncUserAddresses(user);
+let userAddress = user.address || {};
+selectedCheckoutAddressId = user.defaultAddressId || (user.addresses && user.addresses[0] ? user.addresses[0].id : "");
 
 function getCartSummary(){
 try{
@@ -205,7 +361,14 @@ return {};
 }
 }
 
+async function renderOfferBar(forceRefresh){
+if(window.SWADRA_OFFERS && typeof window.SWADRA_OFFERS.renderSaleBar === "function"){
+await window.SWADRA_OFFERS.renderSaleBar("saleBarTrack", !!forceRefresh);
+}
+}
+
 window.onload = function(){
+renderOfferBar(true);
 document.getElementById("name").value = userProfile.name || currentUser.split("@")[0];
 document.getElementById("phone").value = user.phone || "";
 document.getElementById("house").value = userAddress.house || "";
@@ -216,6 +379,7 @@ document.getElementById("state").value = userAddress.state || "";
 if(userAddress.postoffice){
 document.getElementById("postoffice").innerHTML = `<option value="${userAddress.postoffice}">${userAddress.postoffice}</option>`;
 }
+renderAddressSelector();
 loadOrderSummary();
 };
 
@@ -335,15 +499,26 @@ state:stateField.value,
 address: addressText
 }));
 
-users[currentUser].address = {
+const checkoutAddress = {
+id: selectedCheckoutAddressId || ("addr_" + Date.now()),
 house: houseField.value,
 area: areaField.value,
+nearby: safeText((users[currentUser].address || {}).nearby),
 city: cityField.value,
 pincode: pincodeField.value,
 postoffice: postofficeField.value,
 district: cityField.value,
 state: stateField.value
 };
+
+users[currentUser].address = Object.assign({}, checkoutAddress);
+upsertCheckoutAddress(
+users[currentUser],
+checkoutAddress,
+!selectedCheckoutAddressId || selectedCheckoutAddressId === users[currentUser].defaultAddressId || isNewCheckoutAddress
+);
+selectedCheckoutAddressId = users[currentUser].defaultAddressId || checkoutAddress.id;
+user = users[currentUser];
 
 saveUsers(users);
 location.href = "payment.html";
@@ -354,9 +529,8 @@ location.href = "payment.html";
 function swadraHeaderUpdateAccountNav(){
   let slot=document.getElementById("accountNavSlot");
   if(!slot) return;
-  let currentUser=localStorage.getItem("currentUser");
-  let users={};
-  try{ users=JSON.parse(localStorage.getItem("users")) || {}; }catch(e){}
+  let currentUser=getCurrentUser();
+  let users=getUsers();
   if(currentUser && users[currentUser]){
     slot.innerHTML='<a class="account-link" href="dashboard.html" aria-label="Account"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 19.5c1.6-3.3 4-5 7-5s5.4 1.7 7 5"></path></svg></a>';
   }else{
@@ -372,10 +546,13 @@ document.querySelectorAll(".header-search-input").forEach(input=>{
     window.location.href="index.html";
   });
 });
-window.addEventListener("load", function(){ swadraHeaderUpdateAccountNav(); });
+window.addEventListener("load", function(){ renderOfferBar(true); swadraHeaderUpdateAccountNav(); });
 window.addEventListener("storage", function(event){
-  if(["cart","users","currentUser"].includes(event.key)){
+  if(["cart","currentUser","userPhone"].includes(event.key)){
     swadraHeaderUpdateAccountNav();
+  }
+  if(["offers","homeContent"].includes(event.key)){
+    renderOfferBar(true);
   }
 });
 </script>

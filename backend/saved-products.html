@@ -6,7 +6,8 @@
   <title>Saved Products - Swadra Backend</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="../api-config.js"></script>
+  <script src="../api-config.js?v=20260423-3"></script>
+  <link rel="stylesheet" href="../swadra-responsive.css">
   <style>
     *{box-sizing:border-box}
     :root{
@@ -448,7 +449,7 @@
     <a class="admin-index-link" href="../admin-index.html">Back To Admin Index</a>
     <div class="topbar">
       <h1>Saved Products</h1>
-      <p>Backend se category-wise grouped products yahan show ho rahe hain.</p>
+      <p>Category-wise grouped products from the backend are displayed here.</p>
     </div>
 
     <div class="toolbar">
@@ -465,7 +466,7 @@
       <div class="modal-head">
         <div>
           <h2>Edit Saved Product</h2>
-          <p>Yahin se product name, summary, stock, offline price aur image update kar sakte ho.</p>
+          <p>Update the product name, summary, stock, offline price, and image from here.</p>
         </div>
         <button class="btn-dark" onclick="closeEditModal()">Close</button>
       </div>
@@ -486,6 +487,33 @@
         <div class="field">
           <label>Stock Qty</label>
           <input id="editStockQty" type="number" min="0" placeholder="Stock Qty">
+        </div>
+        <div class="field">
+          <label>Raw Cost</label>
+          <input id="editRawCost" type="number" min="0" placeholder="Raw Cost">
+        </div>
+        <div class="field">
+          <label>Shipping Cost</label>
+          <input id="editShippingCost" type="number" min="0" placeholder="Shipping Cost">
+        </div>
+        <div class="field">
+          <label>Extra Cost</label>
+          <input id="editExtraCost" type="number" min="0" placeholder="Extra Cost">
+        </div>
+        <div class="field">
+          <label>Packaging Cost</label>
+          <input id="editPackagingCost" type="number" min="0" placeholder="Packaging Cost">
+        </div>
+        <div class="field">
+          <label>Minimum Profit</label>
+          <input id="editMinimumProfit" type="number" min="0" placeholder="Minimum Profit">
+        </div>
+        <div class="field full">
+          <div class="mini-grid" id="editPricingPreview">
+            <div class="mini"><div class="k">Total Cost</div><div class="v">₹0</div></div>
+            <div class="mini"><div class="k">Floor Price</div><div class="v">₹0</div></div>
+            <div class="mini"><div class="k">Selling Price</div><div class="v">₹0</div></div>
+          </div>
         </div>
         <div class="field full">
           <label>Product Summary</label>
@@ -596,7 +624,18 @@
     function normalizeProduct(product){
       const name = product?.name || product?.productName || "";
       const size = product?.size || product?.productSize || "";
-      const sellingPrice = Number(product?.price ?? product?.sellingPrice ?? 0) || 0;
+      const rawCost = Number(product?.rawCost ?? 0) || 0;
+      const shippingCost = Number(product?.shippingCost ?? 0) || 0;
+      const extraCost = Number(product?.extraCost ?? 0) || 0;
+      const packagingCost = Number(product?.packagingCost ?? 0) || 0;
+      const minimumProfit = Number(product?.minimumProfit ?? 0) || 0;
+      const offlinePrice = Number(product?.offlinePrice ?? 0) || 0;
+      const computedFloorPrice = Math.max(0, Math.round(rawCost + shippingCost + extraCost + packagingCost + minimumProfit));
+      const persistedFloorPrice = Number(product?.floorPrice ?? 0) || 0;
+      const floorPrice = Math.max(computedFloorPrice, persistedFloorPrice);
+      const baseSellingPrice = Number(product?.price ?? product?.sellingPrice ?? 0) || 0;
+      const fallbackSellingPrice = offlinePrice > 0 ? offlinePrice : floorPrice;
+      const sellingPrice = Math.max(baseSellingPrice, fallbackSellingPrice, floorPrice);
       const stockQty = Number(product?.stockQty ?? 0) || 0;
       const availability = String(
         product?.availability || ((product?.outOfStock || stockQty <= 0) ? "Out of Stock" : "Available")
@@ -613,9 +652,87 @@
         sellingPrice,
         stockQty,
         availability,
-        images: Array.isArray(product?.images) ? product.images.filter(Boolean).slice(0,4) : (product?.image ? [product.image] : []),
-        summary: String(product?.summary || product?.productSummary || "").trim(),
-        productSummary: String(product?.summary || product?.productSummary || "").trim()
+        image: String(product?.image || product?.imageUrl || (Array.isArray(product?.images) ? product.images[0] : "") || "").trim(),
+        imageUrl: String(product?.imageUrl || product?.image || (Array.isArray(product?.images) ? product.images[0] : "") || "").trim(),
+        images: Array.isArray(product?.images) ? product.images.filter(Boolean).slice(0,4) : ((product?.image || product?.imageUrl) ? [product.image || product.imageUrl] : []),
+        summary: String(product?.summary || product?.productSummary || product?.description || "").trim(),
+        productSummary: String(product?.summary || product?.productSummary || product?.description || "").trim(),
+        description: String(product?.description || product?.summary || product?.productSummary || "").trim(),
+        rawCost,
+        shippingCost,
+        extraCost,
+        packagingCost,
+        minimumProfit,
+        offlinePrice,
+        floorPrice
+      };
+    }
+
+    function calculatePricing(nextData, currentProduct){
+      const base = normalizeProduct({ ...(currentProduct || {}), ...(nextData || {}) });
+      const rawCost = Number(base.rawCost || 0) || 0;
+      const shippingCost = Number(base.shippingCost || 0) || 0;
+      const extraCost = Number(base.extraCost || 0) || 0;
+      const packagingCost = Number(base.packagingCost || 0) || 0;
+      const minimumProfit = Number(base.minimumProfit || 0) || 0;
+      const offlinePrice = Number(base.offlinePrice || 0) || 0;
+      const currentSellingPrice = Number(base.price || base.sellingPrice || 0) || 0;
+      const totalCost = rawCost + shippingCost + extraCost + packagingCost;
+      const floorPrice = Math.max(0, Math.round(totalCost + minimumProfit));
+      let finalSellingPrice = currentSellingPrice;
+
+      if(finalSellingPrice <= 0){
+        finalSellingPrice = offlinePrice > 0 ? offlinePrice : floorPrice;
+      }
+      finalSellingPrice = Math.max(Math.round(finalSellingPrice), floorPrice);
+
+      return {
+        totalCost: Math.round(totalCost),
+        floorPrice,
+        finalSellingPrice
+      };
+    }
+
+    function buildPreservedProductPayload(product, overrides){
+      const current = normalizeProduct(product);
+      const next = { ...(overrides || {}) };
+      const safeImages = Array.isArray(next.images)
+        ? next.images.filter(Boolean).slice(0,4)
+        : current.images.filter(Boolean).slice(0,4);
+      const summary = String(
+        next.summary ?? next.productSummary ?? next.description ?? current.summary ?? current.productSummary ?? current.description ?? ""
+      ).trim();
+      const image = String(next.image || next.imageUrl || safeImages[0] || current.image || current.imageUrl || "").trim();
+      const pricing = calculatePricing(next, current);
+      return {
+        ...current,
+        ...next,
+        id: current.id,
+        docId: String(current.docId || current.id),
+        name: String(next.name ?? next.productName ?? current.name ?? current.productName ?? "").trim(),
+        productName: String(next.productName ?? next.name ?? current.productName ?? current.name ?? "").trim(),
+        size: String(next.size ?? next.productSize ?? current.size ?? current.productSize ?? "").trim(),
+        productSize: String(next.productSize ?? next.size ?? current.productSize ?? current.size ?? "").trim(),
+        summary,
+        productSummary: summary,
+        description: summary,
+        image,
+        imageUrl: image,
+        images: safeImages.length ? safeImages : (image ? [image] : []),
+        offlinePrice: Number(next.offlinePrice ?? current.offlinePrice ?? 0) || 0,
+        rawCost: Number(next.rawCost ?? current.rawCost ?? 0) || 0,
+        shippingCost: Number(next.shippingCost ?? current.shippingCost ?? 0) || 0,
+        extraCost: Number(next.extraCost ?? current.extraCost ?? 0) || 0,
+        packagingCost: Number(next.packagingCost ?? current.packagingCost ?? 0) || 0,
+        minimumProfit: Number(next.minimumProfit ?? current.minimumProfit ?? 0) || 0,
+        price: pricing.finalSellingPrice,
+        sellingPrice: pricing.finalSellingPrice,
+        mrp: Number(next.mrp ?? current.mrp ?? 0) || 0,
+        floorPrice: pricing.floorPrice,
+        lowestCompetitor: Number(next.lowestCompetitor ?? current.lowestCompetitor ?? 0) || 0,
+        amazonPrice: Number(next.amazonPrice ?? current.amazonPrice ?? 0) || 0,
+        flipkartPrice: Number(next.flipkartPrice ?? current.flipkartPrice ?? 0) || 0,
+        otherPrice: Number(next.otherPrice ?? current.otherPrice ?? 0) || 0
       };
     }
 
@@ -646,7 +763,7 @@
         const file = input?.files?.[0];
         if(file){
           if(!file.type.startsWith("image/")){
-            throw new Error(`Valid image file choose karo for image ${index + 1}.`);
+            throw new Error(`Please choose a valid image file for image ${index + 1}.`);
           }
           if(file.size > 10 * 1024 * 1024){
             throw new Error(`Image ${index + 1} size must be 10MB or less.`);
@@ -669,8 +786,13 @@
     function applyOfflineFallbackPricing(products){
       return (Array.isArray(products) ? products : []).map(product=>{
         const normalized = normalizeProduct(product);
-        const offlinePrice = Number(normalized.offlinePrice || 0) || 0;
-        return offlinePrice > 0 ? {...normalized, price: offlinePrice, sellingPrice: offlinePrice} : normalized;
+        const pricing = calculatePricing(normalized, normalized);
+        return {
+          ...normalized,
+          floorPrice: pricing.floorPrice,
+          price: pricing.finalSellingPrice,
+          sellingPrice: pricing.finalSellingPrice
+        };
       });
     }
 
@@ -813,8 +935,11 @@ return "spices";
                   <div class="mini-grid">
                     <div class="mini"><div class="k">Floor Price</div><div class="v">${rupee(product.floorPrice)}</div></div>
                     <div class="mini"><div class="k">Stock Qty</div><div class="v">${Number(product.stockQty || 0)}</div></div>
-                    <div class="mini"><div class="k">Amazon</div><div class="v">${rupee(product.amazonPrice)}</div></div>
-                    <div class="mini"><div class="k">Flipkart</div><div class="v">${rupee(product.flipkartPrice)}</div></div>
+                    <div class="mini"><div class="k">Raw Cost</div><div class="v">${rupee(product.rawCost)}</div></div>
+                    <div class="mini"><div class="k">Shipping Cost</div><div class="v">${rupee(product.shippingCost)}</div></div>
+                    <div class="mini"><div class="k">Extra Cost</div><div class="v">${rupee(product.extraCost)}</div></div>
+                    <div class="mini"><div class="k">Packaging Cost</div><div class="v">${rupee(product.packagingCost)}</div></div>
+                    <div class="mini"><div class="k">Minimum Profit</div><div class="v">${rupee(product.minimumProfit)}</div></div>
                   </div>
                 </div>
               `;
@@ -827,7 +952,7 @@ return "spices";
     async function loadProducts(){
       try{
         const data = await apiGetProducts();
-        state.products = Array.isArray(data?.products) ? data.products.map(normalizeProduct) : [];
+        state.products = Array.isArray(data?.products) ? applyOfflineFallbackPricing(data.products) : [];
         renderProducts();
       }catch(error){
         state.products = [];
@@ -845,21 +970,11 @@ return "spices";
       const confirmed = await smoothConfirm(`Are you sure you want to mark this product as ${nextAvailability}?`, "Update Stock Status");
       if(!confirmed) return;
 
-      const payload = {
-        id: product.id,
-        name: product.name || product.productName,
-        productName: product.productName || product.name,
-        size: product.size || product.productSize,
-        productSize: product.productSize || product.size,
-        category: product.category || "Spices",
-        isBestseller: Boolean(product.isBestseller),
-        isSpecialProduct: Boolean(product.isSpecialProduct),
-        mrp: Number(product.mrp || 0),
-        offlinePrice: Number(product.offlinePrice || 0),
+      const payload = buildPreservedProductPayload(product, {
         availability: nextAvailability,
         outOfStock: nextAvailability === "Out of Stock",
         stockQty: nextAvailability === "Out of Stock" ? 0 : Math.max(1, Number(product.stockQty || 1))
-      };
+      });
 
       try{
         await apiUpdateProduct(id, payload);
@@ -880,21 +995,13 @@ return "spices";
       const confirmed = await smoothConfirm(`Are you sure you want to ${label}?`, "Update Product Badge");
       if(!confirmed) return;
 
-      const payload = {
-        id: product.id,
-        name: product.name || product.productName,
-        productName: product.productName || product.name,
-        size: product.size || product.productSize,
-        productSize: product.productSize || product.size,
-        category: product.category || "Spices",
+      const payload = buildPreservedProductPayload(product, {
         isBestseller: nextBestseller,
         isSpecialProduct: nextSpecial,
-        mrp: Number(product.mrp || 0),
-        offlinePrice: Number(product.offlinePrice || 0),
         availability: product.availability || "Available",
         outOfStock: (product.availability || "") === "Out of Stock" || Number(product.stockQty || 0) <= 0,
         stockQty: Number(product.stockQty || 0)
-      };
+      });
 
       try{
         await apiUpdateProduct(id, payload);
@@ -929,7 +1036,19 @@ return "spices";
       document.getElementById("editProductSize").value = product.size || product.productSize || "";
       document.getElementById("editOfflinePrice").value = Number(product.offlinePrice || 0) || 0;
       document.getElementById("editStockQty").value = Number(product.stockQty || 0) || 0;
+      document.getElementById("editRawCost").value = Number(product.rawCost || 0) || 0;
+      document.getElementById("editShippingCost").value = Number(product.shippingCost || 0) || 0;
+      document.getElementById("editExtraCost").value = Number(product.extraCost || 0) || 0;
+      document.getElementById("editPackagingCost").value = Number(product.packagingCost || 0) || 0;
+      document.getElementById("editMinimumProfit").value = Number(product.minimumProfit || 0) || 0;
       document.getElementById("editProductSummary").value = product.summary || product.productSummary || "";
+      ["editOfflinePrice","editRawCost","editShippingCost","editExtraCost","editPackagingCost","editMinimumProfit"].forEach(inputId=>{
+        const input = document.getElementById(inputId);
+        if(input){
+          input.oninput = ()=>updateEditPricingPreview(product);
+        }
+      });
+      updateEditPricingPreview(product);
       getEditImageInputIds().forEach(inputId=>{
         const input = document.getElementById(inputId);
         input.value = "";
@@ -953,6 +1072,24 @@ return "spices";
       document.getElementById("editModal").classList.remove("open");
     }
 
+    function updateEditPricingPreview(baseProduct){
+      const preview = document.getElementById("editPricingPreview");
+      if(!preview) return;
+      const pricing = calculatePricing({
+        offlinePrice: Number(document.getElementById("editOfflinePrice").value || 0),
+        rawCost: Number(document.getElementById("editRawCost").value || 0),
+        shippingCost: Number(document.getElementById("editShippingCost").value || 0),
+        extraCost: Number(document.getElementById("editExtraCost").value || 0),
+        packagingCost: Number(document.getElementById("editPackagingCost").value || 0),
+        minimumProfit: Number(document.getElementById("editMinimumProfit").value || 0)
+      }, baseProduct || {});
+      preview.innerHTML = `
+        <div class="mini"><div class="k">Total Cost</div><div class="v">${rupee(pricing.totalCost)}</div></div>
+        <div class="mini"><div class="k">Floor Price</div><div class="v">${rupee(pricing.floorPrice)}</div></div>
+        <div class="mini"><div class="k">Selling Price</div><div class="v">${rupee(pricing.finalSellingPrice)}</div></div>
+      `;
+    }
+
     async function saveProductEdits(){
       const id = state.editingId;
       const product = (state.products || []).find(item => String(item.id) === String(id));
@@ -961,36 +1098,39 @@ return "spices";
       const nextName = document.getElementById("editProductName").value.trim();
       const nextOfflinePrice = Number(document.getElementById("editOfflinePrice").value || 0);
       const nextStockQty = Math.max(0, Number(document.getElementById("editStockQty").value || 0));
+      const nextRawCost = Number(document.getElementById("editRawCost").value || 0);
+      const nextShippingCost = Number(document.getElementById("editShippingCost").value || 0);
+      const nextExtraCost = Number(document.getElementById("editExtraCost").value || 0);
+      const nextPackagingCost = Number(document.getElementById("editPackagingCost").value || 0);
+      const nextMinimumProfit = Number(document.getElementById("editMinimumProfit").value || 0);
       const nextSummary = document.getElementById("editProductSummary").value.trim();
 
       if(!nextName){
-        alert("Product name required hai.");
+        alert("Product name is required.");
         return;
       }
 
       const saveWithImage = async (imagesData)=>{
         const safeImages = Array.isArray(imagesData) ? imagesData.filter(Boolean).slice(0,4) : [];
-        const payload = {
-          id: product.id,
+        const payload = buildPreservedProductPayload(product, {
           name: nextName,
           productName: nextName,
-          category: product.category || "Spices",
-          isBestseller: Boolean(product.isBestseller),
-          isSpecialProduct: Boolean(product.isSpecialProduct),
           availability: nextStockQty <= 0 ? "Out of Stock" : "Available",
           stockQty: nextStockQty,
           outOfStock: nextStockQty <= 0,
-          mrp: Number(product.mrp || 0),
-          price: Number(product.price || product.sellingPrice || 0),
-          sellingPrice: Number(product.price || product.sellingPrice || 0),
           offlinePrice: nextOfflinePrice,
+          rawCost: nextRawCost,
+          shippingCost: nextShippingCost,
+          extraCost: nextExtraCost,
+          packagingCost: nextPackagingCost,
+          minimumProfit: nextMinimumProfit,
           summary: nextSummary,
           productSummary: nextSummary,
+          description: nextSummary,
           images: safeImages,
-          image: safeImages[0] || undefined,
-          productSize: product.productSize || product.size,
-          size: product.size || product.productSize
-        };
+          image: safeImages[0] || product.image || product.imageUrl || undefined,
+          imageUrl: safeImages[0] || product.imageUrl || product.image || undefined
+        });
 
         try{
           await apiUpdateProduct(id, payload);

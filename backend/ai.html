@@ -6,7 +6,8 @@
   <title>Swadra Organics - Admin Products AI Pricing</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="../api-config.js"></script>
+  <script src="../api-config.js?v=20260423-3"></script>
+  <link rel="stylesheet" href="../swadra-responsive.css">
   <style>
     * { box-sizing: border-box; }
     :root{
@@ -429,7 +430,7 @@
     <a class="admin-index-link" href="../admin-index.html">Back To Admin Index</a>
     <div class="topbar">
       <h1>Swadra Organics Admin Products</h1>
-      <p>Layout same rakha gaya hai. Selling price AI competitor pricing ke hisaab se update hoga, MRP lock rahega, aur website sync ke liye original product storage structure same rakha gaya hai.</p>
+      <p>The layout remains unchanged. The product catalog is stored in Firestore, images are sent to Cloudinary, and Railway is used only for secure competitor-pricing logic.</p>
     </div>
 
     <div class="toolbar">
@@ -507,7 +508,7 @@
           <div class="row one">
             <div class="field">
               <label>Product Summary</label>
-              <textarea id="productSummary" placeholder="Short summary jo product save hone ke saath store ho jaye"></textarea>
+              <textarea id="productSummary" placeholder="Short summary that will be stored when the product is saved"></textarea>
             </div>
           </div>
 
@@ -565,7 +566,7 @@
           <div class="row three">
             <div class="field">
               <label>Offline Price</label>
-              <input type="number" id="offlinePrice" min="0" value="0" placeholder="Offline hone par ye price show hoga">
+              <input type="number" id="offlinePrice" min="0" value="0" placeholder="This price will be shown when offline">
             </div>
             <div class="field">
               <label>Current Selling Price</label>
@@ -622,8 +623,8 @@
           <div class="hint">
             Total Cost = Raw + Shipping + Packaging + Extra.<br>
             Floor Price = Total Cost + Minimum Profit.<br>
-            AI selling price competitor se sasta rakhne ki koshish karega, lekin floor se neeche nahi jayega.<br>
-            MRP save ke baad lock ho jayega.
+            The AI selling price will try to stay lower than the competitor price, but it will not go below the floor price.<br>
+            The MRP will lock after saving.
           </div>
         </div>
       </div>
@@ -924,15 +925,15 @@ return "spices";
 
       if (withValidation) {
         if (!data.name) {
-          alert("Product name enter karo.");
+          alert("Please enter the product name.");
           return null;
         }
         if (!data.size) {
-          alert("Product size enter karo.");
+          alert("Please enter the product size.");
           return null;
         }
         if (data.mrp <= 0) {
-          alert("MRP enter karo.");
+          alert("Please enter the MRP.");
           return null;
         }
       }
@@ -984,7 +985,7 @@ return "spices";
       };
 
       if (!payload.productName) {
-        alert("Product name enter karo.");
+        alert("Please enter the product name.");
         return;
       }
 
@@ -1027,21 +1028,29 @@ return "spices";
     }
 
     async function saveCurrentProduct() {
-      const data = collectFormData(true);
-      if (!data) return;
+      try{
+        const data = collectFormData(true);
+        if (!data) return;
 
-      const calc = calculateAIPrice(data);
-      const existingProducts = await getProducts();
-      const existingIndex = existingProducts.findIndex(p => String(p.id) === String(data.id));
-      const oldProduct = existingIndex > -1 ? buildProductRecord(existingProducts[existingIndex]) : null;
+        const calc = calculateAIPrice(data);
+        const existingProducts = await getProducts();
+        const existingIndex = existingProducts.findIndex(p => String(p.id) === String(data.id));
+        const oldProduct = existingIndex > -1 ? buildProductRecord(existingProducts[existingIndex]) : null;
 
-      const finalizeSave = async (imagesData) => {
+        const imagesData = await collectProductImages(oldProduct);
+        if(!imagesData.length){
+          alert("Please upload at least product hero image");
+          return;
+        }
+
         const safeImages = Array.isArray(imagesData) ? imagesData.filter(Boolean).slice(0,4) : [];
         const product = buildProductRecord({
           ...(oldProduct || {}),
           ...data,
           images: safeImages,
           image: safeImages[0] || (oldProduct ? oldProduct.image : ""),
+          imageUrl: safeImages[0] || (oldProduct ? (oldProduct.imageUrl || oldProduct.image) : ""),
+          description: data.summary,
           price: calc.finalSellingPrice,
           sellingPrice: calc.finalSellingPrice,
           totalCost: calc.totalCost,
@@ -1055,27 +1064,13 @@ return "spices";
           mrpLocked: true
         });
 
-        try{
-          await putProduct(product);
-          await renderProducts();
-          loadProductIntoForm(product.id);
-          alert("Product saved successfully.");
-        }catch(e){
-          alert(e.message || "Save failed");
-          console.error("Save failed", e);
-        }
-      };
-
-      try{
-        const imagesData = await collectProductImages(oldProduct);
-        if(!imagesData.length){
-          alert("Please upload at least product hero image");
-          return;
-        }
-        await finalizeSave(imagesData);
+        await putProduct(product);
+        await renderProducts();
+        loadProductIntoForm(product.id);
+        alert("Product saved successfully to Firestore.");
       }catch(error){
-        alert(error.message || "Image processing failed");
-        console.error(error);
+        alert(error.message || "Product save failed");
+        console.error("Product save failed", error);
       }
     }
 

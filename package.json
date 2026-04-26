@@ -5,8 +5,8 @@
   "description": "Root package for Railway deployment of Swadra backend",
   "type": "commonjs",
   "scripts": {
-    "start": "node backend/server.js",
-    "check": "node --check backend/server.js"
+    "start": "node backend/entry.js",
+    "check": "node --check backend/entry.js && node --check backend/server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

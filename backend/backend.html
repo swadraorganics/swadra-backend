@@ -7,6 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="../api-config.js"></script>
+  <link rel="stylesheet" href="../swadra-responsive.css">
   <style>
     * { box-sizing: border-box; }
     :root{
@@ -337,7 +338,7 @@
     <a class="admin-index-link" href="../admin-index.html">Back To Admin Index</a>
     <div class="topbar">
       <h1>Swadra Backend Control Panel</h1>
-      <p>Ye panel backend health, product sync, auto market search aur fetched values ko clearly monitor karne ke liye optimized hai. Exact price issue backend parser me hota hai, panel usko clearly expose karega.</p>
+      <p>This panel monitors Railway secure backend health and competitor-pricing logic. The product catalog loads from Firestore, and Railway is used only for secure processing.</p>
 
       <div class="topbar-actions">
         <button id="serverStatusButton" class="status-pill checking" title="Server status">
@@ -403,7 +404,7 @@
           <br><code>/api/pricing/search-by-product-name</code>
           <br><code>/api/pricing/fetch-all-competitor-prices</code>
           <br><br>
-          Agar yahan exact market price wrong aa raha hai, to issue HTML me nahi, backend fetch/parser me hai.
+          Product data comes from Firestore. If the exact market price is incorrect here, the issue is in pricing fetch/parser logic, not product storage.
         </div>
 
         <div class="stats">
@@ -427,7 +428,7 @@
 
         <div style="height:16px;"></div>
 
-        <h2>Products from Backend</h2>
+        <h2>Products from Firestore</h2>
         <div id="productsList" class="product-list"></div>
       </div>
 
@@ -456,7 +457,6 @@
       logs: [],
       products: []
     };
-
     async function saveRemoteState() {
       const payload = {
         backendUrl: state.backendUrl,
@@ -806,7 +806,7 @@
       const wrap = document.getElementById("productsList");
 
       if (!state.products.length) {
-        wrap.innerHTML = `<div class="empty">No products found from backend.</div>`;
+        wrap.innerHTML = `<div class="empty">No Firestore products found.</div>`;
         return;
       }
 

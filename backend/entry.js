@@ -8,7 +8,7 @@ const ROOT_HTML = `<!doctype html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Swadra Backend</title>
+    <title>Swadra Secure Backend</title>
     <style>
       body { font-family: Arial, sans-serif; background: #f8f5f2; color: #222; padding: 40px; }
       .box { max-width: 800px; margin: auto; background: #fff; padding: 24px; border-radius: 18px; box-shadow: 0 10px 28px rgba(0,0,0,0.08); }
@@ -19,14 +19,11 @@ const ROOT_HTML = `<!doctype html>
   </head>
   <body>
     <div class="box">
-      <h1>Swadra AI Pricing Backend Running</h1>
-      <p>Available endpoints:</p>
+      <h1>Swadra Secure Backend Running</h1>
+      <p>Railway is reserved for secure server-side tasks. Product catalog data stays in Firestore and product images stay in Cloudinary.</p>
       <ul>
         <li><code>GET /health</code></li>
-      <li><code>GET /api/products</code> (disabled; products are Firestore-only)</li>
-      <li><code>POST /api/products</code> (disabled; products are Firestore-only)</li>
-      <li><code>PUT /api/products/:id</code> (disabled; products are Firestore-only)</li>
-      <li><code>DELETE /api/products/:id</code> (disabled; products are Firestore-only)</li>
+        <li><code>GET|POST|PUT|DELETE /api/products</code> disabled</li>
       </ul>
     </div>
   </body>

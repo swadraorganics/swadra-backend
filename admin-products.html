@@ -187,15 +187,16 @@ input:focus,select:focus,textarea:focus{border-color:#7a3d3d;box-shadow:0 0 0 4p
 }
 </style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<link rel="stylesheet" href="mobile.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="api-config.js"></script></head>
 <body>
-<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
+<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Callback Requests</a></div>
 
 <div class="sidebar">
 <div class="brand">Swadra Admin</div>
-<div class="brand-sub">Products, pricing, stock and merchandising ko ek jagah se control karo.</div>
+<div class="brand-sub">Control products, pricing, stock, and merchandising from one place.</div>
 <div class="nav-label">Workspace</div>
 <button onclick="location.href='admin-dashboard.html'">Dashboard</button>
 <button class="active">Products</button>
@@ -203,7 +204,7 @@ input:focus,select:focus,textarea:focus{border-color:#7a3d3d;box-shadow:0 0 0 4p
 <button onclick="location.href='admin-customers.html'">Customers</button>
 <button onclick="location.href='admin-payments.html'">Payments</button>
 <button onclick="location.href='admin-profit.html'">Profit Tracker</button>
-<button onclick="location.href='admin-extra.html'">Extra</button>
+  <button onclick="location.href='admin-callbacks.html'">Callback Requests</button>
 <button onclick="location.href='admin-index.html'">Settings</button>
 <div class="nav-label">Storefront</div>
 <button onclick="location.href='index.html'">Home</button>
@@ -214,7 +215,7 @@ input:focus,select:focus,textarea:focus{border-color:#7a3d3d;box-shadow:0 0 0 4p
 <div>
 <div class="eyebrow">Catalog Control Room</div>
 <h1>Manage Products</h1>
-<p>Existing functions same rahenge. Yahan se aap products add, update, stock manage aur home/category pages ko sync kar sakte ho.</p>
+<p>Existing functions remain unchanged. From here, you can add products, update details, manage stock, and sync home/category pages.</p>
 </div>
 <button class="primary-btn" onclick="openModal()">+ Add Product</button>
 </div>
@@ -225,7 +226,7 @@ input:focus,select:focus,textarea:focus{border-color:#7a3d3d;box-shadow:0 0 0 4p
 <div class="panel-head">
   <div>
     <h2>Catalog Overview</h2>
-    <p>Har category ka product list, stock status aur pricing yahin se manage karo.</p>
+    <p>Manage each category’s product list, stock status, and pricing from here.</p>
   </div>
 </div>
 <div id="productsContainer"></div>
@@ -237,7 +238,7 @@ input:focus,select:focus,textarea:focus{border-color:#7a3d3d;box-shadow:0 0 0 4p
 <div class="modal-top">
 <div>
 <h2>Add Product</h2>
-<p>New SKU details bhar ke catalog me instantly push karo.</p>
+<p>Enter new SKU details and push them to the catalog instantly.</p>
 </div>
 <button class="close-btn" onclick="closeModal()">Close</button>
 </div>
@@ -309,7 +310,7 @@ input:focus,select:focus,textarea:focus{border-color:#7a3d3d;box-shadow:0 0 0 4p
 
 <div class="field full">
 <label for="productSummary">Product Summary</label>
-<textarea id="productSummary" placeholder="Short summary jo website ke product popup me show hoga"></textarea>
+<textarea id="productSummary" placeholder="Short summary that will appear in the website product popup"></textarea>
 </div>
 
 <div class="field full">
@@ -752,12 +753,12 @@ productStats.innerHTML = `
 <div class="stat-card">
 <div class="stat-label">Total Products</div>
 <div class="stat-value">${products.length}</div>
-<div class="stat-note">Catalog me saved records</div>
+<div class="stat-note">Saved catalog records</div>
 </div>
 <div class="stat-card">
 <div class="stat-label">Available</div>
 <div class="stat-value">${inStockCount}</div>
-<div class="stat-note">Storefront ke liye ready</div>
+<div class="stat-note">Ready for storefront</div>
 </div>
 <div class="stat-card">
 <div class="stat-label">Out Of Stock</div>

@@ -329,9 +329,12 @@
     }
   </style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<link rel="stylesheet" href="mobile.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="api-config.js"></script></head>
 <body>
-<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
+<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Callback Requests</a></div>
   <div class="wrap">
     <div class="topbar">
       <h1>Swadra Organics Admin Dashboard</h1>
@@ -383,8 +386,8 @@
             <span class="title">Profit</span>
             <span class="sub">Date-wise profit</span>
           </a>
-          <a href="admin-extra.html">
-            <span class="title">Extra</span>
+          <a href="admin-callbacks.html">
+            <span class="title">Callback Requests</span>
             <span class="sub">Other settings</span>
           </a>
         </div>
@@ -417,7 +420,7 @@
         <div class="list" id="systemHealthList"></div>
 
         <div class="small-note">
-          Dashboard common localStorage keys aur AI products storage ko read karta hai. Isliye jo pages tumne pehle banwaye hain unka quick overview yahan auto show hoga.
+          Dashboard common localStorage keys aur live Firestore products ko read karta hai. Isliye current admin status ka quick overview yahan auto show hota hai.
         </div>
       </div>
 
@@ -436,10 +439,6 @@
   </div>
 
   <script>
-    const PRODUCTS_DB_NAME = "swadraProductsDB";
-    const PRODUCTS_STORE_NAME = "products";
-
-    const PRODUCT_KEYS = ["swadraBackendProductsCache", "adminProducts"];
     const CUSTOMER_KEYS = ["users","customers","accounts","registeredUsers","userAccounts","swadraUsers","swadraCustomers","allUsers"];
     const ORDER_KEYS = ["adminOrders","orders","swadraOrders","customerOrders","allOrders"];
     const PAYMENT_KEYS = ["payments","adminPayments","swadraPayments","orders","adminOrders","swadraOrders","customerOrders","allOrders"];
@@ -490,29 +489,6 @@
       return date.toLocaleString("en-IN");
     }
 
-    async function openProductsDb(){
-      return new Promise((resolve,reject)=>{
-        const request = indexedDB.open(PRODUCTS_DB_NAME,1);
-        request.onsuccess = ()=>resolve(request.result);
-        request.onerror = ()=>reject(request.error);
-      });
-    }
-
-    async function getProductsFromIndexedDb(){
-      try{
-        const db = await openProductsDb();
-        return await new Promise((resolve,reject)=>{
-          const tx = db.transaction(PRODUCTS_STORE_NAME, "readonly");
-          const store = tx.objectStore(PRODUCTS_STORE_NAME);
-          const request = store.getAll();
-          request.onsuccess = ()=>resolve(request.result || []);
-          request.onerror = ()=>reject(request.error);
-        });
-      }catch(error){
-        return [];
-      }
-    }
-
     function normalizeProduct(raw){
       const name = String(raw.name || raw.productName || "").trim() || "Product";
       const size = String(raw.size || raw.productSize || "").trim();
@@ -540,15 +516,18 @@
     }
 
     async function getProducts(){
-      let merged = [];
-      PRODUCT_KEYS.forEach((key)=>{
-        const parsed = safeJsonParse(localStorage.getItem(key), []);
-        if(Array.isArray(parsed)) merged = merged.concat(parsed);
-      });
+      const productDataApi = window.SWADRA_PRODUCT_DATA;
+      if(!productDataApi || typeof productDataApi.fetchProducts !== "function"){
+        console.error("Firestore product helper unavailable");
+        return [];
+      }
 
-      const indexed = await getProductsFromIndexedDb();
-      if(Array.isArray(indexed) && indexed.length){
-        merged = merged.concat(indexed);
+      let merged = [];
+      try{
+        merged = await productDataApi.fetchProducts();
+      }catch(error){
+        console.error("dashboard product fetch failed", error);
+        return [];
       }
 
       const uniqueMap = new Map();
@@ -743,7 +722,7 @@
           title:"Products Storage",
           status:data.products.length ? "Connected" : "Empty",
           className:data.products.length ? "green" : "gold",
-          meta1:"Saved products",
+          meta1:"Firestore products",
           value1:data.products.length,
           meta2:"Potential margin",
           value2:rupee(data.totalPotentialMargin)

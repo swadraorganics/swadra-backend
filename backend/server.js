@@ -17,22 +17,56 @@ const PUBLIC_BASE_URL = String(
   process.env.RAILWAY_PUBLIC_DOMAIN ||
   ""
 ).trim().replace(/\/+$/, "");
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, "db.json");
-const PRODUCTS_PATH = process.env.PRODUCTS_PATH || path.join(__dirname, "products.json");
+const FRONTEND_ORIGIN = String(process.env.FRONTEND_ORIGIN || "").trim();
 const USE_FIRESTORE = String(process.env.USE_FIRESTORE || "").toLowerCase() === "true";
+const IS_HOSTED_RUNTIME = Boolean(
+  PUBLIC_BASE_URL ||
+  process.env.RAILWAY_PROJECT_ID ||
+  process.env.RAILWAY_SERVICE_ID ||
+  process.env.RAILWAY_ENVIRONMENT
+);
 const FIRESTORE_COLLECTION = process.env.FIRESTORE_COLLECTION || "appData";
 const FIRESTORE_DOCUMENT = process.env.FIRESTORE_DOCUMENT || "swadra";
-const FIRESTORE_LISTS = ["products", "orders", "paymentAttempts", "logs"];
+const FIRESTORE_LISTS = ["orders", "paymentAttempts", "logs"];
 const ENABLE_STARTUP_DB_LOG = String(process.env.ENABLE_STARTUP_DB_LOG || "").toLowerCase() === "true";
 const ENABLE_PERSISTENT_LOGS = String(process.env.ENABLE_PERSISTENT_LOGS || "").toLowerCase() === "true";
 let firestoreDb = null;
-let fileStorageAvailable = !USE_FIRESTORE;
 let memoryDb = null;
 let dbCache = null;
 let dbCacheLoaded = false;
-let productsCache = null;
-let productsCacheLoaded = false;
 
+function normalizeOrigin(value) {
+  return String(value || "").trim().replace(/\/+$/, "");
+}
+
+function splitOrigins(value) {
+  return String(value || "")
+    .split(",")
+    .map((entry) => normalizeOrigin(entry))
+    .filter(Boolean);
+}
+
+function buildAllowedOrigins() {
+  const allowed = new Set();
+  splitOrigins(FRONTEND_ORIGIN).forEach((origin) => allowed.add(origin));
+  [
+    "https://swadraorganics.com",
+    "https://www.swadraorganics.com",
+    "https://swadra-organics-db127.web.app",
+    "https://swadra-organics-db127.firebaseapp.com"
+  ].forEach((origin) => allowed.add(origin));
+  const publicOrigin = normalizeOrigin(
+    PUBLIC_BASE_URL
+      ? (PUBLIC_BASE_URL.startsWith("http") ? PUBLIC_BASE_URL : `https://${PUBLIC_BASE_URL}`)
+      : ""
+  );
+  if (publicOrigin) {
+    allowed.add(publicOrigin);
+  }
+  return allowed;
+}
+
+const ALLOWED_ORIGINS = buildAllowedOrigins();
 process.on("unhandledRejection", (reason) => {
   console.error("[unhandledRejection]", reason);
 });
@@ -41,14 +75,29 @@ process.on("uncaughtException", (error) => {
   console.error("[uncaughtException]", error);
 });
 
-app.use(cors());
+app.use(cors({
+  origin(origin, callback) {
+    const normalized = normalizeOrigin(origin);
+    if (!normalized) {
+      callback(null, true);
+      return;
+    }
+    if (
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalized) ||
+      ALLOWED_ORIGINS.has(normalized)
+    ) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error("CORS origin not allowed"));
+  }
+}));
 app.use(express.json({ limit: "12mb" }));
 app.use(express.urlencoded({ extended: true, limit: "12mb" }));
 app.use(express.static(__dirname));
 
 function getDefaultDB() {
   return {
-    products: [],
     coupons: [],
     orders: [],
     paymentAttempts: [],
@@ -71,7 +120,6 @@ function cloneDB(data) {
 
 function normalizeDB(data) {
   const db = data && typeof data === "object" ? data : getDefaultDB();
-  db.products = Array.isArray(db.products) ? db.products : [];
   db.coupons = Array.isArray(db.coupons) ? db.coupons : [];
   db.orders = Array.isArray(db.orders) ? db.orders : [];
   db.paymentAttempts = Array.isArray(db.paymentAttempts) ? db.paymentAttempts : [];
@@ -109,7 +157,20 @@ function getFirestore() {
     throw new Error("firebase-admin package is required when USE_FIRESTORE=true");
   }
   if (!admin.apps.length) {
-    admin.initializeApp();
+    const projectId = String(process.env.FIREBASE_PROJECT_ID || "").trim();
+    const clientEmail = String(process.env.FIREBASE_CLIENT_EMAIL || "").trim();
+    const privateKey = String(process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n");
+    if (projectId && clientEmail && privateKey) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey
+        })
+      });
+    } else {
+      admin.initializeApp();
+    }
   }
   if (!firestoreDb) {
     firestoreDb = admin.firestore();
@@ -176,21 +237,6 @@ async function replaceFirestoreCollection(rootRef, name, items) {
   await commitIfNeeded(true);
 }
 
-function ensureDB() {
-  if (USE_FIRESTORE) return;
-  if (!fileStorageAvailable) return;
-  try {
-    if (!fs.existsSync(DB_PATH)) {
-      const initialData = getDefaultDB();
-      fs.writeFileSync(DB_PATH, JSON.stringify(initialData, null, 2), "utf8");
-    }
-  } catch (error) {
-    fileStorageAvailable = false;
-    memoryDb = cloneDB(memoryDb);
-    console.error("[db fallback] file storage unavailable:", error.message);
-  }
-}
-
 function productPersistenceDisabledResponse(res) {
   return res.status(410).json({
     ok: false,
@@ -198,36 +244,15 @@ function productPersistenceDisabledResponse(res) {
   });
 }
 
-function ensureProductsFile() {
-  if (USE_FIRESTORE || !fileStorageAvailable) return;
-  try {
-    if (fs.existsSync(PRODUCTS_PATH)) {
-      return;
-    }
-
-    let migratedProducts = [];
-    if (fs.existsSync(DB_PATH)) {
-      try {
-        const raw = fs.readFileSync(DB_PATH, "utf8");
-        const parsed = normalizeDB(JSON.parse(raw || "{}"));
-        migratedProducts = Array.isArray(parsed.products) ? parsed.products : [];
-        if (migratedProducts.length) {
-          parsed.products = [];
-          fs.writeFileSync(DB_PATH, JSON.stringify(parsed, null, 2), "utf8");
-          dbCache = parsed;
-          memoryDb = parsed;
-          dbCacheLoaded = true;
-        }
-      } catch (error) {
-        console.error("[products migration] failed:", error.message);
-      }
-    }
-
-    fs.writeFileSync(PRODUCTS_PATH, JSON.stringify(migratedProducts, null, 2), "utf8");
-  } catch (error) {
-    fileStorageAvailable = false;
-    console.error("[products fallback] file storage unavailable:", error.message);
+function requireDurablePersistence(res) {
+  if (USE_FIRESTORE || !IS_HOSTED_RUNTIME) {
+    return true;
   }
+  res.status(503).json({
+    ok: false,
+    error: "Durable Firestore persistence is required for hosted backend writes. Set USE_FIRESTORE=true and configure firebase-admin credentials."
+  });
+  return false;
 }
 
 async function readDB() {
@@ -245,32 +270,14 @@ async function readDB() {
   if (dbCacheLoaded && dbCache) {
     return dbCache;
   }
-  ensureDB();
-  if (!fileStorageAvailable) {
-    if (!memoryDb) {
-      memoryDb = getDefaultDB();
-    }
-    dbCache = normalizeDB(memoryDb);
-    dbCacheLoaded = true;
-    return dbCache;
+  if (!memoryDb) {
+    // Railway should not recreate db.json or any file-backed business store.
+    // Outside Firestore, backend state is runtime-memory only.
+    memoryDb = getDefaultDB();
   }
-  try {
-    const raw = fs.readFileSync(DB_PATH, "utf8");
-    const parsed = normalizeDB(JSON.parse(raw || '{"products":[],"logs":[],"meta":{}}'));
-    memoryDb = parsed;
-    dbCache = parsed;
-    dbCacheLoaded = true;
-    return dbCache;
-  } catch (error) {
-    fileStorageAvailable = false;
-    if (!memoryDb) {
-      memoryDb = getDefaultDB();
-    }
-    dbCache = normalizeDB(memoryDb);
-    dbCacheLoaded = true;
-    console.error("[db fallback] read failed:", error.message);
-    return dbCache;
-  }
+  dbCache = normalizeDB(memoryDb);
+  dbCacheLoaded = true;
+  return dbCache;
 }
 
 async function writeDB(data) {
@@ -294,13 +301,6 @@ async function writeDB(data) {
     return;
   }
   memoryDb = normalized;
-  if (!fileStorageAvailable) return;
-  try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(normalized, null, 2), "utf8");
-  } catch (error) {
-    fileStorageAvailable = false;
-    console.error("[db fallback] write failed:", error.message);
-  }
 }
 
 async function readProducts() {
@@ -780,6 +780,124 @@ function createRazorpayOrder({ amount, currency, receipt, notes }) {
   });
 }
 
+function razorpayApiRequest({ method = "GET", path: requestPath, body = null }) {
+  const keyId = process.env.RAZORPAY_KEY_ID || "";
+  const secret = process.env.RAZORPAY_KEY_SECRET || "";
+
+  if (!keyId || !secret) {
+    return Promise.resolve({
+      ok: false,
+      configured: false,
+      data: null,
+      message: "Razorpay backend credentials are not configured"
+    });
+  }
+
+  const payload = body ? JSON.stringify(body) : "";
+
+  return new Promise((resolve) => {
+    const request = https.request(
+      {
+        hostname: "api.razorpay.com",
+        path: requestPath,
+        method,
+        auth: `${keyId}:${secret}`,
+        headers: {
+          "Content-Type": "application/json",
+          ...(payload ? { "Content-Length": Buffer.byteLength(payload) } : {})
+        },
+        timeout: 15000
+      },
+      (response) => {
+        let raw = "";
+        response.on("data", (chunk) => {
+          raw += chunk;
+        });
+        response.on("end", () => {
+          let parsed = {};
+          try {
+            parsed = JSON.parse(raw || "{}");
+          } catch (error) {
+            parsed = { raw };
+          }
+          resolve({
+            ok: response.statusCode >= 200 && response.statusCode < 300,
+            configured: true,
+            data: parsed,
+            message: parsed.error?.description || parsed.error?.reason || "Razorpay API response"
+          });
+        });
+      }
+    );
+
+    request.on("error", (error) => {
+      resolve({
+        ok: false,
+        configured: true,
+        data: null,
+        message: error.message
+      });
+    });
+
+    request.on("timeout", () => {
+      request.destroy();
+      resolve({
+        ok: false,
+        configured: true,
+        data: null,
+        message: "Razorpay API request timed out"
+      });
+    });
+
+    if (payload) request.write(payload);
+    request.end();
+  });
+}
+
+async function fetchRazorpayPaymentDetails(paymentId) {
+  const normalizedId = String(paymentId || "").trim();
+  if (!normalizedId) {
+    return {
+      ok: false,
+      configured: Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
+      payment: null,
+      instrument: null,
+      message: "Razorpay payment ID is required"
+    };
+  }
+
+  const paymentResponse = await razorpayApiRequest({
+    method: "GET",
+    path: "/v1/payments/" + encodeURIComponent(normalizedId)
+  });
+
+  const payment = paymentResponse.data || null;
+  const instrument = payment
+    ? {
+        method: String(payment.method || "").trim(),
+        vpa: String(payment.vpa || payment.acquirer_data?.vpa || "").trim(),
+        bank: String(payment.bank || payment.acquirer_data?.bank || "").trim(),
+        wallet: String(payment.wallet || "").trim(),
+        cardId: String(payment.card_id || "").trim(),
+        network: String(payment.card?.network || payment.network || "").trim(),
+        last4: String(payment.card?.last4 || "").trim(),
+        issuer: String(payment.card?.issuer || "").trim(),
+        cardType: String(payment.card?.type || "").trim(),
+        email: String(payment.email || "").trim(),
+        contact: String(payment.contact || "").trim(),
+        status: String(payment.status || "").trim()
+      }
+    : null;
+
+  return {
+    ok: paymentResponse.ok,
+    configured: paymentResponse.configured,
+    payment,
+    instrument,
+    message: paymentResponse.message
+  };
+}
+
 function normalizeSearchText(value) {
   return encodeURIComponent(
     String(value || "")
@@ -1223,19 +1341,29 @@ app.get("/api/admin/config", async (req, res) => {
 app.post("/api/admin/login", async (req, res) => {
   try {
     const db = await readDB();
-    const username = String(req.body?.username || "").trim();
+    const username = String(req.body?.username || req.body?.email || "").trim();
     const password = String(req.body?.password || "");
     const success = username === db.admin.username && password === db.admin.password;
     addLog(`Admin login ${success ? "success" : "failed"} for ${username || "unknown"}`, success ? "success" : "warn");
     res.status(success ? 200 : 401).json({
       ok: success,
       success,
-      message: success ? "Login successful" : "Wrong credentials"
+      message: success ? "Login successful" : "Wrong credentials",
+      redirectTo: success ? "admin-dashboard.html" : ""
     });
   } catch (error) {
     addLog("Admin login failed: " + error.message, "error");
     res.status(500).json({ ok: false, error: "Failed to login" });
   }
+});
+
+app.post("/admin/login", async (req, res) => {
+  req.url = "/api/admin/login";
+  app._router.handle(req, res, () => {
+    if (!res.headersSent) {
+      res.status(404).json({ ok: false, error: "Admin login route unavailable" });
+    }
+  });
 });
 
 app.post("/api/admin/credentials", async (req, res) => {
@@ -1295,10 +1423,6 @@ app.get("/api/app-state/bootstrap", async (req, res) => {
     const keys = [
       "users",
       "homeContent",
-      "adminProducts",
-      "adminProductsByCategory",
-      "swadraBackendProductsCache",
-      "adminProductsUpdatedAt",
       "adminCustomersUpdatedAt",
       "heroVideoUpdatedAt",
       "adminCoupons",
@@ -1321,6 +1445,7 @@ app.get("/api/app-state/bootstrap", async (req, res) => {
 
 app.post("/api/app-state", async (req, res) => {
   try {
+    if (!requireDurablePersistence(res)) return;
     const db = await readDB();
     const state = req.body && typeof req.body.state === "object" ? req.body.state : {};
     const removeKeys = Array.isArray(req.body?.removeKeys) ? req.body.removeKeys : [];
@@ -1350,6 +1475,7 @@ app.post("/api/app-state", async (req, res) => {
 
 app.post("/api/coupons", async (req, res) => {
   try {
+    if (!requireDurablePersistence(res)) return;
     const coupon = normalizeCoupon(req.body || {});
     if (!coupon.code) {
       return res.status(400).json({ ok: false, error: "Coupon code is required" });
@@ -1384,6 +1510,7 @@ app.post("/api/coupons", async (req, res) => {
 
 app.delete("/api/coupons/:code", async (req, res) => {
   try {
+    if (!requireDurablePersistence(res)) return;
     const code = String(req.params.code || "").trim().toUpperCase();
     const db = await readDB();
     db.coupons = db.coupons.filter((coupon) => String(coupon.code || "").trim().toUpperCase() !== code);
@@ -1402,6 +1529,7 @@ app.delete("/api/coupons/:code", async (req, res) => {
 
 app.post("/api/orders", async (req, res) => {
   try {
+    if (!requireDurablePersistence(res)) return;
     const incoming = normalizeOrderForDb(req.body || {});
     const db = await readDB();
     const existingIndex = findOrderIndex(db, (order) => String(order.id) === String(incoming.id));
@@ -1512,6 +1640,20 @@ app.get("/api/orders/:id", async (req, res) => {
   }
 });
 
+app.get("/api/orders", async (req, res) => {
+  try {
+    const db = await readDB();
+    res.json({
+      ok: true,
+      count: Array.isArray(db.orders) ? db.orders.length : 0,
+      orders: Array.isArray(db.orders) ? db.orders : []
+    });
+  } catch (error) {
+    addLog("Orders list fetch failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to fetch orders list" });
+  }
+});
+
 app.get("/api/orders/user/:userId", async (req, res) => {
   try {
     const db = await readDB();
@@ -1526,6 +1668,7 @@ app.get("/api/orders/user/:userId", async (req, res) => {
 
 app.post("/api/payments/create-order", async (req, res) => {
   try {
+    if (!requireDurablePersistence(res)) return;
     const payload = req.body || {};
     const amount = Math.round(toNumber(payload.amount));
 
@@ -1598,6 +1741,10 @@ app.post("/api/payments/verify", async (req, res) => {
   try {
     const payload = req.body || {};
     const verification = verifyRazorpaySignature(payload);
+    let paymentDetails = null;
+    if (verification.verified && payload.razorpay_payment_id) {
+      paymentDetails = await fetchRazorpayPaymentDetails(payload.razorpay_payment_id);
+    }
     const db = await readDB();
     const attemptId = payload.razorpay_order_id || payload.localOrderId || "";
     const index = db.paymentAttempts.findIndex((attempt) => String(attempt.id) === String(attemptId));
@@ -1610,6 +1757,8 @@ app.post("/api/payments/verify", async (req, res) => {
         razorpaySignature: payload.razorpay_signature || "",
         verificationConfigured: verification.configured,
         verificationMessage: verification.message,
+        razorpayPaymentDetails: paymentDetails && paymentDetails.ok ? paymentDetails.payment : null,
+        paymentInstrument: paymentDetails && paymentDetails.instrument ? paymentDetails.instrument : null,
         updatedAt: new Date().toISOString()
       };
     } else {
@@ -1619,6 +1768,8 @@ app.post("/api/payments/verify", async (req, res) => {
         razorpayPaymentId: payload.razorpay_payment_id || "",
         verificationConfigured: verification.configured,
         verificationMessage: verification.message,
+        razorpayPaymentDetails: paymentDetails && paymentDetails.ok ? paymentDetails.payment : null,
+        paymentInstrument: paymentDetails && paymentDetails.instrument ? paymentDetails.instrument : null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
@@ -1630,6 +1781,11 @@ app.post("/api/payments/verify", async (req, res) => {
     res.status(verification.verified ? 200 : 202).json({
       ok: verification.verified,
       ...verification
+      ,
+      paymentDetails: paymentDetails && paymentDetails.ok ? paymentDetails.payment : null,
+      instrument: paymentDetails && paymentDetails.instrument ? paymentDetails.instrument : null,
+      paymentLookupConfigured: paymentDetails ? paymentDetails.configured : Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
+      paymentLookupMessage: paymentDetails ? paymentDetails.message : ""
     });
   } catch (error) {
     addLog("Payment verification failed: " + error.message, "error");
@@ -1643,6 +1799,7 @@ app.post("/api/payments/verify", async (req, res) => {
 
 app.post("/api/payments/attempts", async (req, res) => {
   try {
+    if (!requireDurablePersistence(res)) return;
     const payload = req.body || {};
     const db = await readDB();
     const id = payload.id || payload.localOrderId || makePaymentOrderId();
@@ -1694,14 +1851,14 @@ app.delete("/api/products/:id", async (req, res) => {
 app.post("/api/pricing/run", async (req, res) => {
   return res.status(410).json({
     ok: false,
-    error: "Legacy backend pricing write disabled. Recalculate Firestore products in the frontend."
+    error: "Legacy backend pricing write disabled. Railway may analyze pricing, but product records must be updated in Firestore only."
   });
 });
 
 app.post("/api/products/:id/recalculate", async (req, res) => {
   return res.status(410).json({
     ok: false,
-    error: "Legacy backend product recalculation disabled. Recalculate Firestore products in the frontend."
+    error: "Legacy backend product recalculation disabled. Railway may calculate pricing, but product records must be updated in Firestore only."
   });
 });
 
@@ -1995,24 +2152,37 @@ const ROOT_HTML = `<!doctype html>
   </head>
   <body>
     <div class="box">
-      <h1>Swadra AI Pricing Backend Running</h1>
-      <p>Available endpoints:</p>
+      <h1>Swadra Secure Backend Running</h1>
+      <p>Railway is restricted to secure server-side tasks. Product catalog storage stays in Firestore and product images stay in Cloudinary.</p>
       <ul>
         <li><code>GET /health</code></li>
-<li><code>GET /api/products</code> (disabled; products are Firestore-only)</li>
-<li><code>POST /api/products</code> (disabled; products are Firestore-only)</li>
-<li><code>PUT /api/products/:id</code> (disabled; products are Firestore-only)</li>
-<li><code>DELETE /api/products/:id</code> (disabled; products are Firestore-only)</li>
         <li><code>GET /api/logs</code></li>
+        <li><code>GET /api/admin/config</code></li>
+        <li><code>POST /api/admin/login</code></li>
+        <li><code>POST /api/admin/credentials</code></li>
+        <li><code>GET /api/coupons</code></li>
+        <li><code>POST /api/coupons</code></li>
+        <li><code>DELETE /api/coupons/:code</code></li>
+        <li><code>GET /api/app-state</code></li>
+        <li><code>GET /api/app-state/bootstrap</code></li>
+        <li><code>POST /api/app-state</code></li>
+        <li><code>POST /api/orders</code></li>
+        <li><code>GET /api/orders/:id</code></li>
+        <li><code>GET /api/orders/user/:userId</code></li>
         <li><code>POST /api/payments/create-order</code></li>
         <li><code>POST /api/payments/verify</code></li>
         <li><code>POST /api/payments/attempts</code></li>
         <li><code>GET /api/payments/attempts</code></li>
-        <li><code>POST /api/pricing/run</code></li>
-<li><code>POST /api/products/:id/recalculate</code> (disabled; products are Firestore-only)</li>
         <li><code>POST /api/pricing/fetch-competitor-prices</code></li>
         <li><code>POST /api/pricing/search-by-product-name</code></li>
         <li><code>POST /api/pricing/fetch-all-competitor-prices</code></li>
+        <li><code>GET /api/shiprocket/config</code></li>
+        <li><code>GET /api/shiprocket/auth-token</code></li>
+        <li><code>GET /api/shiprocket/track/:awb</code></li>
+        <li><code>POST /api/shiprocket/webhook</code></li>
+        <li><code>GET|POST|PUT|DELETE /api/products</code> disabled</li>
+        <li><code>POST /api/pricing/run</code> disabled</li>
+        <li><code>POST /api/products/:id/recalculate</code> disabled</li>
       </ul>
     </div>
   </body>
@@ -2021,10 +2191,16 @@ const ROOT_HTML = `<!doctype html>
 const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#7a3d3d"/><text x="16" y="21" text-anchor="middle" font-size="16" font-family="Arial" fill="#fff">S</text></svg>`;
 
 function buildCorsHeaders(req, extraHeaders = {}) {
-  const origin = String(req.headers.origin || "").trim();
-  const allowOrigin = origin || "*";
+  const origin = normalizeOrigin(req.headers.origin || "");
+  const allowOrigin = (
+    !origin ||
+    /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin) ||
+    ALLOWED_ORIGINS.has(origin)
+  )
+    ? (origin || "*")
+    : "";
   return {
-    "Access-Control-Allow-Origin": allowOrigin,
+    ...(allowOrigin ? { "Access-Control-Allow-Origin": allowOrigin } : {}),
     "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     Vary: "Origin",
@@ -2051,7 +2227,9 @@ function handleRequest(req, res) {
     }));
     res.end(JSON.stringify({
       ok: true,
-      status: "online",
+      status: USE_FIRESTORE || !IS_HOSTED_RUNTIME ? "online" : "degraded",
+      persistence: USE_FIRESTORE ? "firestore" : "memory",
+      hosted: IS_HOSTED_RUNTIME,
       time: new Date().toISOString()
     }));
     return true;

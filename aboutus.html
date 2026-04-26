@@ -7,10 +7,10 @@
   <link rel="stylesheet" href="aboutus.css">
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
   <style>
-    :root{--top-bar-height:43px;--navbar-height:62px}
-    .top-bar{position:sticky;top:0;z-index:7002;margin:0 !important}
-    .navbar{position:sticky !important;top:calc(var(--top-bar-height) - 1px);z-index:7001 !important;background:#7a3d3d !important}
-    .logo a{color:#fff;font-weight:800;text-decoration:none;font-size:24px;font-family:Arial,sans-serif}
+    :root{--top-bar-height:43px;--navbar-height:62px;--sale-bar-height:44px}
+    .top-bar{position:sticky !important;top:0 !important;z-index:7002 !important;margin:0 !important}
+    .navbar{position:sticky !important;top:calc(var(--top-bar-height) - 1px) !important;z-index:7001 !important;background:#7a3d3d !important;min-height:62px}
+    .logo a{color:#fff;font-weight:800;text-decoration:none;font-size:26px;line-height:1;font-family:Arial,sans-serif}
     .nav-search{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);flex:0 0 300px;max-width:300px;width:300px;margin:0;z-index:2}
     .nav-search input{width:100%;height:38px;border:none;outline:none;border-radius:8px;padding:0 14px 0 40px;background:#f5f5f6;color:#282c3f;font-size:13px;font-weight:500;box-sizing:border-box;text-overflow:ellipsis}
     .nav-search input::placeholder{color:#b98f8f;opacity:1}
@@ -49,15 +49,57 @@
     .account-hover-list a:hover{background:#fbf4f2;color:#7a3d3d !important}
     .account-menu-icon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;color:#7a3d3d}
     .account-menu-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-    .sale-bar{display:block;position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height) - 1px);z-index:7000;overflow:hidden;white-space:nowrap;padding:10px 0;background:#ffffff;color:#c62828;font-size:18px;font-weight:700;line-height:1;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif}
-    .sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;padding-left:0;animation:offerTicker 26s linear infinite;will-change:transform}
+    .sale-bar{display:block;position:sticky !important;top:calc(var(--top-bar-height) + var(--navbar-height) - 1px) !important;z-index:7000 !important;overflow:hidden;white-space:nowrap;min-height:44px;padding:10px 0;background:#ffffff;color:#7a3d3d;font-size:16px;font-weight:700;line-height:20px;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif}
+    .sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;min-height:44px;padding-left:0;animation:offerTicker 52s linear infinite;will-change:transform}
     .sale-bar-item{display:inline-flex;align-items:center;flex:0 0 auto;margin-right:84px}
     @keyframes offerTicker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+    .swadra-category-footer{margin:40px 0 0;padding:34px 20px 38px;background:#7a3d3d;color:#fff;text-align:center;font-family:Arial,sans-serif}
+    .swadra-category-footer h2{margin:0 0 10px;font-size:28px;line-height:1.2;font-weight:900;letter-spacing:.2px}
+    .swadra-category-footer p{margin:0;font-size:18px;line-height:1.5;font-weight:700;color:#f7e7a9}
     @media(max-width:1180px){.navbar{flex-wrap:wrap;gap:12px}.nav-search{position:relative;left:auto;top:auto;transform:none;order:3;flex:1 1 100%;max-width:none;margin:4px 0 0;width:auto}.account-hover-menu{right:0;width:230px}}
     @media(max-width:900px){.nav-buttons{justify-content:center}}
+    .contact-support-section{max-width:1360px;margin:70px auto 90px;padding:0 24px}
+    .contact-support-shell{background:#fff;border:1px solid #eadfdd;border-radius:30px;box-shadow:0 20px 48px rgba(122,61,61,.08);overflow:hidden}
+    .contact-support-head{padding:28px 30px 18px;background:linear-gradient(135deg,#7a3d3d,#9b5a5a);color:#fff}
+    .contact-support-head h2{margin:0;font-size:34px;font-family:Georgia,'Times New Roman',serif;font-weight:600}
+    .contact-support-head p{margin:10px 0 0;font-size:15px;line-height:1.65;max-width:850px;opacity:.96}
+    .contact-support-body{padding:28px 30px 30px}
+    .contact-option-tabs{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+    .contact-option-tab{border:none;border-radius:999px;padding:12px 18px;background:#f5ece8;color:#7a3d3d;font-size:14px;font-weight:800;cursor:pointer}
+    .contact-option-tab.active{background:#7a3d3d;color:#fff}
+    .contact-option-panel{display:none}
+    .contact-option-panel.active{display:block}
+    .support-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:22px;align-items:start}
+    .support-card{background:#fcf8f6;border:1px solid #efe2de;border-radius:24px;padding:20px}
+    .support-card h3{margin:0 0 10px;font-size:22px;color:#2b2222}
+    .support-card p{margin:0;color:#6f6363;font-size:14px;line-height:1.65}
+    .support-points{display:grid;gap:10px;margin-top:16px}
+    .support-point{display:flex;gap:10px;align-items:flex-start;color:#4f4343;font-size:14px;line-height:1.55}
+    .support-point strong{color:#7a3d3d}
+    .support-form{display:grid;gap:14px}
+    .support-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .support-field{display:flex;flex-direction:column;gap:7px}
+    .support-field label{font-size:13px;font-weight:800;color:#5c4a4a}
+    .support-field input,.support-field select,.support-field textarea{width:100%;border:1px solid #e5d8d3;background:#fff;border-radius:16px;padding:14px 15px;font-size:14px;outline:none}
+    .support-field textarea{min-height:132px;resize:vertical}
+    .support-field input:focus,.support-field select:focus,.support-field textarea:focus{border-color:#7a3d3d;box-shadow:0 0 0 3px rgba(122,61,61,.12)}
+    .support-full{grid-column:1 / -1}
+    .otp-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+    .support-btn{border:none;border-radius:16px;padding:14px 18px;background:#7a3d3d;color:#fff;font-size:14px;font-weight:800;cursor:pointer}
+    .support-btn.secondary{background:#efe3de;color:#7a3d3d}
+    .support-btn.ghost{background:#fff;border:1px solid #e5d8d3;color:#7a3d3d}
+    .support-status{min-height:22px;color:#7a3d3d;font-size:13px;font-weight:700}
+    .support-muted{font-size:12px;color:#8b7b7b;line-height:1.55}
+    .support-order-box{display:none}
+    .support-order-box.show{display:flex}
+    @media(max-width:980px){.support-grid{grid-template-columns:1fr}.support-row{grid-template-columns:1fr}.contact-support-head h2{font-size:28px}}
   </style>
 <style>html,body{background:#f1e3e3 !important;}</style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<link rel="stylesheet" href="mobile.css">
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="api-config.js"></script></head>
 <body>
   <div class="top-bar" style="text-align:center;padding:12px;font-weight:600;font-size:16px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;">Eat Healthy &bull; Be Swadra Family</div>
@@ -77,8 +119,19 @@
       <a href="aboutus.html">About Us</a>
       <span id="accountNavSlot"><a class="account-link" href="account.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a></span>
     </div>
+    <details class="mobile-nav-menu" style="display:none;">
+      <summary aria-label="Open navigation menu"><span></span><span></span><span></span></summary>
+      <div class="mobile-nav-panel">
+        <a href="index.html">Home</a>
+        <a href="spices.html">Spices</a>
+        <a href="dryfruits.html">Dry Fruits</a>
+        <a href="oilghee.html">Oil Ghee &amp; More</a>
+        <a href="aboutus.html">About Us</a>
+        <a href="account.html">Account</a>
+      </div>
+    </details>
   </header>
-  <div class="sale-bar"><div class="sale-bar-track"><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span></div></div>
+<div class="sale-bar"><div class="sale-bar-track" id="saleBarTrack"></div></div>
 
   <section>
     <h1 class="main-heading">The Story Behind Swadra</h1>
@@ -118,16 +171,451 @@
     <p>Used where quality is non-negotiable.</p>
   </section>
 
+  <section class="contact-support-section" id="contact">
+    <div class="contact-support-shell">
+      <div class="contact-support-head">
+        <h2>Contact Swadra Support</h2>
+        <p>Two quick options are available. You can send a direct message request with verified details or raise a callback request. Your email address will not be visible on the page, but the verified request will reach Swadra support.</p>
+      </div>
+      <div class="contact-support-body">
+        <div class="contact-option-tabs">
+          <button class="contact-option-tab active" type="button" data-support-tab="mail" onclick="switchSupportTab('mail')">Email Support</button>
+          <button class="contact-option-tab" type="button" data-support-tab="callback" onclick="switchSupportTab('callback')">Request Callback</button>
+        </div>
+
+        <div class="contact-option-panel active" id="support-panel-mail">
+          <div class="support-grid">
+            <div class="support-card">
+              <h3>Email Support</h3>
+              <p>Issue details will be collected through the verified form. An OTP will be sent to your entered email, and once verified, the support message will be prepared and visible in the admin panel as well.</p>
+              <div class="support-points">
+                <div class="support-point"><strong>1.</strong><span>Both email and mobile number are required.</span></div>
+                <div class="support-point"><strong>2.</strong><span>If the issue is order-related, you can attach an order from your orders list.</span></div>
+                <div class="support-point"><strong>3.</strong><span>After OTP verification, the message will be sent through the hidden support email route.</span></div>
+              </div>
+            </div>
+            <form class="support-form" onsubmit="return false;">
+              <div class="support-row">
+                <div class="support-field">
+                  <label for="contactName">Full Name</label>
+                  <input id="contactName" placeholder="Enter your full name">
+                </div>
+                <div class="support-field">
+                  <label for="contactMobile">Mobile Number</label>
+                  <input id="contactMobile" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number">
+                </div>
+              </div>
+              <div class="support-row">
+                <div class="support-field">
+                  <label for="contactEmail">Email Address</label>
+                  <input id="contactEmail" type="email" placeholder="Enter your email">
+                </div>
+                <div class="support-field">
+                  <label for="contactSubject">Subject</label>
+                  <input id="contactSubject" placeholder="Short subject">
+                </div>
+              </div>
+              <div class="support-row">
+                <div class="support-field">
+                  <label for="contactIssueType">Issue Type</label>
+                  <select id="contactIssueType" onchange="toggleOrderSelection('contact')">
+                    <option value="">Select issue type</option>
+                    <option value="Order Related">Order Related</option>
+                    <option value="Product Query">Product Query</option>
+                    <option value="Payment Issue">Payment Issue</option>
+                    <option value="Delivery Issue">Delivery Issue</option>
+                    <option value="General Support">General Support</option>
+                  </select>
+                </div>
+                <div class="support-field support-order-box" id="contactOrderWrap">
+                  <label for="contactOrderId">Attach Order</label>
+                  <select id="contactOrderId">
+                    <option value="">Select order</option>
+                  </select>
+                </div>
+              </div>
+              <div class="support-field support-full">
+                <label for="contactIssue">Issue Details</label>
+                <textarea id="contactIssue" placeholder="Please explain the issue clearly."></textarea>
+              </div>
+              <div class="support-row">
+                <div class="support-field">
+                  <label for="contactOtp">Email OTP</label>
+                  <div class="otp-row">
+                    <button class="support-btn ghost" type="button" onclick="sendSupportOtp('contact')">Send OTP</button>
+                    <input id="contactOtp" inputmode="numeric" maxlength="6" placeholder="Enter OTP">
+                  </div>
+                </div>
+                <div class="support-field">
+                  <label>&nbsp;</label>
+                  <button class="support-btn" type="button" onclick="submitSupportRequest('contact')">Verify & Send</button>
+                </div>
+              </div>
+              <div class="support-status" id="contactStatus"></div>
+              <div class="support-muted">The OTP will be sent only to the entered email address. Both mobile and email will be submitted as verified contact details.</div>
+            </form>
+          </div>
+        </div>
+
+        <div class="contact-option-panel" id="support-panel-callback">
+          <div class="support-grid">
+            <div class="support-card">
+              <h3>Request Callback</h3>
+              <p>The support team will call you back. Issue details are mandatory, and if the request is order-related, a specific order can also be attached.</p>
+              <div class="support-points">
+                <div class="support-point"><strong>1.</strong><span>Email and mobile number are required.</span></div>
+                <div class="support-point"><strong>2.</strong><span>You can mention your preferred callback slot.</span></div>
+                <div class="support-point"><strong>3.</strong><span>The request will appear directly in the admin callback panel.</span></div>
+              </div>
+            </div>
+            <form class="support-form" onsubmit="return false;">
+              <div class="support-row">
+                <div class="support-field">
+                  <label for="callbackName">Full Name</label>
+                  <input id="callbackName" placeholder="Enter your full name">
+                </div>
+                <div class="support-field">
+                  <label for="callbackMobile">Mobile Number</label>
+                  <input id="callbackMobile" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number">
+                </div>
+              </div>
+              <div class="support-row">
+                <div class="support-field">
+                  <label for="callbackEmail">Email Address</label>
+                  <input id="callbackEmail" type="email" placeholder="Enter your email">
+                </div>
+                <div class="support-field">
+                  <label for="callbackTime">Preferred Callback Time</label>
+                  <input id="callbackTime" placeholder="Example: Today 5 PM - 7 PM">
+                </div>
+              </div>
+              <div class="support-row">
+                <div class="support-field">
+                  <label for="callbackIssueType">Issue Type</label>
+                  <select id="callbackIssueType" onchange="toggleOrderSelection('callback')">
+                    <option value="">Select issue type</option>
+                    <option value="Order Related">Order Related</option>
+                    <option value="Product Query">Product Query</option>
+                    <option value="Payment Issue">Payment Issue</option>
+                    <option value="Delivery Issue">Delivery Issue</option>
+                    <option value="General Support">General Support</option>
+                  </select>
+                </div>
+                <div class="support-field support-order-box" id="callbackOrderWrap">
+                  <label for="callbackOrderId">Attach Order</label>
+                  <select id="callbackOrderId">
+                    <option value="">Select order</option>
+                  </select>
+                </div>
+              </div>
+              <div class="support-field support-full">
+                <label for="callbackIssue">Issue Details</label>
+                <textarea id="callbackIssue" placeholder="Describe exactly why you want a callback."></textarea>
+              </div>
+              <div class="support-row">
+                <div class="support-field">
+                  <label for="callbackOtp">Email OTP</label>
+                  <div class="otp-row">
+                    <button class="support-btn ghost" type="button" onclick="sendSupportOtp('callback')">Send OTP</button>
+                    <input id="callbackOtp" inputmode="numeric" maxlength="6" placeholder="Enter OTP">
+                  </div>
+                </div>
+                <div class="support-field">
+                  <label>&nbsp;</label>
+                  <button class="support-btn secondary" type="button" onclick="submitSupportRequest('callback')">Verify & Request</button>
+                </div>
+              </div>
+              <div class="support-status" id="callbackStatus"></div>
+                <div class="support-muted">The callback request will be saved in the admin panel, and the support team will contact you regarding the issue.</div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="swadra-category-footer">
+    <h2>Swadra Organics - Crafted for Global Standards</h2>
+    <p>Experience the Difference - Order Today</p>
+  </footer>
   <script>
+    emailjs.init("uqdnXG18txM1DBF6j");
     const productDataApi = window.SWADRA_PRODUCT_DATA || {};
+    const siteContentApi = window.SWADRA_SITE_CONTENT || null;
+    let siteContentState = siteContentApi && typeof siteContentApi.createEmptyState === "function"
+      ? siteContentApi.createEmptyState()
+      : { homeContent:{}, offers:[], heroImages:[], customers:[], familyCards:[], swadra_home_family_story_v1:{} };
+    const SUPPORT_REQUESTS_KEY = "supportRequests";
+    const SUPPORT_EMAIL = "swadraorganics@gmail.com";
+    const APP_STATE_URL = window.SWADRA_APP_STATE_URL || "";
+    function getHomeContent(){
+      return siteContentState.homeContent || {};
+    }
+    function getHomeArray(key){
+      const content = getHomeContent();
+      if(Array.isArray(content[key])){
+        return content[key];
+      }
+      return Array.isArray(siteContentState[key]) ? siteContentState[key] : [];
+    }
+    async function renderOfferBar(forceRefresh){
+      if(window.SWADRA_OFFERS && typeof window.SWADRA_OFFERS.renderSaleBar === "function"){
+        await window.SWADRA_OFFERS.renderSaleBar("saleBarTrack", !!forceRefresh);
+        return;
+      }
+      const track = document.getElementById("saleBarTrack");
+      if(track){
+        track.innerHTML = "";
+        const saleBar = track.closest ? track.closest(".sale-bar") : null;
+        if(saleBar) saleBar.style.display = "none";
+      }
+    }
+    async function loadSiteContent(){
+      if(!siteContentApi || typeof siteContentApi.fetch !== "function"){
+        return siteContentState;
+      }
+      try{
+        siteContentState = await siteContentApi.fetch(true);
+      }catch(error){
+        console.error("about site content fetch failed", error);
+      }
+      return siteContentState;
+    }
+    function supportAuthApi(){ return window.SWADRA_AUTH || null; }
+    function getSupportCurrentUser(){
+      const authApi = supportAuthApi();
+      return authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : localStorage.getItem("currentUser");
+    }
+    function getSupportUsers(){
+      const authApi = supportAuthApi();
+      if(authApi && typeof authApi.getUsers === "function") return authApi.getUsers();
+      try{ return JSON.parse(localStorage.getItem("users")) || {}; }catch(error){ return {}; }
+    }
+    async function readSupportRequests(){
+      if(!APP_STATE_URL) return [];
+      try{
+        const response = await fetch(APP_STATE_URL + "?keys=" + encodeURIComponent(SUPPORT_REQUESTS_KEY), { cache:"no-store" });
+        const data = await response.json().catch(()=>({ ok:false }));
+        const list = data && data.ok && data.state ? data.state[SUPPORT_REQUESTS_KEY] : [];
+        return Array.isArray(list) ? list : [];
+      }catch(error){
+        console.error("support request fetch failed", error);
+        return [];
+      }
+    }
+    async function saveSupportRequests(list){
+      if(!APP_STATE_URL) throw new Error("Support storage unavailable");
+      const next = Array.isArray(list) ? list : [];
+      const response = await fetch(APP_STATE_URL, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ state: { [SUPPORT_REQUESTS_KEY]: next } })
+      });
+      const data = await response.json().catch(()=>({ ok:false }));
+      if(!response.ok || !data.ok){
+        throw new Error((data && data.error) || "Support request save failed");
+      }
+      return next;
+    }
+    function setSupportStatus(type, message, isError){
+      const node = document.getElementById(type + "Status");
+      if(!node) return;
+      node.textContent = message || "";
+      node.style.color = isError ? "#c62828" : "#7a3d3d";
+    }
+    function switchSupportTab(type){
+      document.querySelectorAll(".contact-option-tab").forEach(button=>{
+        button.classList.toggle("active", button.dataset.supportTab === type);
+      });
+      document.querySelectorAll(".contact-option-panel").forEach(panel=>{
+        panel.classList.toggle("active", panel.id === "support-panel-" + type);
+      });
+    }
+    function getSupportOrders(){
+      const currentUser = getSupportCurrentUser();
+      const users = getSupportUsers();
+      const user = currentUser && users[currentUser] ? users[currentUser] : {};
+      return Array.isArray(user.orders) ? user.orders.slice() : [];
+    }
+    function fillSupportOrderOptions(selectId){
+      const select = document.getElementById(selectId);
+      if(!select) return;
+      const orders = getSupportOrders();
+      select.innerHTML = `<option value="">Select order</option>`;
+      if(!orders.length){
+        select.innerHTML += `<option value="" disabled>No order found</option>`;
+        return;
+      }
+      orders.forEach(order=>{
+        const orderId = String(order.id || order.orderId || "").trim();
+        const label = [orderId || "Order", order.status || "", order.date || order.createdAt || ""].filter(Boolean).join(" | ");
+        select.innerHTML += `<option value="${orderId}">${label}</option>`;
+      });
+    }
+    function toggleOrderSelection(type){
+      const issueType = document.getElementById(type + "IssueType");
+      const orderWrap = document.getElementById(type + "OrderWrap");
+      if(!issueType || !orderWrap) return;
+      const show = issueType.value === "Order Related";
+      orderWrap.classList.toggle("show", show);
+      if(show) fillSupportOrderOptions(type + "OrderId");
+    }
+    function prefillSupportForms(){
+      const currentUser = getSupportCurrentUser();
+      const users = getSupportUsers();
+      const user = currentUser && users[currentUser] ? users[currentUser] : {};
+      const profile = user.profile || {};
+      const name = String(profile.name || (currentUser ? currentUser.split("@")[0] : "") || "").trim();
+      const email = String(user.email || currentUser || "").trim();
+      const mobile = String(user.phone || profile.phone || "").trim();
+      ["contact","callback"].forEach(type=>{
+        const nameField = document.getElementById(type + "Name");
+        const emailField = document.getElementById(type + "Email");
+        const mobileField = document.getElementById(type + "Mobile");
+        if(nameField && !nameField.value) nameField.value = name;
+        if(emailField && !emailField.value) emailField.value = email;
+        if(mobileField && !mobileField.value) mobileField.value = mobile;
+      });
+      fillSupportOrderOptions("contactOrderId");
+      fillSupportOrderOptions("callbackOrderId");
+    }
+    function validateSupportForm(type){
+      const payload = {
+        type,
+        name: String(document.getElementById(type + "Name")?.value || "").trim(),
+        email: String(document.getElementById(type + "Email")?.value || "").trim(),
+        mobile: String(document.getElementById(type + "Mobile")?.value || "").replace(/\D/g, "").slice(-10),
+        issueType: String(document.getElementById(type + "IssueType")?.value || "").trim(),
+        orderId: String(document.getElementById(type + "OrderId")?.value || "").trim(),
+        issue: String(document.getElementById(type + "Issue")?.value || "").trim(),
+        subject: type === "contact" ? String(document.getElementById("contactSubject")?.value || "").trim() : "Callback Request",
+        preferredTime: type === "callback" ? String(document.getElementById("callbackTime")?.value || "").trim() : ""
+      };
+      if(!payload.name || !payload.email || !payload.mobile){
+        setSupportStatus(type, "Name, email, and mobile number are required.", true);
+        return null;
+      }
+      if(payload.mobile.length !== 10){
+        setSupportStatus(type, "Valid 10-digit mobile number dalo.", true);
+        return null;
+      }
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)){
+        setSupportStatus(type, "Valid email address dalo.", true);
+        return null;
+      }
+      if(!payload.issueType || !payload.issue){
+        setSupportStatus(type, "Issue type and issue details are required.", true);
+        return null;
+      }
+      if(type === "contact" && !payload.subject){
+        setSupportStatus(type, "Subject is required.", true);
+        return null;
+      }
+      if(type === "callback" && !payload.preferredTime){
+        setSupportStatus(type, "Preferred callback time is required.", true);
+        return null;
+      }
+      if(payload.issueType === "Order Related" && !payload.orderId){
+        setSupportStatus(type, "Please attach an order for order-related issues.", true);
+        return null;
+      }
+      return payload;
+    }
+    function sendSupportOtp(type){
+      const payload = validateSupportForm(type);
+      if(!payload) return;
+      const otp = String(Math.floor(1000 + Math.random() * 9000));
+      sessionStorage.setItem("supportOtp_" + type, otp);
+      sessionStorage.setItem("supportOtpEmail_" + type, payload.email);
+      emailjs.send("service_12k6w9q", "template_qvyodce", { to_email: payload.email, otp: otp }).then(()=>{
+        setSupportStatus(type, "OTP sent to your email.", false);
+      }).catch(()=>{
+        setSupportStatus(type, "Failed to send OTP.", true);
+      });
+    }
+    async function saveSupportRequest(payload){
+      const list = await readSupportRequests();
+      list.unshift({
+        id: "req_" + Date.now(),
+        requestType: payload.type === "contact" ? "Email Support" : "Request Callback",
+        status: "Open",
+        name: payload.name,
+        email: payload.email,
+        mobile: payload.mobile,
+        issueType: payload.issueType,
+        issue: payload.issue,
+        subject: payload.subject,
+        preferredTime: payload.preferredTime,
+        orderId: payload.orderId,
+        userEmail: getSupportCurrentUser() || payload.email,
+        createdAt: new Date().toISOString()
+      });
+      await saveSupportRequests(list.slice(0, 500));
+    }
+    function buildSupportMailBody(payload){
+      return [
+        "Swadra Support Request",
+        "",
+        "Name: " + payload.name,
+        "Email: " + payload.email,
+        "Mobile: " + payload.mobile,
+        "Issue Type: " + payload.issueType,
+        payload.orderId ? "Attached Order: " + payload.orderId : "",
+        payload.preferredTime ? "Preferred Callback Time: " + payload.preferredTime : "",
+        "",
+        "Issue Details:",
+        payload.issue
+      ].filter(Boolean).join("\n");
+    }
+    async function submitSupportRequest(type){
+      const payload = validateSupportForm(type);
+      if(!payload) return;
+      const enteredOtp = String(document.getElementById(type + "Otp")?.value || "").trim();
+      const savedOtp = sessionStorage.getItem("supportOtp_" + type);
+      const savedEmail = sessionStorage.getItem("supportOtpEmail_" + type);
+      if(!savedOtp){
+        setSupportStatus(type, "Please send the OTP first.", true);
+        return;
+      }
+      if(payload.email !== savedEmail){
+        setSupportStatus(type, "The OTP can only be verified for the email address it was sent to.", true);
+        return;
+      }
+      if(enteredOtp !== savedOtp){
+        setSupportStatus(type, "Incorrect OTP.", true);
+        return;
+      }
+      try{
+        sessionStorage.removeItem("supportOtp_" + type);
+        sessionStorage.removeItem("supportOtpEmail_" + type);
+        await saveSupportRequest(payload);
+        if(type === "contact"){
+          const subject = encodeURIComponent(payload.subject + " | Swadra Support");
+          const body = encodeURIComponent(buildSupportMailBody(payload));
+          window.location.href = "mailto:" + SUPPORT_EMAIL + "?subject=" + subject + "&body=" + body;
+        setSupportStatus(type, "Verified. The email draft is opening, and the request has also been saved.", false);
+        }else{
+          setSupportStatus(type, "Callback request successfully save ho gayi.", false);
+        }
+        const otpField = document.getElementById(type + "Otp");
+        if(otpField) otpField.value = "";
+      }catch(error){
+        setSupportStatus(type, error.message || "Unable to save the support request.", true);
+      }
+    }
     function swadraHeaderAccountMenu(userLabel, userEmail){
       return `<span class="account-menu-wrap"><a class="account-link" href="${userEmail ? "dashboard.html" : "account.html"}" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">${userLabel}</div><div class="account-hover-copy">${userEmail || "Access your account, orders and saved details from one place."}</div>${userEmail ? `<a class="account-hover-cta" href="#" onclick="return swadraLogout(event)" style="color:#fff !important">LOGOUT</a>` : `<a class="account-hover-cta" href="account.html" style="color:#fff !important">LOGIN / SIGNUP</a>`}</div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="dashboard.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V5"></path><path d="M17 16v-3"></path></svg></span><span>Product Summary</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span>`;
     }
     function swadraLogout(event){
       if(event) event.preventDefault();
-      localStorage.removeItem("currentUser");
-      localStorage.removeItem("userPhone");
-      localStorage.removeItem("redirectAfterLogin");
+      const authApi = window.SWADRA_AUTH || null;
+      if(authApi && typeof authApi.signOutUser === "function"){
+        authApi.signOutUser({ keepCart:false });
+      }else{
+        localStorage.removeItem("currentUser");
+        localStorage.removeItem("userPhone");
+        localStorage.removeItem("redirectAfterLogin");
+      }
       localStorage.setItem("cart", JSON.stringify([]));
       updateAboutAccountNavigation();
       window.location.href = "index.html";
@@ -136,9 +624,12 @@
     function updateAboutAccountNavigation(){
       const slot=document.getElementById("accountNavSlot");
       if(!slot) return;
-      let currentUser=localStorage.getItem("currentUser");
-      let users={};
-      try{ users=JSON.parse(localStorage.getItem("users")) || {}; }catch(e){}
+      const authApi = window.SWADRA_AUTH || null;
+      let currentUser=authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : localStorage.getItem("currentUser");
+      let users=authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : {};
+      if(!authApi){
+        try{ users=JSON.parse(localStorage.getItem("users")) || {}; }catch(e){}
+      }
       if(currentUser && users[currentUser]){
         slot.innerHTML=swadraHeaderAccountMenu((((users[currentUser]||{}).profile||{}).name || currentUser.split("@")[0]), currentUser);
       }else{
@@ -218,8 +709,17 @@
         headerSearchResults.classList.remove("show");
       }
     });
+    prefillSupportForms();
+    loadSiteContent().finally(function(){ renderOfferBar(true); });
     updateAboutAccountNavigation();
+    window.addEventListener("pageshow", async function(){
+      await loadSiteContent();
+      renderOfferBar(true);
+    });
     window.addEventListener("storage", function(event){
+      if(["offers","homeContent"].includes(event.key)){
+        loadSiteContent().finally(function(){ renderOfferBar(true); });
+      }
       if(["users","currentUser"].includes(event.key)) updateAboutAccountNavigation();
     });
   </script>

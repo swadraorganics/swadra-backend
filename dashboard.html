@@ -4,20 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Swadra Dashboard</title>
-<script src="page-storage-sync.js"></script>
-<script>
-window.installSwadraPageStorageSync({
-  pageName: "dashboard page",
-  persistedKeys: [
-    "currentUser",
-    "users",
-    "cart",
-    "dashboardPasswordOtp",
-    "userPhone",
-    "swadraHeaderSearch"
-  ]
-});
-</script>
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -39,10 +25,10 @@ body{
   color:#1d1d1f;
 }
 
-:root{--top-bar-height:43px;--navbar-height:62px}
+:root{--top-bar-height:43px;--navbar-height:62px;--sale-bar-height:44px}
 
-.top-bar{position:sticky;top:0;z-index:7002;margin:0 !important}
-.navbar{position:sticky;top:calc(var(--top-bar-height) - 1px);z-index:7001;background:#7a3d3d !important}
+.top-bar{position:sticky !important;top:0 !important;z-index:7002 !important;margin:0 !important}
+.navbar{position:sticky !important;top:calc(var(--top-bar-height) - 1px) !important;z-index:7001 !important;background:#7a3d3d !important}
 .nav-search{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);flex:0 0 300px;max-width:300px;width:300px;margin:0;z-index:2}
 .nav-search input{width:100%;height:38px;border:none;outline:none;border-radius:8px;padding:0 14px 0 40px;background:#f5f5f6;color:#282c3f;font-size:13px;font-weight:500;box-sizing:border-box;text-overflow:ellipsis}
 .nav-search input::placeholder{color:#b98f8f;opacity:1}
@@ -72,8 +58,8 @@ body{
 .account-hover-list a:hover{background:#fbf4f2;color:#7a3d3d !important}
 .account-menu-icon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;color:#7a3d3d}
 .account-menu-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.sale-bar{display:block;position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height) - 1px);z-index:7000;overflow:hidden;white-space:nowrap;padding:10px 0;background:#ffffff;color:#c62828;font-size:18px;font-weight:700;line-height:1;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif}
-.sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;padding-left:0;animation:offerTicker 26s linear infinite;will-change:transform}
+.sale-bar{display:block;position:sticky !important;top:calc(var(--top-bar-height) + var(--navbar-height) - 1px) !important;z-index:7000 !important;overflow:hidden;white-space:nowrap;min-height:44px;padding:10px 0;background:#ffffff;color:#7a3d3d;font-size:16px;font-weight:700;line-height:20px;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif}
+.sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;min-height:44px;padding-left:0;animation:offerTicker 52s linear infinite;will-change:transform}
 .sale-bar-item{display:inline-flex;align-items:center;flex:0 0 auto;margin-right:84px}
 @keyframes offerTicker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 
@@ -338,7 +324,15 @@ body{
 
 .orders-btn{ background:#fff1f3; color:#7a3d3d; border:1px solid #f0d8d8; }
 .track-btn{ background:#faf4f1; color:#7a3d3d; border:1px solid #efe2de; }
+.contact-btn{ background:#f4efe7; color:#7a3d3d; border:1px solid #e6d7cf; }
 .logout-big{ background:linear-gradient(135deg,#7A3D3D,#9b5a5a); color:#fff; }
+.logout-big{
+  width:auto;
+  min-width:210px;
+  justify-self:start;
+  padding:12px 16px;
+  border-radius:16px;
+}
 
 .modal{
   display:none;
@@ -347,61 +341,193 @@ body{
   background:rgba(0,0,0,0.55);
   z-index:5000;
   justify-content:center;
-  align-items:center;
-  padding:20px;
+  align-items:flex-start;
+  overflow-y:auto;
+  padding:calc(var(--top-bar-height) + var(--navbar-height) + 56px) 20px 24px;
 }
 
 .modal-box{
   width:100%;
-  max-width:520px;
+  max-width:440px;
   max-height:92vh;
   overflow-y:auto;
   background:#fff;
   border:1px solid #eadfdd;
   border-radius:24px;
-  padding:24px;
+  padding:20px;
 }
 
 .modal-box h3{
-  font-size:24px;
-  margin-bottom:18px;
+  font-size:20px;
+  margin-bottom:14px;
 }
 
 .form-grid{
   display:grid;
-  gap:14px;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
 }
 
 input,select{
   width:100%;
   border:1px solid #e3e3e3;
   background:#fafafa;
-  padding:16px;
-  border-radius:16px;
-  font-size:15px;
+  padding:14px 15px;
+  border-radius:14px;
+  font-size:14px;
+}
+
+.field-full{
+  grid-column:1 / -1;
 }
 
 .save-btn,
 .cancel-btn{
   width:100%;
   border:none;
-  padding:16px;
-  border-radius:18px;
-  font-size:15px;
+  padding:14px;
+  border-radius:16px;
+  font-size:14px;
   font-weight:700;
   cursor:pointer;
 }
 
 .save-btn{
-  margin-top:18px;
+  margin-top:14px;
   background:linear-gradient(135deg,#7A3D3D,#9b5a5a);
   color:#fff;
 }
 
 .cancel-btn{
-  margin-top:10px;
+  margin-top:8px;
   background:#f7efed;
   color:#7a3d3d;
+}
+
+.address-list{
+  display:grid;
+  gap:12px;
+}
+
+.address-card{
+  background:#fcf8f6;
+  border:1px solid #efe2de;
+  border-radius:18px;
+  padding:14px;
+}
+
+.address-card-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+.address-card-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.address-card-title strong{
+  font-size:15px;
+  color:#2b2222;
+}
+
+.default-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:4px 10px;
+  border-radius:999px;
+  background:#e7f4ea;
+  color:#127a45;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+
+.address-card-copy{
+  color:#4a3e3e;
+  font-size:14px;
+  line-height:1.55;
+}
+
+.address-card-copy .muted{
+  color:#8b7d7d;
+}
+
+.address-card-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+
+.tiny-btn{
+  border:none;
+  border-radius:12px;
+  padding:9px 12px;
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.tiny-btn.default{
+  background:#eef7f1;
+  color:#127a45;
+}
+
+.tiny-btn.edit{
+  background:#f3ece9;
+  color:#7a3d3d;
+}
+
+.tiny-btn.delete{
+  background:#fff1f3;
+  color:#c73552;
+}
+
+.address-empty{
+  background:#fcf8f6;
+  border:1px solid #efe2de;
+  border-radius:16px;
+  padding:16px;
+  color:#2b2222;
+  font-weight:700;
+}
+
+.modal-note{
+  color:#726767;
+  font-size:13px;
+  line-height:1.5;
+  margin-bottom:12px;
+}
+
+.toggle-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 14px;
+  border:1px solid #efe2de;
+  border-radius:14px;
+  background:#fcf8f6;
+}
+
+.toggle-row label{
+  font-size:13px;
+  font-weight:700;
+  color:#2b2222;
+}
+
+.toggle-row input{
+  width:18px;
+  height:18px;
+  padding:0;
 }
 
 .otp-note{
@@ -571,6 +697,9 @@ margin:4px 0 0 !important;
 </style>
 <style>html,body{background:#f1e3e3 !important;}</style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<link rel="stylesheet" href="mobile.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="api-config.js"></script></head>
 <body>
 
@@ -591,7 +720,18 @@ margin:4px 0 0 !important;
 <a href="aboutus.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">About Us</a>
 <span id="accountNavSlot"><a class="account-link" href="account.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a></span>
 </div>
-</header><div class="sale-bar"><div class="sale-bar-track"><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span><span class="sale-bar-item">&#128666; Free Delivery on orders above &#8377;699</span></div></div><div class="page">
+<details class="mobile-nav-menu" style="display:none;">
+<summary aria-label="Open navigation menu"><span></span><span></span><span></span></summary>
+<div class="mobile-nav-panel">
+<a href="index.html">Home</a>
+<a href="spices.html">Spices</a>
+<a href="dryfruits.html">Dry Fruits</a>
+<a href="oilghee.html">Oil Ghee &amp; More</a>
+<a href="aboutus.html">About Us</a>
+<a href="account.html">Account</a>
+</div>
+</details>
+</header><div class="sale-bar"><div class="sale-bar-track" id="saleBarTrack"></div></div><div class="page">
 
   <section class="hero-card">
     <div class="hero-left">
@@ -610,8 +750,8 @@ margin:4px 0 0 !important;
           <span>Address Saved</span>
         </div>
         <div class="stat-box">
-          <h3>VIP</h3>
-          <span>Customer Status</span>
+          <h3 id="totalSavings">₹0</h3>
+          <span>You Save So Far</span>
         </div>
       </div>
     </div>
@@ -639,8 +779,8 @@ margin:4px 0 0 !important;
 
     <div class="card">
       <div class="card-title">
-        <h2>Saved Delivery Address</h2>
-        <button class="edit-btn" onclick="openModal()">Edit</button>
+        <h2>Saved Delivery Addresses</h2>
+        <button class="edit-btn" onclick="openModal()">Add New</button>
       </div>
       <div id="addressDisplay" class="profile-details"></div>
     </div>
@@ -652,6 +792,7 @@ margin:4px 0 0 !important;
       <div class="quick-actions">
         <button class="action-btn orders-btn" onclick="goOrders()"><span class="action-icon" aria-hidden="true">[]</span>View My Orders</button>
         <button class="action-btn track-btn" onclick="trackOrder()"><span class="action-icon" aria-hidden="true">></span>Track Current Order</button>
+        <button class="action-btn contact-btn" onclick="openSupportPage()"><span class="action-icon" aria-hidden="true">@</span>Contact Support</button>
         <button class="action-btn logout-big" onclick="logout()"><span class="action-icon" aria-hidden="true"><</span>Logout Securely</button>
       </div>
     </div>
@@ -661,20 +802,27 @@ margin:4px 0 0 !important;
 
 <div class="modal" id="modal">
   <div class="modal-box">
-    <h3>Edit Address</h3>
+    <h3 id="addressModalTitle">Add Address</h3>
+    <p class="modal-note">You can save up to 3 addresses. The default address will be selected automatically at checkout.</p>
+    <input type="hidden" id="editingAddressId">
 
     <div class="form-grid">
       <input id="house" placeholder="House No">
       <input id="area" placeholder="Sector / Mohalla">
+      <input class="field-full" id="nearby" placeholder="Nearby / Landmark">
       <input id="city" placeholder="City / Village">
       <input id="pincode" placeholder="Pincode" oninput="fetchPincode()">
 
-      <select id="postoffice">
+      <select class="field-full" id="postoffice">
         <option value="">Select Post Office</option>
       </select>
 
       <input id="district" placeholder="District">
       <input id="state" placeholder="State">
+      <div class="toggle-row field-full">
+        <label for="isDefaultAddress">Set as default address</label>
+        <input id="isDefaultAddress" type="checkbox">
+      </div>
     </div>
 
     <button class="save-btn" onclick="saveAddress()">Save Address</button>
@@ -685,7 +833,7 @@ margin:4px 0 0 !important;
 <div class="modal" id="passwordModal">
   <div class="modal-box">
     <h3>Change Password</h3>
-    <p class="otp-note">Password change ke liye OTP verification mandatory hai. Continue karne par OTP aapke registered email par jayega.</p>
+    <p class="otp-note">OTP verification is required to change your password. When you continue, the OTP will be sent to your registered email.</p>
 
     <div class="form-grid">
       <input id="passwordOtp" placeholder="Enter OTP" inputmode="numeric" maxlength="6">
@@ -702,17 +850,53 @@ margin:4px 0 0 !important;
 
 <script>
 emailjs.init("uqdnXG18txM1DBF6j");
+const authApi = window.SWADRA_AUTH || null;
 
 function getCurrentUser(){
-  return localStorage.getItem("currentUser");
+  return authApi && typeof authApi.getCurrentUserEmail === "function"
+    ? authApi.getCurrentUserEmail()
+    : localStorage.getItem("currentUser");
 }
 
 function getUsers(){
-  return JSON.parse(localStorage.getItem("users")) || {};
+  return authApi && typeof authApi.getUsers === "function"
+    ? authApi.getUsers()
+    : (JSON.parse(localStorage.getItem("users")) || {});
 }
 
 function saveUsers(users){
-  localStorage.setItem("users", JSON.stringify(users));
+  return authApi && typeof authApi.saveUsers === "function"
+    ? authApi.saveUsers(users)
+    : localStorage.setItem("users", JSON.stringify(users));
+}
+
+async function persistCurrentUser(user, successMessage, errorMessage){
+  if(!user || !user.email){
+    if(errorMessage) alert(errorMessage);
+    return false;
+  }
+  try{
+    if(authApi && typeof authApi.saveUserRecord === "function"){
+      await authApi.saveUserRecord(user);
+      if(typeof authApi.refreshUsers === "function"){
+        await authApi.refreshUsers();
+      }
+    }else{
+      let users = getUsers();
+      users[user.email] = user;
+      await Promise.resolve(saveUsers(users));
+    }
+    if(successMessage){
+      alert(successMessage);
+    }
+    return true;
+  }catch(error){
+    console.error(error);
+    if(errorMessage){
+      alert(errorMessage);
+    }
+    return false;
+  }
 }
 
 function safe(val){
@@ -726,8 +910,118 @@ const pincode = document.getElementById("pincode");
 const postoffice = document.getElementById("postoffice");
 const district = document.getElementById("district");
 const state = document.getElementById("state");
+const nearby = document.getElementById("nearby");
+const editingAddressId = document.getElementById("editingAddressId");
+const isDefaultAddress = document.getElementById("isDefaultAddress");
+const addressModalTitle = document.getElementById("addressModalTitle");
 
-window.onload = function(){
+function escapeHtml(value){
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function normalizeAddressEntry(address, fallbackId){
+  const item = address && typeof address === "object" ? address : {};
+  return {
+    id: String(item.id || fallbackId || ("addr_" + Date.now())),
+    house: safe(item.house).trim(),
+    area: safe(item.area).trim(),
+    nearby: safe(item.nearby).trim(),
+    city: safe(item.city).trim(),
+    pincode: safe(item.pincode).trim(),
+    postoffice: safe(item.postoffice).trim(),
+    district: safe(item.district).trim(),
+    state: safe(item.state).trim()
+  };
+}
+
+function getAddressBook(user){
+  const currentUser = user && typeof user === "object" ? user : {};
+  let addresses = Array.isArray(currentUser.addresses)
+    ? currentUser.addresses.map((address, index)=>normalizeAddressEntry(address, "addr_" + (index + 1))).filter(address=>address.house)
+    : [];
+
+  if(!addresses.length && currentUser.address && currentUser.address.house){
+    addresses = [normalizeAddressEntry(currentUser.address, currentUser.defaultAddressId || "addr_1")];
+  }
+
+  let defaultAddressId = safe(currentUser.defaultAddressId).trim();
+  if(!defaultAddressId && addresses.length){
+    defaultAddressId = addresses[0].id;
+  }
+  if(defaultAddressId && !addresses.some(address=>address.id === defaultAddressId) && addresses.length){
+    defaultAddressId = addresses[0].id;
+  }
+
+  return { addresses, defaultAddressId };
+}
+
+function syncUserAddresses(user){
+  const book = getAddressBook(user);
+  user.addresses = book.addresses.slice(0, 3);
+  user.defaultAddressId = book.defaultAddressId || (user.addresses[0] ? user.addresses[0].id : "");
+  const defaultAddress = user.addresses.find(address=>address.id === user.defaultAddressId) || user.addresses[0] || {};
+  user.address = defaultAddress.house ? Object.assign({}, defaultAddress) : {};
+  return user;
+}
+
+function buildAddressText(address){
+  return [
+    address.house,
+    address.area,
+    address.nearby ? "Near " + address.nearby : "",
+    address.postoffice,
+    address.city,
+    address.district,
+    address.state,
+    address.pincode
+  ].filter(Boolean).join(", ");
+}
+
+function calculateOrderSavings(order){
+  const item = order && typeof order === "object" ? order : {};
+  const directProductSavings = Math.max(0, Number(item.productSavings || 0));
+  const directCouponSavings = Math.max(0, Number(item.couponDiscount || item.discount || 0));
+  if(directProductSavings > 0 || directCouponSavings > 0){
+    return directProductSavings + directCouponSavings;
+  }
+
+  const mrpTotal = Math.max(0, Number(item.mrpTotal || 0));
+  const sellingTotal = Math.max(0, Number(item.sellingTotal || item.couponAdjustedSellingTotal || 0));
+  const fallbackProductSavings = mrpTotal > sellingTotal ? (mrpTotal - sellingTotal) : 0;
+  return fallbackProductSavings + directCouponSavings;
+}
+
+function formatMoney(value){
+  return "₹" + Math.round(Number(value || 0)).toLocaleString("en-IN");
+}
+
+async function renderOfferBar(forceRefresh){
+  if(window.SWADRA_OFFERS && typeof window.SWADRA_OFFERS.renderSaleBar === "function"){
+    await window.SWADRA_OFFERS.renderSaleBar("saleBarTrack", !!forceRefresh);
+    return;
+  }
+  const track = document.getElementById("saleBarTrack");
+  if(track){
+    track.innerHTML = "";
+    const saleBar = track.closest ? track.closest(".sale-bar") : null;
+    if(saleBar) saleBar.style.display = "none";
+  }
+}
+
+window.onload = async function(){
+  if(authApi && typeof authApi.ready === "function"){
+    try{
+      await authApi.ready();
+    }catch(error){
+      console.error("dashboard auth bootstrap failed", error);
+    }
+  }
+  renderOfferBar(true);
   let currentUser = getCurrentUser();
 
   if(!currentUser){
@@ -755,7 +1049,7 @@ function loadProfile(){
   document.getElementById("avatarText").innerText = displayName.charAt(0).toUpperCase();
 }
 
-function editProfileName(){
+async function editProfileName(){
   let currentUser = getCurrentUser();
   let users = getUsers();
 
@@ -778,18 +1072,23 @@ function editProfileName(){
   }
 
   users[currentUser].profile.name = newName;
-
-  saveUsers(users);
+  users[currentUser].updatedAt = new Date().toISOString();
+  const saved = await persistCurrentUser(users[currentUser], "Profile updated successfully.", "Profile update failed.");
+  if(!saved) return;
   loadProfile();
 }
 
 function loadStats(){
   let currentUser = getCurrentUser();
   let users = getUsers();
-  let user = users[currentUser] || {};
+  let user = syncUserAddresses(users[currentUser] || {});
+  saveUsers(users);
+  const orders = Array.isArray(user.orders) ? user.orders : [];
+  const totalSavings = orders.reduce((sum, order)=>sum + calculateOrderSavings(order), 0);
 
-  document.getElementById("totalOrders").innerText = (user.orders || []).length;
-  document.getElementById("savedAddress").innerText = user.address?.house ? "Yes" : "No";
+  document.getElementById("totalOrders").innerText = orders.length;
+  document.getElementById("savedAddress").innerText = (user.addresses || []).length ? String((user.addresses || []).length) : "No";
+  document.getElementById("totalSavings").innerText = formatMoney(totalSavings);
 }
 
 function loadAddress(){
@@ -798,35 +1097,63 @@ function loadAddress(){
 
   if(!users[currentUser]) return;
 
-  let address = users[currentUser].address || {};
+  const user = syncUserAddresses(users[currentUser]);
+  saveUsers(users);
+  const addressBook = user.addresses || [];
+  const defaultAddressId = user.defaultAddressId || "";
   const box = document.getElementById("addressDisplay");
 
-  if(address.house){
-    box.innerHTML = `
-      <div class="info-row"><div class="label">House</div><div class="value">${safe(address.house)}</div></div>
-      <div class="info-row"><div class="label">Area</div><div class="value">${safe(address.area)}</div></div>
-      <div class="info-row"><div class="label">City / Pincode</div><div class="value">${safe(address.city)} ${safe(address.pincode)}</div></div>
-      <div class="info-row"><div class="label">Post Office</div><div class="value">${safe(address.postoffice)}</div></div>
-      <div class="info-row"><div class="label">District / State</div><div class="value">${safe(address.district)}, ${safe(address.state)}</div></div>
-    `;
+  if(addressBook.length){
+    box.innerHTML = `<div class="address-list">${
+      addressBook.map(address=>{
+        const isDefault = address.id === defaultAddressId;
+        return `
+          <div class="address-card">
+            <div class="address-card-head">
+              <div class="address-card-title">
+                <strong>${escapeHtml(address.house || "Saved Address")}</strong>
+                ${isDefault ? `<span class="default-pill">Default</span>` : ``}
+              </div>
+            </div>
+            <div class="address-card-copy">${escapeHtml(buildAddressText(address) || "Address details missing")}</div>
+            <div class="address-card-actions">
+              ${isDefault ? `` : `<button class="tiny-btn default" type="button" onclick="setDefaultAddress('${escapeHtml(address.id)}')">Mark Default</button>`}
+              <button class="tiny-btn edit" type="button" onclick="openModal('${escapeHtml(address.id)}')">Edit</button>
+              <button class="tiny-btn delete" type="button" onclick="deleteAddress('${escapeHtml(address.id)}')">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join("")
+    }</div>`;
   }else{
-    box.innerHTML = `<div class="info-row"><div class="value">No address saved yet.</div></div>`;
+    box.innerHTML = `<div class="address-empty">No address saved yet.</div>`;
   }
 }
 
-function openModal(){
+function openModal(addressId){
   document.getElementById("modal").style.display = "flex";
 
   let currentUser = getCurrentUser();
   let users = getUsers();
-  let data = users[currentUser]?.address || {};
+  let user = syncUserAddresses(users[currentUser] || {});
+  let data = {};
+
+  if(addressId){
+    data = (user.addresses || []).find(address=>address.id === addressId) || {};
+  }else if((user.addresses || []).length === 1 && !user.addresses[0].house){
+    data = {};
+  }
 
   house.value = safe(data.house);
   area.value = safe(data.area);
+  nearby.value = safe(data.nearby);
   city.value = safe(data.city);
   pincode.value = safe(data.pincode);
   district.value = safe(data.district);
   state.value = safe(data.state);
+  editingAddressId.value = safe(data.id);
+  isDefaultAddress.checked = !!(data.id ? data.id === user.defaultAddressId : !(user.addresses || []).length);
+  addressModalTitle.innerText = data.id ? "Edit Address" : "Add Address";
 
   postoffice.innerHTML = `<option value="">Select Post Office</option>`;
 
@@ -837,6 +1164,7 @@ function openModal(){
 
 function closeModal(){
   document.getElementById("modal").style.display = "none";
+  editingAddressId.value = "";
 }
 
 function openPasswordModal(){
@@ -863,7 +1191,7 @@ function sendPasswordOtp(){
   let user = users[currentUser];
 
   if(!user || !user.email){
-    setPasswordMessage("Registered email nahi mili.", true);
+    setPasswordMessage("Registered email not found.", true);
     return;
   }
 
@@ -879,26 +1207,26 @@ function sendPasswordOtp(){
     }
   )
   .then(()=>{
-    setPasswordMessage("OTP email par send ho gaya.");
+    setPasswordMessage("OTP sent to your email.");
   })
   .catch(()=>{
-    setPasswordMessage("OTP send nahi ho paya.", true);
+    setPasswordMessage("Failed to send OTP.", true);
   });
 }
 
-function verifyPasswordOtpAndSave(){
+async function verifyPasswordOtpAndSave(){
   const enteredOtp = document.getElementById("passwordOtp").value.trim();
   const newPassword = document.getElementById("newPassword").value;
   const confirmPassword = document.getElementById("confirmPassword").value;
   const savedOtp = localStorage.getItem("dashboardPasswordOtp");
 
   if(!savedOtp){
-    setPasswordMessage("Pehle OTP send karo.", true);
+    setPasswordMessage("Please send the OTP first.", true);
     return;
   }
 
   if(enteredOtp !== savedOtp){
-    setPasswordMessage("OTP galat hai.", true);
+    setPasswordMessage("Incorrect OTP.", true);
     return;
   }
 
@@ -908,7 +1236,7 @@ function verifyPasswordOtpAndSave(){
   }
 
   if(newPassword !== confirmPassword){
-    setPasswordMessage("Confirm password match nahi kar raha.", true);
+    setPasswordMessage("Confirm password does not match.", true);
     return;
   }
 
@@ -918,33 +1246,95 @@ function verifyPasswordOtpAndSave(){
   if(!users[currentUser]) return;
 
   users[currentUser].password = newPassword;
-  saveUsers(users);
+  users[currentUser].updatedAt = new Date().toISOString();
+  const saved = await persistCurrentUser(users[currentUser], "", "Password update failed.");
+  if(!saved) return;
   localStorage.removeItem("dashboardPasswordOtp");
-  setPasswordMessage("Password successfully change ho gaya.");
+  setPasswordMessage("Password changed successfully.");
 
   setTimeout(()=>{
     closePasswordModal();
   }, 900);
 }
 
-function saveAddress(){
+async function saveAddress(){
   let currentUser = getCurrentUser();
   let users = getUsers();
 
   if(!users[currentUser]) return;
 
-  users[currentUser].address = {
+  const user = syncUserAddresses(users[currentUser]);
+  const nextAddress = normalizeAddressEntry({
+    id: editingAddressId.value.trim() || ("addr_" + Date.now()),
     house: house.value.trim(),
     area: area.value.trim(),
+    nearby: nearby.value.trim(),
     city: city.value.trim(),
     pincode: pincode.value.trim(),
     postoffice: postoffice.value.trim(),
     district: district.value.trim(),
     state: state.value.trim()
-  };
+  });
 
-  saveUsers(users);
+  if(!nextAddress.house || !nextAddress.area || !nextAddress.city || !nextAddress.pincode || !nextAddress.postoffice || !nextAddress.district || !nextAddress.state){
+    alert("Please fill all address fields");
+    return;
+  }
+
+  let addresses = Array.isArray(user.addresses) ? user.addresses.slice() : [];
+  const existingIndex = addresses.findIndex(address=>address.id === nextAddress.id);
+
+  if(existingIndex >= 0){
+    addresses[existingIndex] = nextAddress;
+  }else{
+    if(addresses.length >= 3){
+      alert("You can save a maximum of 3 addresses.");
+      return;
+    }
+    addresses.push(nextAddress);
+  }
+
+  user.addresses = addresses;
+  if(isDefaultAddress.checked || !user.defaultAddressId){
+    user.defaultAddressId = nextAddress.id;
+  }
+  syncUserAddresses(user);
+
+  user.updatedAt = new Date().toISOString();
+  const saved = await persistCurrentUser(user, "Address saved successfully.", "Address save failed.");
+  if(!saved) return;
   closeModal();
+  loadAddress();
+  loadStats();
+}
+
+async function setDefaultAddress(addressId){
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+  if(!users[currentUser]) return;
+  const user = syncUserAddresses(users[currentUser]);
+  user.defaultAddressId = addressId;
+  syncUserAddresses(user);
+  user.updatedAt = new Date().toISOString();
+  const saved = await persistCurrentUser(user, "Default address updated.", "Default address update failed.");
+  if(!saved) return;
+  loadAddress();
+  loadStats();
+}
+
+async function deleteAddress(addressId){
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+  if(!users[currentUser]) return;
+  const user = syncUserAddresses(users[currentUser]);
+  user.addresses = (user.addresses || []).filter(address=>address.id !== addressId);
+  if(user.defaultAddressId === addressId){
+    user.defaultAddressId = user.addresses[0] ? user.addresses[0].id : "";
+  }
+  syncUserAddresses(user);
+  user.updatedAt = new Date().toISOString();
+  const saved = await persistCurrentUser(user, "Address deleted successfully.", "Address delete failed.");
+  if(!saved) return;
   loadAddress();
   loadStats();
 }
@@ -986,10 +1376,18 @@ function trackOrder(){
   window.location.href = "trackorder.html";
 }
 
+function openSupportPage(){
+  window.location.href = "aboutus.html#contact";
+}
+
 function logout(){
-  localStorage.removeItem("currentUser");
-  localStorage.removeItem("cart");
-  localStorage.removeItem("userPhone");
+  if(authApi && typeof authApi.signOutUser === "function"){
+    authApi.signOutUser({ keepCart:false });
+  }else{
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("cart");
+    localStorage.removeItem("userPhone");
+  }
   window.location.href = "index.html";
 }
 
@@ -1135,6 +1533,9 @@ window.addEventListener("storage", function(event){
   if(["cart","users","currentUser"].includes(event.key)){
     swadraHeaderUpdateStickyCart();
     swadraHeaderUpdateAccountNav();
+  }
+  if(["offers","homeContent"].includes(event.key)){
+    renderOfferBar(true);
   }
 });
 window.addEventListener("focus", swadraHeaderUpdateStickyCart);

@@ -346,9 +346,10 @@
     }
   </style>
 <link rel="stylesheet" href="swadra-responsive.css">
+<link rel="stylesheet" href="mobile.css">
 <script src="api-config.js"></script></head>
 <body>
-<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-extra.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Extra</a></div>
+<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Callback Requests</a></div>
   <div class="wrap">
     <div class="topbar">
       <h1>Swadra Organics Admin Orders</h1>
@@ -448,6 +449,12 @@
   <script>
     const ORDER_SOURCE_KEYS = ["adminOrders", "orders", "swadraOrders", "customerOrders", "allOrders"];
     const ORDER_STATUS_OVERRIDE_KEY = "adminOrderStatusOverrides";
+    const DEFAULT_SENDER_DETAILS = {
+      company: "Swadra Organics",
+      name: "Swadra Dispatch",
+      phone: "",
+      address: ""
+    };
 
     function safeJsonParse(value, fallback){
       try{
@@ -469,6 +476,10 @@
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+    }
+
+    function jsString(value){
+      return JSON.stringify(value == null ? "" : value);
     }
 
     function normalizeText(value){
@@ -495,6 +506,22 @@
       return null;
     }
 
+    function buildShippingAddress(raw){
+      const shipping = raw && typeof raw.shipping === "object" ? raw.shipping : {};
+      const directAddress = String(getValueByPossibleKeys(shipping, ["address","fullAddress"])).trim();
+      if(directAddress){
+        return directAddress;
+      }
+      return [
+        getValueByPossibleKeys(shipping, ["house","line1","addressLine1"]),
+        getValueByPossibleKeys(shipping, ["area","line2","addressLine2"]),
+        getValueByPossibleKeys(shipping, ["postoffice"]),
+        getValueByPossibleKeys(shipping, ["city","district"]),
+        getValueByPossibleKeys(shipping, ["state"]),
+        getValueByPossibleKeys(shipping, ["pincode","zip","postalCode"])
+      ].map(value => String(value || "").trim()).filter(Boolean).join(", ");
+    }
+
     function normalizeOrderStatus(raw){
       const value = normalizeText(raw);
       if(!value) return "unknown";
@@ -512,6 +539,14 @@
 
     function setStatusOverrides(map){
       localStorage.setItem(ORDER_STATUS_OVERRIDE_KEY, JSON.stringify(map || {}));
+    }
+
+    function getUsersMap(){
+      const appStateApi = window.SWADRA_APP_STATE || {};
+      if(typeof appStateApi.getUsers === "function"){
+        return appStateApi.getUsers() || {};
+      }
+      return safeJsonParse(localStorage.getItem("users"), {});
     }
 
     function normalizeOrderItem(rawItem){
@@ -558,6 +593,13 @@
       const date = parseAnyDate(dateRaw);
       const itemsRaw = raw.items || raw.products || raw.cartItems || [];
       const items = Array.isArray(itemsRaw) ? itemsRaw.map(normalizeOrderItem) : [];
+      const shipping = raw && typeof raw.shipping === "object" ? raw.shipping : {};
+      const shippingName = String(getValueByPossibleKeys(shipping, ["name","fullName"])).trim() || customerName;
+      const shippingPhone = String(getValueByPossibleKeys(shipping, ["phone","mobile","contactNumber"])).trim() || mobile;
+      const shippingAddress = buildShippingAddress(raw);
+      const awb = String(getValueByPossibleKeys(raw, ["awb","trackingId","awbCode"])).trim();
+      const shipmentId = String(getValueByPossibleKeys(raw, ["shipment_id","shipmentId"])).trim();
+      const courierName = String(getValueByPossibleKeys(raw, ["courierName","courier","courier_company_name"])).trim();
 
       return {
         id,
@@ -570,6 +612,13 @@
         date,
         dateLabel: date ? date.toLocaleString("en-IN") : "-",
         items,
+        shippingName,
+        shippingPhone,
+        shippingAddress,
+        awb,
+        shipmentId,
+        courierName,
+        shipping,
         searchText: [
           id,
           customerName,
@@ -599,7 +648,152 @@
         });
       });
 
+      const users = getUsersMap();
+      Object.entries(users).forEach(([email, user]) => {
+        const userOrders = Array.isArray(user && user.orders) ? user.orders : [];
+        userOrders.forEach((item, index) => {
+          if(!item || typeof item !== "object") return;
+          const normalized = normalizeOrder({
+            email,
+            customerName: user?.profile?.name || user?.name || email,
+            mobile: user?.phone || user?.profile?.phone || "",
+            ...item
+          }, "users", index);
+          const dedupeKey = [normalized.id, normalized.amount, normalized.customerName].join("|");
+          if(seen.has(dedupeKey)) return;
+          seen.add(dedupeKey);
+          merged.push(normalized);
+        });
+      });
+
       return merged;
+    }
+
+    function getSenderDetails(){
+      const siteContentApi = window.SWADRA_SITE_CONTENT || {};
+      try{
+        const saved = typeof siteContentApi.getCached === "function" ? siteContentApi.getCached() : null;
+        const contact = saved && typeof saved.contact === "object" ? saved.contact : {};
+        return {
+          company: String(contact.company || DEFAULT_SENDER_DETAILS.company || "").trim(),
+          name: String(contact.name || DEFAULT_SENDER_DETAILS.name || "").trim(),
+          phone: String(contact.phone || DEFAULT_SENDER_DETAILS.phone || "").trim(),
+          address: String(contact.address || DEFAULT_SENDER_DETAILS.address || "").trim()
+        };
+      }catch(error){
+        return { ...DEFAULT_SENDER_DETAILS };
+      }
+    }
+
+    function buildLabelQrPayload(order){
+      return [
+        `Order: ${order.id || ""}`,
+        `Shiprocket Shipment: ${order.shipmentId || "-"}`,
+        `AWB: ${order.awb || "-"}`,
+        `Customer: ${order.shippingName || order.customerName || ""}`,
+        `Phone: ${order.shippingPhone || order.mobile || ""}`,
+        `Address: ${order.shippingAddress || ""}`
+      ].join("\n");
+    }
+
+    function openPrintLabel(order){
+      if(!order || typeof order !== "object") return;
+      const sender = getSenderDetails();
+      const qrData = encodeURIComponent(buildLabelQrPayload(order));
+      const qrUrl = `https://chart.googleapis.com/chart?cht=qr&chs=180x180&chl=${qrData}`;
+      const printWindow = window.open("", "_blank", "width=900,height=700");
+      if(!printWindow){
+        alert("Popup blocked. Please allow popups to print the shipping label.");
+        return;
+      }
+
+      const shipmentLabel = order.shipmentId || "-";
+      const awbLabel = order.awb || "-";
+      const courierLabel = order.courierName || "Shiprocket";
+      const customerName = order.shippingName || order.customerName || "Customer";
+      const customerPhone = order.shippingPhone || order.mobile || "-";
+      const customerAddress = order.shippingAddress || "Address not available";
+      const senderCompany = sender.company || "Swadra Organics";
+      const senderName = sender.name || "Swadra Dispatch";
+      const senderPhone = sender.phone || "-";
+      const senderAddress = sender.address || "Update sender/company address in admin label defaults.";
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Shipping Label - ${escapeHtml(order.id)}</title>
+          <style>
+            body{margin:0;padding:24px;font-family:Arial,sans-serif;background:#f7f2ed;color:#1f1f1f}
+            .sheet{max-width:900px;margin:0 auto;background:#fff;border:2px solid #2d2d2d;padding:24px}
+            .top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
+            .brand{font-size:28px;font-weight:800;color:#7a3d3d}
+            .meta{display:grid;gap:8px;margin-top:16px}
+            .meta strong{display:inline-block;min-width:150px}
+            .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
+            .box{border:1.5px solid #2d2d2d;padding:16px;min-height:170px}
+            .box h3{margin:0 0 10px;font-size:18px}
+            .value{font-size:16px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+            .qr{text-align:center}
+            .qr img{width:180px;height:180px;object-fit:contain;border:1px solid #ddd;padding:8px;background:#fff}
+            .footer{margin-top:18px;border:1.5px dashed #2d2d2d;padding:14px;font-size:14px;line-height:1.7}
+            .actions{margin:0 auto 18px;max-width:900px;display:flex;justify-content:flex-end}
+            .actions button{background:#7a3d3d;color:#fff;border:none;border-radius:10px;padding:12px 18px;font-weight:700;cursor:pointer}
+            @media print{
+              body{background:#fff;padding:0}
+              .actions{display:none}
+              .sheet{border:none;max-width:none;padding:0}
+            }
+          </style>
+        </head>
+        <body>
+          <div class="actions"><button onclick="window.print()">Print Label</button></div>
+          <div class="sheet">
+            <div class="top">
+              <div>
+                <div class="brand">${escapeHtml(senderCompany)}</div>
+                <div style="margin-top:8px;font-size:14px;color:#555;">Shiprocket-ready shipping label</div>
+                <div class="meta">
+                  <div><strong>Order ID:</strong> ${escapeHtml(order.id)}</div>
+                  <div><strong>Shipment ID:</strong> ${escapeHtml(shipmentLabel)}</div>
+                  <div><strong>AWB / Tracking:</strong> ${escapeHtml(awbLabel)}</div>
+                  <div><strong>Courier:</strong> ${escapeHtml(courierLabel)}</div>
+                  <div><strong>Date:</strong> ${escapeHtml(order.dateLabel || "-")}</div>
+                </div>
+              </div>
+              <div class="qr">
+                <img src="${qrUrl}" alt="Shipping QR">
+                <div style="margin-top:8px;font-size:13px;color:#555;">Scan for shipment details</div>
+              </div>
+            </div>
+
+            <div class="grid">
+              <div class="box">
+                <h3>Ship To</h3>
+                <div class="value"><strong>${escapeHtml(customerName)}</strong>
+${escapeHtml(customerPhone)}
+${escapeHtml(customerAddress)}</div>
+              </div>
+              <div class="box">
+                <h3>Ship From</h3>
+                <div class="value"><strong>${escapeHtml(senderName)}</strong>
+${escapeHtml(senderCompany)}
+${escapeHtml(senderPhone)}
+${escapeHtml(senderAddress)}</div>
+              </div>
+            </div>
+
+            <div class="footer">
+              <div><strong>Products:</strong> ${escapeHtml(order.items.map(item => `${item.name}${item.size ? ` (${item.size})` : ""} x ${Number(item.quantity || 1)}`).join(", ") || "No items")}</div>
+              <div><strong>Total Amount:</strong> ${escapeHtml(rupee(order.amount))}</div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
     }
 
     function getFilteredOrders(){
@@ -736,6 +930,7 @@
               <button class="btn-primary" onclick="updateOrderStatus('${escapeHtml(order.id)}','shipped')">Ship</button>
               <button class="btn-dark" onclick="updateOrderStatus('${escapeHtml(order.id)}','delivered')">Deliver</button>
               <button class="btn-danger" onclick="updateOrderStatus('${escapeHtml(order.id)}','cancelled')">Cancel</button>
+              <button class="btn-light" onclick='openPrintLabel(${JSON.stringify(order)})'>Print Label</button>
             </div>
           </div>
         `;
@@ -761,7 +956,7 @@
     }
 
     window.addEventListener("storage", function(event){
-      if(ORDER_SOURCE_KEYS.includes(event.key) || event.key === ORDER_STATUS_OVERRIDE_KEY){
+      if(ORDER_SOURCE_KEYS.includes(event.key) || event.key === ORDER_STATUS_OVERRIDE_KEY || event.key === "users"){
         renderOrders();
       }
     });
