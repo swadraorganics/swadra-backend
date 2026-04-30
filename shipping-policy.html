@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Shipping Policy | Swadra Organics</title><meta name="description" content="Swadra Organics Shipping Policy for order processing, delivery timelines, courier updates, tracking, and serviceability."><meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"><link rel="canonical" href="https://swadraorganics.com/shipping-policy.html"><style>*{box-sizing:border-box}body{margin:0;font-family:Arial,"Nirmala UI","Mangal","Noto Sans Devanagari",sans-serif;background:#f1e3e3;color:#2b2222}.top-bar{text-align:center;padding:12px;font-weight:700;background:#fff;color:#7a3d3d}.navbar{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:14px 30px;background:#7a3d3d}.logo{font-size:28px;font-weight:900;color:#fff;text-decoration:none}.nav-links{display:flex;gap:24px;flex-wrap:wrap}.nav-links a{color:#fff;text-decoration:none;font-weight:800}.wrap{max-width:1100px;margin:32px auto;padding:0 20px 70px}.card{background:#fff;border:1px solid #eadfdd;border-radius:28px;padding:32px;box-shadow:0 18px 42px rgba(122,61,61,.08)}h1{margin:0 0 12px;color:#7a3d3d;font-size:40px}h2{color:#7a3d3d;margin:26px 0 10px;font-size:22px}p,li{line-height:1.75;font-size:15px;color:#4d4242}.updated{font-weight:800;color:#7a3d3d}.policy-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.policy-links a{padding:10px 14px;border-radius:999px;background:#f7ece8;color:#7a3d3d;text-decoration:none;font-weight:800;font-size:13px}@media(max-width:760px){.navbar{align-items:flex-start;flex-direction:column}.nav-links{gap:14px}h1{font-size:30px}.card{padding:24px}}:root{--top-bar-height:43px;--navbar-height:84px}.top-bar{position:sticky;top:0;z-index:7002}.navbar{position:sticky;top:calc(var(--top-bar-height) - 1px);z-index:7001}.sale-bar{display:flex;position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height) - 1px);z-index:7000;overflow:hidden;white-space:nowrap;background:#f1e3e3;border-top:1px solid rgba(122,61,61,.12);border-bottom:1px solid rgba(122,61,61,.12);min-height:38px;align-items:center;justify-content:center;color:#7a3d3d}.sale-bar-track{display:flex;align-items:center;justify-content:center;width:max-content;min-width:max-content;animation:policySaleMarquee 35s linear infinite}.sale-bar-item{display:inline-flex;align-items:center;gap:6px;padding:0 34px;font-size:16px;font-weight:800;color:#7a3d3d}@keyframes policySaleMarquee{0%{transform:translateX(0)}100%{transform:translateX(-33.333%)}}@media(max-width:760px){:root{--navbar-height:150px}.sale-bar-item{font-size:13px;padding:0 20px}}</style><link rel="manifest" href="manifest.json">`r`n<script src="seo-aeo.js"></script>`r`n</head><body><div class="top-bar">Eat Healthy &bull; Be Swadra Family</div><header class="navbar"><a class="logo" href="index.html">Swadra Organics</a><nav class="nav-links"><a href="index.html">Home</a><a href="spices.html">Spices</a><a href="dryfruits.html">Dry Fruits</a><a href="oilghee.html">Oil Ghee & More</a><a href="aboutus.html">About Us</a></nav></header><div class="sale-bar" id="offerBar"><div class="sale-bar-track" id="saleBarTrack"><span class="sale-bar-item">?? Experience the Difference - Order Today</span><span class="sale-bar-item">?? Packed Fresh When You Order</span><span class="sale-bar-item">?? Free Delivery Above ?799</span><span class="sale-bar-item">?? ? 100% Natural ? Expertly Selected ? Farm Direct</span><span class="sale-bar-item">?? Experience the Difference - Order Today</span><span class="sale-bar-item">?? Packed Fresh When You Order</span></div></div><main class="wrap"><section class="card"><h1>Shipping Policy</h1><p class="updated">Last updated: 29 April 2026</p><p id="policySummary">Swadra Organics packs orders carefully and ships through available courier partners based on pincode serviceability.</p><div id="policyDynamicBody"></div><h2>Processing Time</h2><p>Orders are generally processed within 1 to 3 working days after successful payment confirmation, unless delayed due to stock, address, payment verification, or operational reasons.</p><h2>Delivery Time</h2><p>Delivery timelines depend on destination pincode, courier partner, weather, local restrictions, and operational movement. Tracking updates are shared when available from the courier partner.</p><h2>Shipping Charges</h2><p>Shipping charges or free delivery eligibility are shown before checkout based on cart value and service rules.</p><h2>Tracking</h2><p>Once shipped, available AWB/tracking details may be shown in the customer order section.</p><h2>Address Issues</h2><p>Incorrect address, unreachable phone number, or failed delivery attempts may delay delivery or lead to return-to-origin.</p><div class="policy-links"><a href="privacy-policy.html">Privacy</a><a href="terms-conditions.html">Terms</a><a href="return-refund-policy.html">Return & Refund</a><a href="cancellation-policy.html">Cancellation</a></div></section></main><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><script src="api-config.js"></script><script>
+(function(){
+  function escapeHtml(value){ return String(value == null ? "" : value).replace(/[&<>"']/g,function(ch){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]; }); }
+  function linesToHtml(value){ return String(value || "").split(/\n+/).map(function(line){ return line.trim(); }).filter(Boolean).map(function(line){ return "<p>" + escapeHtml(line) + "</p>"; }).join(""); }
+  async function loadPolicy(){
+    try{
+      var api = window.SWADRA_SITE_CONTENT;
+      if(!api || typeof api.fetch !== "function") return;
+      var state = await api.fetch(false);
+      var pages = state && state.policyPages && typeof state.policyPages === "object" ? state.policyPages : {};
+      var data = pages["shipping"] && typeof pages["shipping"] === "object" ? pages["shipping"] : {};
+      var summary = data.summary || data.returnSummary || data.refundSummary || "";
+      var body = data.body || "";
+      var summaryEl = document.getElementById("policySummary");
+      var bodyEl = document.getElementById("policyDynamicBody");
+      if(summaryEl && summary) summaryEl.textContent = summary;
+      if(bodyEl && body) bodyEl.innerHTML = linesToHtml(body);
+    }catch(error){ console.error("policy content load failed", error); }
+  }
+  loadPolicy();
+})();
+</script><script>
+(function(){
+  function escapeOfferHtml(value){ return String(value == null ? "" : value).replace(/[&<>"']/g,function(ch){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]; }); }
+  async function renderPolicyOfferBar(){
+    var bar = document.getElementById("offerBar");
+    var track = document.getElementById("saleBarTrack");
+    if(!bar || !track) return;
+    try{
+      if(window.SWADRA_OFFERS && typeof window.SWADRA_OFFERS.fetch === "function"){
+        var offers = await window.SWADRA_OFFERS.fetch(false);
+        var items = offers.map(function(item){ return String(item || "").trim(); }).filter(Boolean);
+        if(items.length){
+          var repeated = items.concat(items, items);
+          track.innerHTML = repeated.map(function(item){ return '<span class="sale-bar-item">?? ' + escapeOfferHtml(item) + '</span>'; }).join('');
+        }
+      }
+    }catch(error){ console.error("policy offer bar failed", error); }
+  }
+  renderPolicyOfferBar();
+})();
+</script></body></html>

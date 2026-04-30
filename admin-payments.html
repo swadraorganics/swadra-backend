@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Swadra Organics - Admin Payments</title>
+<meta name="description" content="Admin payment dashboard for Swadra Organics Razorpay attempts, payment instruments, verification and reconciliation review.">
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <style>
     * { box-sizing: border-box; }
 
@@ -330,21 +334,15 @@
   </style>
 <link rel="stylesheet" href="swadra-responsive.css">
 <link rel="stylesheet" href="mobile.css">
-<script src="api-config.js"></script></head>
+<script src="api-config.js"></script><style id="adminGlobalNavPadFix">body{padding-top:118px !important;}</style>
+</head>
 <body>
-<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Callback Requests</a></div>
+<div id="adminTopBar" style="position:fixed;top:0;left:0;right:0;z-index:100000;height:44px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;font-weight:700;font-size:22px;line-height:44px;text-align:center;border-bottom:1px solid rgba(122,61,61,.18);">Swadra Organics Admin Pannel</div>
+<div class="admin-global-nav" id="adminGlobalNav" style="position:fixed;top:44px;left:0;right:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Home</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Main</a><a href="backend/ai.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Add Product</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="backend/saved-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Edit Products</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payment</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupan</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Call Back</a><a href="backend/backend.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Backend</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Courier</a><span id="backendLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Backend</span><span id="firestoreLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Firestore</span><details style="margin-left:auto;position:relative;"><summary style="list-style:none;cursor:pointer;color:#fff;font-size:18px;line-height:1;padding:4px 6px;">👤</summary><div style="position:absolute;right:0;top:30px;min-width:210px;background:#fff;border:1px solid #ece1de;border-radius:14px;box-shadow:0 16px 35px rgba(0,0,0,.18);padding:8px;"><a href="admin-index.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Admin Home</a><a href="admin-profit.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Shiprocket</a><a href="index.html" style="display:block;padding:10px 12px;color:#991b1b;text-decoration:none;font-weight:800;border-radius:10px;background:#fff7f7;">Logout</a></div></details></div>
   <div class="wrap">
-    <div class="topbar">
-      <h1>Swadra Organics Admin Payments</h1>
-      <p>Yahan payment records, order-linked payments aur review status manage kar sakte ho. Search, filter aur review toggle working hain.</p>
-    </div>
-
     <div class="toolbar">
       <button class="btn-primary" onclick="refreshPayments()">Refresh Payments</button>
       <button class="btn-secondary" onclick="clearFilters()">Clear Filters</button>
-      <a class="btn-dark" href="payment.html">Open Payment Page</a>
-      <a class="btn-light" href="invoice.html">Open Invoice</a>
-      <a class="btn-light" href="admin-index.html">Back to Admin</a>
     </div>
 
     <div class="stats-grid" id="paymentStats"></div>
@@ -410,7 +408,7 @@
 
           <div class="hint">
             Page common payment and order storage keys read karta hai.<br>
-            Reviewed status alag localStorage map me save hota hai, original payment data break nahi hota.<br>
+          Reviewed status alag admin review state me save hota hai, original payment data break nahi hota.<br>
             Backend payment attempts aur saved orders se verified Razorpay method details bhi yahan show hongi.
           </div>
 
@@ -428,18 +426,11 @@
   </div>
 
   <script>
-    const PAYMENT_SOURCE_KEYS = [
-      "payments",
-      "adminPayments",
-      "swadraPayments",
-      "orders",
-      "adminOrders",
-      "swadraOrders",
-      "customerOrders",
-      "allOrders"
-    ];
-
-    const PAYMENT_REVIEW_KEY = "adminPaymentReviewMap";
+    const dataApi = window.SWADRA_DATA || null;
+    const firestoreFactory = window.firebase && typeof window.firebase.firestore === "function"
+      ? window.firebase.firestore.bind(window.firebase)
+      : null;
+    const runtimeReviewMap = {};
 
     function safeJsonParse(value, fallback){
       try{
@@ -479,19 +470,31 @@
     }
 
     function getReviewMap(){
-      return safeJsonParse(localStorage.getItem(PAYMENT_REVIEW_KEY), {});
+      return runtimeReviewMap;
     }
 
-    function setReviewMap(map){
-      localStorage.setItem(PAYMENT_REVIEW_KEY, JSON.stringify(map || {}));
+    async function persistReviewedState(paymentId, reviewed, orderId){
+      runtimeReviewMap[paymentId] = !!reviewed;
+      if(!orderId || !firestoreFactory) return;
+      try{
+        const db = firestoreFactory();
+        await db.collection("orders").doc(String(orderId)).set({
+          adminPaymentReviewed: !!reviewed,
+          updatedAt: new Date().toISOString()
+        }, { merge:true });
+      }catch(error){
+        console.error("payment review save failed", error);
+      }
     }
 
     function normalizeStatus(raw){
       const value = normalizeText(raw);
       if(!value) return "unknown";
-      if(value.includes("paid") || value.includes("success") || value.includes("completed")) return "paid";
-      if(value.includes("pending") || value.includes("processing")) return "pending";
-      if(value.includes("fail") || value.includes("cancel")) return "failed";
+      if(value.includes("refund")) return "failed";
+      if(value.includes("cancel")) return "failed";
+      if(value.includes("paid") || value.includes("success") || value.includes("completed") || value === "captured") return "paid";
+      if(value.includes("pending") || value.includes("processing") || value.includes("created")) return "pending";
+      if(value.includes("fail")) return "failed";
       if(value.includes("cod") || value.includes("cash")) return "cod";
       return value;
     }
@@ -508,15 +511,21 @@
     }
 
     function buildPaymentId(raw, sourceKey, index){
-      const directId = getValueByPossibleKeys(raw, ["paymentId","id","txnId","transactionId","razorpayPaymentId"]);
-      const orderId = getValueByPossibleKeys(raw, ["orderId","orderID","invoiceId"]);
+      const detail = raw && raw.detail && typeof raw.detail === "object" ? raw.detail : {};
+      const directId = getValueByPossibleKeys(raw, ["paymentId","id","txnId","transactionId","razorpayPaymentId"]) || getValueByPossibleKeys(detail, ["paymentId","id","txnId","transactionId","razorpayPaymentId"]);
+      const orderId = getValueByPossibleKeys(raw, ["orderId","orderID","invoiceId","localOrderId"]) || getValueByPossibleKeys(detail, ["orderId","orderID","invoiceId","localOrderId"]);
       const email = getValueByPossibleKeys(raw, ["email","emailId"]);
       return String(directId || orderId || `${sourceKey}_${email || "record"}_${index}`);
     }
 
-    function extractAmount(raw){
-      const directAmount = Number(getValueByPossibleKeys(raw, ["amount","totalAmount","paidAmount","grandTotal","paymentAmount"]));
-      if(directAmount > 0) return directAmount;
+    function extractAmount(raw, sourceKey){
+      const directAmount = Number(getValueByPossibleKeys(raw, ["finalAmount","total","amount","totalAmount","paidAmount","grandTotal","paymentAmount"]));
+      if(directAmount > 0){
+        const isPaiseAmount = sourceKey === "backendPaymentAttempts" && directAmount >= 10000;
+        return isPaiseAmount ? Math.round(directAmount / 100) : directAmount;
+      }
+      const amountPaise = Number(raw.amountPaise || 0);
+      if(amountPaise > 0) return Math.round(amountPaise / 100);
 
       const items = raw.items || raw.products || raw.cartItems || [];
       if(Array.isArray(items) && items.length){
@@ -553,18 +562,27 @@
 
     function normalizePayment(raw, sourceKey, index){
       const reviewMap = getReviewMap();
+      const detail = raw && raw.detail && typeof raw.detail === "object" ? raw.detail : {};
       const id = buildPaymentId(raw, sourceKey, index);
-      const orderId = String(getValueByPossibleKeys(raw, ["orderId","orderID","invoiceId","order_id"])).trim();
-      const paymentId = String(getValueByPossibleKeys(raw, ["paymentId","txnId","transactionId","razorpayPaymentId","id"])).trim() || id;
+      const rawOrderId = getValueByPossibleKeys(raw, ["orderId","orderID","invoiceId","order_id","localOrderId"]) || getValueByPossibleKeys(detail, ["orderId","orderID","invoiceId","order_id","localOrderId"]);
+      const orderId = String(rawOrderId || (/^SWO/i.test(String(raw.id || "")) ? raw.id : "")).trim();
+      const paymentId = String(getValueByPossibleKeys(raw, ["paymentId","txnId","transactionId","razorpayPaymentId"]) || getValueByPossibleKeys(detail, ["paymentId","txnId","transactionId","razorpayPaymentId"]) || id).trim();
       const customerName = String(getValueByPossibleKeys(raw, ["name","customerName","fullName","username"])).trim() || "Unknown Customer";
       const email = String(getValueByPossibleKeys(raw, ["email","emailId","mail"])).trim();
       const mobile = String(getValueByPossibleKeys(raw, ["mobile","phone","phoneNumber","mobileNumber","contactNumber"])).trim();
       const method = String(getValueByPossibleKeys(raw, ["paymentMethod","method","mode"])).trim() || "Unknown";
-      const status = normalizeStatus(getValueByPossibleKeys(raw, ["paymentStatus","status","payment_state"]));
-      const amount = extractAmount(raw);
+      const orderStatusText = normalizeText(getValueByPossibleKeys(raw, ["orderStatus","status","deliveryStatus"]));
+      const status = orderStatusText.includes("cancel")
+        ? "failed"
+        : normalizeStatus(getValueByPossibleKeys(raw, ["payment","paymentStatus","status","payment_state","refundStatus"]));
+      const amount = extractAmount(raw, sourceKey);
+      const refundStatus = String(getValueByPossibleKeys(raw, ["refundStatus","razorpayRefundStatus","razorpayRefundGatewayStatus"])).trim();
+      const refundId = String(getValueByPossibleKeys(raw, ["refundId","razorpayRefundId"])).trim();
+      const refundAmount = Number(getValueByPossibleKeys(raw, ["refundAmount"])) || 0;
       const dateRaw = getValueByPossibleKeys(raw, ["createdAt","date","orderedAt","timestamp","time","paidAt"]);
       const date = parseAnyDate(dateRaw);
-      const reviewed = Boolean(reviewMap[id]);
+      const reviewed = raw.adminPaymentReviewed != null ? Boolean(raw.adminPaymentReviewed) : Boolean(reviewMap[id]);
+      reviewMap[id] = reviewed;
 
       return {
         id,
@@ -577,6 +595,10 @@
         method,
         instrumentLabel: getInstrumentLabel(raw),
         status,
+        cancelled: orderStatusText.includes("cancel") || normalizeText(getValueByPossibleKeys(raw, ["refundStatus","payment"])).includes("refund"),
+        refundStatus,
+        refundId,
+        refundAmount,
         amount,
         reviewed,
         dateLabel: date ? date.toLocaleString("en-IN") : "-",
@@ -593,25 +615,69 @@
       };
     }
 
-    function getPaymentsFromStorage(){
+    function getPaymentMergeKey(payment){
+      const payId = String(payment.paymentId || "").trim();
+      const orderId = String(payment.orderId || "").trim();
+      if(payId && /^pay_/i.test(payId)) return "pay:" + payId;
+      if(orderId) return "order:" + orderId;
+      return "id:" + String(payment.id || "");
+    }
+
+    function paymentStatusRank(status){
+      if(status === "paid") return 4;
+      if(status === "failed") return 3;
+      if(status === "pending") return 2;
+      if(status === "cod") return 1;
+      return 0;
+    }
+
+    function mergePaymentRecord(existing, incoming){
+      if(!existing) return incoming;
+      if(incoming.cancelled && !existing.cancelled) return { ...existing, ...incoming, status:"failed", cancelled:true };
+      if(existing.cancelled && !incoming.cancelled) return { ...incoming, ...existing, status:"failed", cancelled:true };
+      const preferred = paymentStatusRank(incoming.status) >= paymentStatusRank(existing.status) ? incoming : existing;
+      const other = preferred === incoming ? existing : incoming;
+      return {
+        ...other,
+        ...preferred,
+        id: preferred.id || other.id,
+        orderId: preferred.orderId || other.orderId,
+        paymentId: /^pay_/i.test(String(preferred.paymentId || "")) ? preferred.paymentId : (other.paymentId || preferred.paymentId),
+        customerName: preferred.customerName !== "Unknown Customer" ? preferred.customerName : other.customerName,
+        email: preferred.email || other.email,
+        mobile: preferred.mobile || other.mobile,
+        method: preferred.method !== "Unknown" ? preferred.method : other.method,
+        instrumentLabel: preferred.instrumentLabel || other.instrumentLabel,
+        amount: Number(preferred.amount || 0) > 0 ? preferred.amount : other.amount,
+        cancelled: Boolean(preferred.cancelled || other.cancelled),
+        refundStatus: preferred.refundStatus || other.refundStatus,
+        refundId: preferred.refundId || other.refundId,
+        refundAmount: Number(preferred.refundAmount || 0) > 0 ? preferred.refundAmount : other.refundAmount,
+        reviewed: Boolean(preferred.reviewed || other.reviewed),
+        sourceKey: Array.from(new Set([other.sourceKey, preferred.sourceKey].filter(Boolean))).join(", ")
+      };
+    }
+
+    async function getFirestorePayments(){
       const merged = [];
       const seen = new Set();
-
-      PAYMENT_SOURCE_KEYS.forEach((key) => {
-        const parsed = safeJsonParse(localStorage.getItem(key), []);
-        if(!Array.isArray(parsed)) return;
-
-        parsed.forEach((item, index) => {
+      if(!dataApi || typeof dataApi.fetchOrders !== "function") return merged;
+      try{
+        const orders = await dataApi.fetchOrders();
+        (Array.isArray(orders) ? orders : []).forEach((item, index) => {
           if(!item || typeof item !== "object") return;
-
-          const normalized = normalizePayment(item, key, index);
+          const normalized = normalizePayment(item, "firestoreOrders", index);
           const dedupeKey = [normalized.paymentId, normalized.orderId, normalized.amount].join("|");
           if(seen.has(dedupeKey)) return;
           seen.add(dedupeKey);
           merged.push(normalized);
         });
-      });
-
+      }catch(error){
+        const errorCode = String(error && error.code || "").trim().toLowerCase();
+        if(errorCode !== "permission-denied" && errorCode !== "unauthenticated"){
+          console.error("firestore payments fetch failed", error);
+        }
+      }
       return merged;
     }
 
@@ -705,15 +771,14 @@
     }
 
     async function renderPayments(){
-      const storagePayments = getPaymentsFromStorage();
+      const firestorePayments = await getFirestorePayments();
       const backendPayments = await getBackendPayments();
-      const seen = new Set();
-      const allPayments = [...backendPayments, ...storagePayments].filter((payment)=>{
-        const key = [payment.paymentId, payment.orderId, payment.amount, payment.sourceKey].join("|");
-        if(seen.has(key)) return false;
-        seen.add(key);
-        return true;
+      const paymentMap = new Map();
+      [...firestorePayments, ...backendPayments].forEach((payment)=>{
+        const key = getPaymentMergeKey(payment);
+        paymentMap.set(key, mergePaymentRecord(paymentMap.get(key), payment));
       });
+      const allPayments = Array.from(paymentMap.values());
       const payments = getFilteredPayments(allPayments);
       const paymentsList = document.getElementById("paymentsList");
 
@@ -772,12 +837,24 @@
                 <div class="k">Source</div>
                 <div class="v">${escapeHtml(payment.sourceKey || "-")}</div>
               </div>
+              <div class="mini">
+                <div class="k">Refund Status</div>
+                <div class="v">${escapeHtml(payment.refundStatus || "-")}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Razorpay Refund ID</div>
+                <div class="v">${escapeHtml(payment.refundId || "-")}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Refund Amount</div>
+                <div class="v">${payment.refundAmount ? rupee(payment.refundAmount) : "-"}</div>
+              </div>
             </div>
 
             <div class="card-actions">
               <button
                 class="${payment.reviewed ? 'btn-dark' : 'btn-secondary'}"
-                onclick="toggleReviewed('${escapeHtml(payment.id)}')"
+                onclick="toggleReviewed('${escapeHtml(payment.id)}','${escapeHtml(payment.orderId || "")}')"
               >
                 ${payment.reviewed ? "Mark Unreviewed" : "Mark Reviewed"}
               </button>
@@ -787,15 +864,13 @@
       }).join("");
     }
 
-    function toggleReviewed(paymentId){
+    async function toggleReviewed(paymentId, orderId){
       const reviewMap = getReviewMap();
-      reviewMap[paymentId] = !reviewMap[paymentId];
-
-      if(!reviewMap[paymentId]){
+      const nextReviewed = !reviewMap[paymentId];
+      if(!nextReviewed){
         delete reviewMap[paymentId];
       }
-
-      setReviewMap(reviewMap);
+      await persistReviewedState(paymentId, nextReviewed, orderId);
       renderPayments();
     }
 
@@ -810,18 +885,12 @@
       renderPayments();
     }
 
-    window.addEventListener("storage", function(event){
-      if(PAYMENT_SOURCE_KEYS.includes(event.key) || event.key === PAYMENT_REVIEW_KEY){
-        renderPayments();
-      }
+    window.addEventListener("focus", function(){
+      renderPayments();
     });
 
     renderPayments();
   </script>
+<script src="admin-nav-active.js"></script>
 </body>
 </html>
-
-
-
-
-

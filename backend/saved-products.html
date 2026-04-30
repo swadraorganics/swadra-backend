@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Saved Products - Swadra Backend</title>
+<meta name="description" content="Backend saved products panel for Swadra Organics product editing, stock, pricing and availability management.">
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="../api-config.js?v=20260423-3"></script>
@@ -443,18 +444,14 @@
       .topbar h1{font-size:24px}
     }
   </style>
+<style id="adminGlobalNavPadFix">body{padding-top:118px !important;}</style>
 </head>
 <body>
+<div id="adminTopBar" style="position:fixed;top:0;left:0;right:0;z-index:100000;height:44px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;font-weight:700;font-size:22px;line-height:44px;text-align:center;border-bottom:1px solid rgba(122,61,61,.18);">Swadra Organics Admin Pannel</div>
+<div class="admin-global-nav" id="adminGlobalNav" style="position:fixed;top:44px;left:0;right:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Home</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Main</a><a href="backend/ai.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Add Product</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="backend/saved-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Edit Products</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payment</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupan</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Call Back</a><a href="backend/backend.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Backend</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Courier</a><span id="backendLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Backend</span><span id="firestoreLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Firestore</span><details style="margin-left:auto;position:relative;"><summary style="list-style:none;cursor:pointer;color:#fff;font-size:18px;line-height:1;padding:4px 6px;">👤</summary><div style="position:absolute;right:0;top:30px;min-width:210px;background:#fff;border:1px solid #ece1de;border-radius:14px;box-shadow:0 16px 35px rgba(0,0,0,.18);padding:8px;"><a href="admin-index.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Admin Home</a><a href="admin-profit.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Shiprocket</a><a href="index.html" style="display:block;padding:10px 12px;color:#991b1b;text-decoration:none;font-weight:800;border-radius:10px;background:#fff7f7;">Logout</a></div></details></div>
   <div class="wrap">
-    <a class="admin-index-link" href="../admin-index.html">Back To Admin Index</a>
-    <div class="topbar">
-      <h1>Saved Products</h1>
-      <p>Category-wise grouped products from the backend are displayed here.</p>
-    </div>
-
     <div class="toolbar">
       <button class="btn-primary" onclick="loadProducts()">Refresh Products</button>
-      <button class="btn-dark" onclick="window.location.href='ai.html'">Back To AI Panel</button>
     </div>
 
     <div class="summary" id="summaryCards"></div>
@@ -636,9 +633,12 @@
       const baseSellingPrice = Number(product?.price ?? product?.sellingPrice ?? 0) || 0;
       const fallbackSellingPrice = offlinePrice > 0 ? offlinePrice : floorPrice;
       const sellingPrice = Math.max(baseSellingPrice, fallbackSellingPrice, floorPrice);
-      const stockQty = Number(product?.stockQty ?? 0) || 0;
+      const hasExplicitStockQty = product?.stockQty !== undefined && product?.stockQty !== null && `${product.stockQty}`.trim() !== "";
+      const hasExplicitStock = product?.stock !== undefined && product?.stock !== null && `${product.stock}`.trim() !== "";
+      const stockQty = Number(product?.stockQty ?? product?.stock ?? 0) || 0;
+      const quantityImpliesOutOfStock = (hasExplicitStockQty || hasExplicitStock) ? stockQty <= 0 : false;
       const availability = String(
-        product?.availability || ((product?.outOfStock || stockQty <= 0) ? "Out of Stock" : "Available")
+        product?.availability || ((product?.outOfStock || quantityImpliesOutOfStock) ? "Out of Stock" : "Available")
       );
 
       return {
@@ -650,8 +650,11 @@
         productSize: size,
         price: sellingPrice,
         sellingPrice,
+        hasExplicitStockQty,
+        hasExplicitStock,
         stockQty,
         availability,
+        outOfStock: availability === "Out of Stock" || quantityImpliesOutOfStock,
         image: String(product?.image || product?.imageUrl || (Array.isArray(product?.images) ? product.images[0] : "") || "").trim(),
         imageUrl: String(product?.imageUrl || product?.image || (Array.isArray(product?.images) ? product.images[0] : "") || "").trim(),
         images: Array.isArray(product?.images) ? product.images.filter(Boolean).slice(0,4) : ((product?.image || product?.imageUrl) ? [product.image || product.imageUrl] : []),
@@ -666,6 +669,22 @@
         offlinePrice,
         floorPrice
       };
+    }
+
+    function productUsesExplicitStock(product){
+      return !!(product?.hasExplicitStockQty || product?.hasExplicitStock);
+    }
+
+    function isProductOutOfStock(product){
+      const normalized = normalizeProduct(product);
+      const quantityImpliesOutOfStock = productUsesExplicitStock(normalized) ? Number(normalized.stockQty || 0) <= 0 : false;
+      return normalized.availability === "Out of Stock" || normalized.outOfStock === true || quantityImpliesOutOfStock;
+    }
+
+    function getEditableStockQty(product){
+      const normalized = normalizeProduct(product);
+      if(isProductOutOfStock(normalized)) return 0;
+      return productUsesExplicitStock(normalized) ? Math.max(1, Number(normalized.stockQty || 1)) : 1;
     }
 
     function calculatePricing(nextData, currentProduct){
@@ -857,8 +876,8 @@ return "spices";
     }
 
     function renderSummary(products){
-      const available = products.filter(item => (item.availability || "Available") !== "Out of Stock" && Number(item.stockQty || 0) > 0).length;
-      const outOfStock = products.filter(item => (item.availability || "") === "Out of Stock" || Number(item.stockQty || 0) <= 0).length;
+      const available = products.filter(item => !isProductOutOfStock(item)).length;
+      const outOfStock = products.filter(item => isProductOutOfStock(item)).length;
       const stockUnits = products.reduce((sum,item)=>sum + (Number(item.stockQty || 0) || 0),0);
 
       document.getElementById("summaryCards").innerHTML = `
@@ -904,7 +923,7 @@ return "spices";
           <div class="category-title">${escapeHtml(category)} (${items.length})</div>
           <div class="products-grid">
             ${items.map(product => {
-              const stockStatus = (product.availability || "") === "Out of Stock" || Number(product.stockQty || 0) <= 0 ? "Out Of Stock" : "Available";
+              const stockStatus = isProductOutOfStock(product) ? "Out Of Stock" : "Available";
               const toggleClass = stockStatus === "Available" ? "available" : "out";
               return `
                 <div class="product-card">
@@ -965,7 +984,7 @@ return "spices";
       const product = (state.products || []).find(item => String(item.id) === String(id));
       if(!product) return;
 
-      const currentOut = (product.availability || "") === "Out of Stock" || Number(product.stockQty || 0) <= 0;
+      const currentOut = isProductOutOfStock(product);
       const nextAvailability = currentOut ? "Available" : "Out of Stock";
       const confirmed = await smoothConfirm(`Are you sure you want to mark this product as ${nextAvailability}?`, "Update Stock Status");
       if(!confirmed) return;
@@ -999,8 +1018,8 @@ return "spices";
         isBestseller: nextBestseller,
         isSpecialProduct: nextSpecial,
         availability: product.availability || "Available",
-        outOfStock: (product.availability || "") === "Out of Stock" || Number(product.stockQty || 0) <= 0,
-        stockQty: Number(product.stockQty || 0)
+        outOfStock: isProductOutOfStock(product),
+        stockQty: getEditableStockQty(product)
       });
 
       try{
@@ -1035,7 +1054,7 @@ return "spices";
       document.getElementById("editProductName").value = product.name || product.productName || "";
       document.getElementById("editProductSize").value = product.size || product.productSize || "";
       document.getElementById("editOfflinePrice").value = Number(product.offlinePrice || 0) || 0;
-      document.getElementById("editStockQty").value = Number(product.stockQty || 0) || 0;
+      document.getElementById("editStockQty").value = getEditableStockQty(product);
       document.getElementById("editRawCost").value = Number(product.rawCost || 0) || 0;
       document.getElementById("editShippingCost").value = Number(product.shippingCost || 0) || 0;
       document.getElementById("editExtraCost").value = Number(product.extraCost || 0) || 0;
@@ -1158,5 +1177,6 @@ return "spices";
 
     loadProducts();
   </script>
+<script src="../admin-nav-active.js"></script>
 </body>
 </html>

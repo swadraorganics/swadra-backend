@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Swadra Organics - Admin Products AI Pricing</title>
+<meta name="description" content="Backend product pricing and product creation panel for Swadra Organics admin product operations.">
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="../api-config.js?v=20260423-3"></script>
@@ -424,25 +425,19 @@
       .topbar h1{ font-size:24px; }
     }
   </style>
+<style id="adminGlobalNavPadFix">body{padding-top:118px !important;}</style>
 </head>
 <body>
+<div id="adminTopBar" style="position:fixed;top:0;left:0;right:0;z-index:100000;height:44px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;font-weight:700;font-size:22px;line-height:44px;text-align:center;border-bottom:1px solid rgba(122,61,61,.18);">Swadra Organics Admin Pannel</div>
+<div class="admin-global-nav" id="adminGlobalNav" style="position:fixed;top:44px;left:0;right:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Home</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Main</a><a href="backend/ai.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Add Product</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="backend/saved-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Edit Products</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payment</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupan</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Call Back</a><a href="backend/backend.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Backend</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Courier</a><details style="margin-left:auto;position:relative;"><summary style="list-style:none;cursor:pointer;color:#fff;font-size:18px;line-height:1;padding:4px 6px;">👤</summary><div style="position:absolute;right:0;top:30px;min-width:210px;background:#fff;border:1px solid #ece1de;border-radius:14px;box-shadow:0 16px 35px rgba(0,0,0,.18);padding:8px;"><a href="admin-index.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Admin Home</a><a href="admin-profit.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Shiprocket</a><a href="index.html" style="display:block;padding:10px 12px;color:#991b1b;text-decoration:none;font-weight:800;border-radius:10px;background:#fff7f7;">Logout</a></div></details></div>
   <div class="wrap">
-    <a class="admin-index-link" href="../admin-index.html">Back To Admin Index</a>
-    <div class="topbar">
-      <h1>Swadra Organics Admin Products</h1>
-      <p>The layout remains unchanged. The product catalog is stored in Firestore, images are sent to Cloudinary, and Railway is used only for secure competitor-pricing logic.</p>
-    </div>
-
     <div class="toolbar">
       <button class="btn-primary" onclick="addNewProduct()">Add New Product</button>
       <button class="btn-secondary" onclick="saveCurrentProduct()">Save Product</button>
       <button class="btn-secondary" onclick="fetchCompetitorPrices()">Fetch Competitor Prices</button>
 <button class="btn-dark" onclick="applyAIPrice()">Apply AI Selling Price</button>
-<button class="btn-light" onclick="window.open('saved-products.html','_blank')">Open Saved Products</button>
 <button class="btn-light" onclick="clearForm()">Clear Form</button>
-<button class="btn-light" onclick="window.open('backend.html','_blank')">Open Backend</button>
 <button id="serverStatusBtn" class="btn-live" onclick="checkServerStatus()">Check Server</button>
-<button class="btn-light" onclick="window.location.href='../admin-index.html'">Admin Index</button>
 </div>
 
     <div class="stats-grid" id="productStats"></div>
@@ -1361,5 +1356,6 @@ return "spices";
       clearForm();
     });
   </script>
+<script src="../admin-nav-active.js"></script>
 </body>
 </html>

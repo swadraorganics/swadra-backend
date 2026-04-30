@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Swadra Checkout</title>
+<meta name="description" content="Enter shipping details, saved address, pincode delivery estimate and final order summary for Swadra Organics checkout.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -42,6 +43,11 @@ body{background:#f1e3e3;color:#1f1f1f}
 .product-name{font-weight:700;line-height:1.5}
 .product-price{font-weight:800}
 .summary-box{margin-top:26px;padding-top:22px;border-top:1px solid #ececec}
+.summary-box{
+  padding:18px 16px 14px;
+  border:1px solid #b17979;
+  border-radius:18px;
+}
 .summary-row{display:flex;justify-content:space-between;padding:12px 0;color:#444}
 .discount-green{color:#0f8a47;font-weight:700}
 .total-row{margin-top:10px;padding-top:18px;border-top:1px solid #ececec;font-size:22px;font-weight:800;display:flex;justify-content:space-between}
@@ -50,8 +56,10 @@ body{background:#f1e3e3;color:#1f1f1f}
 .input-wrap label{display:block;margin-bottom:10px;font-size:13px;font-weight:700;color:#555}
 .star{color:#d62839}
 input,select{width:100%;padding:18px;border-radius:20px;border:1px solid #e6e6e6;background:#fafafa;font-size:15px;outline:none}
-.payment-btn{width:100%;margin-top:28px;padding:22px;border:none;border-radius:24px;background:#7a3d3d;color:#fff;font-size:17px;font-weight:800;cursor:pointer;box-shadow:0 14px 28px rgba(122,61,61,0.22)}
-.payment-btn:hover{background:#6a3434}
+.payment-btn{width:100%;margin-top:28px;padding:22px;border:none;border-radius:24px;background:linear-gradient(135deg,#7a3d3d,#b76e79,#d4af37);color:#fff;font-size:17px;font-weight:800;cursor:pointer;box-shadow:0 14px 28px rgba(122,61,61,0.22);position:relative;overflow:hidden;transition:all .35s ease}
+.payment-btn:hover{background:linear-gradient(135deg,#d4af37,#f7e7a9,#ffd700);color:#000;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 4px 15px rgba(212,175,55,0.6),inset 0 0 10px rgba(255,255,255,0.4);transform:translateY(-3px) scale(1.02)}
+.payment-btn::before{content:"";position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.6),transparent);transition:.6s}
+.payment-btn:hover::before{left:100%}
 @media(max-width:1100px){.checkout-layout{grid-template-columns:1fr}}
 @media(max-width:760px){.page-title{flex-direction:column;align-items:flex-start}.form-grid{grid-template-columns:1fr}.left-panel,.right-panel{padding:22px;border-radius:24px}.page-title h1{font-size:28px}}
 .top-bar{position:sticky;top:0;z-index:7002;margin:0 !important;text-align:center;padding:12px;font-weight:600;font-size:16px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif}
@@ -80,7 +88,8 @@ input,select{width:100%;padding:18px;border-radius:20px;border:1px solid #e6e6e6
 <link rel="stylesheet" href="mobile.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="api-config.js"></script></head>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="api-config.js"></script><link rel="manifest" href="manifest.json">`r`n</head>
 <body>
 <div class="top-bar" style="text-align:center;padding:12px;font-weight:600;font-size:16px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;">Eat Healthy &bull; Be Swadra Family</div>
 <header class="navbar" style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:#7a3d3d;">
@@ -150,36 +159,49 @@ input,select{width:100%;padding:18px;border-radius:20px;border:1px solid #e6e6e6
 </div>
 <script>
 const authApi = window.SWADRA_AUTH || null;
+const dataApi = window.SWADRA_DATA || null;
 function getCurrentUser(){ return authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : ""; }
 function getUsers(){ return authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : {}; }
 function saveUsers(users){ return authApi && typeof authApi.saveUsers === "function" ? authApi.saveUsers(users) : users; }
 
-let currentUser = getCurrentUser();
+async function waitForCheckoutUser(){
+if(authApi && typeof authApi.ready === "function"){
+try{
+await authApi.ready();
+}catch(error){
+console.error("checkout auth bootstrap failed", error);
+}
+}
+let nextUser = getCurrentUser();
+if(nextUser) return nextUser;
+for(let attempt = 0; attempt < 10; attempt += 1){
+await new Promise(resolve=>setTimeout(resolve, 150));
+nextUser = getCurrentUser();
+if(nextUser) return nextUser;
+}
+return "";
+}
+
+async function initializeCheckoutPage(){
+let currentUser = await waitForCheckoutUser();
 if(!currentUser){
 if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
 authApi.setRedirectAfterLogin("checkout.html");
-}else{
-localStorage.setItem("redirectAfterLogin","checkout.html");
 }
 location.href = "account.html";
-}else{
+return;
+}
 
 let users = getUsers();
 if(!users[currentUser]){
 users[currentUser] = { cart:[], orders:[] };
 saveUsers(users);
 }
-if((!users[currentUser].cart || users[currentUser].cart.length === 0)){
-let localCart = JSON.parse(localStorage.getItem("cart")) || [];
-if(localCart.length){
-users[currentUser].cart = localCart;
-saveUsers(users);
-}
-}
 let user = users[currentUser] || {};
 let userProfile = user.profile || {};
 let selectedCheckoutAddressId = "";
 let isNewCheckoutAddress = false;
+let checkoutDraftCache = null;
 
 function safeText(value){
 return String(value == null ? "" : value).trim();
@@ -354,10 +376,145 @@ let userAddress = user.address || {};
 selectedCheckoutAddressId = user.defaultAddressId || (user.addresses && user.addresses[0] ? user.addresses[0].id : "");
 
 function getCartSummary(){
+return window.__swadraCheckoutSummary || user.checkoutSummary || {};
+}
+
+function getCheckoutCartItems(){
+return ((user.cart && user.cart.length ? user.cart : []) || []).map(item=>({
+...item,
+price:Number(item.price || 0),
+mrp:Number(item.mrp || item.price || 0),
+qty:Number(item.qty || 1)
+}));
+}
+
+function getDiscountedItemsTotal(items){
+return Math.round((Array.isArray(items) ? items : []).reduce((sum,item)=>sum + Math.round(Number(item && (item.discountedLineTotal || item.displayLineTotal || ((Number(item.price || 0) * Number(item.qty || 1))))) || 0),0));
+}
+
+async function loadCheckoutDraft(){
+if(!currentUser || !dataApi || typeof dataApi.fetchCheckoutDraft !== "function"){
+return null;
+}
 try{
-return JSON.parse(localStorage.getItem("cartSummary")) || {};
-}catch(e){
-return {};
+checkoutDraftCache = await dataApi.fetchCheckoutDraft(currentUser);
+return checkoutDraftCache;
+}catch(error){
+console.error("checkout draft fetch failed", error);
+return null;
+}
+}
+
+async function saveCheckoutDraftToFirestore(summary){
+if(!currentUser || !dataApi || typeof dataApi.saveCheckoutDraft !== "function"){
+return;
+}
+const address = readCheckoutAddress();
+const payload = {
+address: address,
+deliveryDetails: summary && summary.deliveryDetails ? summary.deliveryDetails : null,
+cartSnapshot: Array.isArray(summary && summary.discountedItems) ? summary.discountedItems : getCheckoutCartItems(),
+summary: summary || getCartSummary()
+};
+checkoutDraftCache = payload;
+try{
+await dataApi.saveCheckoutDraft(currentUser, payload);
+}catch(error){
+console.error("checkout draft save failed", error);
+}
+}
+
+async function persistCheckoutUserRecord(){
+if(!currentUser) return;
+try{
+if(authApi && typeof authApi.saveUserRecord === "function"){
+await authApi.saveUserRecord(users[currentUser]);
+if(typeof authApi.refreshUsers === "function"){
+await authApi.refreshUsers();
+users = getUsers();
+user = users[currentUser] || user;
+}
+}else{
+saveUsers(users);
+}
+}catch(error){
+console.error("checkout user save failed", error);
+saveUsers(users);
+}
+}
+
+function readCheckoutAddress(){
+return {
+name: document.getElementById("name").value.trim(),
+phone: document.getElementById("phone").value.trim(),
+house: document.getElementById("house").value.trim(),
+area: document.getElementById("area").value.trim(),
+pincode: document.getElementById("pincode").value.trim(),
+postoffice: document.getElementById("postoffice").value.trim(),
+city: document.getElementById("city").value.trim(),
+state: document.getElementById("state").value.trim(),
+address: [document.getElementById("house").value.trim(), document.getElementById("area").value.trim(), document.getElementById("postoffice").value.trim(), document.getElementById("city").value.trim(), document.getElementById("state").value.trim(), document.getElementById("pincode").value.trim()].filter(Boolean).join(", ")
+};
+}
+
+function getCheckoutQueryAddress(){
+try{
+const params = new URLSearchParams(window.location.search || "");
+return {
+  pincode: String(params.get("cartPincode") || "").trim(),
+  postoffice: String(params.get("cartPostOffice") || "").trim()
+};
+}catch(error){
+return { pincode:"", postoffice:"" };
+}
+}
+
+async function calculateCheckoutSummary(baseSummary, cartItems){
+let summary = baseSummary && typeof baseSummary === "object" ? { ...baseSummary } : {};
+let shippingApi = window.SWADRA_SHIPPING || null;
+let discountedItemsTotal = getDiscountedItemsTotal(cartItems);
+if(!shippingApi || typeof shippingApi.estimateSurfaceDelivery !== "function"){
+summary.couponAdjustedSellingTotal = Math.max(0, Math.round(Number(summary.couponAdjustedSellingTotal || 0) || discountedItemsTotal || Number(summary.sellingTotal || 0)));
+summary.finalTotal = Math.max(0, Math.round(Number(summary.couponAdjustedSellingTotal || summary.sellingTotal || 0) + Number(summary.delivery || 0)));
+  return summary;
+}
+try{
+if(window.SWADRA_SITE_CONTENT && typeof window.SWADRA_SITE_CONTENT.fetch === "function"){
+await window.SWADRA_SITE_CONTENT.fetch(true);
+}
+let deliveryDetails = await shippingApi.estimateSurfaceDelivery({
+cartItems: cartItems,
+subtotal: Number(summary.sellingTotal || 0),
+deliveryAddress: readCheckoutAddress()
+});
+let delivery = Math.round(Number(deliveryDetails && deliveryDetails.finalDeliveryCharge || 0));
+if(!(deliveryDetails && deliveryDetails.freeDeliveryApplied) && delivery <= 0 && Number(summary.sellingTotal || 0) > 0){
+delivery = Math.max(0, Math.round(Number(deliveryDetails && deliveryDetails.configuredDeliveryCharge || (shippingApi && typeof shippingApi.getDeliveryCharge === "function" ? shippingApi.getDeliveryCharge() : 0)) || 0));
+}
+let couponDiscount = Math.min(Number(summary.couponDiscount || 0), Number(summary.sellingTotal || 0) + delivery);
+let couponAdjustedSellingTotal = Math.max(0, Math.round(Number(summary.sellingTotal || 0) - couponDiscount));
+return {
+...summary,
+delivery: delivery,
+couponDiscount: Math.round(couponDiscount),
+couponAdjustedSellingTotal: couponAdjustedSellingTotal || discountedItemsTotal,
+finalTotal: Math.max(0, Math.round(couponAdjustedSellingTotal + delivery)),
+deliveryDetails: deliveryDetails,
+freeDeliveryApplied: !!(deliveryDetails && deliveryDetails.freeDeliveryApplied),
+freeDeliveryThreshold: deliveryDetails && deliveryDetails.freeDeliveryThreshold,
+freeDeliveryRemaining: Math.max(0, Math.ceil(Number(deliveryDetails && deliveryDetails.freeDeliveryThreshold || 499) - Number(summary.sellingTotal || 0))),
+freeDeliveryMessage: deliveryDetails && deliveryDetails.freeDeliveryApplied
+  ? "🎉 You unlocked FREE Delivery"
+  : "Add ₹" + Math.max(0, Math.ceil(Number(deliveryDetails && deliveryDetails.freeDeliveryThreshold || 499) - Number(summary.sellingTotal || 0))) + " more to get FREE Delivery",
+deliveryEstimateLabel: deliveryDetails && deliveryDetails.freeDeliveryApplied
+  ? [deliveryDetails.etaLabel, "FREE Delivery unlocked"].filter(Boolean).join(". ")
+  : ([deliveryDetails && deliveryDetails.etaLabel, deliveryDetails && deliveryDetails.estimated ? "Estimated delivery charge" : "", "Add ₹" + Math.max(0, Math.ceil(Number(deliveryDetails && deliveryDetails.freeDeliveryThreshold || 499) - Number(summary.sellingTotal || 0))) + " more to get FREE Delivery"].filter(Boolean).join(". "))
+};
+}catch(error){
+console.error("checkout delivery estimate failed", error);
+summary.couponAdjustedSellingTotal = Math.max(0, Math.round(Number(summary.couponAdjustedSellingTotal || 0) || discountedItemsTotal || Number(summary.sellingTotal || 0)));
+summary.finalTotal = Math.max(0, Math.round(Number(summary.couponAdjustedSellingTotal || summary.sellingTotal || 0) + Number(summary.delivery || 0)));
+return summary;
 }
 }
 
@@ -367,31 +524,47 @@ await window.SWADRA_OFFERS.renderSaleBar("saleBarTrack", !!forceRefresh);
 }
 }
 
-window.onload = function(){
+function hydrateCheckoutView(){
+Promise.resolve(loadCheckoutDraft()).then(function(draft){
 renderOfferBar(true);
 document.getElementById("name").value = userProfile.name || currentUser.split("@")[0];
 document.getElementById("phone").value = user.phone || "";
-document.getElementById("house").value = userAddress.house || "";
-document.getElementById("area").value = userAddress.area || "";
-document.getElementById("city").value = userAddress.city || "";
-document.getElementById("pincode").value = userAddress.pincode || "";
-document.getElementById("state").value = userAddress.state || "";
-if(userAddress.postoffice){
-document.getElementById("postoffice").innerHTML = `<option value="${userAddress.postoffice}">${userAddress.postoffice}</option>`;
+const draftAddress = draft && draft.address ? draft.address : {};
+const queryAddress = getCheckoutQueryAddress();
+const savedDefaultAddress = userAddress && userAddress.house ? userAddress : {};
+const activeAddress = {
+house: savedDefaultAddress.house || draftAddress.house || "",
+area: savedDefaultAddress.area || draftAddress.area || "",
+city: savedDefaultAddress.city || draftAddress.city || "",
+pincode: queryAddress.pincode || savedDefaultAddress.pincode || draftAddress.pincode || "",
+state: savedDefaultAddress.state || draftAddress.state || "",
+postoffice: queryAddress.postoffice || savedDefaultAddress.postoffice || draftAddress.postoffice || ""
+};
+document.getElementById("house").value = activeAddress.house;
+document.getElementById("area").value = activeAddress.area;
+document.getElementById("city").value = activeAddress.city;
+document.getElementById("pincode").value = activeAddress.pincode;
+document.getElementById("state").value = activeAddress.state;
+const postofficeValue = activeAddress.postoffice || "";
+if(postofficeValue){
+document.getElementById("postoffice").innerHTML = `<option value="${postofficeValue}">${postofficeValue}</option>`;
+}
+if(activeAddress.pincode && !postofficeValue){
+fetchPincode(activeAddress.pincode);
 }
 renderAddressSelector();
 loadOrderSummary();
-};
+});
+}
 
-function loadOrderSummary(){
-let cart = ((user.cart && user.cart.length ? user.cart : (JSON.parse(localStorage.getItem("cart")) || [])) || []).map(item=>({
-...item,
-price:Number(item.price || 0),
-mrp:Number(item.mrp || item.price || 0),
-qty:Number(item.qty || 1)
-}));
+async function loadOrderSummary(){
+let cart = getCheckoutCartItems();
 let itemsDiv = document.getElementById("items");
 let summary = getCartSummary();
+if((!summary || !Object.keys(summary).length) && checkoutDraftCache && checkoutDraftCache.summary){
+summary = checkoutDraftCache.summary;
+window.__swadraCheckoutSummary = summary;
+}
 let discountedItems = Array.isArray(summary.discountedItems) && summary.discountedItems.length ? summary.discountedItems : cart;
 if(!summary || Object.keys(summary).length === 0){
 let mrpTotal = 0;
@@ -400,16 +573,27 @@ cart.forEach(item=>{
 mrpTotal += (Number(item.mrp || item.price || 0) * Number(item.qty || 0));
 sellingTotal += (Number(item.price || 0) * Number(item.qty || 0));
 });
-let delivery = sellingTotal >= 399 || sellingTotal === 0 ? 0 : 199;
-summary = {
-mrpTotal,
-sellingTotal,
-delivery,
-productDiscount: Math.max(0, mrpTotal - sellingTotal),
-couponDiscount: Number(localStorage.getItem("couponDiscount")) || 0,
-finalTotal: Math.max(0, sellingTotal + delivery - (Number(localStorage.getItem("couponDiscount")) || 0))
-};
+      let fallbackFreeDelivery = window.SWADRA_SHIPPING && typeof window.SWADRA_SHIPPING.getFreeDeliveryThreshold === "function" ? window.SWADRA_SHIPPING.getFreeDeliveryThreshold() : 499;
+      let fallbackDeliveryCharge = window.SWADRA_SHIPPING && typeof window.SWADRA_SHIPPING.getDeliveryCharge === "function" ? window.SWADRA_SHIPPING.getDeliveryCharge() : 0;
+      let delivery = sellingTotal >= fallbackFreeDelivery || sellingTotal === 0 ? 0 : fallbackDeliveryCharge;
+      let fallbackCouponDiscount = Math.min(Number(summary.couponDiscount || 0), sellingTotal + delivery);
+      summary = {
+        mrpTotal,
+        sellingTotal,
+        delivery,
+        productDiscount: Math.max(0, mrpTotal - sellingTotal),
+        couponDiscount: fallbackCouponDiscount,
+        couponAdjustedSellingTotal: Math.max(0, sellingTotal - fallbackCouponDiscount),
+        finalTotal: Math.max(0, sellingTotal + delivery - fallbackCouponDiscount),
+        freeDeliveryThreshold: fallbackFreeDelivery,
+        freeDeliveryRemaining: Math.max(0, Math.ceil(fallbackFreeDelivery - sellingTotal)),
+        freeDeliveryMessage: sellingTotal >= fallbackFreeDelivery && sellingTotal > 0 ? "🎉 You unlocked FREE Delivery" : "Add ₹" + Math.max(0, Math.ceil(fallbackFreeDelivery - sellingTotal)) + " more to get FREE Delivery",
+        discountedItems
+      };
 }
+summary = await calculateCheckoutSummary(summary, discountedItems);
+window.__swadraCheckoutSummary = summary;
+saveCheckoutDraftToFirestore(summary);
 
 itemsDiv.innerHTML = "";
 discountedItems.forEach(i=>{
@@ -418,7 +602,7 @@ let originalLineTotal = Math.round(Number(i.price || 0) * qty);
 let displayLineTotal = Math.round(Number(i.discountedLineTotal || i.displayLineTotal || originalLineTotal));
 itemsDiv.innerHTML += `
 <div class="order-line">
-<div class="product-name">${i.name || "Product"} &times; ${qty}${Number(i.couponLineDiscount || 0) > 0 ? `<br><span style="font-size:12px;color:#0f8a47;font-weight:700;">Coupon applied -&#8377;${Math.round(Number(i.couponLineDiscount || 0))}</span>` : ""}</div>
+<div class="product-name">${i.name || "Product"}${(i.size || i.productSize || i.selectedSize || i.variant || i.weight) ? ` <span style="font-size:12px;color:#6b5c5c;font-weight:700;">(${i.size || i.productSize || i.selectedSize || i.variant || i.weight})</span>` : ""} &times; ${qty}${Number(i.couponLineDiscount || 0) > 0 ? `<br><span style="font-size:12px;color:#0f8a47;font-weight:700;">Coupon applied -&#8377;${Math.round(Number(i.couponLineDiscount || 0))}</span>` : ""}</div>
 <div class="product-price">${displayLineTotal < originalLineTotal ? `<span style="display:block;font-size:12px;color:#888;text-decoration:line-through;">&#8377;${originalLineTotal}</span>` : ""}&#8377;${displayLineTotal}</div>
 </div>`;
 });
@@ -426,10 +610,11 @@ itemsDiv.innerHTML += `
 document.getElementById("summaryBox").innerHTML = `
 <div class="summary-row"><span>Total MRP</span><span>&#8377;${Math.round(Number(summary.mrpTotal || 0))}</span></div>
 <div class="summary-row"><span>Selling Price Total</span><span>${Number(summary.couponDiscount || 0) > 0 ? `<span style="display:block;font-size:12px;color:#888;text-decoration:line-through;">&#8377;${Math.round(Number(summary.sellingTotal || 0))}</span>&#8377;${Math.round(Number(summary.couponAdjustedSellingTotal || summary.finalTotal || 0))}` : `&#8377;${Math.round(Number(summary.sellingTotal || 0))}`}</span></div>
-<div class="summary-row"><span>Delivery</span><span>&#8377;${Math.round(Number(summary.delivery || 0))}</span></div>
+<div class="summary-row"><span>${summary.freeDeliveryApplied ? "Delivery (Free Applied)" : "Delivery"}</span><span>&#8377;${Math.round(Number(summary.delivery || 0))}</span></div>
 <div class="summary-row discount-green"><span>Product Discount</span><span>-&#8377;${Math.round(Number(summary.productDiscount || 0))}</span></div>
 <div class="summary-row discount-green"><span>Coupon Discount</span><span>-&#8377;${Math.round(Number(summary.couponDiscount || 0))}</span></div>
 <div class="total-row"><span>Total Payable</span><span>&#8377;${Math.round(Number(summary.finalTotal || 0))}</span></div>
+${summary.deliveryEstimateLabel || summary.freeDeliveryMessage ? `<div class="summary-row" style="font-size:12px;color:#7a3d3d;"><span>${summary.deliveryEstimateLabel || summary.freeDeliveryMessage}</span><span></span></div>` : ``}
 `;
 }
 
@@ -446,13 +631,16 @@ return;
 }
 let offices = data[0].PostOffice;
 let dropdown = document.getElementById("postoffice");
+const currentSelected = String(dropdown.value || "").trim();
 dropdown.innerHTML = "<option value=''>Select Post Office</option>";
 offices.forEach((po,index)=>{
 let opt = document.createElement("option");
 opt.value = po.Name;
 opt.textContent = po.Name + " (" + po.BranchType + ")";
 dropdown.appendChild(opt);
-if(index === 0){
+if(currentSelected && currentSelected === po.Name){
+dropdown.value = po.Name;
+}else if(index === 0 && !currentSelected){
 dropdown.value = po.Name;
 }
 });
@@ -462,8 +650,14 @@ document.getElementById("state").value = offices[0].State;
 .catch(()=>{ alert("Pincode API error"); });
 }
 
-pincodeInput.addEventListener("input", ()=>fetchPincode(pincodeInput.value));
-pincodeInput.addEventListener("blur", ()=>fetchPincode(pincodeInput.value));
+pincodeInput.addEventListener("input", ()=>{ fetchPincode(pincodeInput.value); loadOrderSummary(); });
+pincodeInput.addEventListener("blur", ()=>{ fetchPincode(pincodeInput.value); loadOrderSummary(); });
+["house","area","city","state","postoffice"].forEach(function(id){
+let input = document.getElementById(id);
+if(!input) return;
+input.addEventListener("input", function(){ loadOrderSummary(); });
+input.addEventListener("change", function(){ loadOrderSummary(); });
+});
 
 function goPayment(){
 const nameField = document.getElementById("name");
@@ -486,8 +680,9 @@ if(!val) return alert("Please fill all required fields");
 }
 
 const addressText = [houseField.value, areaField.value, postofficeField.value, cityField.value, stateField.value, pincodeField.value].filter(Boolean).join(", ");
-
-localStorage.setItem("checkoutData", JSON.stringify({
+const summary = getCartSummary();
+const deliveryDetails = summary && summary.deliveryDetails ? summary.deliveryDetails : null;
+const checkoutPayload = {
 name:nameField.value,
 phone:mobile,
 house:houseField.value,
@@ -496,8 +691,10 @@ pincode:pincodeField.value,
 postoffice:postofficeField.value,
 city:cityField.value,
 state:stateField.value,
-address: addressText
-}));
+address: addressText,
+deliveryDetails: deliveryDetails,
+deliveryCharge: Math.round(Number(summary.delivery || 0))
+};
 
 const checkoutAddress = {
 id: selectedCheckoutAddressId || ("addr_" + Date.now()),
@@ -519,10 +716,22 @@ checkoutAddress,
 );
 selectedCheckoutAddressId = users[currentUser].defaultAddressId || checkoutAddress.id;
 user = users[currentUser];
-
-saveUsers(users);
+window.__swadraCheckoutSummary = summary;
+persistCheckoutUserRecord().finally(function(){
+saveCheckoutDraftToFirestore({
+...summary,
+deliveryDetails: deliveryDetails,
+discountedItems: summary.discountedItems || getCheckoutCartItems()
+});
 location.href = "payment.html";
+});
 }
+
+window.toggleAddressPicker = toggleAddressPicker;
+window.selectCheckoutAddress = selectCheckoutAddress;
+window.startNewAddressEntry = startNewAddressEntry;
+window.goPayment = goPayment;
+hydrateCheckoutView();
 }
 </script>
 <script>
@@ -542,25 +751,16 @@ document.querySelectorAll(".header-search-input").forEach(input=>{
     if(e.key!=="Enter") return;
     const query=input.value.trim();
     if(!query) return;
-    localStorage.setItem("swadraHeaderSearch", query);
-    window.location.href="index.html";
+    window.location.href="index.html?search=" + encodeURIComponent(query);
   });
 });
-window.addEventListener("load", function(){ renderOfferBar(true); swadraHeaderUpdateAccountNav(); });
-window.addEventListener("storage", function(event){
-  if(["cart","currentUser","userPhone"].includes(event.key)){
-    swadraHeaderUpdateAccountNav();
-  }
-  if(["offers","homeContent"].includes(event.key)){
+window.addEventListener("load", function(){
+  if(typeof renderOfferBar === "function"){
     renderOfferBar(true);
   }
+  swadraHeaderUpdateAccountNav();
 });
+initializeCheckoutPage();
 </script>
 </body>
 </html>
-
-
-
-
-
-

@@ -1,9 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Track Order</title>
+<meta name="description" content="Track Swadra Organics orders with order ID, shipment status, courier details and delivery progress.">
 <style>
 
 :root{
@@ -313,7 +314,8 @@ text-align:center;
 <link rel="stylesheet" href="mobile.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="api-config.js"></script></head>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="api-config.js"></script><link rel="manifest" href="manifest.json">`r`n</head>
 
 <body>
 
@@ -355,16 +357,14 @@ Eat Healthy â€¢ Be Swadra Family
 /* =====================================================
    HELPERS
 ===================================================== */
+const authApi = window.SWADRA_AUTH || null;
+const dataApi = window.SWADRA_DATA || null;
 function getCurrentUser(){
-  return localStorage.getItem("currentUser");
+  return authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
 }
 
 function getUsers(){
-  return JSON.parse(localStorage.getItem("users")) || {};
-}
-
-function saveUsers(users){
-  localStorage.setItem("users", JSON.stringify(users));
+  return authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : {};
 }
 
 function safe(v){
@@ -372,7 +372,7 @@ function safe(v){
 }
 
 function money(value){
-  return "â‚¹" + Math.round(Number(value) || 0).toLocaleString("en-IN");
+  return "₹" + Math.round(Number(value) || 0).toLocaleString("en-IN");
 }
 
 const API_BASE = window.SWADRA_API_BASE || "";
@@ -388,8 +388,7 @@ async function renderOfferBar(forceRefresh){
 ===================================================== */
 window.onload = function(){
   renderOfferBar(true);
-
-  let last = localStorage.getItem("currentOrderId");
+  let last = new URLSearchParams(window.location.search).get("orderId");
 
   if(last){
     document.getElementById("orderId").value = last;
@@ -436,12 +435,25 @@ function persistOrderUpdate(order){
     existingOrders.push(order);
   }
   users[currentUser].orders = existingOrders;
-  saveUsers(users);
+  if(authApi && typeof authApi.saveUsers === "function"){
+    authApi.saveUsers(users);
+  }
+}
+
+function buildOrderAccessQuery(){
+  const currentUser = getCurrentUser();
+  return currentUser ? "?userId=" + encodeURIComponent(currentUser) + "&email=" + encodeURIComponent(currentUser) : "";
 }
 
 async function fetchBackendOrder(id){
+  if(dataApi && typeof dataApi.fetchOrder === "function"){
+    try{
+      const order = await dataApi.fetchOrder(id);
+      if(order && order.id) return order;
+    }catch(error){}
+  }
   try{
-    const response = await fetch(`${API_BASE}/api/orders/${encodeURIComponent(id)}`, { cache:"no-store" });
+    const response = await fetch(`${API_BASE}/api/orders/${encodeURIComponent(id)}${buildOrderAccessQuery()}`, { cache:"no-store" });
     const data = await response.json();
     if(!response.ok || !data.ok) throw new Error(data.error || "Order not found");
     return data.order;
@@ -453,6 +465,29 @@ async function fetchBackendOrder(id){
 /* =====================================================
    TRACK ORDER
 ===================================================== */
+function normalizeAdminOrderStatus(status){
+  const value = String(status || "").trim().toLowerCase();
+  if(value.includes("cancel")) return "cancelled";
+  if(value.includes("deliver")) return "delivered";
+  if(value.includes("out")) return "out_for_delivery";
+  if(value.includes("dispatch") || value.includes("ship")) return "dispatched";
+  if(value.includes("pack") || value.includes("process")) return "packed";
+  return "confirmed";
+}
+
+function getOrderItemSizeLabel(item){
+  return String(
+    item?.size ||
+    item?.productSize ||
+    item?.selectedSize ||
+    item?.variant ||
+    item?.weight ||
+    item?.packSize ||
+    item?.unit ||
+    ""
+  ).trim();
+}
+
 async function trackOrder(){
 
   let id =
@@ -474,52 +509,42 @@ async function trackOrder(){
     return;
   }
 
-  /* status map */
   let steps = [
-    "placed",
     "confirmed",
     "packed",
-    "shipped",
+    "dispatched",
     "out_for_delivery",
     "delivered"
   ];
 
   let labels = [
-    "Placed",
     "Confirmed",
     "Packed",
-    "Shipped",
+    "Dispatched",
     "Out for Delivery",
     "Delivered"
   ];
 
-  /* current order status support */
-  let statusText =
-    (order.status || "").toLowerCase();
+  let normalizedStatus = normalizeAdminOrderStatus(order.status || order.orderStatus || order.deliveryStatus);
+  let currentIndex = Math.max(0, steps.indexOf(normalizedStatus));
 
-  let currentIndex = 1; // default confirmed
-
-  if(statusText.includes("placed")) currentIndex = 0;
-  else if(statusText.includes("confirmed")) currentIndex = 1;
-  else if(statusText.includes("packed")) currentIndex = 2;
-  else if(statusText.includes("shipped")) currentIndex = 3;
-  else if(statusText.includes("out")) currentIndex = 4;
-  else if(statusText.includes("delivered")) currentIndex = 5;
-
-  if(statusText.includes("cancel")){
+  if(normalizedStatus === "cancelled"){
     document.getElementById("result").innerHTML = `
       <h3>Order ID: ${safe(order.id)}</h3>
       <div class="empty">
         <h3>Order Cancelled</h3>
         <p>This order has been cancelled and will not be dispatched.</p>
         ${order.refundStatus ? `<p><b>Refund Status:</b> ${safe(order.refundStatus)}</p>` : ""}
-        ${order.refundAmount ? `<p><b>Refund Amount:</b> â‚¹${safe(order.refundAmount)}</p>` : ""}
+        ${order.refundAmount ? `<p><b>Refund Amount:</b> ₹${safe(order.refundAmount)}</p>` : ""}
         ${order.refundDate ? `<p><b>Refund Date:</b> ${safe(order.refundDate)}</p>` : ""}
         ${order.refundMessage ? `<p>${safe(order.refundMessage)}</p>` : ""}
       </div>
       <div class="items-box">
         <h3>Ordered Items</h3>
-        ${(order.items || order.products || []).map(item=>`<div>${safe(item.name)} Ã— ${safe(item.qty)}</div>`).join("")}
+        ${(order.items || order.products || []).map(item=>{
+          const size = getOrderItemSizeLabel(item);
+          return `<div>${safe(item.name)}${size ? ` (${safe(size)})` : ""} x ${safe(item.qty || item.quantity || 1)}</div>`;
+        }).join("")}
       </div>
     `;
     return;
@@ -529,6 +554,8 @@ async function trackOrder(){
   let html = `
     <h3>Order ID: ${safe(order.id)}</h3>
     <p><b>Status:</b> ${labels[currentIndex]}</p>
+    ${order.awb || order.trackingId || order.awbCode ? `<p><b>Tracking ID:</b> ${safe(order.awb || order.trackingId || order.awbCode)}</p>` : ""}
+    ${order.courierName ? `<p><b>Courier:</b> ${safe(order.courierName)}</p>` : ""}
 
     <div class="progress">
   `;
@@ -555,9 +582,10 @@ async function trackOrder(){
   `;
 
   (order.items || order.products || []).forEach(item=>{
+    const size = getOrderItemSizeLabel(item);
     html += `
       <div>
-        ${safe(item.name)} Ã— ${safe(item.qty)}
+        ${safe(item.name)}${size ? ` (${safe(size)})` : ""} x ${safe(item.qty || item.quantity || 1)}
       </div>
     `;
   });
@@ -570,15 +598,16 @@ async function trackOrder(){
   html += `
     <div class="info">
       <p><b>Transaction ID:</b> ${safe(order.payment_id)}</p>
-      <p><b>Total Paid:</b> â‚¹${safe(order.total)}</p>
+      <p><b>Total Paid:</b> ₹${safe(order.total || order.finalAmount || order.amount)}</p>
       <p><b>Date:</b> ${safe(order.date)}</p>
       <p><b>Name:</b> ${safe(shipping.name)}</p>
       <p><b>Phone:</b> ${safe(shipping.phone)}</p>
-      <p><b>Address:</b> 
-        ${safe(shipping.house)} 
-        ${safe(shipping.area)} 
-        ${safe(shipping.city)} 
+      <p><b>Address:</b>
+        ${safe(shipping.house)}
+        ${safe(shipping.area)}
+        ${safe(shipping.city || shipping.district)}
         ${safe(shipping.state)}
+        ${safe(shipping.pincode)}
       </p>
     </div>
   `;
@@ -631,11 +660,13 @@ async function loadShiprocketTracking(order){
     const shipment = pickShiprocketShipment(data);
     const activities = pickShiprocketActivities(data).slice(0, 5);
     const status = shipment.current_status || shipment.shipment_status || shipment.status || "Tracking updated";
+    const normalizedLiveStatus = normalizeAdminOrderStatus(status);
     const courier = shipment.courier_name || shipment.courier || order.courierName || "Shiprocket";
     const eta = shipment.edd || shipment.expected_delivery_date || shipment.estimated_delivery_date || "";
     persistOrderUpdate({
       ...order,
-      status,
+      status: normalizedLiveStatus,
+      shiprocketStatus: status,
       courierName: courier,
       trackingId: awb,
       awb,
@@ -671,9 +702,3 @@ async function loadShiprocketTracking(order){
 
 </body>
 </html>
-
-
-
-
-
-

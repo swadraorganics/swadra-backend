@@ -271,6 +271,13 @@ body{
   gap:16px;
 }
 
+#addressDisplay{
+  max-height:420px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-right:6px;
+}
+
 .info-row{
   background:#fcf8f6;
   border:1px solid #efe2de;
@@ -700,6 +707,7 @@ margin:4px 0 0 !important;
 <link rel="stylesheet" href="mobile.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="api-config.js"></script></head>
 <body>
 
@@ -728,7 +736,7 @@ margin:4px 0 0 !important;
 <a href="dryfruits.html">Dry Fruits</a>
 <a href="oilghee.html">Oil Ghee &amp; More</a>
 <a href="aboutus.html">About Us</a>
-<a href="account.html">Account</a>
+<a href="account.html" id="mobileDashboardAuthLink">Account</a>
 </div>
 </details>
 </header><div class="sale-bar"><div class="sale-bar-track" id="saleBarTrack"></div></div><div class="page">
@@ -793,7 +801,7 @@ margin:4px 0 0 !important;
         <button class="action-btn orders-btn" onclick="goOrders()"><span class="action-icon" aria-hidden="true">[]</span>View My Orders</button>
         <button class="action-btn track-btn" onclick="trackOrder()"><span class="action-icon" aria-hidden="true">></span>Track Current Order</button>
         <button class="action-btn contact-btn" onclick="openSupportPage()"><span class="action-icon" aria-hidden="true">@</span>Contact Support</button>
-        <button class="action-btn logout-big" onclick="logout()"><span class="action-icon" aria-hidden="true"><</span>Logout Securely</button>
+        <button class="action-btn logout-big" onclick="logout()"><span class="action-icon" aria-hidden="true"><</span>Logout</button>
       </div>
     </div>
 
@@ -802,6 +810,7 @@ margin:4px 0 0 !important;
 
 <div class="modal" id="modal">
   <div class="modal-box">
+    <button type="button" class="modal-close-btn" aria-label="Close popup" onclick="closeModal()">&times;</button>
     <h3 id="addressModalTitle">Add Address</h3>
     <p class="modal-note">You can save up to 3 addresses. The default address will be selected automatically at checkout.</p>
     <input type="hidden" id="editingAddressId">
@@ -832,6 +841,7 @@ margin:4px 0 0 !important;
 
 <div class="modal" id="passwordModal">
   <div class="modal-box">
+    <button type="button" class="modal-close-btn" aria-label="Close popup" onclick="closePasswordModal()">&times;</button>
     <h3>Change Password</h3>
     <p class="otp-note">OTP verification is required to change your password. When you continue, the OTP will be sent to your registered email.</p>
 
@@ -855,19 +865,19 @@ const authApi = window.SWADRA_AUTH || null;
 function getCurrentUser(){
   return authApi && typeof authApi.getCurrentUserEmail === "function"
     ? authApi.getCurrentUserEmail()
-    : localStorage.getItem("currentUser");
+    : "";
 }
 
 function getUsers(){
   return authApi && typeof authApi.getUsers === "function"
     ? authApi.getUsers()
-    : (JSON.parse(localStorage.getItem("users")) || {});
+    : {};
 }
 
 function saveUsers(users){
   return authApi && typeof authApi.saveUsers === "function"
     ? authApi.saveUsers(users)
-    : localStorage.setItem("users", JSON.stringify(users));
+    : users;
 }
 
 async function persistCurrentUser(user, successMessage, errorMessage){
@@ -902,6 +912,8 @@ async function persistCurrentUser(user, successMessage, errorMessage){
 function safe(val){
   return val ? val : "";
 }
+
+let dashboardPasswordOtp = "";
 
 const house = document.getElementById("house");
 const area = document.getElementById("area");
@@ -1027,6 +1039,17 @@ window.onload = async function(){
   if(!currentUser){
     window.location.href = "account.html";
     return;
+  }
+
+  const mobileAuthLink = document.getElementById("mobileDashboardAuthLink");
+  if(mobileAuthLink){
+    mobileAuthLink.textContent = "Logout";
+    mobileAuthLink.href = "#";
+    mobileAuthLink.onclick = function(event){
+      event.preventDefault();
+      logout();
+      return false;
+    };
   }
 
   loadProfile();
@@ -1196,7 +1219,7 @@ function sendPasswordOtp(){
   }
 
   const otp = String(Math.floor(1000 + Math.random()*9000));
-  localStorage.setItem("dashboardPasswordOtp", otp);
+  dashboardPasswordOtp = otp;
 
   emailjs.send(
     "service_12k6w9q",
@@ -1218,7 +1241,7 @@ async function verifyPasswordOtpAndSave(){
   const enteredOtp = document.getElementById("passwordOtp").value.trim();
   const newPassword = document.getElementById("newPassword").value;
   const confirmPassword = document.getElementById("confirmPassword").value;
-  const savedOtp = localStorage.getItem("dashboardPasswordOtp");
+  const savedOtp = dashboardPasswordOtp;
 
   if(!savedOtp){
     setPasswordMessage("Please send the OTP first.", true);
@@ -1249,7 +1272,7 @@ async function verifyPasswordOtpAndSave(){
   users[currentUser].updatedAt = new Date().toISOString();
   const saved = await persistCurrentUser(users[currentUser], "", "Password update failed.");
   if(!saved) return;
-  localStorage.removeItem("dashboardPasswordOtp");
+  dashboardPasswordOtp = "";
   setPasswordMessage("Password changed successfully.");
 
   setTimeout(()=>{
@@ -1383,10 +1406,6 @@ function openSupportPage(){
 function logout(){
   if(authApi && typeof authApi.signOutUser === "function"){
     authApi.signOutUser({ keepCart:false });
-  }else{
-    localStorage.removeItem("currentUser");
-    localStorage.removeItem("cart");
-    localStorage.removeItem("userPhone");
   }
   window.location.href = "index.html";
 }
@@ -1406,7 +1425,12 @@ document.getElementById("passwordModal").addEventListener("click", function(e){
 
 <script>
 function swadraHeaderGetCart(){
-  try{return JSON.parse(localStorage.getItem("cart")) || [];}catch(e){return [];}
+  const currentUser = getCurrentUser();
+  const users = getUsers();
+  if(currentUser && users[currentUser] && Array.isArray(users[currentUser].cart)){
+    return users[currentUser].cart;
+  }
+  return [];
 }
 function swadraHeaderUpdateStickyCart(){
   let bar=document.getElementById("stickyCart");
@@ -1425,9 +1449,8 @@ function swadraHeaderUpdateStickyCart(){
 function swadraHeaderUpdateAccountNav(){
   let slot=document.getElementById("accountNavSlot");
   if(!slot) return;
-  let currentUser=localStorage.getItem("currentUser");
-  let users={};
-  try{ users=JSON.parse(localStorage.getItem("users")) || {}; }catch(e){}
+  let currentUser=getCurrentUser();
+  let users=getUsers();
   if(currentUser && users[currentUser]){
     slot.innerHTML='<span class="account-menu-wrap"><a class="account-link" href="dashboard.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">'+((((users[currentUser]||{}).profile||{}).name) || currentUser.split("@")[0])+'</div><div class="account-hover-copy">'+currentUser+'</div><a class="account-hover-cta" href="dashboard.html">MY ACCOUNT</a></div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="dashboard.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V5"></path><path d="M17 16v-3"></path></svg></span><span>Product Summary</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span>';
   }else{
@@ -1481,8 +1504,7 @@ function renderHeaderSearchResults(items){
     row.addEventListener("click", function(){
       const query = this.getAttribute("data-search-query") || "";
       if(!query) return;
-      localStorage.setItem("swadraHeaderSearch", query);
-      window.location.href = "index.html";
+      window.location.href = "index.html?search=" + encodeURIComponent(query);
     });
   });
 }
@@ -1511,8 +1533,7 @@ if(headerSearchInput && headerSearchResults){
     if(e.key !== "Enter") return;
     const query = headerSearchInput.value.trim();
     if(!query) return;
-    localStorage.setItem("swadraHeaderSearch", query);
-    window.location.href = "index.html";
+    window.location.href = "index.html?search=" + encodeURIComponent(query);
   });
 
   headerSearchInput.addEventListener("search", function(){
@@ -1528,7 +1549,27 @@ document.addEventListener("click", function(e){
     headerSearchResults.classList.remove("show");
   }
 });
-window.addEventListener("load", function(){ swadraHeaderUpdateStickyCart(); swadraHeaderUpdateAccountNav(); });
+
+async function refreshDashboardHeaderState(){
+  if(authApi && typeof authApi.ready === "function"){
+    try{
+      await authApi.ready();
+    }catch(error){
+      console.error("dashboard header auth ready failed", error);
+    }
+  }
+  if(authApi && typeof authApi.refreshUsers === "function"){
+    try{
+      await authApi.refreshUsers();
+    }catch(error){
+      console.error("dashboard header refresh users failed", error);
+    }
+  }
+  swadraHeaderUpdateStickyCart();
+  swadraHeaderUpdateAccountNav();
+}
+
+window.addEventListener("load", function(){ refreshDashboardHeaderState(); });
 window.addEventListener("storage", function(event){
   if(["cart","users","currentUser"].includes(event.key)){
     swadraHeaderUpdateStickyCart();
@@ -1538,7 +1579,9 @@ window.addEventListener("storage", function(event){
     renderOfferBar(true);
   }
 });
-window.addEventListener("focus", swadraHeaderUpdateStickyCart);
+window.addEventListener("focus", function(){
+  refreshDashboardHeaderState();
+});
 </script>
 </body>
 </html>

@@ -25,24 +25,7 @@ body{
     linear-gradient(180deg,#f8f2f5 0%,#f4f5f8 26%,#eef1f6 100%);
   color:var(--ink);
 }
-.sidebar{
-  position:fixed;left:0;top:0;width:280px;height:100vh;
-  background:#7a3d3d;
-  padding:26px;color:#fff;overflow:auto;
-  box-shadow:24px 0 40px rgba(122,61,61,.14);
-}
-.brand{font-size:34px;font-weight:800;margin-bottom:10px;letter-spacing:-.04em}
-.brand-sub{font-size:13px;line-height:1.6;color:rgba(255,255,255,.78);margin-bottom:24px}
-.nav-label{font-size:12px;text-transform:uppercase;letter-spacing:.16em;color:rgba(255,255,255,.58);margin:20px 0 10px}
-.sidebar button{
-  width:100%;padding:15px 16px;border:none;border-radius:18px;
-  background:rgba(255,255,255,.12);color:#fff;font-weight:700;text-align:left;
-  margin-bottom:12px;cursor:pointer;transition:.25s;backdrop-filter:blur(6px)
-}
-.sidebar button:hover,.sidebar button.active{
-  background:#fff;color:var(--wine);transform:translateX(4px)
-}
-.main{margin-left:280px;padding:34px}
+.main{margin-left:0;padding:34px}
 .topbar{
   display:flex;justify-content:space-between;align-items:flex-start;
   margin-bottom:24px;gap:20px;flex-wrap:wrap
@@ -177,7 +160,6 @@ input:focus,select:focus,textarea:focus{border-color:#7a3d3d;box-shadow:0 0 0 4p
 }
 @media(max-width:1200px){.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:980px){
-  .sidebar{position:relative;width:100%;height:auto}
   .main{margin-left:0;padding:20px}
 }
 @media(max-width:720px){
@@ -190,36 +172,12 @@ input:focus,select:focus,textarea:focus{border-color:#7a3d3d;box-shadow:0 0 0 4p
 <link rel="stylesheet" href="mobile.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="api-config.js"></script></head>
+<script src="api-config.js"></script><style id="adminGlobalNavPadFix">body{padding-top:118px !important;}</style>
+</head>
 <body>
-<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Callback Requests</a></div>
-
-<div class="sidebar">
-<div class="brand">Swadra Admin</div>
-<div class="brand-sub">Control products, pricing, stock, and merchandising from one place.</div>
-<div class="nav-label">Workspace</div>
-<button onclick="location.href='admin-dashboard.html'">Dashboard</button>
-<button class="active">Products</button>
-<button onclick="location.href='admin-orders.html'">Orders</button>
-<button onclick="location.href='admin-customers.html'">Customers</button>
-<button onclick="location.href='admin-payments.html'">Payments</button>
-<button onclick="location.href='admin-profit.html'">Profit Tracker</button>
-  <button onclick="location.href='admin-callbacks.html'">Callback Requests</button>
-<button onclick="location.href='admin-index.html'">Settings</button>
-<div class="nav-label">Storefront</div>
-<button onclick="location.href='index.html'">Home</button>
-</div>
-
+<div id="adminTopBar" style="position:fixed;top:0;left:0;right:0;z-index:100000;height:44px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;font-weight:700;font-size:22px;line-height:44px;text-align:center;border-bottom:1px solid rgba(122,61,61,.18);">Swadra Organics Admin Pannel</div>
+<div class="admin-global-nav" id="adminGlobalNav" style="position:fixed;top:44px;left:0;right:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Home</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Main</a><a href="backend/ai.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Add Product</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="backend/saved-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Edit Products</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payment</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupan</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Call Back</a><a href="backend/backend.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Backend</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Courier</a><span id="backendLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Backend</span><span id="firestoreLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Firestore</span><details style="margin-left:auto;position:relative;"><summary style="list-style:none;cursor:pointer;color:#fff;font-size:18px;line-height:1;padding:4px 6px;">👤</summary><div style="position:absolute;right:0;top:30px;min-width:210px;background:#fff;border:1px solid #ece1de;border-radius:14px;box-shadow:0 16px 35px rgba(0,0,0,.18);padding:8px;"><a href="admin-index.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Admin Home</a><a href="admin-profit.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Shiprocket</a><a href="index.html" style="display:block;padding:10px 12px;color:#991b1b;text-decoration:none;font-weight:800;border-radius:10px;background:#fff7f7;">Logout</a></div></details></div>
 <div class="main">
-<div class="topbar">
-<div>
-<div class="eyebrow">Catalog Control Room</div>
-<h1>Manage Products</h1>
-<p>Existing functions remain unchanged. From here, you can add products, update details, manage stock, and sync home/category pages.</p>
-</div>
-<button class="primary-btn" onclick="openModal()">+ Add Product</button>
-</div>
-
 <div class="stats-grid" id="productStats"></div>
 
 <div class="panel">
@@ -434,13 +392,13 @@ if(offPercent > 0){
 return `
 <div class="price-stack">
 <div class="price-line">
-<span class="old-price">â‚¹${mrp}</span>
-<div class="price">â‚¹${price}</div>
+<span class="old-price">₹${mrp}</span>
+<div class="price">₹${price}</div>
 </div>
 <div class="discount-badge">${offPercent}% OFF</div>
 </div>`;
 }
-return `<div class="price">â‚¹${price}</div>`;
+return `<div class="price">₹${price}</div>`;
 }
 
 async function migrateLegacyProductsIfNeeded(){
@@ -698,8 +656,8 @@ ${getProductImages(item).length > 1 ? `<div class="thumb-dots">${buildAdminImage
 <h3>${item.name}</h3>
 <div class="meta">
 <div><b>Size:</b> ${item.size || "100gm"}</div>
-<div><b>MRP:</b> â‚¹${item.mrp}</div>
-<div><b>Selling Price:</b> â‚¹${item.price}</div>
+<div><b>MRP:</b> ₹${item.mrp}</div>
+<div><b>Selling Price:</b> ₹${item.price}</div>
 <div><b>Discount:</b> ${item.offPercent}% OFF</div>
 <div><b>Stock:</b> ${item.stockQty}</div>
 </div>
@@ -817,11 +775,11 @@ ${stockStatus==="Out of Stock"
 </div>
 <div class="meta-chip">
 <div class="meta-label">MRP</div>
-<div class="meta-value">â‚¹${item.mrp}</div>
+<div class="meta-value">₹${item.mrp}</div>
 </div>
 <div class="meta-chip">
 <div class="meta-label">Selling Price</div>
-<div class="meta-value">â‚¹${item.price}</div>
+<div class="meta-value">₹${item.price}</div>
 </div>
 <div class="meta-chip">
 <div class="meta-label">Discount</div>
@@ -887,8 +845,14 @@ migrateLegacyProductsIfNeeded().then(async ()=>{
 await renderProducts();
 });
 </script>
+<script src="admin-nav-active.js"></script>
 </body>
 </html>
+
+
+
+
+
 
 
 

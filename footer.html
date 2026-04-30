@@ -70,7 +70,7 @@ border-radius:30px;text-decoration:none;font-weight:700;
 <div class="mini-links">
 <a href="#combos-deals">Combos</a>
 <a href="#contact-us">Contact</a>
-<a href="#privacy-policy">Privacy</a>
+<a href="privacy-policy.html">Privacy</a>
 <a href="#cities">Cities</a>
 <a href="#subscribe">Subscribe</a>
 </div>
@@ -102,10 +102,10 @@ border-radius:30px;text-decoration:none;font-weight:700;
 <a href="#about-us">About Us</a>
 <a href="#faq">FAQ</a>
 <a href="#blog">Blog</a>
-<a href="#privacy-policy">Privacy Policy</a>
-<a href="#shipping-policy">Shipping Policy</a>
-<a href="#return-policy">Return Policy</a>
-<a href="#terms-conditions">Terms & Conditions</a>
+<a href="privacy-policy.html">Privacy Policy</a>
+<a href="shipping-policy.html">Shipping Policy</a>
+<a href="return-refund-policy.html">Return Policy</a>
+<a href="terms-conditions.html">Terms & Conditions</a>
 </div>
 </div>
 
@@ -197,21 +197,25 @@ border-radius:30px;text-decoration:none;font-weight:700;
 <section id="privacy-policy" class="detail-section">
 <h3>Privacy Policy</h3>
 <p>Your information should be handled with care and used only to support a smooth shopping experience. Privacy here means transparency, respect and secure customer communication.</p>
+<p><a href="privacy-policy.html">Open full Privacy Policy</a></p>
 </section>
 
 <section id="shipping-policy" class="detail-section">
 <h3>Shipping Policy</h3>
 <p>Orders are packed with care and dispatched with a focus on freshness, secure packaging and reliable delivery communication. The aim is simple: products should arrive safely and in great condition.</p>
+<p><a href="shipping-policy.html">Open full Shipping Policy</a></p>
 </section>
 
 <section id="return-policy" class="detail-section">
 <h3>Return Policy</h3>
 <p>If something goes wrong, the return experience should feel fair and clear. This section communicates support expectations with empathy and straightforward steps.</p>
+<p><a href="return-refund-policy.html">Open full Return & Refund Policy</a></p>
 </section>
 
 <section id="terms-conditions" class="detail-section">
 <h3>Terms & Conditions</h3>
 <p>These terms outline the basics of shopping, ordering, payment and service usage in a way that protects both customers and the brand while keeping the experience transparent.</p>
+<p><a href="terms-conditions.html">Open full Terms & Conditions</a></p>
 </section>
 
 <section id="cities" class="detail-section">
@@ -238,12 +242,26 @@ border-radius:30px;text-decoration:none;font-weight:700;
 </main>
 
 <script>
-function getCart(){
-  return JSON.parse(localStorage.getItem("cart")) || [];
+async function getCart(){
+  const authApi = window.SWADRA_AUTH || null;
+  const dataApi = window.SWADRA_DATA || null;
+  if(!authApi || !dataApi || typeof authApi.ready !== "function" || typeof authApi.getCurrentUser !== "function" || typeof dataApi.fetchCart !== "function"){
+    return [];
+  }
+  try{
+    await authApi.ready();
+    const userId = String(authApi.getCurrentUser() || "").trim().toLowerCase();
+    if(!userId){
+      return [];
+    }
+    return await dataApi.fetchCart(userId);
+  }catch(error){
+    return [];
+  }
 }
 
-function updateCartUI(){
-  let cart = getCart();
+async function updateCartUI(){
+  let cart = await getCart();
   let totalItems = 0;
   let totalPrice = 0;
 
@@ -257,17 +275,18 @@ function updateCartUI(){
 
   if(totalItems > 0){
     bar.style.display = "flex";
-    document.getElementById("cartCount").innerText = totalItems + " item â‚¹" + totalPrice;
+    document.getElementById("cartCount").innerText = totalItems + " item ₹" + totalPrice;
   }else{
     bar.style.display = "none";
   }
 }
 
 updateCartUI();
-window.addEventListener("storage", updateCartUI);
+window.addEventListener("focus", updateCartUI);
 </script>
 </body>
 </html>
+
 
 
 

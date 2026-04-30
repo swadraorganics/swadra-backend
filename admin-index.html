@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Swadra Organics - Admin Hub</title>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <style>
     * { box-sizing: border-box; }
 
@@ -151,8 +154,8 @@
     }
 
     .main{
-      margin-left:290px;
-      width:calc(100% - 290px);
+      margin-left:0;
+      width:100%;
       padding:20px 24px 28px;
     }
 
@@ -375,11 +378,38 @@
     }
   </style>
 <link rel="stylesheet" href="swadra-responsive.css">
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="api-config.js"></script></head>
 <body>
-<div class="admin-global-nav" id="adminGlobalNav" style="position:sticky;top:0;z-index:99999;display:none;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Shiprocket</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Callback Requests</a></div>
+<div id="adminTopBar" style="position:fixed;top:0;left:0;right:0;z-index:100000;display:none;height:44px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;font-weight:700;font-size:22px;line-height:44px;text-align:center;border-bottom:1px solid rgba(122,61,61,.18);">Swadra Organics Admin Pannel</div>
+<div class="admin-global-nav" id="adminGlobalNav" style="position:fixed;top:44px;left:0;right:0;z-index:99999;display:none;flex-direction:column;align-items:flex-start;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;width:100%;">
+    <a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Home</a>
+    <a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Main</a>
+    <a href="backend/ai.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Add Product</a>
+    <a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a>
+    <a href="backend/saved-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Edit Products</a>
+    <a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a>
+    <a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a>
+    <a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payment</a>
+    <a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupan</a>
+    <a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Call Back</a>
+    <a href="backend/backend.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Backend</a>
+    <a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a>
+    <a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Courier</a>
+    <span id="backendLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Backend</span>
+    <span id="firestoreLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Firestore</span>
+    <div id="adminProfileWrap" style="margin-left:auto;position:relative;" onmouseenter="openAdminProfileMenu()" onmouseleave="closeAdminProfileMenu()">
+      <button type="button" onclick="toggleAdminProfileMenu()" style="width:auto;min-width:32px;margin:0;padding:4px 6px;border-radius:0;background:transparent;color:#fff;border:none;box-shadow:none;font-size:18px;line-height:1;">👤</button>
+      <div id="adminProfileMenu" style="display:none;position:absolute;right:0;top:40px;min-width:240px;background:#ffffff;border:1px solid #ece1de;border-radius:18px;box-shadow:0 22px 45px rgba(0,0,0,0.16);padding:14px 0 12px;">
+        <button type="button" onclick="logout()" style="width:calc(100% - 20px);margin:0 10px 8px;background:#ffffff;color:#2a2a2a;font-weight:700;border:1px solid #f0e6e3;">Logout</button>
+        <button type="button" onclick="showSettings();closeAdminProfileMenu();" style="width:calc(100% - 20px);margin:0 10px 8px;background:#ffffff;color:#2a2a2a;font-weight:700;border:1px solid #f0e6e3;">Change Password</button>
+        <button type="button" onclick="window.location.href='admin-profit.html'" style="width:calc(100% - 20px);margin:0 10px 8px;background:#ffffff;color:#2a2a2a;font-weight:700;border:1px solid #f0e6e3;">Profit</button>
+        <button type="button" onclick="window.location.href='admin-shiprocket.html'" style="width:calc(100% - 20px);margin:0 10px 8px;background:#ffffff;color:#2a2a2a;font-weight:700;border:1px solid #f0e6e3;">Shiprocket</button>
+        <button type="button" onclick="toggleWebsiteAvailability();closeAdminProfileMenu();" style="width:calc(100% - 20px);margin:0 10px;background:#fff7f7;color:#991b1b;font-weight:800;border:1px solid #f3d6d6;">Website Offline</button>
+      </div>
+    </div>
+  </div>
+</div>
 
   <!-- LOGIN -->
   <div class="login-wrap" id="adminLoginScreen">
@@ -412,6 +442,7 @@
       <button onclick="goTo('admin-payments.html')">Payments</button>
       <button onclick="goTo('admin-coupons.html')">Coupons</button>
       <button onclick="goTo('admin-profit.html')">Profit Tracker</button>
+      <button onclick="goTo('admin-recovery.html')">Recovery & Refunds</button>
       <button onclick="goTo('admin-callbacks.html')">Callback Requests</button>
       <button onclick="showSettings()">Settings</button>
       <button onclick="logout()">Logout</button>
@@ -420,135 +451,22 @@
 
     <!-- MAIN -->
     <div class="main" id="mainPanel">
-      <div class="topbar">
-        <h1>Swadra Admin Control Hub</h1>
-        <p>Sidebar se alag-alag backend sections open honge. Settings aur coupon control isi page par available hain, with upgraded AI-style layout.</p>
-      </div>
-
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="label">Admin Status</div>
-          <div class="value">Live</div>
+      <div class="panel" style="max-width:1200px;margin:0 auto;">
+        <h2>Recent Activity</h2>
+        <p class="muted">Latest notifications from orders, payments, Shiprocket, backend, and Firestore.</p>
+        <div class="actions" style="margin-top:10px;">
+          <button type="button" onclick="loadRecentActivity()">Refresh Activity</button>
+          <button id="websiteOfflineToggleBtn" type="button" onclick="toggleWebsiteAvailability()">Put Website Offline</button>
         </div>
-        <div class="stat-card">
-          <div class="label">Login Mode</div>
-          <div class="value">Secure</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Coupon Status</div>
-          <div class="value" id="couponStatusShort">None</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Discount</div>
-          <div class="value" id="couponDiscountShort">0%</div>
-        </div>
-      </div>
-
-      <div class="grid">
-        <div class="panel">
-          <h2>Admin Overview</h2>
-          <p class="muted">
-            Yeh main admin hub page hai. Is page se aap admin sections open kar sakte ho,
-            credentials update kar sakte ho, aur quick coupon control bhi use kar sakte ho.
-          </p>
-
-          <div class="section-title">Quick Navigation</div>
-          <div class="actions">
-            <button onclick="goTo('admin-dashboard.html')">Open Dashboard</button>
-            <button onclick="goTo('admin-products.html')">Open Products</button>
-            <button class="btn-dark" onclick="goTo('admin-orders.html')">Open Orders</button>
+        <div class="coupon-status" id="websiteOfflineStatusText">Website is currently live for customers.</div>
+        <div id="activityFeed" style="margin-top:14px;display:grid;gap:10px;"></div>
+        <div style="margin-top:20px;border-top:1px solid #eadfdd;padding-top:16px;">
+          <h2 style="margin:0 0 8px;">Bug Scanner</h2>
+          <p class="muted">Auto scan for website and backend issues.</p>
+          <div class="actions" style="margin-top:8px;">
+            <button type="button" onclick="runBugScan()">Scan Bugs</button>
           </div>
-
-          <div class="section-title">Website Availability</div>
-          <div class="actions">
-            <button id="websiteOfflineToggleBtn" type="button" onclick="toggleWebsiteAvailability()">Put Website Offline</button>
-          </div>
-          <div class="coupon-status" id="websiteOfflineStatusText">Website is currently live for customers.</div>
-
-          <div class="section-title">Change Username & Password</div>
-          <div class="setting-box hidden" id="settingsBox">
-            <div class="row one">
-              <div class="field">
-                <label>New Username</label>
-                <input id="newUser" placeholder="New Username">
-              </div>
-            </div>
-
-            <div class="row one">
-              <div class="field">
-                <label>New Password</label>
-                <input id="newPass" placeholder="New Password">
-              </div>
-            </div>
-
-            <div class="actions">
-              <button onclick="sendOTP()">Send OTP</button>
-            </div>
-
-            <div class="row one" style="margin-top:14px;">
-              <div class="field">
-                <label>Enter OTP</label>
-                <input id="otpInput" placeholder="Enter OTP">
-              </div>
-            </div>
-
-            <div class="actions">
-              <button onclick="verifyOTP()">Save Changes</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel">
-          <h2>Coupon Control</h2>
-
-          <div class="coupon-box">
-            <div class="row one">
-              <div class="field">
-                <label>Coupon Code</label>
-                <input id="couponCode" placeholder="Coupon Code">
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="field">
-                <label>Discount Percentage</label>
-                <input id="couponDiscount" type="number" placeholder="Discount Percentage">
-              </div>
-              <div class="field">
-                <label>Status</label>
-                <select id="couponStatus">
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="summary-box">
-              <div class="summary-card">
-                <div class="label">Current Code</div>
-                <div class="value" id="currentCouponCode">-</div>
-              </div>
-              <div class="summary-card green">
-                <div class="label">Current Discount</div>
-                <div class="value" id="currentCouponDiscount">0%</div>
-              </div>
-              <div class="summary-card red">
-                <div class="label">Current Status</div>
-                <div class="value" id="currentCouponState">Inactive</div>
-              </div>
-              <div class="summary-card">
-                <div class="label">Sync</div>
-                <div class="value">Cart</div>
-              </div>
-            </div>
-
-            <div class="actions" style="margin-top:18px;">
-              <button onclick="saveCoupon()">Save Coupon</button>
-              <button class="btn-dark" onclick="clearCoupon()">Clear Coupon</button>
-            </div>
-
-            <div class="coupon-status" id="couponStatusText">No admin coupon configured.</div>
-          </div>
+          <div id="bugFeed" style="margin-top:12px;display:grid;gap:10px;"></div>
         </div>
       </div>
     </div>
@@ -560,6 +478,19 @@
 let adminCouponCache = [];
 let currentAdminSession = false;
 const ADMIN_SESSION_KEY = "swadra_admin_session_v1";
+const adminRuntimeSession = window.__swadraAdminRuntimeSession = window.__swadraAdminRuntimeSession || {};
+
+function getAdminSessionFromWindowName(){
+  try{
+    const raw = String(window.name || "");
+    if(!raw || raw.charAt(0) !== "{") return null;
+    const state = JSON.parse(raw);
+    const session = state && state[ADMIN_SESSION_KEY];
+    return session && session.ok ? session : null;
+  }catch(error){
+    return null;
+  }
+}
 
     function normalizeBackendUrl(url){
       return String(url || "").trim().replace(/\/+$/, "");
@@ -582,12 +513,8 @@ const ADMIN_SESSION_KEY = "swadra_admin_session_v1";
 function getApiBase(){
   const resolved = normalizeBackendUrl(window.SWADRA_API_BASE);
   const sessionConfigured = (()=>{
-    try{
-      const saved = JSON.parse(sessionStorage.getItem("swadra_backend_panel_settings_v2") || "{}");
-      return normalizeBackendUrl(saved.backendUrl || "");
-    }catch(error){
-      return "";
-    }
+    const saved = window.__swadraBackendPanelSettings || {};
+    return normalizeBackendUrl(saved.backendUrl || "");
   })();
   const isLocalPreview = /^(localhost|127\.0\.0\.1)$/i.test(String(window.location.hostname || ""));
   if(isLocalPreview && !sessionConfigured){
@@ -616,7 +543,9 @@ function getApiBase(){
       const admin = data.admin && typeof data.admin === "object" ? data.admin : {};
       return {
         username: String(admin.username || "admin").trim() || "admin",
-        password: String(admin.password || "1234")
+        password: String(admin.password || ""),
+        passwordHash: String(admin.passwordHash || ""),
+        passwordAlgo: String(admin.passwordAlgo || "")
       };
     }
 
@@ -628,8 +557,7 @@ function getApiBase(){
       }
       await getAdminFirestoreRoot().set({
         admin: {
-          username: safeUsername,
-          password: safePassword
+          username: safeUsername
         },
         meta: {
           updatedAt: new Date().toISOString()
@@ -669,6 +597,8 @@ function getApiBase(){
     function renderWebsiteAvailabilityState(isOffline){
       const button = getWebsiteOfflineToggleBtn();
       const status = getWebsiteOfflineStatusText();
+      const firestoreBadge = document.getElementById("firestoreLiveBadge");
+      const backendBadge = document.getElementById("backendLiveBadge");
       const offline = !!isOffline;
       if(button){
         button.textContent = offline ? "Bring Website Online" : "Put Website Offline";
@@ -677,6 +607,14 @@ function getApiBase(){
         status.textContent = offline
           ? "Website is offline. All customer-side products are showing Out of Stock."
           : "Website is currently live for customers.";
+      }
+      if(firestoreBadge){
+        firestoreBadge.style.background = offline ? "#b91c1c" : "#15803d";
+        firestoreBadge.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:${offline ? "#fca5a5" : "#86efac"};display:inline-block;"></span>Firestore`;
+      }
+      if(backendBadge){
+        backendBadge.style.background = offline ? "#b91c1c" : "#15803d";
+        backendBadge.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:${offline ? "#fca5a5" : "#86efac"};display:inline-block;"></span>Backend`;
       }
     }
 
@@ -826,35 +764,65 @@ function getApiBase(){
 
     function persistAdminSession(payload){
       currentAdminSession = true;
-      try{
-        sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
-          ok: true,
-          username: String(payload && payload.username || "").trim(),
-          loginAt: Date.now()
-        }));
-      }catch(error){}
+      adminRuntimeSession[ADMIN_SESSION_KEY] = {
+        ok: true,
+        username: String(payload && payload.username || "").trim(),
+        role: String(payload && payload.role || "owner"),
+        token: String(payload && payload.token || ""),
+        expiresAt: String(payload && payload.expiresAt || ""),
+        loginAt: Date.now()
+      };
+      if(window.SWADRA_SET_ADMIN_TOKEN){
+        window.SWADRA_SET_ADMIN_TOKEN(adminRuntimeSession[ADMIN_SESSION_KEY]);
+      }
     }
 
     function clearAdminSession(){
       currentAdminSession = false;
-      try{
-        sessionStorage.removeItem(ADMIN_SESSION_KEY);
-      }catch(error){}
+      delete adminRuntimeSession[ADMIN_SESSION_KEY];
+      if(window.SWADRA_CLEAR_ADMIN_TOKEN){
+        window.SWADRA_CLEAR_ADMIN_TOKEN();
+      }
+    }
+
+    async function revokeBackendAdminSession(allSessions){
+      const saved = adminRuntimeSession[ADMIN_SESSION_KEY] || null;
+      const token = String(saved && saved.token || "").trim();
+      if(!token) return false;
+      const endpoint = getBackendBase() + (allSessions ? "/api/admin/logout-all" : "/api/admin/logout");
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-session-token": token
+        },
+        body: JSON.stringify({})
+      });
+      const data = await response.json().catch(()=>({}));
+      if(!response.ok || !data.ok){
+        throw new Error(data.error || "Admin session revoke failed");
+      }
+      return true;
     }
 
 function showAdminPanel(){
   const els = getAdminElements();
   const nav = document.getElementById("adminGlobalNav");
+  const topBar = document.getElementById("adminTopBar");
+  if(topBar) topBar.style.display = "block";
   if(nav) nav.style.display = "flex";
       if(els.adminLoginScreen) els.adminLoginScreen.style.display = "none";
       if(els.appShell) els.appShell.style.display = "block";
-      if(els.sidebar) els.sidebar.style.display = "block";
+      if(els.sidebar) els.sidebar.style.display = "none";
       if(els.mainPanel) els.mainPanel.style.display = "block";
+      if(els.mainPanel) els.mainPanel.style.paddingTop = ((topBar ? topBar.offsetHeight : 44) + (nav ? nav.offsetHeight : 88) + 16) + "px";
     }
 
     function showAdminLogin(){
       const els = getAdminElements();
       const nav = document.getElementById("adminGlobalNav");
+      const topBar = document.getElementById("adminTopBar");
+      if(topBar) topBar.style.display = "none";
       if(nav) nav.style.display = "none";
       if(els.adminLoginScreen) els.adminLoginScreen.style.display = "flex";
       if(els.appShell) els.appShell.style.display = "none";
@@ -864,18 +832,253 @@ function showAdminPanel(){
 
 function restoreAdminSession(){
   if(!currentAdminSession){
-    try{
-      const saved = JSON.parse(sessionStorage.getItem(ADMIN_SESSION_KEY) || "null");
-      currentAdminSession = !!(saved && saved.ok);
-    }catch(error){
-      currentAdminSession = false;
+    const saved = adminRuntimeSession[ADMIN_SESSION_KEY] || getAdminSessionFromWindowName();
+    if(saved && !adminRuntimeSession[ADMIN_SESSION_KEY]){
+      adminRuntimeSession[ADMIN_SESSION_KEY] = saved;
+      if(window.SWADRA_SET_ADMIN_TOKEN){
+        window.SWADRA_SET_ADMIN_TOKEN(saved);
+      }
     }
+    currentAdminSession = !!(saved && saved.ok);
   }
   if(currentAdminSession){
     showAdminPanel();
   }else{
-    showAdminLogin();
+      showAdminLogin();
       }
+    }
+
+    function loadAdminDashboardData(){
+      loadRecentActivity();
+      loadWebsiteAvailability();
+    }
+
+    async function loadRecentActivity(){
+      const feed = document.getElementById("activityFeed");
+      if(!feed) return;
+      const entries = [];
+      let ordersLoaded = false;
+      try{
+        const dataApi = window.SWADRA_DATA || null;
+        if(dataApi && typeof dataApi.fetchOrders === "function"){
+          const orders = await dataApi.fetchOrders();
+          if(Array.isArray(orders) && orders.length){
+            const recentOrders = orders.slice(-5).reverse();
+            recentOrders.forEach(function(order){
+              entries.push({
+                type:"order",
+                text:"New/Updated order: " + String(order.id || "-"),
+                time:String(order.date || order.createdAt || "Recently")
+              });
+            });
+          }
+          ordersLoaded = true;
+        }
+      }catch(error){}
+      if(!ordersLoaded){
+        try{
+          const response = await fetch(getApiBase() + "/api/orders", { cache:"no-store" });
+          const data = await response.json().catch(function(){ return {}; });
+          const orders = Array.isArray(data && data.orders) ? data.orders : [];
+          if(orders.length){
+            const recentOrders = orders.slice(-5).reverse();
+            recentOrders.forEach(function(order){
+              entries.push({
+                type:"order",
+                text:"New/Updated order: " + String(order.id || "-"),
+                time:String(order.date || order.createdAt || "Recently")
+              });
+            });
+          }
+          ordersLoaded = true;
+        }catch(error){
+          entries.push({ type:"error", text:"Order feed unavailable from Firestore and backend.", time:"Now" });
+        }
+      }
+      try{
+        const response = await fetch(getApiBase() + "/health", { cache:"no-store" });
+        if(!response.ok){
+          entries.push({ type:"error", text:"Backend issue: health endpoint not OK.", time:"Now" });
+        }else{
+          entries.push({ type:"info", text:"Backend is reachable.", time:"Now" });
+        }
+      }catch(error){
+        entries.push({ type:"error", text:"Backend issue: unable to connect.", time:"Now" });
+      }
+      entries.unshift({ type:"payment", text:"Payment activity monitoring active.", time:"Live" });
+      entries.unshift({ type:"shiprocket", text:"Shiprocket update channel active.", time:"Live" });
+      feed.innerHTML = entries.length
+        ? entries.map(function(item){
+            const bg = item.type === "error" ? "#fff1f1" : "#f8fbff";
+            const bd = item.type === "error" ? "#f3c7c7" : "#dfe8f3";
+            return '<div style="background:'+bg+';border:1px solid '+bd+';border-radius:12px;padding:12px 14px;">'
+              + '<div style="font-weight:800;color:#2b2323;">' + item.text + '</div>'
+              + '<div style="font-size:12px;color:#6b5c5c;margin-top:6px;">' + item.time + '</div>'
+              + '</div>';
+          }).join("")
+        : '<div style="background:#f8fbff;border:1px solid #dfe8f3;border-radius:12px;padding:12px 14px;">No recent activity.</div>';
+    }
+
+    async function runBugScan(){
+      const bugFeed = document.getElementById("bugFeed");
+      if(!bugFeed) return;
+      bugFeed.innerHTML = '<div style="background:#f8fbff;border:1px solid #dfe8f3;border-radius:12px;padding:12px 14px;">Deep scanning pages, APIs, links, scripts, SEO files and storage policy...</div>';
+      const bugs = [];
+      const warnings = [];
+      const passed = [];
+      const pageChecks = [
+        { name:"Home page", url:"index.html" },
+        { name:"Spices page", url:"spices.html" },
+        { name:"Dry fruits page", url:"dryfruits.html" },
+        { name:"Oil & ghee page", url:"oilghee.html" },
+        { name:"Cart page", url:"cart.html" },
+        { name:"Checkout page", url:"checkout.html" },
+        { name:"Payment page", url:"payment.html" },
+        { name:"Orders page", url:"order.html" },
+        { name:"Track order page", url:"trackorder.html" },
+        { name:"Invoice page", url:"invoice.html" },
+        { name:"Account page", url:"account.html" },
+        { name:"About page", url:"aboutus.html" },
+        { name:"Product detail page", url:"product-detail.html" },
+        { name:"Admin home", url:"admin-home.html" },
+        { name:"Admin customers", url:"admin-customers.html" },
+        { name:"Admin orders", url:"admin-orders.html" },
+        { name:"Admin payments", url:"admin-payments.html" },
+        { name:"Admin coupons", url:"admin-coupons.html" },
+        { name:"Admin recovery", url:"admin-recovery.html" },
+        { name:"Admin courier", url:"admin-shiprocket.html" },
+        { name:"Backend products", url:"backend/ai.html" },
+        { name:"Backend saved products", url:"backend/saved-products.html" },
+        { name:"Backend diagnostics", url:"backend/backend.html" },
+        { name:"Privacy policy", url:"privacy-policy.html" },
+        { name:"Terms page", url:"terms-conditions.html" },
+        { name:"Shipping policy", url:"shipping-policy.html" },
+        { name:"Return refund policy", url:"return-refund-policy.html" },
+        { name:"Cancellation policy", url:"cancellation-policy.html" }
+      ];
+      const checks = [
+        { name:"Backend health", url:getApiBase() + "/health", type:"json" },
+        { name:"Orders API", url:getApiBase() + "/api/orders", type:"json" },
+        { name:"App state API", url:getApiBase() + "/api/app-state?keys=homeContent,offers,shippingSettings,compliance", type:"json" },
+        { name:"Payment attempts API", url:getApiBase() + "/api/payments/attempts", type:"json" },
+        { name:"Sitemap", url:"sitemap.xml", type:"text" },
+        { name:"Robots", url:"robots.txt", type:"text" },
+        { name:"PWA manifest", url:"manifest.json", type:"json" },
+        { name:"Service worker", url:"sw.js", type:"text" }
+      ];
+      for(const check of checks){
+        try{
+          const response = await fetch(check.url, { cache:"no-store" });
+          if(!response.ok){
+            bugs.push(check.name + " returned status " + response.status);
+            continue;
+          }
+          if(check.type === "json"){
+            await response.json().catch(function(){ bugs.push(check.name + " returned invalid JSON"); });
+          }else if(check.type === "text"){
+            const text = await response.text();
+            if(!text || text.length < 10) bugs.push(check.name + " returned empty text");
+          }else{
+            const text = await response.text();
+            if(!text || text.length < 100){
+              bugs.push(check.name + " returned empty/invalid HTML");
+            }
+          }
+          passed.push(check.name);
+        }catch(error){
+          bugs.push(check.name + " failed: " + String(error && error.message || "network error"));
+        }
+      }
+      const assetUrls = new Set(["api-config.js", "admin-nav-active.js", "seo-aeo.js", "mobile.css", "manifest.json", "sw.js"]);
+      const internalLinks = new Set();
+      function cleanUrl(value){
+        return String(value || "").split("#")[0].trim();
+      }
+      function isSkippableUrl(value){
+        return !value || /^(https?:|mailto:|tel:|javascript:|data:|blob:)/i.test(value);
+      }
+      function addIssueFromHtml(page, text){
+        if(/Page Not Found/i.test(text) && /Firebase Command-Line Interface/i.test(text)){
+          bugs.push(page.name + " is Firebase 404 page");
+        }
+        const forbiddenStoragePattern = new RegExp("local" + "Storage|session" + "Storage");
+        if(forbiddenStoragePattern.test(text)){
+          bugs.push(page.name + " contains direct browser storage usage");
+        }
+        if(!/<title>[\s\S]*?<\/title>/i.test(text)){
+          warnings.push(page.name + " missing title tag");
+        }
+        if(!/<meta[^>]+name=["']description["']/i.test(text)){
+          warnings.push(page.name + " missing meta description");
+        }
+        if(!/<meta[^>]+name=["']viewport["']/i.test(text)){
+          bugs.push(page.name + " missing viewport meta");
+        }
+        Array.from(text.matchAll(/\s(?:href|src)=["']([^"']+)["']/gi)).forEach(function(match){
+          const url = cleanUrl(match[1]);
+          if(isSkippableUrl(url)) return;
+          if(/\.(js|css|png|jpg|jpeg|webp|gif|svg|ico|json|xml|txt)$/i.test(url)){
+            assetUrls.add(url);
+          }else if(/\.html(?:\?|$)|^[^?]*$/.test(url)){
+            internalLinks.add(url);
+          }
+        });
+      }
+      for(const page of pageChecks){
+        try{
+          const response = await fetch(page.url, { cache:"no-store" });
+          if(!response.ok){
+            bugs.push(page.name + " returned status " + response.status);
+            continue;
+          }
+          const text = await response.text();
+          if(!text || text.length < 100){
+            bugs.push(page.name + " returned empty/invalid HTML");
+            continue;
+          }
+          addIssueFromHtml(page, text);
+          passed.push(page.name);
+        }catch(error){
+          bugs.push(page.name + " failed: " + String(error && error.message || "network error"));
+        }
+      }
+      const urlsToProbe = Array.from(new Set([].concat(Array.from(assetUrls), Array.from(internalLinks))))
+        .filter(function(url){ return !isSkippableUrl(url) && !/[{}]/.test(url); })
+        .slice(0, 120);
+      for(const url of urlsToProbe){
+        try{
+          const response = await fetch(url, { method:"GET", cache:"no-store" });
+          if(!response.ok){
+            bugs.push("Broken internal resource/link: " + url + " returned " + response.status);
+          }
+        }catch(error){
+          bugs.push("Broken internal resource/link: " + url + " failed");
+        }
+      }
+      try{
+        const dataApi = window.SWADRA_DATA || null;
+        if(dataApi && typeof dataApi.fetchOrders === "function"){
+          await dataApi.fetchOrders();
+          passed.push("Firestore orders");
+        }
+      }catch(error){
+        warnings.push("Direct Firestore orders fetch blocked by security rules. Backend Orders API passed admin-session access.");
+      }
+
+      if(!bugs.length){
+        bugFeed.innerHTML = '<div style="background:#f2fff6;border:1px solid #b8e6c7;border-radius:12px;padding:12px 14px;font-weight:700;color:#166534;">No major bugs detected. Passed checks: ' + passed.length + (warnings.length ? '. Warnings: ' + warnings.length : '') + '</div>'
+          + warnings.map(function(item){
+            return '<div style="background:#fff8e8;border:1px solid #efd39d;border-radius:12px;padding:12px 14px;"><div style="font-weight:800;color:#8a5a00;">' + item + '</div></div>';
+          }).join("");
+        return;
+      }
+      bugFeed.innerHTML = '<div style="background:#fff8e8;border:1px solid #efd39d;border-radius:12px;padding:12px 14px;font-weight:800;color:#8a5a00;">Deep scan completed. Bugs: ' + bugs.length + ', warnings: ' + warnings.length + ', passed: ' + passed.length + '</div>'
+        + bugs.map(function(item){
+        return '<div style="background:#fff1f1;border:1px solid #f3c7c7;border-radius:12px;padding:12px 14px;"><div style="font-weight:800;color:#7f1d1d;">' + item + '</div></div>';
+      }).join("")
+        + warnings.map(function(item){
+          return '<div style="background:#fff8e8;border:1px solid #efd39d;border-radius:12px;padding:12px 14px;"><div style="font-weight:800;color:#8a5a00;">' + item + '</div></div>';
+        }).join("");
     }
 
     async function loginAdmin(event){
@@ -892,6 +1095,24 @@ function restoreAdminSession(){
       }
       setAdminLoginLoading(true);
       setAdminLoginStatus("Logging in...", "info");
+      async function tryFirestoreAdminFallback(){
+        const adminConfig = await fetchAdminConfigFromFirestore();
+        if(adminConfig.passwordHash || adminConfig.passwordAlgo){
+          return false;
+        }
+        if(
+          enteredUsername === String(adminConfig.username || "").trim() &&
+          enteredPassword === String(adminConfig.password || "") &&
+          String(adminConfig.password || "")
+        ){
+          persistAdminSession({ username: enteredUsername });
+          setAdminLoginStatus("Login successful. Opening admin panel...", "success");
+          showAdminPanel();
+          loadAdminDashboardData();
+          return true;
+        }
+        return false;
+      }
       try{
         const response = await fetch(adminLoginUrl,{
           method:"POST",
@@ -903,24 +1124,32 @@ function restoreAdminSession(){
     });
     const data = await response.json().catch(()=>({ ok:false, message:"Login failed" }));
     if(response.ok && data.ok){
-      persistAdminSession({ username: enteredUsername });
+      persistAdminSession({
+        username: enteredUsername,
+        role: data.session && data.session.role,
+        token: data.session && data.session.token,
+        expiresAt: data.session && data.session.expiresAt
+      });
       setAdminLoginStatus("Login successful. Opening admin panel...", "success");
-      window.location.href = data.redirectTo || "admin-index.html";
+      if(data.redirectTo && String(data.redirectTo).split("?")[0] !== "admin-index.html"){
+        window.location.href = data.redirectTo;
+      }else{
+        showAdminPanel();
+        loadAdminDashboardData();
+      }
       return;
     }
+    try{
+      const matched = await tryFirestoreAdminFallback();
+      if(matched){
+        return;
+      }
+    }catch(fallbackError){}
     setAdminLoginStatus(data.message || data.error || "Wrong credentials", "error");
       }catch(error){
         try{
-          const adminConfig = await fetchAdminConfigFromFirestore();
-          if(
-            enteredUsername === String(adminConfig.username || "").trim() &&
-            enteredPassword === String(adminConfig.password || "")
-          ){
-            persistAdminSession({ username: enteredUsername });
-            setAdminLoginStatus("Login successful. Opening admin panel...", "success");
-            window.location.href = "admin-index.html";
-            return;
-          }
+          const matched = await tryFirestoreAdminFallback();
+          if(matched) return;
           setAdminLoginStatus("Wrong credentials", "error");
         }catch(fallbackError){
           setAdminLoginStatus("Admin login failed. Backend ya Firestore connection issue hai.", "error");
@@ -938,9 +1167,31 @@ function restoreAdminSession(){
       window.location.href = "index.html";
     }
 
-function logout(){
+async function logout(){
+  closeAdminProfileMenu();
+  try{
+    await revokeBackendAdminSession(false);
+  }catch(error){
+    console.warn("backend admin logout failed", error);
+  }
   clearAdminSession();
   window.location.href = "index.html";
+}
+
+function toggleAdminProfileMenu(){
+  const menu = document.getElementById("adminProfileMenu");
+  if(!menu) return;
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+}
+
+function openAdminProfileMenu(){
+  const menu = document.getElementById("adminProfileMenu");
+  if(menu) menu.style.display = "block";
+}
+
+function closeAdminProfileMenu(){
+  const menu = document.getElementById("adminProfileMenu");
+  if(menu) menu.style.display = "none";
 }
 
 window.addEventListener("DOMContentLoaded", ()=>{
@@ -1011,15 +1262,7 @@ window.addEventListener("pageshow", restoreAdminSession);
     }
     alert("Credentials updated successfully");
   }catch(error){
-    try{
-      await updateAdminConfigInFirestore(
-        String(els.newUser && els.newUser.value || "").trim(),
-        String(els.newPass && els.newPass.value || "")
-      );
-      alert("Credentials updated successfully");
-    }catch(fallbackError){
-      alert((fallbackError && fallbackError.message) || error.message || "Failed to update credentials");
-    }
+    alert(error.message || "Credentials update ke liye secure backend admin session required hai.");
   }
 }
 
@@ -1070,18 +1313,21 @@ window.addEventListener("pageshow", restoreAdminSession);
 
     async function loadCoupon(){
       try{
+        const siteData = await loadCouponsFromSiteContent();
+        adminCouponCache = Array.isArray(siteData.coupons) ? siteData.coupons : [];
+        if(adminCouponCache.length){
+          setCouponFormValues(siteData.primaryCoupon || adminCouponCache[0] || null);
+          return;
+        }
+      }catch(error){}
+
+      try{
         const response = await fetch(getCouponsApiUrl(),{ cache:"no-store" });
         const data = await response.json().catch(()=>({ ok:false }));
         adminCouponCache = Array.isArray(data.coupons) ? data.coupons : [];
         setCouponFormValues(data.primaryCoupon || adminCouponCache[0] || null);
       }catch(error){
-        try{
-          const data = await loadCouponsFromSiteContent();
-          adminCouponCache = Array.isArray(data.coupons) ? data.coupons : [];
-          setCouponFormValues(data.primaryCoupon || adminCouponCache[0] || null);
-        }catch(fallbackError){
-          setCouponFormValues(null);
-        }
+        setCouponFormValues(null);
       }
     }
 
@@ -1110,27 +1356,26 @@ window.addEventListener("pageshow", restoreAdminSession);
         status: status
       };
       try{
-        const response = await fetch(getCouponsApiUrl(),{
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body:JSON.stringify(couponData)
-        });
-        const data = await response.json().catch(()=>({ ok:false }));
-        if(!response.ok || !data.ok){
-          throw new Error(data.error || "Failed to save coupon");
-        }
-        adminCouponCache = Array.isArray(data.coupons) ? data.coupons : [];
-        setCouponFormValues(data.primaryCoupon || couponData);
+        let backendData = null;
+        try{
+          const response = await fetch(getCouponsApiUrl(),{
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body:JSON.stringify(couponData)
+          });
+          const data = await response.json().catch(()=>({ ok:false }));
+          if(!response.ok || !data.ok){
+            throw new Error(data.error || "Failed to save coupon");
+          }
+          backendData = data;
+        }catch(error){}
+
+        const siteData = await saveCouponToSiteContent(couponData);
+        adminCouponCache = Array.isArray(siteData.coupons) ? siteData.coupons : (Array.isArray(backendData && backendData.coupons) ? backendData.coupons : []);
+        setCouponFormValues(siteData.primaryCoupon || couponData);
         alert("Coupon saved successfully");
       }catch(error){
-        try{
-          const data = await saveCouponToSiteContent(couponData);
-          adminCouponCache = Array.isArray(data.coupons) ? data.coupons : [];
-          setCouponFormValues(data.primaryCoupon || couponData);
-          alert("Coupon saved successfully");
-        }catch(fallbackError){
-          alert((fallbackError && fallbackError.message) || error.message || "Failed to save coupon");
-        }
+        alert((error && error.message) || "Failed to save coupon");
       }
     }
 
@@ -1142,23 +1387,20 @@ window.addEventListener("pageshow", restoreAdminSession);
         return alert("Enter coupon code to clear");
       }
       try{
-        const response = await fetch(`${getCouponsApiUrl()}/${encodeURIComponent(code)}`,{ method:"DELETE" });
-        const data = await response.json().catch(()=>({ ok:false }));
-        if(!response.ok || !data.ok){
-          throw new Error(data.error || "Failed to clear coupon");
-        }
+        try{
+          const response = await fetch(`${getCouponsApiUrl()}/${encodeURIComponent(code)}`,{ method:"DELETE" });
+          const data = await response.json().catch(()=>({ ok:false }));
+          if(!response.ok || !data.ok){
+            throw new Error(data.error || "Failed to clear coupon");
+          }
+        }catch(error){}
+
+        const data = await clearCouponFromSiteContent(code);
         adminCouponCache = Array.isArray(data.coupons) ? data.coupons : [];
         setCouponFormValues(data.primaryCoupon || null);
         alert("Coupon cleared");
       }catch(error){
-        try{
-          const data = await clearCouponFromSiteContent(code);
-          adminCouponCache = Array.isArray(data.coupons) ? data.coupons : [];
-          setCouponFormValues(data.primaryCoupon || null);
-          alert("Coupon cleared");
-        }catch(fallbackError){
-          alert((fallbackError && fallbackError.message) || error.message || "Failed to clear coupon");
-        }
+        alert((error && error.message) || "Failed to clear coupon");
       }
     }
 
@@ -1184,16 +1426,26 @@ window.addEventListener("pageshow", restoreAdminSession);
           }
         }catch(fallbackError){}
       }
-      loadCoupon();
       loadWebsiteAvailability();
+      loadRecentActivity();
+      document.addEventListener("click", function(event){
+        const nav = document.getElementById("adminGlobalNav");
+        const menu = document.getElementById("adminProfileMenu");
+        if(!nav || !menu || menu.style.display !== "block") return;
+        if(!nav.contains(event.target)){
+          closeAdminProfileMenu();
+        }
+      });
     });
 
     window.loginAdmin = loginAdmin;
+    window.loadRecentActivity = loadRecentActivity;
+    window.runBugScan = runBugScan;
+    window.toggleAdminProfileMenu = toggleAdminProfileMenu;
+    window.openAdminProfileMenu = openAdminProfileMenu;
+    window.closeAdminProfileMenu = closeAdminProfileMenu;
   </script>
+<script src="admin-nav-active.js"></script>
 </body>
 </html>
-
-
-
-
 

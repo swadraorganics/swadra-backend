@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "swadra-organics-db127",
     "public": ".",
     "ignore": [
       "firebase.json",
@@ -24,7 +25,45 @@
             "value": "no-cache, no-store, must-revalidate"
           }
         ]
+      },
+      {
+        "source": "admin-nav-active.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
       }
+    ],
+    "redirects": [
+      { "source": "/backend/admin-customers.html", "destination": "/admin-customers.html", "type": 301 },
+      { "source": "/backend/admin-orders.html", "destination": "/admin-orders.html", "type": 301 },
+      { "source": "/backend/admin-payments.html", "destination": "/admin-payments.html", "type": 301 },
+      { "source": "/backend/admin-coupons.html", "destination": "/admin-coupons.html", "type": 301 },
+      { "source": "/backend/admin-callbacks.html", "destination": "/admin-callbacks.html", "type": 301 },
+      { "source": "/backend/admin-products.html", "destination": "/admin-products.html", "type": 301 },
+      { "source": "/backend/admin-profit.html", "destination": "/admin-profit.html", "type": 301 },
+      { "source": "/backend/admin-shiprocket.html", "destination": "/admin-shiprocket.html", "type": 301 },
+      { "source": "/backend/admin-recovery.html", "destination": "/admin-recovery.html", "type": 301 },
+      { "source": "/backend/admin-home.html", "destination": "/admin-home.html", "type": 301 },
+      { "source": "/backend/admin-index.html", "destination": "/admin-index.html", "type": 301 },
+      { "source": "/backend/admin-order-sheet.html", "destination": "/admin-order-sheet.html", "type": 301 },
+      { "source": "/backend/backend/admin-customers.html", "destination": "/admin-customers.html", "type": 301 },
+      { "source": "/backend/backend/admin-orders.html", "destination": "/admin-orders.html", "type": 301 },
+      { "source": "/backend/backend/admin-payments.html", "destination": "/admin-payments.html", "type": 301 },
+      { "source": "/backend/backend/admin-coupons.html", "destination": "/admin-coupons.html", "type": 301 },
+      { "source": "/backend/backend/admin-callbacks.html", "destination": "/admin-callbacks.html", "type": 301 },
+      { "source": "/backend/backend/admin-products.html", "destination": "/admin-products.html", "type": 301 },
+      { "source": "/backend/backend/admin-profit.html", "destination": "/admin-profit.html", "type": 301 },
+      { "source": "/backend/backend/admin-shiprocket.html", "destination": "/admin-shiprocket.html", "type": 301 },
+      { "source": "/backend/backend/admin-recovery.html", "destination": "/admin-recovery.html", "type": 301 },
+      { "source": "/backend/backend/admin-home.html", "destination": "/admin-home.html", "type": 301 },
+      { "source": "/backend/backend/admin-index.html", "destination": "/admin-index.html", "type": 301 },
+      { "source": "/backend/backend/admin-order-sheet.html", "destination": "/admin-order-sheet.html", "type": 301 },
+      { "source": "/backend/backend/backend.html", "destination": "/backend/backend.html", "type": 301 },
+      { "source": "/backend/backend/ai.html", "destination": "/backend/ai.html", "type": 301 },
+      { "source": "/backend/backend/saved-products.html", "destination": "/backend/saved-products.html", "type": 301 }
     ]
   },
   "firestore": {

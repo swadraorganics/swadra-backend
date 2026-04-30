@@ -1,13 +1,17 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Invoice</title>
+<meta name="description" content="View and print Swadra Organics order invoice with customer, delivery, item, GST and payment details.">
 
 <link rel="stylesheet" href="invoice.css">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
 <style>html,body{background:#f1e3e3 !important;}</style>
 <link rel="stylesheet" href="swadra-responsive.css">
@@ -27,7 +31,8 @@ Choose Healthy â€¢ Be Swadra Family
 
 <div class="main" id="invoice">
 
-<h2>Tax Invoice</h2>
+<h2>Tax Invoice/Bill of Supply/Cash Memo</h2>
+<p>(Original for Recipient)</p>
 
 <p><strong>Order ID:</strong> <span id="orderId"></span></p>
 <p><strong>Date:</strong> <span id="date"></span></p>
@@ -61,15 +66,15 @@ Choose Healthy â€¢ Be Swadra Family
 <!-- GST BREAKDOWN -->
 <div class="price-box">
 
-<p>Subtotal: â‚¹<span id="subtotal"></span></p>
+<p>Subtotal: ₹<span id="subtotal"></span></p>
 
-<p>CGST (2.5%): â‚¹<span id="cgst"></span></p>
-<p>SGST (2.5%): â‚¹<span id="sgst"></span></p>
+<p>CGST (2.5%): ₹<span id="cgst"></span></p>
+<p>SGST (2.5%): ₹<span id="sgst"></span></p>
 
-<p>Delivery: â‚¹<span id="delivery"></span></p>
-<p>Discount: â‚¹<span id="discount"></span></p>
+<p>Delivery: ₹<span id="delivery"></span></p>
+<p>Discount: ₹<span id="discount"></span></p>
 
-<h3>Total: â‚¹<span id="total"></span></h3>
+<h3>Total: ₹<span id="total"></span></h3>
 
 </div>
 
@@ -82,6 +87,10 @@ Choose Healthy â€¢ Be Swadra Family
 <h4>Status</h4>
 <p class="paid">Paid âœ…</p>
 </div>
+<div class="signature-box">
+<div><strong>For SWADRA ORGANICS</strong></div>
+<div style="margin-top:12px;">Authorized Signatory</div>
+</div>
 
 <div class="actions">
 <button onclick="downloadPDF()">Download Invoice</button>
@@ -92,6 +101,17 @@ Choose Healthy â€¢ Be Swadra Family
 
 <script>
 const API_BASE = window.SWADRA_API_BASE || "";
+const dataApi = window.SWADRA_DATA || null;
+const authApi = window.SWADRA_AUTH || null;
+
+function getCurrentUser(){
+  return authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
+}
+
+function buildOrderAccessQuery(){
+  const currentUser = getCurrentUser();
+  return currentUser ? "?userId=" + encodeURIComponent(currentUser) + "&email=" + encodeURIComponent(currentUser) : "";
+}
 
 function escapeHtml(value){
   return String(value ?? "").replace(/[&<>"']/g, char => ({
@@ -108,11 +128,23 @@ function formatMoney(value){
 }
 
 function getCurrentOrderId(){
-  return String(localStorage.getItem("currentOrderId") || "").trim();
+  const params = new URLSearchParams(window.location.search);
+  return String(params.get("orderId") || "").trim();
 }
 
 async function fetchOrder(orderId){
-  const response = await fetch(`${API_BASE}/api/orders/${encodeURIComponent(orderId)}`, { cache:"no-store" });
+  if(dataApi && typeof dataApi.fetchOrder === "function"){
+    try{
+      const firestoreOrder = await dataApi.fetchOrder(orderId);
+      if(firestoreOrder){
+        return firestoreOrder;
+      }
+    }catch(error){
+      console.error("invoice firestore fetch failed", error);
+    }
+  }
+
+  const response = await fetch(`${API_BASE}/api/orders/${encodeURIComponent(orderId)}${buildOrderAccessQuery()}`, { cache:"no-store" });
   const data = await response.json().catch(()=>({}));
   if(!response.ok || !data?.order){
     throw new Error(data?.error || "Order not found");
@@ -139,11 +171,25 @@ function getItemLineTotal(item){
   return Math.round(Number(item?.discountedLineTotal || item?.displayLineTotal || originalLineTotal));
 }
 
+function getInvoiceItemSize(item){
+  return String(
+    item?.size
+    || item?.productSize
+    || item?.selectedSize
+    || item?.variant
+    || item?.weight
+    || item?.packSize
+    || item?.unit
+    || "-"
+  ).trim() || "-";
+}
+
 function renderInvoice(order){
   const items = Array.isArray(order?.items) ? order.items : [];
   const subtotal = Math.round(Number(order?.couponAdjustedSellingTotal || order?.sellingTotal || order?.total || 0));
   const discount = Math.round(Number(order?.couponDiscount || 0));
-  const delivery = Math.round(Number(order?.delivery || 0));
+  const deliveryDetails = order?.deliveryDetails || order?.shipping?.deliveryDetails || (order?.delivery && typeof order.delivery === "object" ? order.delivery : null);
+  const delivery = Math.round(Number(deliveryDetails && deliveryDetails.finalDeliveryCharge !== undefined ? deliveryDetails.finalDeliveryCharge : (order?.deliveryCharge ?? order?.delivery) || 0));
   const total = Math.round(Number(order?.total || (subtotal + delivery)));
   const gstTotal = Math.round(Number(order?.gstTotal || 0));
   const cgst = gstTotal / 2;
@@ -152,6 +198,8 @@ function renderInvoice(order){
   const shippingPhone = order?.shipping?.phone || "Phone not provided";
   const shippingEmail = order?.shipping?.email || order?.userId || "Email not provided";
   const shippingAddress = buildAddress(order) || "Address not provided";
+  const pickupLine = deliveryDetails ? `Pickup: ${deliveryDetails.pickupCity || "Jind"}, ${deliveryDetails.pickupState || "Haryana"} (${deliveryDetails.pickupPincode || "126102"})` : "Pickup: Jind, Haryana (126102)";
+  const deliveryMeta = deliveryDetails ? `${pickupLine}\nDelivery Pincode: ${deliveryDetails.deliveryPincode || "-"}` : pickupLine;
 
   document.getElementById("orderId").innerText = order?.id || "";
   document.getElementById("date").innerText = new Date(order?.date || order?.createdAt || Date.now()).toLocaleDateString("en-IN");
@@ -159,21 +207,39 @@ function renderInvoice(order){
   document.getElementById("billingAddress").innerText = shippingAddress;
   document.getElementById("billingPhone").innerText = shippingPhone;
   document.getElementById("deliveryName").innerText = shippingName;
-  document.getElementById("deliveryAddress").innerText = shippingAddress;
+  document.getElementById("deliveryAddress").innerText = `${shippingAddress}\n${deliveryMeta}`;
   document.getElementById("deliveryPhone").innerText = shippingPhone;
 
   const itemsDiv = document.getElementById("items");
-  itemsDiv.innerHTML = items.map(item=>`
-<div class="item">
-<span>${escapeHtml(item?.name || "Swadra Product")}</span>
-<span>₹${formatMoney(getItemLineTotal(item))} × ${Math.max(1, Number(item?.qty) || 1)}</span>
-</div>
-`).join("");
+  itemsDiv.innerHTML = `
+<table class="invoice-table">
+<thead>
+<tr><th>Sl. No</th><th>Description</th><th>Size</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr>
+</thead>
+<tbody>
+${items.map((item,index)=>{
+  const qty = Math.max(1, Number(item?.qty) || 1);
+  const unitPrice = Math.round(Number(item?.price) || 0);
+  const size = getInvoiceItemSize(item);
+  const originalLineTotal = Math.round(unitPrice * qty);
+  const discountedLineTotal = Math.round(getItemLineTotal(item));
+  const couponLineDiscount = Math.round(Number(item?.couponLineDiscount || 0));
+  return `<tr>
+<td>${index+1}</td>
+<td>${escapeHtml(item?.name || "Swadra Product")}${size && size !== "-" ? ` (${escapeHtml(size)})` : ""}</td>
+<td>${escapeHtml(size)}</td>
+<td>${qty}</td>
+<td>₹${formatMoney(unitPrice)}</td>
+<td>${discountedLineTotal < originalLineTotal ? `<span style="display:block;color:#b3261e;text-decoration:line-through;">₹${formatMoney(originalLineTotal)}</span><span style="display:block;">₹${formatMoney(discountedLineTotal)}</span><span style="display:block;color:#0f8a47;font-size:12px;">Coupon -₹${formatMoney(couponLineDiscount)}</span>` : `₹${formatMoney(discountedLineTotal)}`}</td>
+</tr>`;
+}).join("")}
+</tbody>
+</table>`;
 
   document.getElementById("subtotal").innerText = formatMoney(subtotal);
   document.getElementById("cgst").innerText = formatMoney(cgst);
   document.getElementById("sgst").innerText = formatMoney(sgst);
-  document.getElementById("delivery").innerText = formatMoney(delivery);
+  document.getElementById("delivery").innerText = deliveryDetails && deliveryDetails.freeDeliveryApplied ? "₹0 Free Delivery Applied" : formatMoney(delivery);
   document.getElementById("discount").innerText = formatMoney(discount);
   document.getElementById("total").innerText = formatMoney(total);
 }
@@ -212,7 +278,7 @@ let message = `Hello ${name},
 
 ðŸ§¾ Your Swadra Organics Order Invoice
 
-Total Amount: â‚¹${total}
+Total Amount: ₹${total}
 
 Please find your invoice attached.
 
@@ -221,7 +287,7 @@ Thank you for shopping with us ðŸŒ¿`;
 // open WhatsApp
 let url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
-window.open(url, "_blank");
+window.location.href = url;
 }
 
 window.onload = loadInvoice;
@@ -230,8 +296,3 @@ window.onload = loadInvoice;
 
 </body>
 </html>
-
-
-
-
-

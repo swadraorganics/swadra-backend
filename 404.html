@@ -4,6 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Page Not Found</title>
+    <script>
+      (function(){
+        var path = String(window.location.pathname || "");
+        var query = String(window.location.search || "");
+        var match = path.match(/^\/backend\/(?:backend\/)?(admin-[^\/]+\.html)$/i);
+        if(match && match[1]){
+          window.location.replace("/" + match[1] + query);
+        }
+      })();
+    </script>
 
     <style media="screen">
       body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }

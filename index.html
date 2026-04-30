@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -13,8 +13,9 @@
 <link rel="stylesheet" href="mobile.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="api-config.js?v=20260423-2"></script>
-<script src="seo-aeo.js"></script></head>
+<script src="seo-aeo.js"></script><link rel="manifest" href="manifest.json">`r`n</head>
 
 <body>
 <div id="progressBar"></div>
@@ -1666,7 +1667,7 @@ body{
 .hero-text h1{
   color:#ffffff !important;
   -webkit-text-fill-color:#ffffff !important;
-  text-shadow:0 8px 25px rgba(0,0,0,0.6);  /* ðŸ‘ˆ glow effect */
+  text-shadow:0 8px 25px rgba(0,0,0,0.6);  /* 👈 glow effect */
   background:none !important;
  font-size:80px;
   letter-spacing:4px;
@@ -1752,8 +1753,8 @@ padding-top:0px;
   margin:0;
   right:120px;
   width:600px;
-  text-align:right;   /* ðŸ‘ˆ clean alignment */
-  margin-right:80px; /* ðŸ‘ˆ spacing from edge */
+  text-align:right;   /* 👈 clean alignment */
+  margin-right:80px; /* 👈 spacing from edge */
  position:absolute;
  top:50%;
   animation:fadeUp 1s ease;
@@ -1762,14 +1763,14 @@ padding-top:0px;
 
 
 .hero-content{
-  max-width:600px; /* ðŸ‘ˆ width control */
+  max-width:600px; /* 👈 width control */
   position:relative;
   z-index:2;
   margin-top:0px;
   margin:0 !important;
   padding-top:100px;
-  text-align:right !important;   /* ðŸ‘ˆ sab right */
-  top:0px;   /* ðŸ‘ˆ adjust upar niche */
+  text-align:right !important;   /* 👈 sab right */
+  top:0px;   /* 👈 adjust upar niche */
   background:none !important;
   backdrop-filter:none !important;
   -webkit-backdrop-filter:none !important;
@@ -1923,7 +1924,7 @@ padding-top:0px;
   width:fit-content;
   display:inline-block;
   margin-top:25px;
-  margin-left:auto;   /* ðŸ‘ˆ RIGHT ALIGN */
+  margin-left:auto;   /* 👈 RIGHT ALIGN */
 }
 
 .hero-btn:hover{
@@ -1931,7 +1932,7 @@ padding-top:0px;
 }
 
 .hero-text .btn{
- margin:20px auto;   /* ðŸ‘ˆ center magic */
+ margin:20px auto;   /* 👈 center magic */
   display:flex;
   justify-content:center;
   align-items:center;
@@ -2476,7 +2477,7 @@ h2{
 }
 
 .admin-btn::after{
-  content:" â†’";
+  content:" →";
 }
 
 .admin-footer-btn{
@@ -3178,11 +3179,17 @@ margin:0 !important;
 }
 
 .discount-badge{
-  font-size:11px;
-  color:#0c831f;
-  font-weight:800;
-  margin-top:-5px;
-  margin-bottom:4px;
+font-size:11px;
+color:#0c831f;
+font-weight:800;
+margin-top:-5px;
+margin-bottom:4px;
+}
+.unit-price-note{
+font-size:10px;
+font-weight:500;
+color:#6f675f;
+margin-left:6px;
 }
 
 .out-stock-text{
@@ -3906,15 +3913,15 @@ margin:0 !important;
 }
 
 #allProductsGrid .spices-img-wrap{
-  height:350px !important;
-  min-height:350px !important;
-  max-height:350px !important;
-  flex:0 0 350px !important;
+  height:334px !important;
+  min-height:334px !important;
+  max-height:334px !important;
+  flex:0 0 334px !important;
   display:flex !important;
   align-items:center !important;
   justify-content:center !important;
   overflow:hidden !important;
-  padding:28px 1px 0 !important;
+  padding:20px 1px 0 !important;
   position:relative !important;
   width:100% !important;
   border-radius:14px 14px 8px 8px !important;
@@ -3929,7 +3936,7 @@ margin:0 !important;
 }
 
 #allProductsGrid .spices-info-wrap{
-  margin-top:26px !important;
+  margin-top:18px !important;
   padding-top:0 !important;
   position:relative !important;
   z-index:3 !important;
@@ -3972,14 +3979,17 @@ margin:0 !important;
 #allProductsGrid .bottom{
   display:flex !important;
   justify-content:space-between !important;
-  align-items:center !important;
-  margin:-6px 14px 0 !important;
+  align-items:flex-end !important;
+  gap:12px !important;
+  margin:5px 14px 0 !important;
 }
 
 #allProductsGrid .left{
   display:flex !important;
   align-items:center !important;
   gap:8px !important;
+  flex-wrap:wrap !important;
+  min-width:0 !important;
 }
 
 #allProductsGrid .price{
@@ -4117,7 +4127,6 @@ margin:0 !important;
   inset:0 auto 0 0;
   width:52%;
   z-index:0;
-  background:url("images/background.jpg") center/cover no-repeat;
   filter:saturate(.82) sepia(.08);
 }
 
@@ -4270,7 +4279,7 @@ margin:0 !important;
   overflow:hidden;
 }
 
-/* 🔥 HOVER GOLD GLASS EFFECT */
+/* ?? HOVER GOLD GLASS EFFECT */
 .cart-btn:hover{
   background:linear-gradient(135deg,#d4af37,#f7e7a9,#ffd700);
   color:#000;
@@ -4282,7 +4291,7 @@ margin:0 !important;
   transform:scale(1.05);
 }
 
-/* 🔥 SHINE ANIMATION */
+/* ?? SHINE ANIMATION */
 .cart-btn::before{
   content:"";
   position:absolute;
@@ -4351,12 +4360,12 @@ margin:0 !important;
   left:100%;
 }
 
-/* ✅ ADDED STATE */
+/* ? ADDED STATE */
 .cart-btn.added{
   background:#0c831f;
 }
 
-/* ❌ OUT OF STOCK */
+/* ? OUT OF STOCK */
 .cart-btn.disabled{
   background:#c62828;
   cursor:not-allowed;
@@ -4408,7 +4417,6 @@ margin:0 !important;
   width:100% !important;
   height:100% !important;
   z-index:0 !important;
-  background:url("images/background.jpg") left center/cover no-repeat !important;
   filter:saturate(.92) sepia(.06) contrast(.95) !important;
 }
 
@@ -4529,12 +4537,12 @@ margin:0 !important;
 <span></span>
 </summary>
 <div class="mobile-nav-panel">
+<a href="account.html" id="mobileIndexAuthLink">Login</a>
 <a href="index.html">Home</a>
 <a href="spices.html">Spices</a>
 <a href="dryfruits.html">Dry Fruits</a>
 <a href="oilghee.html">Oil Ghee &amp; More</a>
 <a href="aboutus.html">About Us</a>
-<a href="account.html">Account</a>
 </div>
 </details>
 </header><div class="sale-bar" id="offerBar"></div>
@@ -4644,12 +4652,12 @@ margin:0 !important;
 </section>
 
 <section class="family-counter-banner" id="familyCounterBanner" style="width:100%;max-width:none;min-height:498px;margin:44px 0 86px;border-radius:0;overflow:hidden;position:relative;display:grid;grid-template-columns:48.5% 51.5%;align-items:stretch;background:#fff;color:#19110d;box-shadow:none;">
-<div class="family-counter-image" id="familyCounterImage" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;background:url('images/background.jpg') left center/cover no-repeat;filter:saturate(.92) sepia(.06) contrast(.95);"></div>
+<div class="family-counter-image" id="familyCounterImage" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;background:none;filter:saturate(.92) sepia(.06) contrast(.95);"></div>
 <div class="family-counter-content" style="position:relative;z-index:2;grid-column:2;width:100%;padding:48px 44px 38px 14px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;">
-<h2 class="family-counter-title" id="familyCounterTitle" style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:40px;line-height:1.04;font-weight:500;color:#17100c;letter-spacing:.01em;">More Than a Brand, A Family</h2>
-<p class="family-counter-subtitle" id="familyCounterSubtitle" style="margin:0 0 58px;color:#17100c;font-size:38px;line-height:1.08;font-weight:900;">जड़ों से जुड़े लोग, असली बदलाव</p>
-<div class="family-counter-number" id="familyCounterNumber" style="margin:0 0 19px;display:flex;align-items:center;justify-content:center;gap:13px;font-family:Georgia,'Times New Roman',serif;"><span style="display:inline-flex;align-items:center;justify-content:center;width:54px;height:70px;border-radius:10px;background:#a56413;color:#fff;font-size:48px;line-height:1;font-weight:500;">0</span><span style="display:inline-flex;align-items:center;justify-content:center;width:54px;height:70px;border-radius:10px;background:#a56413;color:#fff;font-size:48px;line-height:1;font-weight:500;">5</span><span style="display:inline-flex;align-items:center;justify-content:center;width:54px;height:70px;border-radius:10px;background:#a56413;color:#fff;font-size:48px;line-height:1;font-weight:500;">9</span><span style="display:inline-flex;align-items:center;justify-content:center;width:54px;height:70px;border-radius:10px;background:#a56413;color:#fff;font-size:48px;line-height:1;font-weight:500;">7</span><span style="display:inline-flex;align-items:center;justify-content:center;width:54px;height:70px;border-radius:10px;background:#a56413;color:#fff;font-size:48px;line-height:1;font-weight:500;">8</span></div>
-<p class="family-counter-caption" id="familyCounterCaption" style="margin:0;color:#17100c;font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:500;letter-spacing:.02em;">Every Number Tells a Story</p>
+<h2 class="family-counter-title" id="familyCounterTitle" style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:40px;line-height:1.04;font-weight:500;color:#17100c;letter-spacing:.01em;"></h2>
+<p class="family-counter-subtitle" id="familyCounterSubtitle" style="margin:0 0 58px;color:#17100c;font-size:38px;line-height:1.08;font-weight:900;"></p>
+<div class="family-counter-number" id="familyCounterNumber" style="margin:0 0 19px;display:flex;align-items:center;justify-content:center;gap:13px;font-family:Georgia,'Times New Roman',serif;"></div>
+<p class="family-counter-caption" id="familyCounterCaption" style="margin:0;color:#17100c;font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:500;letter-spacing:.02em;"></p>
 <div class="family-counter-tags" style="display:none;"><span>Farmers</span><span>Families</span><span>Trust</span></div>
 </div>
 </section>
@@ -4765,7 +4773,7 @@ margin:0 !important;
 <div class="customers-topbar">
 <h2 class="customers-title">From Our Customers</h2>
 <div class="customers-controls">
-<span id="customersPager">1 â€” 1</span>
+<span id="customersPager">1 — 1</span>
 <button class="customers-arrow" onclick="slideCustomers(-1)" aria-label="Previous review">&#10094;</button>
 <button class="customers-arrow" onclick="slideCustomers(1)" aria-label="Next review">&#10095;</button>
 </div>
@@ -5013,7 +5021,7 @@ methods to preserve natural taste and nutrition.
 
 <div class="footer-bottom">
 
-<p>Â© 2026 Swadra Organics. All Rights Reserved.</p>
+<p>© 2026 Swadra Organics. All Rights Reserved.</p>
 
 </div>
 
@@ -5066,7 +5074,7 @@ function renderOfferTicker(offers){
 
   const repeatedItems = [...items, ...items, ...items];
   const tickerMarkup = repeatedItems.map(item =>
-    `<span class="sale-bar-item">🚚 ${escapeOfferHtml(item)}</span>`
+    `<span class="sale-bar-item">?? ${escapeOfferHtml(item)}</span>`
   ).join("");
 
   const nextOfferText = JSON.stringify(items);
@@ -5085,11 +5093,22 @@ function revokeUrls(list){
 
 async function loadHeroAssets(){
   revokeUrls(heroObjectUrls);
-  return getHomeArray("heroImages");
+  if(typeof getHomeArray === "function"){
+    return getHomeArray("heroImages");
+  }
+  if(window.siteContentState){
+    const homeContent = window.siteContentState.homeContent || {};
+    const nested = Array.isArray(homeContent.heroImages) ? homeContent.heroImages : [];
+    const direct = Array.isArray(window.siteContentState.heroImages) ? window.siteContentState.heroImages : [];
+    return nested.length ? nested : direct;
+  }
+  return [];
 }
 
 async function loadCustomerAssets(){
-  const storedCustomers = getHomeArray("customers");
+  const storedCustomers = typeof getHomeArray === "function"
+    ? getHomeArray("customers")
+    : [];
   if(storedCustomers.length){
     revokeUrls(customerObjectUrls);
     return storedCustomers;
@@ -5282,7 +5301,20 @@ function renderFamilyCards(cardsData){
 }
 
 function updateFamilySection(){
-  let familyCards = getHomeArray("familyCards");
+  let familyCards = [];
+  if(typeof getHomeArray === "function"){
+    familyCards = getHomeArray("familyCards");
+  }else{
+    const rootState = window.siteContentState && typeof window.siteContentState === "object"
+      ? window.siteContentState
+      : {};
+    const nestedHome = rootState.homeContent && typeof rootState.homeContent === "object"
+      ? rootState.homeContent
+      : {};
+    familyCards = Array.isArray(nestedHome.familyCards)
+      ? nestedHome.familyCards
+      : (Array.isArray(rootState.familyCards) ? rootState.familyCards : []);
+  }
   renderFamilyCards(familyCards);
 }
 
@@ -5301,22 +5333,27 @@ window.addEventListener("resize", function(){
 
 /* ================= READ MORE ================= */
 
-document.querySelectorAll(".why-different-btn").forEach(function(btn){
+function toggleWhyDifferentCard(button){
+  if(!button) return;
+  const card = button.closest(".why-different-card");
+  const more = card ? card.querySelector(".why-different-more") : button.previousElementSibling;
+  if(!more) return;
+  const shouldOpen = getComputedStyle(more).display === "none";
+  more.style.display = shouldOpen ? "block" : "none";
+  button.innerText = shouldOpen ? "Read Less" : "Read More";
+  button.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+}
 
-  btn.addEventListener("click", function(){
+document.querySelectorAll(".why-different-btn").forEach(function(button){
+  button.setAttribute("type", "button");
+  button.setAttribute("aria-expanded", "false");
+});
 
-    let more = this.previousElementSibling;
-
-    if(more.style.display === "block"){
-      more.style.display="none";
-      this.innerText="Read More";
-    } else {
-      more.style.display="block";
-      this.innerText="Read Less";
-    }
-
-  });
-
+document.addEventListener("click", function(event){
+  const button = event.target && event.target.closest ? event.target.closest(".why-different-btn") : null;
+  if(!button) return;
+  event.preventDefault();
+  toggleWhyDifferentCard(button);
 });
 
 
@@ -5324,9 +5361,10 @@ document.querySelectorAll(".why-different-btn").forEach(function(btn){
 
 function getSafeCartImage(image){
   if(typeof image !== "string") return "";
-  if(image.startsWith("data:")) return "";
-  if(image.length > 500) return "";
-  return image;
+  const value = image.trim();
+  if(!value) return "";
+  if(/^data:/i.test(value)) return "";
+  return value;
 }
 
 function compactCartItems(cart){
@@ -5340,52 +5378,81 @@ function compactCartItems(cart){
   }));
 }
 
-function getCart(){
-  const authApi = window.SWADRA_AUTH || null;
-  let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function"
+var authApi = window.SWADRA_AUTH || null;
+var dataApi = window.SWADRA_DATA || null;
+var runtimeIndexCartCache = [];
+let runtimeHomeQtyState = {};
+
+function getCurrentIndexUser(){
+  return authApi && typeof authApi.getCurrentUserEmail === "function"
     ? authApi.getCurrentUserEmail()
-    : localStorage.getItem("currentUser");
-  let users = authApi && typeof authApi.getUsers === "function"
+    : "";
+}
+
+function getIndexUsers(){
+  return authApi && typeof authApi.getUsers === "function"
     ? authApi.getUsers()
-    : (JSON.parse(localStorage.getItem("users")) || {});
-  let localCart = compactCartItems(JSON.parse(localStorage.getItem("cart")) || []);
+    : {};
+}
 
-  if(currentUser && users[currentUser]){
+async function refreshIndexCartState(){
+  const currentUser = getCurrentIndexUser();
+  const users = getIndexUsers();
+  let nextCart = [];
+  if(currentUser && dataApi && typeof dataApi.fetchCart === "function"){
     try{
-      localStorage.setItem("cart", JSON.stringify(compactCartItems(users[currentUser].cart || [])));
+      nextCart = compactCartItems(await dataApi.fetchCart(currentUser));
     }catch(error){
-      console.warn("cart local sync skipped", error);
+      console.error("index firestore cart fetch failed", error);
     }
-    return compactCartItems(users[currentUser].cart || []);
   }
+  if(!nextCart.length && currentUser && users[currentUser] && Array.isArray(users[currentUser].cart)){
+    nextCart = compactCartItems(users[currentUser].cart || []);
+  }
+  if(!currentUser && dataApi && typeof dataApi.getGuestCart === "function"){
+    try{
+      nextCart = compactCartItems(dataApi.getGuestCart());
+    }catch(error){
+      console.error("index guest cart fetch failed", error);
+    }
+  }
+  runtimeIndexCartCache = compactCartItems(nextCart);
+  return runtimeIndexCartCache.slice();
+}
 
-  return localCart;
+function getCart(){
+  return compactCartItems(runtimeIndexCartCache);
 }
 
 function saveCart(cart){
   let safeCart = compactCartItems(cart);
-  const authApi = window.SWADRA_AUTH || null;
-  let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function"
-    ? authApi.getCurrentUserEmail()
-    : localStorage.getItem("currentUser");
-  let users = authApi && typeof authApi.getUsers === "function"
-    ? authApi.getUsers()
-    : (JSON.parse(localStorage.getItem("users")) || {});
-
-  if(currentUser && users[currentUser]){
+  runtimeIndexCartCache = safeCart.slice();
+  let currentUser = getCurrentIndexUser();
+  let users = getIndexUsers();
+  if(!currentUser && dataApi && typeof dataApi.saveGuestCart === "function"){
     try{
+      dataApi.saveGuestCart(safeCart);
+    }catch(error){
+      console.error("index guest cart save failed", error);
+    }
+    return;
+  }
+  if(currentUser){
+    try{
+      users[currentUser] = users[currentUser] || {};
       users[currentUser].cart = safeCart;
       if(authApi && typeof authApi.saveUsers === "function"){
         authApi.saveUsers(users);
-      }else{
-        localStorage.setItem("users", JSON.stringify(users));
       }
     }catch(error){
       console.warn("cart user save skipped", error);
     }
+    if(dataApi && typeof dataApi.saveCart === "function"){
+      dataApi.saveCart(currentUser, safeCart).catch(function(error){
+        console.error("index firestore cart save failed", error);
+      });
+    }
   }
-
-  localStorage.setItem("cart", JSON.stringify(safeCart));
 }
 
 /* ===== ADD TO CART ===== */
@@ -5433,7 +5500,7 @@ function handleAddToCart(btn){
   saveCart(cart);
 updateCartUI();
 
-  btn.innerText = "Added ✓";
+  btn.innerText = "Added ?";
 }
 
 
@@ -5474,7 +5541,7 @@ document.addEventListener("click", function(e){
 
     let image = card.querySelector("img").src;
 
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    let cart = getCart();
 
     let existing = cart.find(i => i.name === name);
 
@@ -5484,11 +5551,10 @@ document.addEventListener("click", function(e){
       cart.push({name, price, mrp: mrp || price, image, qty:1});
     }
 
-    localStorage.setItem("cart", JSON.stringify(cart));
-
+    saveCart(cart);
     updateCartUI();
 
-    btn.innerText = "Added ✓";
+    btn.innerText = "Added ?";
   }
 
 });
@@ -5526,7 +5592,7 @@ function renderSearchResults(items){
     <img src="${item.image || 'https://via.placeholder.com/80'}" alt="${item.name}">
     <div class="nav-search-copy">
       <strong>${item.name}</strong>
-      <span>${item.category || 'Product'}${item.size ? ' • ' + item.size : ''}</span>
+      <span>${item.category || 'Product'}${item.size ? ' � ' + item.size : ''}</span>
     </div>
   </div>
   <button type="button">View</button>
@@ -5553,11 +5619,21 @@ function getCatalogCards(){
 }
 
 function getPendingHeaderSearch(){
-  return String(localStorage.getItem("swadraHeaderSearch") || "").trim();
+  try{
+    const url = new URL(window.location.href);
+    return String(url.searchParams.get("search") || "").trim();
+  }catch(error){
+    return "";
+  }
 }
 
 function clearPendingHeaderSearch(){
-  localStorage.removeItem("swadraHeaderSearch");
+  try{
+    const url = new URL(window.location.href);
+    if(!url.searchParams.has("search")) return;
+    url.searchParams.delete("search");
+    window.history.replaceState({}, "", url.pathname + (url.search ? url.search : "") + url.hash);
+  }catch(error){}
 }
 
 function focusCatalogProduct(productId, query){
@@ -5684,19 +5760,19 @@ function updateCartUI(){
   });
 
   let bar = document.getElementById("stickyCart");
-  let info = document.getElementById("cartCount"); // âœ… FIX
+  let info = document.getElementById("cartCount"); // ✅ FIX
 
   if(!bar || !info){
     return;
   }
 
   if(totalItems > 0){
-    bar.style.display = "flex"; // ðŸ‘ˆ IMPORTANT (class nahi lag raha tha)
+    bar.style.display = "flex"; // 👈 IMPORTANT (class nahi lag raha tha)
     
-    info.innerText = totalItems + " item ₹" + totalPrice;
+    info.innerText = totalItems + " item ?" + totalPrice;
 
   } else {
-    bar.style.display = "none"; // ðŸ‘ˆ hide when empty
+    bar.style.display = "none"; // 👈 hide when empty
   }
 }
 
@@ -5728,10 +5804,7 @@ window.addEventListener("scroll", ()=>{
 
 // ORDER FUNCTION (IMPORTANT)
 function placeOrder(product, price){
-  const authApi = window.SWADRA_AUTH || null;
-  let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function"
-    ? authApi.getCurrentUserEmail()
-    : localStorage.getItem("currentUser");
+  let currentUser = getCurrentIndexUser();
 
   if(!currentUser){
     alert("Please log in first.");
@@ -5739,9 +5812,7 @@ function placeOrder(product, price){
     return;
   }
 
-  let users = authApi && typeof authApi.getUsers === "function"
-    ? authApi.getUsers()
-    : (JSON.parse(localStorage.getItem("users")) || {});
+  let users = getIndexUsers();
   users[currentUser] = users[currentUser] || {};
   users[currentUser].orders = users[currentUser].orders || [];
 
@@ -5756,11 +5827,23 @@ function placeOrder(product, price){
 
   if(authApi && typeof authApi.saveUsers === "function"){
     authApi.saveUsers(users);
-  }else{
-    localStorage.setItem("users", JSON.stringify(users));
+  }
+  if(dataApi && typeof dataApi.saveOrder === "function"){
+    dataApi.saveOrder({
+      id: order.id,
+      userId: currentUser,
+      items: [{ name: product, price: price, qty: 1 }],
+      subtotal: Number(price) || 0,
+      finalAmount: Number(price) || 0,
+      paymentStatus: "Pending",
+      status: "Placed",
+      createdAt: new Date().toISOString()
+    }).catch(function(error){
+      console.error("legacy placeOrder firestore save failed", error);
+    });
   }
 
-  alert("Order Placed âœ…");
+  alert("Order Placed ✅");
 }
 
 
@@ -5882,24 +5965,21 @@ async function addNamedHomeProductToCart(name, button){
   if(existing){
     existing.qty = Number(existing.qty || 1) + 1;
   }else{
+    const quantity = 1;
     cart.push({
       id: String(item.id),
       name: item.name,
       price: Number(item.price) || 0,
       mrp: Number(item.mrp || item.price) || 0,
       image: item.image,
-      qty: (() => {
-        const qtyEl = document.getElementById(`home-qty-${sectionKey}-${id}`);
-        const qty = qtyEl ? Number(qtyEl.innerText || 1) : 1;
-        return qty > 0 ? qty : 1;
-      })()
+      qty: quantity
     });
   }
 
   saveCart(cart);
   updateCartUI();
   if(button){
-    button.innerText = "ADDED ✓";
+    button.innerText = "ADDED ?";
     button.classList.add("added");
   }
 }
@@ -5923,7 +6003,13 @@ function bindStaticHomeCartButtons(){
 const STORY_COUNTER_KEY = "swadra_home_family_story_v1";
 
 function getFamilyCounterObject(){
-  return siteContentState[STORY_COUNTER_KEY] || {};
+  const topLevel = siteContentState[STORY_COUNTER_KEY] && typeof siteContentState[STORY_COUNTER_KEY] === "object"
+    ? siteContentState[STORY_COUNTER_KEY]
+    : {};
+  const homeLevel = siteContentState.homeContent && siteContentState.homeContent[STORY_COUNTER_KEY] && typeof siteContentState.homeContent[STORY_COUNTER_KEY] === "object"
+    ? siteContentState.homeContent[STORY_COUNTER_KEY]
+    : {};
+  return Object.assign({}, homeLevel, topLevel);
 }
 
 function getRegisteredCustomerCount(){
@@ -5940,20 +6026,20 @@ function getPaidOrderCount(){
 
 function getFamilyCounterTotal(settings){
   const data = settings || getFamilyCounterObject();
-  return Math.max(0, Number(data.baseCount || 5978)) + getRegisteredCustomerCount() + getFamilyReviewCustomerCount() + getPaidOrderCount();
+  return Math.max(0, Number(data.baseCount || 0)) + getRegisteredCustomerCount() + getFamilyReviewCustomerCount() + getPaidOrderCount();
 }
 
 function repairMojibake(value){
   const text = String(value || "");
   if(!text) return text;
-  if(!/[ÃÂâà¤à¥]/.test(text)) return text;
+  if(!/[�����]/.test(text)) return text;
   try{
     return decodeURIComponent(escape(text));
   }catch(e){
     return text
-      .replaceAll("â˜…", "★")
-      .replaceAll("âœ“", "✓")
-      .replaceAll("â†’", "→");
+      .replaceAll("★", "?")
+      .replaceAll("✓", "?")
+      .replaceAll("→", "?");
   }
 }
 
@@ -5978,19 +6064,17 @@ function renderFamilyCounterBanner(){
   const subtitleEl = document.getElementById("familyCounterSubtitle");
   const numberEl = document.getElementById("familyCounterNumber");
   const captionEl = document.getElementById("familyCounterCaption");
-  if(titleEl) titleEl.innerText = cleanUiText(data.title, "More Than a Brand, A Family");
-  if(subtitleEl) subtitleEl.innerText = cleanUiText(data.subtitle, "जड़ों से जुड़े लोग, असली बदलाव");
-  if(captionEl) captionEl.innerText = cleanUiText(data.caption, "Every Number Tells a Story");
-  if(titleEl) titleEl.style.color = normalizeHexColor(data.titleColor, "#17100c");
-  if(subtitleEl) subtitleEl.style.color = normalizeHexColor(data.subtitleColor, "#17100c");
-  if(captionEl) captionEl.style.color = normalizeHexColor(data.captionColor, "#17100c");
+  if(titleEl) titleEl.innerText = cleanUiText(data.title, "");
+  if(subtitleEl) subtitleEl.innerText = cleanUiText(data.subtitle, "");
+  if(captionEl) captionEl.innerText = cleanUiText(data.caption, "");
+  if(titleEl) titleEl.style.setProperty("color", normalizeHexColor(data.titleColor, "#17100c"), "important");
+  if(subtitleEl) subtitleEl.style.setProperty("color", normalizeHexColor(data.subtitleColor, "#17100c"), "important");
+  if(captionEl) captionEl.style.setProperty("color", normalizeHexColor(data.captionColor, "#17100c"), "important");
   if(numberEl){
     const digits = String(getFamilyCounterTotal(data)).padStart(5,"0").split("");
     numberEl.innerHTML = digits.map(digit=>`<span class="family-counter-digit" style="display:inline-flex;align-items:center;justify-content:center;width:54px;height:70px;border-radius:10px;background:#a56413;color:#fff;font-size:48px;line-height:1;font-weight:500;">${digit}</span>`).join("");
   }
-  if(data.image){
-    if(imageEl) imageEl.style.background = `url("${data.image}") left center / cover no-repeat`;
-  }
+  if(imageEl) imageEl.style.background = data.image ? `url("${data.image}") left center / cover no-repeat` : "none";
 }
 
 function renderFooterStandardBlock(){
@@ -6026,11 +6110,11 @@ function renderHeroTextBlock(){
     ["heroTitleLine1", cleanUiText(content.heroTitleLine1, "Crafted For Global")],
     ["heroTitleLine2", cleanUiText(content.heroTitleLine2, "Standards")],
     ["heroSubline", cleanUiText(content.heroSubline, "Pure Quality. Honest Food. Swadra Promise.")],
-    ["heroTrustLine", cleanUiText(content.heroTrust, "★ Packed Fresh When You Order")],
-    ["heroBadge1", cleanUiText(content.heroBadge1, "✓ 100% Natural")],
-    ["heroBadge2", cleanUiText(content.heroBadge2, "✓ Expertly Selected")],
-    ["heroBadge3", cleanUiText(content.heroBadge3, "✓ Farm Direct")],
-    ["heroButtonText", cleanUiText(content.heroButton, "Explore Products →")]
+    ["heroTrustLine", cleanUiText(content.heroTrust, "? Packed Fresh When You Order")],
+    ["heroBadge1", cleanUiText(content.heroBadge1, "? 100% Natural")],
+    ["heroBadge2", cleanUiText(content.heroBadge2, "? Expertly Selected")],
+    ["heroBadge3", cleanUiText(content.heroBadge3, "? Farm Direct")],
+    ["heroButtonText", cleanUiText(content.heroButton, "Explore Products ?")]
   ];
   pairs.forEach(([id,value])=>{
     const el = document.getElementById(id);
@@ -6155,6 +6239,7 @@ function productMatchesCategory(product, config){
 
 function buildHomeClonePriceMarkup(product){
   const { mrp, sellingPrice, offPercent } = getProductPricing(product);
+  const perHundredMarkup = getPerHundredPriceMarkup(product, sellingPrice);
 
   if(offPercent > 0){
     return `
@@ -6163,11 +6248,11 @@ function buildHomeClonePriceMarkup(product){
 <span class="old">&#8377;${mrp.toLocaleString()}</span>
 <span class="price">&#8377;${sellingPrice.toLocaleString()}</span>
 </div>
-<div class="off">${offPercent}% OFF</div>
+<div class="off">${offPercent}% OFF${perHundredMarkup}</div>
 </div>`;
   }
 
-  return `<div class="price">&#8377;${sellingPrice.toLocaleString()}</div>`;
+  return perHundredMarkup ? `<div class="price-stack"><div class="price">&#8377;${sellingPrice.toLocaleString()}</div><div class="off">${perHundredMarkup}</div></div>` : `<div class="price">&#8377;${sellingPrice.toLocaleString()}</div>`;
 }
 
 function buildSpicesStyleCards(products, sectionKey, cartItems){
@@ -6207,7 +6292,7 @@ ${buildHomeClonePriceMarkup(product)}
 class="cart ${existing ? 'added' : ''} ${isOut ? 'disabled' : ''}"
 data-admin-product="true"
 onclick="${isOut ? '' : (sectionKey === 'catalog' ? `toggleCatalogCart('${id}')` : `toggleSectionCart('${sectionKey}','${id}')`)}"
-${isOut ? 'disabled' : ''}>${existing ? 'ADDED ✓' : 'ADD TO CART'}</button>
+${isOut ? 'disabled' : ''}>${existing ? 'ADDED ?' : 'ADD TO CART'}</button>
 </div>
 </div>
 </div>`;
@@ -6240,19 +6325,19 @@ ${isOut
 ${pricing.offPercent > 0
 ? `<div class="price-stack">
 <div class="price-line">
-<span class="old">₹${pricing.mrp.toLocaleString()}</span>
-<span class="price">₹${pricing.sellingPrice.toLocaleString()}</span>
+<span class="old">?${pricing.mrp.toLocaleString()}</span>
+<span class="price">?${pricing.sellingPrice.toLocaleString()}</span>
 </div>
-<div class="off">${pricing.offPercent}% OFF</div>
+<div class="off">${pricing.offPercent}% OFF${getPerHundredPriceMarkup(product, pricing.sellingPrice)}</div>
 </div>`
-: `<div class="price">₹${pricing.sellingPrice.toLocaleString()}</div>`}
+: (getPerHundredPriceMarkup(product, pricing.sellingPrice) ? `<div class="price-stack"><div class="price">?${pricing.sellingPrice.toLocaleString()}</div><div class="off">${getPerHundredPriceMarkup(product, pricing.sellingPrice)}</div></div>` : `<div class="price">?${pricing.sellingPrice.toLocaleString()}</div>`)}
 `}
 </div>
 <button
 class="cart ${existing ? 'added' : ''} ${isOut ? 'disabled' : ''}"
 data-admin-product="true"
 onclick="${isOut ? '' : `toggleCatalogCart('${id}')`}"
-${isOut ? 'disabled' : ''}>${existing ? 'ADDED ✓' : 'ADD TO CART'}</button>
+${isOut ? 'disabled' : ''}>${existing ? 'ADDED ?' : 'ADD TO CART'}</button>
 </div>
 </div>
 </div>`;
@@ -6512,12 +6597,12 @@ function lockAllProductsGridLayout(){
   container.querySelectorAll(".spices-card-final").forEach(card=>{
     card.style.cssText = "background:#fff !important;height:458px !important;min-height:458px !important;max-height:458px !important;padding:1px 1px 0 !important;border:1px solid #7a3d3d !important;border-radius:15px !important;display:flex !important;flex-direction:column !important;box-shadow:0 8px 25px rgba(0,0,0,0.08) !important;overflow:hidden !important;position:relative !important;box-sizing:border-box !important;";
     const imgWrap = card.querySelector(".spices-img-wrap");
-    if(imgWrap) imgWrap.style.cssText = "height:350px !important;min-height:350px !important;max-height:350px !important;flex:0 0 350px !important;display:flex !important;align-items:center !important;justify-content:center !important;overflow:hidden !important;padding:28px 1px 0 !important;position:relative !important;width:100% !important;border-radius:14px 14px 8px 8px !important;box-sizing:border-box !important;";
+    if(imgWrap) imgWrap.style.cssText = "height:334px !important;min-height:334px !important;max-height:334px !important;flex:0 0 334px !important;display:flex !important;align-items:center !important;justify-content:center !important;overflow:hidden !important;padding:20px 1px 0 !important;position:relative !important;width:100% !important;border-radius:14px 14px 8px 8px !important;box-sizing:border-box !important;";
     card.querySelectorAll(".spices-img-wrap img").forEach(img=>{
       img.style.cssText = "width:122% !important;height:100% !important;object-fit:contain !important;border-radius:12px !important;display:block !important;";
     });
     const info = card.querySelector(".spices-info-wrap");
-    if(info) info.style.cssText = "margin-top:26px !important;padding-top:0 !important;position:relative !important;z-index:3 !important;background:#fff !important;box-sizing:border-box !important;";
+    if(info) info.style.cssText = "margin-top:18px !important;padding-top:0 !important;position:relative !important;z-index:3 !important;background:#fff !important;display:flex !important;flex-direction:column !important;flex:1 !important;box-sizing:border-box !important;";
     const row = card.querySelector(".product-title-row");
     if(row) row.style.cssText = "display:flex !important;align-items:flex-start !important;justify-content:space-between !important;gap:10px !important;margin:0 14px 0 !important;min-height:unset !important;box-sizing:border-box !important;";
     const title = card.querySelector(".product-title-row h3");
@@ -6525,9 +6610,9 @@ function lockAllProductsGridLayout(){
     const size = card.querySelector(".product-title-row .size");
     if(size) size.style.cssText = "font-size:15px !important;color:#7a3d3d !important;margin:0 !important;line-height:1.2 !important;white-space:nowrap !important;text-align:right !important;flex:0 0 auto !important;transform:none !important;padding-top:1px !important;";
     const bottom = card.querySelector(".bottom");
-    if(bottom) bottom.style.cssText = "display:flex !important;justify-content:space-between !important;align-items:center !important;margin:-14px 14px 0 !important;box-sizing:border-box !important;";
+    if(bottom) bottom.style.cssText = "display:flex !important;justify-content:space-between !important;align-items:flex-end !important;gap:12px !important;margin:5px 14px 0 !important;box-sizing:border-box !important;";
     const left = card.querySelector(".left");
-    if(left) left.style.cssText = "display:flex !important;align-items:center !important;gap:8px !important;";
+    if(left) left.style.cssText = "display:flex !important;align-items:center !important;gap:8px !important;flex-wrap:wrap !important;min-width:0 !important;";
   });
 }
 
@@ -6669,13 +6754,24 @@ function updateAccountNavigation(){
   const slot = document.getElementById("accountNavSlot");
   if(!slot) return;
 
-  const authApi = window.SWADRA_AUTH || null;
-  const currentUser = authApi && typeof authApi.getCurrentUserEmail === "function"
-    ? authApi.getCurrentUserEmail()
-    : localStorage.getItem("currentUser");
-  const users = authApi && typeof authApi.getUsers === "function"
-    ? authApi.getUsers()
-    : (JSON.parse(localStorage.getItem("users")) || {});
+  const currentUser = getCurrentIndexUser();
+  const users = getIndexUsers();
+
+  const mobileAuthLink = document.getElementById("mobileIndexAuthLink");
+  if(mobileAuthLink){
+    if(currentUser && users[currentUser]){
+      mobileAuthLink.textContent = "Logout";
+      mobileAuthLink.setAttribute("href", "#");
+      mobileAuthLink.onclick = function(event){
+        event.preventDefault();
+        return swadraLogout(event);
+      };
+    }else{
+      mobileAuthLink.textContent = "Login";
+      mobileAuthLink.setAttribute("href", "account.html");
+      mobileAuthLink.onclick = null;
+    }
+  }
 
   if(currentUser && users[currentUser]){
 
@@ -6733,15 +6829,10 @@ function updateAccountNavigation(){
 
 function swadraLogout(event){
   if(event) event.preventDefault();
-  const authApi = window.SWADRA_AUTH || null;
   if(authApi && typeof authApi.signOutUser === "function"){
     authApi.signOutUser({ keepCart:false });
-  }else{
-    localStorage.removeItem("currentUser");
-    localStorage.removeItem("userPhone");
-    localStorage.removeItem("redirectAfterLogin");
   }
-  localStorage.setItem("cart", JSON.stringify([]));
+  runtimeIndexCartCache = [];
   if(typeof updateAccountNavigation === "function") updateAccountNavigation();
   if(typeof swadraHeaderUpdateAccountNav === "function") swadraHeaderUpdateAccountNav();
   if(typeof updateCartUI === "function") updateCartUI();
@@ -6778,6 +6869,7 @@ let heroImgs = [];
 let heroIndex = 0;
 let lastHeroData = "";
 let heroSliderTimer = null;
+let lastVideoUpdate = "";
 
 function renderHeroTrack(images){
   const track = document.getElementById("heroTrack");
@@ -6877,8 +6969,41 @@ function getProductPricing(product){
   return { mrp, sellingPrice, offPercent };
 }
 
+function getPerHundredPriceMarkup(product, sellingPrice){
+  const sizeText = String(product?.size || product?.productSize || "").trim().toLowerCase();
+  const price = Number(sellingPrice || product?.price || product?.sellingPrice || 0) || 0;
+  if(!sizeText || !(price > 0)) return "";
+  const match = sizeText.match(/(\d+(?:\.\d+)?)\s*(kg|g|gm|gram|grams|ml|l|ltr|litre|liter)/i);
+  if(!match) return "";
+  const quantity = Number(match[1]);
+  const unit = String(match[2] || "").toLowerCase();
+  if(!(quantity > 0)) return "";
+  let baseAmount = 0;
+  let label = "";
+  if(["g","gm","gram","grams"].includes(unit)){
+    baseAmount = quantity;
+    label = "100gm";
+  }else if(unit === "kg"){
+    baseAmount = quantity * 1000;
+    label = "100gm";
+  }else if(unit === "ml"){
+    baseAmount = quantity;
+    label = "100ml";
+  }else if(["l","ltr","litre","liter"].includes(unit)){
+    baseAmount = quantity * 1000;
+    label = "100ml";
+  }
+  if(!(baseAmount > 0) || !label) return "";
+  const perHundred = (price / baseAmount) * 100;
+  if(!(perHundred > 0)) return "";
+  const rounded = Math.round(perHundred * 100) / 100;
+  const formatted = Number.isInteger(rounded) ? rounded.toLocaleString() : rounded.toFixed(2);
+  return `<span class="unit-price-note">?${formatted}/${label}</span>`;
+}
+
 function buildPriceMarkup(product){
   const { mrp, sellingPrice, offPercent } = getProductPricing(product);
+  const perHundredMarkup = getPerHundredPriceMarkup(product, sellingPrice);
 
   if(offPercent > 0){
     return `
@@ -6887,11 +7012,11 @@ function buildPriceMarkup(product){
 <span class="old-price">&#8377;${mrp.toLocaleString()}</span>
 <span class="price">&#8377;${sellingPrice.toLocaleString()}</span>
 </div>
-<div class="discount-badge">${offPercent}% OFF</div>
+<div class="discount-badge">${offPercent}% OFF${perHundredMarkup}</div>
 </div>`;
   }
 
-  return `<div class="price">&#8377;${sellingPrice.toLocaleString()}</div>`;
+  return perHundredMarkup ? `<div class="price-stack"><div class="price">&#8377;${sellingPrice.toLocaleString()}</div><div class="discount-badge">${perHundredMarkup}</div></div>` : `<div class="price">&#8377;${sellingPrice.toLocaleString()}</div>`;
 }
 
 function legacySyncHero(){
@@ -7176,6 +7301,8 @@ bootstrapHomeUi();
   function normalizeIndexCategory(value){
     return String(value || "").toLowerCase().replace(/&/g,"and").replace(/,/g," ").replace(/\s+/g," ").trim();
   }
+  window.__swadraIndexHomeSectionConfig = homeSectionConfig;
+  window.__swadraNormalizeIndexCategory = normalizeIndexCategory;
 
   function getFallbackProducts(sectionKey){
     return [];
@@ -7271,20 +7398,16 @@ async function getAllProductsSafe(){
     if(typeof getCart === "function"){
       return getCart();
     }
-    try{
-      return JSON.parse(localStorage.getItem("cart")) || [];
-    }catch(error){
-      console.error("index recovery: cart parse failed", error);
-      return [];
-    }
+    return [];
   }
+
+  window.getAllProductsSafe = getAllProductsSafe;
 
   function saveSafeCartState(cart){
     if(typeof saveCart === "function"){
       saveCart(cart);
       return;
     }
-    localStorage.setItem("cart", JSON.stringify(cart));
   }
 
   function filterProductsBySection(products, sectionKey){
@@ -7311,17 +7434,11 @@ function buildRecoveryCards(products, sectionKey){
 }
 
 function getHomeQtyState(){
-  try{
-    return JSON.parse(localStorage.getItem("homeSectionQtyState")) || {};
-  }catch(error){
-    return {};
-  }
+  return { ...runtimeHomeQtyState };
 }
 
 function saveHomeQtyState(state){
-  try{
-    localStorage.setItem("homeSectionQtyState", JSON.stringify(state || {}));
-  }catch(error){}
+  runtimeHomeQtyState = { ...(state || {}) };
 }
 
 window.getHomeQtyState = getHomeQtyState;
@@ -7616,21 +7733,7 @@ if(document.readyState === "loading"){
 </script>
 <script>
 function swadraHeaderGetCart(){
-  try{
-    const authApi = window.SWADRA_AUTH || null;
-    const currentUser = authApi && typeof authApi.getCurrentUserEmail === "function"
-      ? authApi.getCurrentUserEmail()
-      : localStorage.getItem("currentUser");
-    const users = authApi && typeof authApi.getUsers === "function"
-      ? authApi.getUsers()
-      : (JSON.parse(localStorage.getItem("users")) || {});
-    if(currentUser && users[currentUser] && Array.isArray(users[currentUser].cart)){
-      return compactCartItems(users[currentUser].cart || []);
-    }
-    return compactCartItems(JSON.parse(localStorage.getItem("cart")) || []);
-  }catch(e){
-    return [];
-  }
+  return getCart();
 }
 function swadraHeaderUpdateStickyCart(){
   let bar=document.getElementById("stickyCart");
@@ -7641,7 +7744,7 @@ function swadraHeaderUpdateStickyCart(){
   cart.forEach(item=>{ totalItems+=Number(item.qty||0); totalPrice+=Number(item.qty||0)*Number(item.price||0); });
   if(totalItems>0){
     bar.style.display="flex";
-    count.innerText=totalItems+" item ₹"+totalPrice;
+    count.innerText=totalItems+" item ?"+totalPrice;
   }else{
     bar.style.display="none";
   }
@@ -7649,12 +7752,8 @@ function swadraHeaderUpdateStickyCart(){
 function swadraHeaderUpdateAccountNav(){
   let slot=document.getElementById("accountNavSlot");
   if(!slot) return;
-  const authApi = window.SWADRA_AUTH || null;
-  let currentUser=authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : localStorage.getItem("currentUser");
-  let users=authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : {};
-  if(!authApi){
-    try{ users=JSON.parse(localStorage.getItem("users")) || {}; }catch(e){}
-  }
+  let currentUser=getCurrentIndexUser();
+  let users=getIndexUsers();
   if(currentUser && users[currentUser]){
     slot.innerHTML='<span class="account-menu-wrap"><a href="dashboard.html" aria-label="Account" title="Account" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;"><span class="account-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></span></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">'+(((users[currentUser]||{}).profile||{}).name || currentUser.split("@")[0])+'</div><div class="account-hover-copy">'+currentUser+'</div><a class="account-hover-cta" href="#" onclick="return swadraLogout(event)">LOGOUT</a></div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span>';
   }else{
@@ -7662,13 +7761,12 @@ function swadraHeaderUpdateAccountNav(){
   }
 }
 window.addEventListener("load", function(){ swadraHeaderUpdateStickyCart(); swadraHeaderUpdateAccountNav(); });
-window.addEventListener("storage", function(event){
-  if(["cart","users","currentUser"].includes(event.key)){
+window.addEventListener("focus", function(){
+  refreshIndexCartState().then(function(){
     swadraHeaderUpdateStickyCart();
     swadraHeaderUpdateAccountNav();
-  }
+  });
 });
-window.addEventListener("focus", swadraHeaderUpdateStickyCart);
 </script>
 <script>
 (function(){
@@ -7727,7 +7825,7 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
     if(typeof window.getCart === "function"){
       try{ return window.getCart() || []; }catch(e){}
     }
-    try{ return JSON.parse(localStorage.getItem("cart")) || []; }catch(e){ return []; }
+    return [];
   }
 
   function getPricing(p){
@@ -7763,8 +7861,8 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
     const isOut = p.availability === "Out of Stock" || p.outOfStock === true;
     const pr = getPricing(p);
     const priceBlock = pr.off > 0
-      ? `<div class="price-stack"><div class="price-line"><span class="old">&#8377;${pr.mrp.toLocaleString()}</span><span class="price">&#8377;${pr.price.toLocaleString()}</span></div><div class="off">${pr.off}% OFF</div></div>`
-      : `<div class="price">&#8377;${pr.price.toLocaleString()}</div>`;
+      ? `<div class="price-stack"><div class="price-line"><span class="old">&#8377;${pr.mrp.toLocaleString()}</span><span class="price">&#8377;${pr.price.toLocaleString()}</span></div><div class="off">${pr.off}% OFF${getPerHundredPriceMarkup(p, pr.price)}</div></div>`
+      : (getPerHundredPriceMarkup(p, pr.price) ? `<div class="price-stack"><div class="price">&#8377;${pr.price.toLocaleString()}</div><div class="off">${getPerHundredPriceMarkup(p, pr.price)}</div></div>` : `<div class="price">&#8377;${pr.price.toLocaleString()}</div>`);
     const gallery = typeof window.buildStoreGalleryMarkup === "function"
       ? window.buildStoreGalleryMarkup(p, `${sectionKey}-${id}`)
       : `<img src="${p.image || "https://via.placeholder.com/300"}" alt="${p.name || "Product"}">`;
@@ -7782,7 +7880,7 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
       <div class="left">
         ${isOut ? `<div class="out">Out Of Stock</div>` : `${priceBlock}`}
       </div>
-      <button class="cart ${existing ? "added" : ""} ${isOut ? "disabled" : ""}" ${isOut ? "disabled" : ""} onclick="${isOut ? "" : `toggleSectionCart('${sectionKey}','${id}')`}">${existing ? "ADDED ✓" : "ADD TO CART"}</button>
+      <button class="cart ${existing ? "added" : ""} ${isOut ? "disabled" : ""}" ${isOut ? "disabled" : ""} onclick="${isOut ? "" : `toggleSectionCart('${sectionKey}','${id}')`}">${existing ? "ADDED ?" : "ADD TO CART"}</button>
     </div>
   </div>
 </div>`;
@@ -7921,11 +8019,7 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
         return window.getCart() || [];
       }
     }catch(e){}
-    try{
-      return JSON.parse(localStorage.getItem("cart")) || [];
-    }catch(e){
-      return [];
-    }
+    return [];
   }
 
   function finalPriceMarkup(product){
@@ -7933,9 +8027,9 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
     const mrp = resolveEffectiveProductMrp(product, price);
     const off = mrp > price && mrp > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
     if(off > 0){
-      return `<div class="price-stack"><div class="price-line"><span class="old">&#8377;${mrp.toLocaleString()}</span><span class="price">&#8377;${price.toLocaleString()}</span></div><div class="off">${off}% OFF</div></div>`;
+      return `<div class="price-stack"><div class="price-line"><span class="old">&#8377;${mrp.toLocaleString()}</span><span class="price">&#8377;${price.toLocaleString()}</span></div><div class="off">${off}% OFF${getPerHundredPriceMarkup(product, price)}</div></div>`;
     }
-    return `<div class="price">&#8377;${price.toLocaleString()}</div>`;
+    return getPerHundredPriceMarkup(product, price) ? `<div class="price-stack"><div class="price">&#8377;${price.toLocaleString()}</div><div class="off">${getPerHundredPriceMarkup(product, price)}</div></div>` : `<div class="price">&#8377;${price.toLocaleString()}</div>`;
   }
 
   function getStoreProductImages(product){
@@ -8034,7 +8128,7 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
       <div class="left">
         ${isOut ? `<div class="out">Out Of Stock</div>` : `${finalPriceMarkup(product)}`}
       </div>
-      <button class="cart ${existing ? 'added' : ''} ${isOut ? 'disabled' : ''}" ${isOut ? 'disabled' : ''} onclick="${isOut ? '' : `toggleSectionCart('${sectionKey}','${id}')`}">${existing ? 'ADDED ✓' : 'ADD TO CART'}</button>
+      <button class="cart ${existing ? 'added' : ''} ${isOut ? 'disabled' : ''}" ${isOut ? 'disabled' : ''} onclick="${isOut ? '' : `toggleSectionCart('${sectionKey}','${id}')`}">${existing ? 'ADDED ?' : 'ADD TO CART'}</button>
     </div>
   </div>
 </div>`;
@@ -8042,8 +8136,20 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
 
   async function finalGetSectionProducts(sectionKey, label){
     try{
-      const products = await getAllProductsSafe();
-      const config = homeSectionConfig[sectionKey];
+      const safeFetcher = typeof getAllProductsSafe === "function"
+        ? getAllProductsSafe
+        : (window.getAllProductsSafe || null);
+      const sectionConfigMap = window.__swadraIndexHomeSectionConfig || {};
+      const normalizeCategory = typeof window.__swadraNormalizeIndexCategory === "function"
+        ? window.__swadraNormalizeIndexCategory
+        : function(value){
+            return String(value || "").toLowerCase().replace(/&/g,"and").replace(/,/g," ").replace(/\s+/g," ").trim();
+          };
+      if(typeof safeFetcher !== "function"){
+        return [];
+      }
+      const products = await safeFetcher();
+      const config = sectionConfigMap[sectionKey];
       if(!config){
         return [];
       }
@@ -8051,9 +8157,9 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
         if(productMatchesSectionKey(product, sectionKey)){
           return true;
         }
-        const normalized = normalizeIndexCategory(product.category);
+        const normalized = normalizeCategory(product.category);
         return config.aliases.some(alias=>{
-          const normalizedAlias = normalizeIndexCategory(alias);
+          const normalizedAlias = normalizeCategory(alias);
           return normalized === normalizedAlias
             || normalized.includes(normalizedAlias)
             || normalizedAlias.includes(normalized);
@@ -8213,19 +8319,3 @@ window.addEventListener("focus", swadraHeaderUpdateStickyCart);
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

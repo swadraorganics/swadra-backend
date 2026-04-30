@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Swadra Organics - Admin Coupons</title>
+<meta name="description" content="Admin coupon panel for Swadra Organics coupon creation, active offers, minimum order value and discount controls.">
   <style>
     * { box-sizing: border-box; }
 
@@ -334,20 +335,15 @@
 <link rel="stylesheet" href="mobile.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="api-config.js"></script></head>
+<script src="api-config.js"></script><style id="adminGlobalNavPadFix">body{padding-top:118px !important;}</style>
+</head>
 <body>
-<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Callback Requests</a></div>
+<div id="adminTopBar" style="position:fixed;top:0;left:0;right:0;z-index:100000;height:44px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;font-weight:700;font-size:22px;line-height:44px;text-align:center;border-bottom:1px solid rgba(122,61,61,.18);">Swadra Organics Admin Pannel</div>
+<div class="admin-global-nav" id="adminGlobalNav" style="position:fixed;top:44px;left:0;right:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Home</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Main</a><a href="backend/ai.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Add Product</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="backend/saved-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Edit Products</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payment</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupan</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Call Back</a><a href="backend/backend.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Backend</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Courier</a><span id="backendLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Backend</span><span id="firestoreLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Firestore</span><details style="margin-left:auto;position:relative;"><summary style="list-style:none;cursor:pointer;color:#fff;font-size:18px;line-height:1;padding:4px 6px;">👤</summary><div style="position:absolute;right:0;top:30px;min-width:210px;background:#fff;border:1px solid #ece1de;border-radius:14px;box-shadow:0 16px 35px rgba(0,0,0,.18);padding:8px;"><a href="admin-index.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Admin Home</a><a href="admin-profit.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Shiprocket</a><a href="index.html" style="display:block;padding:10px 12px;color:#991b1b;text-decoration:none;font-weight:800;border-radius:10px;background:#fff7f7;">Logout</a></div></details></div>
   <div class="wrap">
-    <div class="topbar">
-      <h1>Swadra Organics Admin Coupons</h1>
-      <p>AI products page jaisa same premium layout rakha gaya hai. Coupon create, update, delete aur cart sync ke saare original functions working rahenge.</p>
-    </div>
-
     <div class="toolbar">
       <button class="btn-primary" onclick="saveCoupon()">Save Coupon</button>
       <button class="btn-secondary" onclick="resetForm()">Clear Form</button>
-      <a class="btn-light" href="cart.html">Cart Preview</a>
-      <a class="btn-dark" href="admin-index.html">Back to Admin</a>
     </div>
 
     <div class="stats-grid" id="couponStats"></div>
@@ -405,7 +401,7 @@
             </div>
             <div class="summary-card">
               <div class="label">Minimum Amount</div>
-              <div class="value" id="currentMinAmountView">â‚¹0</div>
+              <div class="value" id="currentMinAmountView">₹0</div>
             </div>
           </div>
 
@@ -429,9 +425,20 @@
     const MAX_COUPONS = 50;
     const RUPEE = "\u20b9";
     const siteContentApi = window.SWADRA_SITE_CONTENT || null;
+    const couponsApiUrl = window.SWADRA_COUPONS_API_URL || ((window.SWADRA_API_BASE || "") + "/api/coupons");
     let couponStore = [];
 
     async function fetchCouponsFromFirestore(forceRefresh){
+      try{
+        const response = await fetch(couponsApiUrl, { cache:"no-store" });
+        const data = await response.json().catch(function(){ return {}; });
+        if(response.ok && Array.isArray(data.coupons)){
+          couponStore = data.coupons.slice(0, MAX_COUPONS);
+          return getCoupons();
+        }
+      }catch(error){
+        console.error("backend coupon fetch failed", error);
+      }
       if(!siteContentApi || typeof siteContentApi.fetch !== "function"){
         throw new Error("Firestore coupon helper unavailable");
       }
@@ -448,6 +455,28 @@
       const state = await siteContentApi.save({ coupons: normalizedCoupons });
       couponStore = Array.isArray(state && state.coupons) ? state.coupons.slice(0, MAX_COUPONS) : normalizedCoupons;
       return getCoupons();
+    }
+
+    async function saveCouponToBackend(coupon){
+      const response = await fetch(couponsApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(coupon)
+      });
+      const data = await response.json().catch(function(){ return {}; });
+      if(!response.ok || data.ok === false){
+        throw new Error(data.error || "Failed to save coupon to backend");
+      }
+      return Array.isArray(data.coupons) ? data.coupons.slice(0, MAX_COUPONS) : null;
+    }
+
+    async function deleteCouponFromBackend(code){
+      const response = await fetch(couponsApiUrl + "/" + encodeURIComponent(code), { method: "DELETE" });
+      const data = await response.json().catch(function(){ return {}; });
+      if(!response.ok || data.ok === false){
+        throw new Error(data.error || "Failed to delete coupon from backend");
+      }
+      return Array.isArray(data.coupons) ? data.coupons.slice(0, MAX_COUPONS) : null;
     }
 
     function getCoupons(){
@@ -619,8 +648,9 @@
               return coupon.id === existingCoupon.id ? nextCoupon : coupon;
             })
           : [nextCoupon].concat(coupons);
-        await saveCouponsToFirestore(nextCoupons);
-        couponStore = nextCoupons;
+        const backendCoupons = await saveCouponToBackend(nextCoupon).catch(function(){ return null; });
+        await saveCouponsToFirestore(backendCoupons || nextCoupons);
+        couponStore = backendCoupons || nextCoupons;
         couponStore.sort(function(a, b){
           return Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0);
         });
@@ -664,8 +694,9 @@
         const nextCoupons = coupons.filter(function(item){
           return item.id !== couponId;
         });
-        await saveCouponsToFirestore(nextCoupons);
-        couponStore = nextCoupons;
+        const backendCoupons = await deleteCouponFromBackend(coupon.code).catch(function(){ return null; });
+        await saveCouponsToFirestore(backendCoupons || nextCoupons);
+        couponStore = backendCoupons || nextCoupons;
         renderCoupons();
         if(String(document.getElementById("couponCode").value || "").trim().toUpperCase() === coupon.code){
           resetForm();
@@ -689,10 +720,6 @@
 
     initCoupons();
   </script>
+<script src="admin-nav-active.js"></script>
 </body>
 </html>
-
-
-
-
-

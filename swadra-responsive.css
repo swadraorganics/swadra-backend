@@ -508,6 +508,131 @@ body > .top-bar + header.navbar + .sale-bar + *{
   }
 }
 
+/* Shared card system: align storefront/admin cards with index product-card look */
+:root{
+  --swadra-card-bg:#ffffff;
+  --swadra-card-border:#7a3d3d;
+  --swadra-card-radius:15px;
+  --swadra-card-shadow:0 8px 25px rgba(0,0,0,0.08);
+  --swadra-card-shadow-hover:0 15px 40px rgba(0,0,0,0.15);
+  --swadra-card-transition:all 0.35s ease;
+}
+
+.product-card,
+.panel,
+.stat-card,
+.order-card,
+.address-card,
+.value-card,
+.why-different-card,
+.family-card,
+.customer-product-card,
+.customer-review-card,
+.mini,
+.summary-box,
+.summary-card,
+.address-box,
+.items-panel,
+.summary-panel,
+.filter-card,
+.card,
+.box-card{
+  background:var(--swadra-card-bg) !important;
+  border:1px solid var(--swadra-card-border) !important;
+  border-radius:var(--swadra-card-radius) !important;
+  box-shadow:var(--swadra-card-shadow) !important;
+  transition:var(--swadra-card-transition) !important;
+  overflow:hidden;
+}
+
+.panel:hover,
+.stat-card:hover,
+.order-card:hover,
+.address-card:hover,
+.value-card:hover,
+.why-different-card:hover,
+.family-card:hover,
+.customer-product-card:hover,
+.customer-review-card:hover,
+.mini:hover,
+.summary-box:hover,
+.summary-card:hover,
+.filter-card:hover,
+.card:hover,
+.box-card:hover{
+  transform:translateY(-6px) !important;
+  box-shadow:var(--swadra-card-shadow-hover) !important;
+}
+
+.panel .title,
+.panel h2,
+.panel h3,
+.stat-card .value,
+.order-card h3,
+.address-card strong,
+.mini .v,
+.summary-card h2,
+.value-card h3,
+.why-different-card h3,
+.customer-review-card h3,
+.customer-review-card h4{
+  color:#7a3d3d !important;
+}
+
+.panel .sub,
+.stat-card .label,
+.order-card .k,
+.mini .k,
+.address-card .address-card-copy,
+.summary-card p,
+.value-card p,
+.why-different-card p,
+.customer-review-card p{
+  color:#6a5b5b !important;
+}
+
+.product-card,
+#bestsellersGrid .product-card,
+#specialProductsGrid .product-card,
+#comboContainer .product-card,
+#allProductsGrid .product-card,
+#productsGrid .product-card,
+#spicesGrid .product-card,
+#dryfruitsGrid .product-card,
+#oilgheeGrid .product-card{
+  border:1px solid #7a3d3d !important;
+  border-radius:15px !important;
+  box-shadow:0 8px 25px rgba(0,0,0,0.08) !important;
+}
+
+.product-card:hover,
+#bestsellersGrid .product-card:hover,
+#specialProductsGrid .product-card:hover,
+#comboContainer .product-card:hover,
+#allProductsGrid .product-card:hover,
+#productsGrid .product-card:hover,
+#spicesGrid .product-card:hover,
+#dryfruitsGrid .product-card:hover,
+#oilgheeGrid .product-card:hover{
+  transform:translateY(-6px) scale(1.03) !important;
+  box-shadow:0 15px 40px rgba(0,0,0,0.15) !important;
+}
+
+.product-card .product-img,
+.product-card .home-spice-img{
+  border-radius:14px 14px 8px 8px !important;
+}
+
+.product-card .product-img img,
+.product-card .home-spice-img img{
+  transition:transform 0.4s ease !important;
+}
+
+.product-card:hover .product-img img,
+.product-card:hover .home-spice-img img{
+  transform:scale(1.08) !important;
+}
+
 html{
   -webkit-text-size-adjust:100%;
 }

@@ -81,6 +81,7 @@ body{margin:0;font-family:Arial;background:#f1e3e3;}
 .price-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .old-price{font-size:13px;color:#8f7f74;text-decoration:line-through;font-weight:700;}
 .discount-badge{font-size:11px;color:#0c831f;font-weight:800;margin-top:-5px;margin-bottom:4px;}
+.unit-price-note{font-size:10px;font-weight:500;color:#6f675f;margin-left:6px;}
 .out-stock-text{font-size:14px;color:#c62828;font-weight:700;white-space:nowrap;}
 .qty-box{display:flex;align-items:center;gap:2px;font-size:14px;}
 .qty-btn{background:#eee;border:none;width:16px;height:16px;border-radius:50%;cursor:pointer;font-size:10px;line-height:16px;padding:0;}
@@ -90,6 +91,8 @@ body{margin:0;font-family:Arial;background:#f1e3e3;}
 .cart-btn:hover::before{left:100%;}
 .cart-btn.added{background:#0c831f;}
 .cart-btn.disabled{background:#c62828;cursor:not-allowed;}
+.detail-link{display:inline-flex;align-items:center;color:#7a3d3d;font-size:12px;font-weight:900;text-decoration:none;margin-top:8px}
+.detail-link:hover{text-decoration:underline}
 #stickyCart{position:fixed;bottom:20px;right:20px;display:none;align-items:center;gap:15px;padding:12px 18px;background:linear-gradient(135deg,#7a3d3d,#b76e79);color:white;border-radius:50px;z-index:9999;}
 #stickyCart a{background:white;color:#7a3d3d;padding:8px 16px;border-radius:30px;text-decoration:none;font-weight:600;}
 .swadra-category-footer{margin:40px 0 0;padding:34px 20px 38px;background:#7a3d3d;color:#fff;text-align:center;font-family:Arial,sans-serif;}
@@ -112,8 +115,9 @@ body{margin:0;font-family:Arial;background:#f1e3e3;}
 <link rel="stylesheet" href="mobile.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="api-config.js?v=20260423-2"></script>
-<script src="seo-aeo.js"></script></head>
+<script src="seo-aeo.js"></script><link rel="manifest" href="manifest.json">`r`n</head>
 <body>
 
 <div id="stickyCart">
@@ -148,12 +152,12 @@ body{margin:0;font-family:Arial;background:#f1e3e3;}
 <details class="mobile-nav-menu" style="display:none;">
 <summary aria-label="Open navigation menu"><span></span><span></span><span></span></summary>
 <div class="mobile-nav-panel">
+<a href="account.html" id="mobileSpicesAuthLink">Login</a>
 <a href="index.html">Home</a>
 <a href="spices.html">Spices</a>
 <a href="dryfruits.html">Dry Fruits</a>
 <a href="oilghee.html">Oil Ghee &amp; More</a>
 <a href="aboutus.html">About Us</a>
-<a href="account.html">Account</a>
 </div>
 </details>
 </header><div class="sale-bar"><div class="sale-bar-track" id="saleBarTrack"></div></div>
@@ -166,25 +170,26 @@ body{margin:0;font-family:Arial;background:#f1e3e3;}
 </footer>
 
 <script>
+const authApi = window.SWADRA_AUTH || null;
+const dataApi = window.SWADRA_DATA || null;
+let runtimeSpicesCartCache = [];
 function getCurrentUser(){
-  const authApi = window.SWADRA_AUTH || null;
   return authApi && typeof authApi.getCurrentUserEmail === "function"
     ? authApi.getCurrentUserEmail()
-    : localStorage.getItem("currentUser");
+    : "";
 }
 function getUsers(){
-  const authApi = window.SWADRA_AUTH || null;
-  if(authApi && typeof authApi.getUsers === "function"){
-    return authApi.getUsers() || {};
-  }
-  return JSON.parse(localStorage.getItem("users")) || {};
+  return authApi && typeof authApi.getUsers === "function"
+    ? (authApi.getUsers() || {})
+    : {};
 }
 
 function getSafeCartImage(image){
 if(typeof image !== "string") return "";
-if(image.startsWith("data:")) return "";
-if(image.length > 500) return "";
-return image;
+const value = image.trim();
+if(!value) return "";
+if(/^data:/i.test(value)) return "";
+return value;
 }
 
 function getSafeCartImages(images){
@@ -207,36 +212,60 @@ images:getSafeCartImages(item.images)
 }));
 }
 
-function getCart(){
+async function getCart(){
 let user=getCurrentUser();
-let users=getUsers();
-let localCart=compactCart(JSON.parse(localStorage.getItem("cart"))||[]);
-if(user && users[user]){
+if(!user){
+if(dataApi && typeof dataApi.getGuestCart === "function"){
 try{
-localStorage.setItem("cart",JSON.stringify(compactCart(users[user].cart||[])));
+const guestCart = compactCart(dataApi.getGuestCart());
+runtimeSpicesCartCache = guestCart;
+return guestCart;
 }catch(e){}
-return compactCart(users[user].cart||[]);
 }
-return localCart;
+runtimeSpicesCartCache = [];
+return [];
+}
+if(dataApi && typeof dataApi.fetchCart === "function"){
+try{
+const firestoreCart = compactCart(await dataApi.fetchCart(user));
+runtimeSpicesCartCache = firestoreCart;
+return firestoreCart;
+}catch(e){}
+}
+let users=getUsers();
+let fallbackCart=compactCart((users[user] && users[user].cart) || runtimeSpicesCartCache || []);
+runtimeSpicesCartCache = fallbackCart;
+return fallbackCart;
 }
 
-function saveCart(cart){
+async function saveCart(cart){
 let safeCart=compactCart(cart);
 let user=getCurrentUser();
-let users=getUsers();
-if(user && users[user]){
-  try{
-    users[user].cart=safeCart;
-    const authApi = window.SWADRA_AUTH || null;
-    if(authApi && typeof authApi.saveUsers === "function"){
-      authApi.saveUsers(users);
-    }else{
-      localStorage.setItem("users",JSON.stringify(users));
-    }
-  }catch(e){}
+if(!user){
+if(dataApi && typeof dataApi.saveGuestCart === "function"){
+try{
+dataApi.saveGuestCart(safeCart);
+runtimeSpicesCartCache = safeCart;
+await updateCartUI();
+return true;
+}catch(e){}
 }
-localStorage.setItem("cart",JSON.stringify(safeCart));
-updateCartUI();
+return false;
+}
+let users=getUsers();
+if(!users[user]) users[user]={ cart:[], orders:[] };
+users[user].cart=safeCart;
+if(authApi && typeof authApi.saveUsers === "function"){
+authApi.saveUsers(users);
+}
+if(dataApi && typeof dataApi.saveCart === "function"){
+try{
+await dataApi.saveCart(user, safeCart);
+}catch(e){}
+}
+runtimeSpicesCartCache = safeCart;
+await updateCartUI();
+return true;
 }
 
 const productDataApi = window.SWADRA_PRODUCT_DATA || {};
@@ -436,9 +465,32 @@ let offPercent=mrp>price && mrp>0 ? Math.round(((mrp-price)/mrp)*100) : 0;
 return {mrp,price,offPercent};
 }
 function formatRupee(value){ return `${RUPEE}${Number(value || 0)}`; }
+function getPerHundredPriceMarkup(product, sellingPrice){
+const sizeText=String(product?.size || product?.productSize || "").trim().toLowerCase();
+const price=Number(sellingPrice || product?.price || product?.sellingPrice || 0) || 0;
+if(!sizeText || !(price>0)) return "";
+const match=sizeText.match(/(\d+(?:\.\d+)?)\s*(kg|g|gm|gram|grams|ml|l|ltr|litre|liter)/i);
+if(!match) return "";
+const quantity=Number(match[1]);
+const unit=String(match[2] || "").toLowerCase();
+if(!(quantity>0)) return "";
+let baseAmount=0;
+let label="";
+if(["g","gm","gram","grams"].includes(unit)){ baseAmount=quantity; label="100gm"; }
+else if(unit==="kg"){ baseAmount=quantity*1000; label="100gm"; }
+else if(unit==="ml"){ baseAmount=quantity; label="100ml"; }
+else if(["l","ltr","litre","liter"].includes(unit)){ baseAmount=quantity*1000; label="100ml"; }
+if(!(baseAmount>0) || !label) return "";
+const perHundred=(price/baseAmount)*100;
+if(!(perHundred>0)) return "";
+const rounded=Math.round(perHundred*100)/100;
+const formatted=Number.isInteger(rounded) ? rounded.toLocaleString() : rounded.toFixed(2);
+return `<span class="unit-price-note">${RUPEE}${formatted}/${label}</span>`;
+}
 
 function buildPriceMarkup(product){
 let pricing=getProductPricing(product);
+let perHundredMarkup=getPerHundredPriceMarkup(product, pricing.price);
 if(pricing.offPercent>0){
 return `
 <div class="price-stack">
@@ -446,15 +498,15 @@ return `
 <span class="old-price">${formatRupee(pricing.mrp)}</span>
 <div class="price">${formatRupee(pricing.price)}</div>
 </div>
-<div class="discount-badge">${pricing.offPercent}% OFF</div>
+<div class="discount-badge">${pricing.offPercent}% OFF${perHundredMarkup}</div>
 </div>`;
 }
-return `<div class="price">${formatRupee(pricing.price)}</div>`;
+return perHundredMarkup ? `<div class="price-stack"><div class="price">${formatRupee(pricing.price)}</div><div class="discount-badge">${perHundredMarkup}</div></div>` : `<div class="price">${formatRupee(pricing.price)}</div>`;
 }
 
 async function loadProducts(){
 let products=await getProducts();
-let cart=getCart();
+let cart=await getCart();
 let filtered=products.filter(p=>productMatchesCategory(p,"spices"));
 let html="";
 
@@ -471,6 +523,7 @@ ${buildGalleryMarkup(p,id)}
 </div>
 <div class="product-info">
 <div class="product-title-row"><h3>${p.name}</h3><div class="size">${p.size || "100gm"}</div></div>
+<a class="detail-link" href="product-detail.html?id=${encodeURIComponent(id)}">View details, reviews & FAQ</a>
 <div class="product-bottom">
 <div class="left">
 ${isOut ? `<div class="out-stock-text">Out Of Stock</div>` : `
@@ -486,7 +539,7 @@ document.getElementById("productsContainer").innerHTML=html;
 }
 
 async function toggleCart(id){
-let cart=getCart();
+let cart=await getCart();
 let products=await getProducts();
 let item=products.find(p=>String(p.id)===String(id));
 if(!item) return;
@@ -507,16 +560,18 @@ qty:qty
 });
 }
 
-saveCart(cart);
+const saved = await saveCart(cart);
+if(saved !== false){
 loadProducts();
+}
 }
 
 function changeQty(id,val){
 return;
 }
 
-function updateCartUI(){
-let cart=getCart();
+async function updateCartUI(){
+let cart=await getCart();
 let totalItems=0,totalPrice=0;
 cart.forEach(i=>{ totalItems+=i.qty; totalPrice+=i.qty*i.price; });
 let bar=document.getElementById("stickyCart");
@@ -534,11 +589,12 @@ return `<span class="account-menu-wrap"><a class="account-link" href="${userEmai
 
 function swadraLogout(event){
 if(event) event.preventDefault();
-localStorage.removeItem("currentUser");
-localStorage.removeItem("userPhone");
-localStorage.removeItem("redirectAfterLogin");
-localStorage.setItem("cart",JSON.stringify([]));
+runtimeSpicesCartCache = [];
+if(authApi && typeof authApi.signOutUser === "function"){
+authApi.signOutUser({ keepCart:false });
+}
 updateAccountNavigation();
+updateCartUI();
 window.location.href = "index.html";
 return false;
 }
@@ -548,6 +604,21 @@ const slot=document.getElementById("accountNavSlot");
 if(!slot) return;
 const user=getCurrentUser();
 const users=getUsers();
+const mobileAuthLink=document.getElementById("mobileSpicesAuthLink");
+if(mobileAuthLink){
+if(user && users[user]){
+mobileAuthLink.textContent="Logout";
+mobileAuthLink.setAttribute("href","#");
+mobileAuthLink.onclick=function(event){
+event.preventDefault();
+return swadraLogout(event);
+};
+}else{
+mobileAuthLink.textContent="Login";
+mobileAuthLink.setAttribute("href","account.html");
+mobileAuthLink.onclick=null;
+}
+}
 if(user && users[user]){
 slot.innerHTML=swadraHeaderAccountMenu((((users[user]||{}).profile||{}).name || user.split("@")[0]), user);
 }else{
@@ -578,8 +649,7 @@ headerSearchResults.querySelectorAll(".nav-search-item[data-search-query]").forE
 row.addEventListener("click", function(){
 const query=this.getAttribute("data-search-query") || "";
 if(!query) return;
-localStorage.setItem("swadraHeaderSearch", query);
-window.location.href="index.html";
+window.location.href="index.html?search=" + encodeURIComponent(query);
 });
 });
 }
@@ -605,8 +675,7 @@ headerSearchInput.addEventListener("keydown", e=>{
 if(e.key!=="Enter") return;
 const query=headerSearchInput.value.trim();
 if(!query) return;
-localStorage.setItem("swadraHeaderSearch", query);
-window.location.href="index.html";
+window.location.href="index.html?search=" + encodeURIComponent(query);
 });
 headerSearchInput.addEventListener("search", ()=>{
 if(!headerSearchInput.value.trim()){
@@ -651,9 +720,4 @@ await renderOfferBar(true);
 </script>
 </body>
 </html>
-
-
-
-
-
 

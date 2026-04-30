@@ -1,0 +1,375 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swadra Organics - Order Sheet</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <link rel="stylesheet" href="swadra-responsive.css">
+  <link rel="stylesheet" href="mobile.css">
+  <script src="api-config.js"></script>
+  <style id="adminGlobalNavPadFix">body{padding-top:118px !important;}</style>
+  <style>
+    *{box-sizing:border-box}
+    :root{--primary:#7a3d3d;--primary-dark:#5f2f2f;--bg:#f8f5f2;--card:#fff;--line:#e7dfd7;--text:#1f1f1f;--muted:#6c6c6c;--success:#137a43;--danger:#c62828;--shadow:0 10px 30px rgba(0,0,0,.08)}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{width:min(100%,1880px);margin:0 auto;padding:20px 24px 28px}
+    .sheet-head{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+    .sheet-head h1{margin:0;color:var(--primary);font-size:28px}
+    .sheet-head p{margin:5px 0 0;color:var(--muted);font-size:13px}
+    .pill{display:inline-flex;align-items:center;gap:7px;background:#e7f5ec;color:var(--success);border-radius:999px;padding:9px 13px;font-weight:800;font-size:13px}
+    .pill::before{content:"";width:8px;height:8px;border-radius:50%;background:#22c55e}
+    .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+    .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+    .stat span{display:block;color:var(--muted);font-size:12px;font-weight:800}
+    .stat b{display:block;color:var(--primary);font-size:26px;margin-top:8px}
+    .sheet-card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+    .table-wrap{overflow:auto;max-height:calc(100vh - 250px)}
+    table{width:100%;border-collapse:collapse;min-width:1180px}
+    th,td{border:1px solid #eadfda;padding:12px 13px;text-align:left;vertical-align:middle;white-space:nowrap}
+    th{position:sticky;top:0;background:#7a3d3d;color:#fff;font-size:13px;z-index:2}
+    td{background:#fff;font-size:14px}
+    tr:nth-child(even) td{background:#fffaf7}
+    .money{font-weight:800;color:#1f1f1f}
+    .profit-pos{color:var(--success);font-weight:900}
+    .profit-neg{color:var(--danger);font-weight:900}
+    .status{font-weight:800;color:var(--primary)}
+    .empty{padding:26px;text-align:center;color:var(--muted);border:1px dashed #d8cdc2;background:#fffdfa}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+    .actions button{border:none;border-radius:12px;padding:11px 15px;font-weight:800;cursor:pointer}
+    .btn-primary{background:var(--primary);color:#fff}.btn-light{background:#eee7df;color:#3a2b2b}.btn-dark{background:#333;color:#fff}
+    .report-box{margin-bottom:14px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+    .report-box h2{margin:0 0 10px;color:var(--primary);font-size:18px}
+    .report-list{display:grid;gap:8px}
+    .report-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;border:1px solid #eadfda;border-radius:12px;padding:10px;background:#fffaf7;font-size:13px}
+    @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.wrap{padding:16px}}
+    @media(max-width:560px){.stats{grid-template-columns:1fr}.sheet-head h1{font-size:24px}}
+  </style>
+</head>
+<body>
+<div id="adminTopBar" style="position:fixed;top:0;left:0;right:0;z-index:100000;height:44px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;font-weight:700;font-size:22px;line-height:44px;text-align:center;border-bottom:1px solid rgba(122,61,61,.18);">Swadra Organics Admin Pannel</div>
+<div class="admin-global-nav" id="adminGlobalNav" style="position:fixed;top:44px;left:0;right:0;z-index:99999;display:flex;flex-direction:column;align-items:flex-start;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;width:100%;">
+    <a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Home</a>
+    <a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Main</a>
+    <a href="backend/ai.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Add Product</a>
+    <a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a>
+    <a href="backend/saved-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Edit Products</a>
+    <a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a>
+    <a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a>
+    <a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payment</a>
+    <a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupan</a>
+    <a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Call Back</a>
+    <a href="backend/backend.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Backend</a>
+    <a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a>
+    <a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Courier</a>
+    <span id="backendLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Backend</span>
+    <span id="firestoreLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Firestore</span>
+    <div id="adminProfileWrap" style="margin-left:auto;position:relative;" onmouseenter="openAdminProfileMenu()" onmouseleave="closeAdminProfileMenu()">
+      <button type="button" onclick="toggleAdminProfileMenu()" style="width:auto;min-width:32px;margin:0;padding:4px 6px;border-radius:0;background:transparent;color:#fff;border:none;box-shadow:none;font-size:18px;line-height:1;">👤</button>
+      <div id="adminProfileMenu" style="display:none;position:absolute;right:0;top:40px;min-width:240px;background:#ffffff;border:1px solid #ece1de;border-radius:18px;box-shadow:0 22px 45px rgba(0,0,0,0.16);padding:14px 0 12px;">
+        <button type="button" onclick="logout()" style="width:calc(100% - 20px);margin:0 10px 8px;background:#ffffff;color:#2a2a2a;font-weight:700;border:1px solid #f0e6e3;">Logout</button>
+        <button type="button" onclick="showSettings();closeAdminProfileMenu();" style="width:calc(100% - 20px);margin:0 10px 8px;background:#ffffff;color:#2a2a2a;font-weight:700;border:1px solid #f0e6e3;">Change Password</button>
+        <button type="button" onclick="window.location.href='admin-profit.html'" style="width:calc(100% - 20px);margin:0 10px 8px;background:#ffffff;color:#2a2a2a;font-weight:700;border:1px solid #f0e6e3;">Profit</button>
+        <button type="button" onclick="window.location.href='admin-order-sheet.html'" style="width:calc(100% - 20px);margin:0 10px 8px;background:#ffffff;color:#2a2a2a;font-weight:700;border:1px solid #f0e6e3;">Order Sheet</button><button type="button" onclick="window.location.href='admin-shiprocket.html'" style="width:calc(100% - 20px);margin:0 10px 8px;background:#ffffff;color:#2a2a2a;font-weight:700;border:1px solid #f0e6e3;">Shiprocket</button>
+        <button type="button" onclick="toggleWebsiteAvailability();closeAdminProfileMenu();" style="width:calc(100% - 20px);margin:0 10px;background:#fff7f7;color:#991b1b;font-weight:800;border:1px solid #f3d6d6;">Website Offline</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="sheet-head">
+    <div>
+      <h1>Order Sheet</h1>
+      <p>Non-editable live sheet. Auto updates from orders, payments, Shiprocket charge, and product cost.</p>
+    </div>
+    <span class="pill" id="refreshState">Auto Update Live</span>
+  </div>
+  <div class="actions">
+    <button class="btn-primary" onclick="createReconciliationSnapshot()">Create Immutable Snapshot</button>
+    <button class="btn-light" onclick="loadReconciliationReports()">Load Snapshots</button>
+    <button class="btn-dark" onclick="downloadBackup()">Download Backup</button>
+  </div>
+  <div class="report-box">
+    <h2>Immutable Reconciliation Reports</h2>
+    <div id="reportState" class="empty">No report loaded yet.</div>
+    <div id="reportList" class="report-list"></div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="sheet-card">
+    <div class="table-wrap" id="sheetTable"></div>
+  </div>
+</div>
+
+<script>
+function openAdminProfileMenu(){ var menu=document.getElementById("adminProfileMenu"); if(menu) menu.style.display="block"; }
+function closeAdminProfileMenu(){ var menu=document.getElementById("adminProfileMenu"); if(menu) menu.style.display="none"; }
+function toggleAdminProfileMenu(){ var menu=document.getElementById("adminProfileMenu"); if(menu) menu.style.display = menu.style.display === "block" ? "none" : "block"; }
+function logout(){ window.location.href="index.html"; }
+function showSettings(){ window.location.href="admin-index.html"; }
+function toggleWebsiteAvailability(){ window.location.href="admin-index.html"; }
+</script>
+<script>
+const dataApi = window.SWADRA_DATA || null;
+const productApi = window.SWADRA_PRODUCT_DATA || null;
+const API_BASE = window.SWADRA_API_BASE || "";
+
+function money(value){ return "â‚¹" + Math.round(Number(value || 0)).toLocaleString("en-IN"); }
+function safe(value){ return String(value == null ? "" : value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
+function formatDate(value){ const d = new Date(value); return Number.isNaN(d.getTime()) ? safe(value || "-") : d.toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"}); }
+function norm(value){ return String(value || "").trim().toLowerCase(); }
+function pick(obj, keys){
+  for(const key of keys){
+    if(obj && obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== "") return obj[key];
+  }
+  return "";
+}
+function getQty(item){ return Number(item.qty || item.quantity || item.count || 1) || 1; }
+function getItemSize(item){ return String(item.size || item.productSize || item.selectedSize || item.variant || item.weight || item.packSize || item.unit || "").trim(); }
+function getPaidLine(item){
+  const qty = getQty(item);
+  const line = Number(item.discountedLineTotal || item.displayLineTotal || item.lineTotal || item.total || 0);
+  if(line > 0) return line;
+  return (Number(item.discountedUnitPrice || item.displayPrice || item.price || item.sellingPrice || 0) || 0) * qty;
+}
+function normalizeProduct(raw){
+  const name = String(raw.name || raw.productName || "").trim();
+  const size = String(raw.size || raw.productSize || "").trim();
+  return {
+    id: String(raw.id || raw.productId || "").trim(),
+    key: [norm(name), norm(size)].join("|"),
+    looseKey: [norm(name), ""].join("|"),
+    totalCost: Number(raw.totalCost || raw.costPrice || raw.purchasePrice || raw.buyingPrice || raw.baseCost || 0) || 0
+  };
+}
+function buildProductLookup(products){
+  const byId = new Map();
+  const byKey = new Map();
+  products.forEach(function(product){
+    const p = normalizeProduct(product || {});
+    if(p.id) byId.set(p.id, p);
+    if(p.key) byKey.set(p.key, p);
+    if(p.looseKey && !byKey.has(p.looseKey)) byKey.set(p.looseKey, p);
+  });
+  return { byId, byKey };
+}
+function getItemCost(item, lookup){
+  const productId = String(item.productId || item.id || "").trim();
+  const exactKey = [norm(item.name || item.productName || item.title), norm(getItemSize(item))].join("|");
+  const looseKey = [norm(item.name || item.productName || item.title), ""].join("|");
+  const product = (productId && lookup.byId.get(productId)) || lookup.byKey.get(exactKey) || lookup.byKey.get(looseKey) || null;
+  const unitCost = product ? product.totalCost : Number(item.totalCost || item.costPrice || item.purchasePrice || item.buyingPrice || item.baseCost || 0) || 0;
+  return Math.max(0, unitCost * getQty(item));
+}
+function getOrderValue(order){
+  return Number(pick(order, ["finalAmount","total","amount","totalAmount","paidAmount","grandTotal","paymentAmount"])) || 0;
+}
+function getPaidAmount(order){
+  const statusText = norm(order.status || order.orderStatus || "");
+  if(statusText.includes("cancel")) return 0;
+  if(norm(order.payment || order.paymentStatus || order.status).includes("paid") || norm(order.payment).includes("success")){
+    return getOrderValue(order);
+  }
+  return Number(order.paidAmount || 0) || 0;
+}
+function getShiprocketCharge(order){
+  const deliveryDetails = order.deliveryDetails || order.shipping?.deliveryDetails || {};
+  const shiprocket = order.shiprocket || {};
+  return Number(
+    shiprocket.freight_charge ||
+    shiprocket.courier_charge ||
+    shiprocket.shipping_charge ||
+    order.freight_charge ||
+    order.courier_charge ||
+    deliveryDetails.lowestCourierCharge ||
+    order.lowestCourierCharge ||
+    0
+  ) || 0;
+}
+function getOrderProfit(order, lookup){
+  const statusText = norm(order.status || order.orderStatus || "");
+  if(statusText.includes("cancel")) return 0;
+  const items = Array.isArray(order.items) ? order.items : [];
+  const paidAmount = getPaidAmount(order);
+  const rawItemPaid = items.reduce((sum, item)=>sum + getPaidLine(item), 0);
+  const ratio = paidAmount > 0 && rawItemPaid > paidAmount ? paidAmount / rawItemPaid : 1;
+  const cost = items.reduce((sum, item)=>sum + getItemCost(item, lookup), 0);
+  const shiprocketCharge = getShiprocketCharge(order);
+  const revenue = rawItemPaid > 0 ? rawItemPaid * ratio : paidAmount;
+  return Math.round(revenue - cost - shiprocketCharge);
+}
+function getEmail(order){
+  return String(order.customerEmail || order.email || order.userEmail || (String(order.userId || "").includes("@") ? order.userId : "") || order.shipping?.email || "").trim().toLowerCase();
+}
+function getMobile(order){
+  return String(order.customerPhone || order.phone || order.mobile || order.shipping?.phone || order.shipping?.mobile || "").trim();
+}
+function getStatus(order){
+  return String(order.status || order.orderStatus || order.paymentStatus || "Unknown").trim();
+}
+function mergeOrders(orders){
+  const map = new Map();
+  orders.forEach(function(order){
+    if(!order || typeof order !== "object") return;
+    const key = String(order.id || order.orderId || "");
+    if(!key) return;
+    map.set(key, { ...(map.get(key) || {}), ...order, id: key });
+  });
+  return Array.from(map.values());
+}
+async function fetchOrders(){
+  const lists = [];
+  if(dataApi && typeof dataApi.fetchOrders === "function"){
+    try{ lists.push(await dataApi.fetchOrders()); }catch(error){ console.error("sheet firestore orders failed", error); }
+  }
+  if(API_BASE){
+    try{
+      const response = await fetch(API_BASE + "/api/orders", { cache:"no-store" });
+      const data = await response.json().catch(()=>({}));
+      if(response.ok && data.ok && Array.isArray(data.orders)) lists.push(data.orders);
+    }catch(error){ console.error("sheet backend orders failed", error); }
+  }
+  return mergeOrders(lists.flat().filter(Boolean));
+}
+async function fetchProducts(){
+  if(!productApi || typeof productApi.fetchProducts !== "function") return [];
+  try{ return await productApi.fetchProducts(); }catch(error){ console.error("sheet products failed", error); return []; }
+}
+function render(rows){
+  const totalOrderValue = rows.reduce((sum,row)=>sum + row.orderValue, 0);
+  const totalPaid = rows.reduce((sum,row)=>sum + row.paidAmount, 0);
+  const totalCourier = rows.reduce((sum,row)=>sum + row.shiprocketCharge, 0);
+  const totalProfit = rows.reduce((sum,row)=>sum + row.profit, 0);
+  document.getElementById("stats").innerHTML = [
+    ["Orders", rows.length],
+    ["Paid Amount", money(totalPaid)],
+    ["Shiprocket Charge", money(totalCourier)],
+    ["Profit", money(totalProfit)]
+  ].map(function(item){ return '<div class="stat"><span>' + item[0] + '</span><b>' + item[1] + '</b></div>'; }).join("");
+
+  if(!rows.length){
+    document.getElementById("sheetTable").innerHTML = '<div class="empty">No order sheet data found.</div>';
+    return;
+  }
+  document.getElementById("sheetTable").innerHTML = `
+    <table aria-label="Order Sheet" contenteditable="false">
+      <thead>
+        <tr>
+          <th>User Email ID</th>
+          <th>Mobile No</th>
+          <th>Order Value</th>
+          <th>Order Status</th>
+          <th>Paid Amount</th>
+          <th>Refund Status</th>
+          <th>Delivered Charge</th>
+          <th>Profit</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(function(row){
+          const profitClass = row.profit >= 0 ? "profit-pos" : "profit-neg";
+          return `
+            <tr>
+              <td>${safe(row.email || "-")}</td>
+              <td>${safe(row.mobile || "-")}</td>
+              <td class="money">${money(row.orderValue)}</td>
+              <td class="status">${safe(row.status || "-")}</td>
+              <td class="money">${money(row.paidAmount)}</td>
+              <td class="status">${safe(row.refundStatus || "-")}</td>
+              <td class="money">${money(row.shiprocketCharge)}</td>
+              <td class="${profitClass}">${money(row.profit)}</td>
+            </tr>
+          `;
+        }).join("")}
+      </tbody>
+    </table>
+  `;
+}
+async function refreshSheet(){
+  document.getElementById("refreshState").textContent = "Updating...";
+  const [orders, products] = await Promise.all([fetchOrders(), fetchProducts()]);
+  const lookup = buildProductLookup(products);
+  const rows = orders.map(function(order){
+    return {
+      email: getEmail(order),
+      mobile: getMobile(order),
+      orderValue: Math.round(getOrderValue(order)),
+      status: getStatus(order),
+      paidAmount: Math.round(getPaidAmount(order)),
+      refundStatus: String(order.refundStatus || order.razorpayRefundStatus || order.razorpayRefundGatewayStatus || "").trim(),
+      shiprocketCharge: Math.round(getShiprocketCharge(order)),
+      profit: getOrderProfit(order, lookup)
+    };
+  });
+  render(rows);
+  document.getElementById("refreshState").textContent = "Auto Update Live";
+}
+async function createReconciliationSnapshot(){
+  if(!API_BASE) return alert("Backend URL missing");
+  document.getElementById("reportState").textContent = "Creating immutable snapshot...";
+  try{
+    const response = await fetch(API_BASE + "/api/admin/reconciliation-reports", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({})
+    });
+    const data = await response.json().catch(()=>({}));
+    if(!response.ok || !data.ok) throw new Error(data.error || "Snapshot failed");
+    await loadReconciliationReports();
+    alert("Immutable reconciliation snapshot created.");
+  }catch(error){
+    document.getElementById("reportState").textContent = error.message || "Snapshot failed";
+    alert(error.message || "Snapshot failed");
+  }
+}
+async function loadReconciliationReports(){
+  if(!API_BASE) return;
+  document.getElementById("reportState").textContent = "Loading snapshots...";
+  try{
+    const response = await fetch(API_BASE + "/api/admin/reconciliation-reports", { cache:"no-store" });
+    const data = await response.json().catch(()=>({}));
+    if(!response.ok || !data.ok) throw new Error(data.error || "Reports unavailable");
+    const reports = Array.isArray(data.reports) ? data.reports : [];
+    document.getElementById("reportState").textContent = reports.length ? ("Snapshots: " + reports.length) : "No snapshots yet.";
+    document.getElementById("reportList").innerHTML = reports.slice(0,8).map(function(report){
+      const totals = report.totals || {};
+      return '<div class="report-row"><div><b>' + safe(report.id) + '</b><br>Created: ' + formatDate(report.createdAt) + '<br>Hash: ' + safe(report.fingerprint || '').slice(0,18) + '</div><div><b>' + money(totals.netReceivable || 0) + '</b><br>Orders: ' + safe(totals.orders || 0) + '<br>Refunds: ' + money(totals.refundAmount || 0) + '</div></div>';
+    }).join("");
+  }catch(error){
+    document.getElementById("reportState").textContent = error.message || "Reports unavailable";
+  }
+}
+async function downloadBackup(){
+  if(!API_BASE) return alert("Backend URL missing");
+  try{
+    const response = await fetch(API_BASE + "/api/admin/backup/export", { cache:"no-store" });
+    const text = await response.text();
+    if(!response.ok){
+      let data = {};
+      try{ data = JSON.parse(text); }catch(error){}
+      throw new Error(data.error || "Backup download failed");
+    }
+    const blobUrl = URL.createObjectURL(new Blob([text], { type:"application/json" }));
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = "swadra-backup-" + new Date().toISOString().slice(0,10) + ".json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(()=>URL.revokeObjectURL(blobUrl), 5000);
+  }catch(error){
+    alert(error.message || "Backup download failed");
+  }
+}
+window.addEventListener("focus", refreshSheet);
+setInterval(refreshSheet, 30000);
+refreshSheet();
+loadReconciliationReports();
+</script>
+<script src="admin-nav-active.js"></script>
+</body>
+</html>
+

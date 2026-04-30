@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Orders - Swadra</title>
+<meta name="description" content="View Swadra Organics orders, status history, cancellation, return request, refund updates and invoice links.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -33,7 +34,7 @@ body{background:#f1e3e3;color:#1d1d1f}
 .items-panel,.summary-panel{border:1px solid #edf0ea;border-radius:22px;padding:18px;background:#fcfcfa}
 .panel-title{font-size:18px;font-weight:800;margin-bottom:14px;color:#1f1f1f}
 .item-list{display:grid;gap:12px}
-.item-row{display:grid;grid-template-columns:56px 1fr auto auto;gap:12px;align-items:center;padding:14px;border-radius:18px;background:#fff;border:1px solid #eff2ec}
+.item-row{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;padding:14px;border-radius:18px;background:#fff;border:1px solid #eff2ec}
 .item-thumb{width:56px;height:56px;border-radius:14px;object-fit:cover;background:#f6f0ed;border:1px solid #eadfda}
 .item-name{font-weight:700}
 .item-qty{font-size:13px;color:#5f6368}
@@ -85,12 +86,40 @@ body{background:#f1e3e3;color:#1d1d1f}
 #stickyCart{position:fixed;bottom:20px;right:20px;display:none;align-items:center;gap:15px;padding:12px 18px;background:linear-gradient(135deg,#7a3d3d,#b76e79);color:white;border-radius:50px;z-index:9999;font-family:Arial,sans-serif}
 #stickyCart a{background:white;color:#7a3d3d;padding:8px 16px;border-radius:30px;text-decoration:none;font-weight:600}
 @media(max-width:900px){.nav-links{gap:14px}}
-.sale-bar{display:block;position:sticky !important;top:calc(var(--top-bar-height) + var(--navbar-height) - 1px) !important;z-index:7000 !important;overflow:hidden;white-space:nowrap;min-height:44px;padding:10px 0;background:#ffffff;color:#7a3d3d;font-size:16px;font-weight:700;line-height:20px;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif}
+.sale-bar{display:block;position:sticky !important;top:calc(var(--top-bar-height) + var(--navbar-height) - 1px) !important;z-index:7000 !important;overflow:hidden;white-space:nowrap;min-height:44px;padding:10px 0;background:#ffffff;color:#7a3d3d;font-size:16px;font-weight:700;line-height:20px;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif;margin:0 !important}
+.navbar + .sale-bar{margin-top:0 !important}
 .sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;min-height:44px;padding-left:0;animation:offerTicker 52s linear infinite;will-change:transform}
 .sale-bar-item{display:inline-flex;align-items:center;flex:0 0 auto;margin-right:84px}
 @keyframes offerTicker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 .account-link{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;color:#fff;text-decoration:none}
 .account-link svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.account-menu-wrap{position:relative;display:inline-flex;align-items:center}
+.account-icon{display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center}
+.account-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.account-hover-menu{
+  position:absolute;
+  right:0;
+  top:calc(100% + 10px);
+  width:320px;
+  background:#fff;
+  color:#1d1d1f;
+  border:1px solid #eadfda;
+  border-radius:16px;
+  box-shadow:0 20px 46px rgba(0,0,0,.16);
+  padding:14px;
+  display:none;
+  z-index:9000;
+}
+.account-menu-wrap:hover .account-hover-menu{display:block}
+.account-hover-head{display:grid;gap:8px;padding:6px 4px 12px}
+.account-hover-title{font-size:20px;font-weight:800;color:#2a1f1f}
+.account-hover-copy{font-size:14px;color:#6a5a5a;line-height:1.5}
+.account-hover-cta{display:inline-flex;justify-content:center;align-items:center;border-radius:999px;background:#7a3d3d;color:#fff;text-decoration:none;font-weight:800;padding:10px 12px}
+.account-hover-list{list-style:none;margin:0;padding:8px 0 0;display:grid;gap:6px;border-top:1px solid #f1e4df}
+.account-hover-list li a{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:10px;color:#2f2727;text-decoration:none;font-weight:700}
+.account-hover-list li a:hover{background:#f8efec}
+.account-menu-icon{display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;color:#7a3d3d}
+.account-menu-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 @media(max-width:1180px){.navbar{flex-wrap:wrap;gap:12px}.nav-search{position:relative;left:auto;top:auto;transform:none;order:3;flex:1 1 100%;max-width:none;margin:4px 0 0;width:auto}}
 </style>
 <style>html,body{background:#f1e3e3 !important;}</style>
@@ -98,7 +127,8 @@ body{background:#f1e3e3;color:#1d1d1f}
 <link rel="stylesheet" href="mobile.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="api-config.js"></script></head>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="api-config.js"></script><link rel="manifest" href="manifest.json">`r`n</head>
 <body>
 <div id="stickyCart" style="position:fixed;bottom:20px;right:20px;display:none;align-items:center;gap:15px;padding:12px 18px;background:linear-gradient(135deg,#7a3d3d,#b76e79);color:#fff;border-radius:50px;z-index:9999;font-family:Arial,sans-serif;box-shadow:0 12px 30px rgba(0,0,0,0.18);"><span id="cartCount">0</span><a href="cart.html" style="background:#fff;color:#7a3d3d;padding:8px 16px;border-radius:30px;text-decoration:none;font-weight:600;font-family:Arial,sans-serif;">View Cart &rarr;</a></div>
 <div class="top-bar" style="text-align:center;padding:12px;font-weight:600;font-size:16px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;">Eat Healthy &bull; Be Swadra Family</div>
@@ -111,7 +141,7 @@ body{background:#f1e3e3;color:#1d1d1f}
 <a href="dryfruits.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Dry Fruits</a>
 <a href="oilghee.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Oil Ghee &amp; More</a>
 <a href="aboutus.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">About Us</a>
-<span id="accountNavSlot"><a class="account-link" href="account.html" aria-label="Account"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></a></span>
+<span id="accountNavSlot"><span class="account-menu-wrap"><a href="account.html" aria-label="Account" title="Account" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;"><span class="account-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></span></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">Welcome</div><div class="account-hover-copy">Access your account, orders and saved details from one place.</div><a class="account-hover-cta" href="account.html">LOGIN / SIGNUP</a></div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span></span>
 </div>
 <details class="mobile-nav-menu" style="display:none;">
 <summary aria-label="Open navigation menu"><span></span><span></span><span></span></summary>
@@ -150,9 +180,38 @@ function money(value){ return "₹" + Math.round(Number(value) || 0).toLocaleStr
 function nowText(){ return new Date().toLocaleString("en-IN", { dateStyle:"medium", timeStyle:"short" }); }
 const API_BASE = window.SWADRA_API_BASE || "";
 const authApi = window.SWADRA_AUTH || null;
+const dataApi = window.SWADRA_DATA || null;
 function getCurrentUser(){ return authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : ""; }
 function getUsers(){ return authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : {}; }
 function saveUsers(users){ return authApi && typeof authApi.saveUsers === "function" ? authApi.saveUsers(users) : users; }
+async function ensureAuthReady(forceRefresh){
+  if(authApi && typeof authApi.ready === "function"){
+    try{
+      await authApi.ready(!!forceRefresh);
+    }catch(error){
+      console.warn("order auth ready failed", error);
+    }
+  }
+}
+function normalizeIdentity(value){
+  let text = String(value || "").trim().toLowerCase();
+  if(!text) return "";
+  try{ text = decodeURIComponent(text); }catch(error){}
+  return text.replace(/\s+/g, "");
+}
+function buildOrderAccessQuery(userId){
+  const currentUser = normalizeIdentity(userId || getCurrentUser());
+  return currentUser ? "?userId=" + encodeURIComponent(currentUser) + "&email=" + encodeURIComponent(currentUser) : "";
+}
+function resolveUserKey(users, currentUser){
+  const directKey = String(currentUser || "");
+  if(users && users[directKey]) return directKey;
+  const target = normalizeIdentity(currentUser);
+  const matched = Object.keys(users || {}).find(function(key){
+    return normalizeIdentity(key) === target;
+  });
+  return matched || directKey;
+}
 function normalizeStatus(status){ return String(status || "Confirmed").trim().toLowerCase(); }
 function statusLabel(status){
   const value = normalizeStatus(status);
@@ -202,7 +261,6 @@ function migrateLegacyOrders(){
 
   users[currentUser].orders = userOrders;
   saveUsers(users);
-  localStorage.removeItem("orders");
 }
 
 function getStatusClass(status){
@@ -239,11 +297,10 @@ async function renderOfferBar(forceRefresh){
 }
 
 function viewOrder(id){
-  localStorage.setItem("currentOrderId", id);
-  window.location.href = "trackorder.html";
+  window.location.href = "trackorder.html?orderId=" + encodeURIComponent(id);
 }
 
-function reorder(id){
+async function reorder(id){
   let currentUser = getCurrentUser();
   let users = getUsers();
   let orders = (users[currentUser] && users[currentUser].orders) || [];
@@ -264,7 +321,13 @@ function reorder(id){
   });
   users[currentUser].cart = mergedCart;
   saveUsers(users);
-  localStorage.setItem("cart", JSON.stringify(mergedCart));
+  if(dataApi && typeof dataApi.saveCart === "function"){
+    try{
+      await dataApi.saveCart(currentUser, mergedCart);
+    }catch(error){
+      console.error("reorder cart sync failed", error);
+    }
+  }
   window.dispatchEvent(new Event("cartUpdated"));
   alert("Available items were merged into your cart.");
   window.location.href = "cart.html";
@@ -299,7 +362,7 @@ function getCancelState(order){
   return { disabled: false, className: "danger-btn", label: "Cancel Order", note: "" };
 }
 
-function cancelOrder(id){
+async function cancelOrder(id){
   let currentUser = getCurrentUser();
   let users = getUsers();
   let orders = (users[currentUser] && users[currentUser].orders) || [];
@@ -334,6 +397,28 @@ function cancelOrder(id){
   selected.statusHistory = Array.isArray(selected.statusHistory) ? selected.statusHistory : [];
   selected.statusHistory.push({ status:"Cancelled", time:nowText(), note:"Cancellation accepted and refund initiated." });
   selected.updatedAt = new Date().toISOString();
+  if(window.SWADRA_API_BASE){
+    try{
+      const response = await fetch(String(window.SWADRA_API_BASE || "") + "/api/orders/" + encodeURIComponent(String(id)) + "/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: currentUser, email: currentUser, status: "Cancelled", note: "Cancelled by customer." })
+      });
+      const data = await response.json().catch(function(){ return {}; });
+      if(response.ok && data.ok && data.order){
+        Object.assign(selected, data.order);
+      }
+    }catch(error){
+      console.error("customer cancel backend sync failed", error);
+    }
+  }
+  if(dataApi && typeof dataApi.saveOrder === "function"){
+    try{
+      await dataApi.saveOrder(id, { ...selected, userId: currentUser, email: selected.email || currentUser });
+    }catch(error){
+      console.error("customer cancel firestore sync failed", error);
+    }
+  }
   saveUsers(users);
   alert("Your order has been cancelled. Refund has been initiated.");
   loadOrders();
@@ -357,42 +442,116 @@ function orderMatchesSearch(order, query){
   return text.includes(String(query || "").trim().toLowerCase());
 }
 
+function getOrderItemSizeLabel(item){
+  return String(
+    item?.size ||
+    item?.productSize ||
+    item?.selectedSize ||
+    item?.variant ||
+    item?.weight ||
+    item?.packSize ||
+    item?.unit ||
+    item?.weightLabel ||
+    item?.quantityLabel ||
+    ""
+  ).trim();
+}
+
+function getOrderItemFinalLineTotal(item){
+  const qty = Number(item?.qty || item?.quantity || 1) || 1;
+  const couponAdjusted = Number(item?.discountedLineTotal || 0);
+  if(couponAdjusted > 0) return couponAdjusted;
+  const displayLineTotal = Number(item?.displayLineTotal || 0);
+  if(displayLineTotal > 0) return displayLineTotal;
+  const displayPrice = Number(item?.discountedUnitPrice || item?.displayPrice || 0);
+  if(displayPrice > 0) return displayPrice * qty;
+  return (Number(item?.price || 0) || 0) * qty;
+}
+
 function toggleOrderDetails(id){
   const panel = document.getElementById("details-" + id);
   if(panel) panel.classList.toggle("show");
 }
 
 function downloadInvoice(id){
-  localStorage.setItem("currentOrderId", id);
-  window.location.href = "invoice.html";
+  const currentUser = getCurrentUser();
+  window.location.href = "invoice.html?orderId=" + encodeURIComponent(id) + (currentUser ? "&authUser=" + encodeURIComponent(currentUser) : "");
 }
 
 function requestSupport(id){
-  localStorage.setItem("supportOrderId", id);
-  alert("Support request noted for order " + id + ". Our team will contact you shortly.");
+  window.location.href = "aboutus.html?supportOrderId=" + encodeURIComponent(id) + "#contact";
+}
+
+async function requestReturn(id){
+  const currentUser = getCurrentUser();
+  const reason = window.prompt("Return/refund reason batao", "Return/refund requested by customer.");
+  if(reason === null) return;
+  try{
+    const response = await fetch(String(window.SWADRA_API_BASE || "") + "/api/orders/" + encodeURIComponent(String(id)) + "/return-request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: currentUser, email: currentUser, type: "Return", reason: reason || "Return/refund requested by customer." })
+    });
+    const data = await response.json().catch(function(){ return {}; });
+    if(!response.ok || !data.ok){
+      throw new Error(data.error || "Return request failed");
+    }
+    if(data.order && dataApi && typeof dataApi.saveOrder === "function"){
+      dataApi.saveOrder(data.order.id, data.order).catch(function(error){ console.error("return order sync failed", error); });
+    }
+    alert("Return/refund request submit ho gayi. Admin approval ke baad status update hoga.");
+    loadOrders();
+  }catch(error){
+    alert(error.message || "Return request submit nahi ho payi.");
+  }
 }
 
 async function fetchBackendOrdersForUser(userId){
+  const normalizedUserId = normalizeIdentity(userId);
+  function orderBelongsToUser(order){
+    if(!order || typeof order !== "object") return false;
+    const candidates = [
+      order.userId,
+      order.email,
+      order.customerEmail,
+      order.userEmail,
+      order.shipping && order.shipping.email,
+      order.shippingEmail
+    ];
+    return candidates.some(function(value){
+      return normalizeIdentity(value) === normalizedUserId;
+    });
+  }
+  let firestoreOrders = [];
+  if(dataApi && typeof dataApi.fetchOrders === "function"){
+    try{
+      const orders = await dataApi.fetchOrders();
+      firestoreOrders = Array.isArray(orders) ? orders.filter(orderBelongsToUser) : [];
+    }catch(error){
+      console.warn("Firestore order fetch failed", error);
+    }
+  }
   try{
-    const response = await fetch(`${API_BASE}/api/orders/user/${encodeURIComponent(userId)}`, { cache:"no-store" });
+    const response = await fetch(`${API_BASE}/api/orders/user/${encodeURIComponent(userId)}${buildOrderAccessQuery(userId)}`, { cache:"no-store" });
     const data = await response.json();
     if(!response.ok || !data.ok) throw new Error(data.error || "Backend orders unavailable");
-    return Array.isArray(data.orders) ? data.orders : [];
+    const backendOrders = Array.isArray(data.orders) ? data.orders : [];
+    return mergeOrders(firestoreOrders, backendOrders);
   }catch(error){
-    console.warn("Backend order fetch failed, using localStorage fallback", error);
-    return null;
+    console.warn("Backend order fetch failed", error);
+    return firestoreOrders.length ? firestoreOrders : null;
   }
 }
 
 function mergeOrders(localOrders, backendOrders){
   if(!Array.isArray(backendOrders)) return Array.isArray(localOrders) ? localOrders : [];
   const map = new Map();
-  (Array.isArray(backendOrders) ? backendOrders : []).forEach(order=>{
+  (Array.isArray(localOrders) ? localOrders : []).forEach(order=>{
     if(order && order.id != null){
       map.set(String(order.id), order);
     }
   });
-  (Array.isArray(localOrders) ? localOrders : []).forEach(order=>{
+  (Array.isArray(backendOrders) ? backendOrders : []).forEach(order=>{
     if(order && order.id != null){
       map.set(String(order.id), { ...(map.get(String(order.id)) || {}), ...order });
     }
@@ -426,14 +585,16 @@ function getPaymentInstrumentLabel(order){
 function syncOrdersToUserStore(currentUser, orders){
   if(!currentUser || !Array.isArray(orders)) return;
   let users = getUsers();
-  users[currentUser] = users[currentUser] || { cart: [], orders: [] };
-  users[currentUser].orders = orders;
+  const userKey = resolveUserKey(users, currentUser);
+  users[userKey] = users[userKey] || { cart: [], orders: [] };
+  users[userKey].orders = orders;
   saveUsers(users);
 }
 
 async function loadOrders(){
   const container = document.getElementById("ordersContainer");
   container.innerHTML = "";
+  await ensureAuthReady(false);
 
   let currentUser = getCurrentUser();
   if(!currentUser){
@@ -444,13 +605,19 @@ async function loadOrders(){
   migrateLegacyOrders();
 
   let users = getUsers();
-  if(!users[currentUser]){
-    container.innerHTML = `<div class="empty"><h3>No account data found</h3><p>Please log in again to view your orders.</p></div>`;
-    return;
+  const userKey = resolveUserKey(users, currentUser);
+  let backendOrders = await fetchBackendOrdersForUser(currentUser);
+  if(!users[userKey]){
+    if(Array.isArray(backendOrders) && backendOrders.length){
+      users[userKey] = { email: currentUser, cart: [], orders: backendOrders };
+      await Promise.resolve(saveUsers(users));
+    }else{
+      container.innerHTML = `<div class="empty"><h3>No orders yet</h3><p>Your confirmed purchases will appear here after checkout.</p><a class="primary-btn" href="index.html">Start Shopping</a></div>`;
+      return;
+    }
   }
 
-  let localOrders = users[currentUser].orders || [];
-  let backendOrders = await fetchBackendOrdersForUser(currentUser);
+  let localOrders = users[userKey].orders || [];
   let orders = Array.isArray(backendOrders) ? mergeOrders(localOrders, backendOrders) : localOrders;
   if(Array.isArray(backendOrders)){
     syncOrdersToUserStore(currentUser, orders);
@@ -479,17 +646,27 @@ async function loadOrders(){
     let cancelState = getCancelState(order);
     let itemCount = (order.items || []).reduce((sum,item)=>sum + Number(item.qty || 1), 0);
     let statusText = statusLabel(order.status);
-    let itemsHtml = (order.items || []).map(item=>`
-      <div class="item-row">
-        <img class="item-thumb" src="${safe(item.image) || "images/logo.png"}" alt="${safe(item.name)}">
-        <div>
-          <div class="item-name">${safe(item.name)}</div>
-          <div class="item-qty">Qty ${safe(item.qty)}</div>
+    let itemsHtml = (order.items || []).map(item=>{
+      const qty = Number(item.qty || item.quantity || 1) || 1;
+      const sizeLabel = getOrderItemSizeLabel(item);
+      const originalLine = (Number(item.price) || 0) * qty;
+      const finalLine = getOrderItemFinalLineTotal(item);
+      const couponLine = Number(item.couponLineDiscount || 0);
+      return `
+        <div class="item-row">
+          <img class="item-thumb" src="${safe(item.image) || "images/logo.png"}" alt="${safe(item.name)}">
+          <div>
+            <div class="item-name">${safe(item.name)}${sizeLabel ? ` <span style="font-size:12px;color:#6b5c5c;font-weight:700;">(${safe(sizeLabel)})</span>` : ""}</div>
+            <div class="item-qty">Qty ${qty}</div>
+          </div>
+          <div class="item-price">
+            ${finalLine < originalLine ? `<span style="display:block;font-size:12px;color:#b3261e;text-decoration:line-through;">${money(originalLine)}</span>` : ""}
+            <span style="display:block;">${money(finalLine)}</span>
+            ${couponLine > 0 ? `<span style="display:block;font-size:11px;color:#0f8a47;">Coupon -${money(couponLine)}</span>` : ""}
+          </div>
         </div>
-        <div class="item-price">${money(item.discountedUnitPrice || item.displayPrice || item.price)}</div>
-        <div class="item-price">${Number(item.discountedLineTotal || item.displayLineTotal || 0) > 0 && Number(item.discountedLineTotal || item.displayLineTotal || 0) < (Number(item.price) || 0) * (Number(item.qty) || 0) ? `<span style="display:block;font-size:12px;color:#888;text-decoration:line-through;">${money((Number(item.price) || 0) * (Number(item.qty) || 0))}</span>` : ""}${money(item.discountedLineTotal || item.displayLineTotal || ((Number(item.price) || 0) * (Number(item.qty) || 0)))}</div>
-      </div>
-    `).join("");
+      `;
+    }).join("");
 
     let shipping = order.shipping || {};
     let history = Array.isArray(order.statusHistory) && order.statusHistory.length ? order.statusHistory : [{ status: statusText, time: safe(order.date) || "Recently", note: "Order status updated." }];
@@ -556,7 +733,7 @@ async function loadOrders(){
             <button class="secondary-btn" onclick="toggleOrderDetails('${safe(order.id)}')">Order Details</button>
             <button class="secondary-btn" onclick="downloadInvoice('${safe(order.id)}')">Invoice</button>
             <button class="secondary-btn" onclick="requestSupport('${safe(order.id)}')">Help / Support</button>
-            ${isDeliveredStatus(order.status) ? `<button class="secondary-btn" onclick="requestSupport('${safe(order.id)}')">Return / Replace</button><button class="secondary-btn" onclick="requestSupport('${safe(order.id)}')">Review Product</button>` : ""}
+            ${isDeliveredStatus(order.status) ? `<button class="secondary-btn" onclick="requestReturn('${safe(order.id)}')">Return / Replace</button><button class="secondary-btn" onclick="requestSupport('${safe(order.id)}')">Review Product</button>` : ""}
             <button class="secondary-btn ${cancelState.className}" onclick="cancelOrder('${safe(order.id)}')" ${cancelState.disabled ? "disabled" : ""}>${cancelState.label}</button>
           </div>
           ${cancelState.note ? `<div class="action-note">${cancelState.note}</div>` : ""}
@@ -585,14 +762,26 @@ document.addEventListener("keydown", function(event){
 });
 </script>
 <script>
-function swadraHeaderGetCart(){
-  try{return JSON.parse(localStorage.getItem("cart")) || [];}catch(e){return [];}
+async function swadraHeaderGetCart(){
+  const currentUser = getCurrentUser();
+  if(currentUser && dataApi && typeof dataApi.fetchCart === "function"){
+    try{
+      const cart = await dataApi.fetchCart(currentUser);
+      return Array.isArray(cart) ? cart : [];
+    }catch(error){
+      console.error("order sticky cart fetch failed", error);
+    }
+  }
+  const users = getUsers();
+  return currentUser && users[currentUser] && Array.isArray(users[currentUser].cart)
+    ? users[currentUser].cart
+    : [];
 }
-function swadraHeaderUpdateStickyCart(){
+async function swadraHeaderUpdateStickyCart(){
   let bar=document.getElementById("stickyCart");
   let count=document.getElementById("cartCount");
   if(!bar || !count) return;
-  let cart=swadraHeaderGetCart();
+  let cart=await swadraHeaderGetCart();
   let totalItems=0,totalPrice=0;
   cart.forEach(item=>{ totalItems+=Number(item.qty||0); totalPrice+=Number(item.qty||0)*Number(item.price||0); });
   if(totalItems>0){
@@ -607,30 +796,16 @@ function swadraHeaderUpdateAccountNav(){
   if(!slot) return;
   let currentUser=getCurrentUser();
   let users=getUsers();
-  if(currentUser && users[currentUser]){
-    slot.innerHTML='<a href="dashboard.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">My Account</a>';
-  }else{
-    slot.innerHTML='<a href="account.html" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;">Signup/Login</a>';
-  }
+  const isLoggedIn = !!(currentUser && users[currentUser]);
+  slot.innerHTML = `<span class="account-menu-wrap"><a href="account.html" aria-label="Account" title="Account" style="color:#fff;text-decoration:none;font-weight:600;font-size:16px;font-family:Arial,sans-serif;"><span class="account-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"></path><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg></span></a><div class="account-hover-menu"><div class="account-hover-head"><div class="account-hover-title">${isLoggedIn ? "My Account" : "Welcome"}</div><div class="account-hover-copy">Access your account, orders and saved details from one place.</div><a class="account-hover-cta" href="${isLoggedIn ? "dashboard.html" : "account.html"}">${isLoggedIn ? "OPEN DASHBOARD" : "LOGIN / SIGNUP"}</a></div><ul class="account-hover-list"><li><a href="order.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 4l9 3.5"></path><path d="M5 9v8.5A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V9"></path><path d="M9 12h6"></path><path d="M9 15h4"></path></svg></span><span>Orders</span></a></li><li><a href="cart.html"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.4"></circle><circle cx="17" cy="19" r="1.4"></circle><path d="M3 5h2l2.1 9.1a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"></path></svg></span><span>Cart</span></a></li><li><a href="aboutus.html#contact"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z"></path><path d="m6 8 6 5 6-5"></path></svg></span><span>Contact Us</span></a></li></ul><ul class="account-hover-list"><li><a href="account.html#coupons"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v2a2 2 0 0 0 0 4v1A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-1a2 2 0 0 0 0-4Z"></path><path d="M9 9h.01"></path><path d="m15.5 9-6.5 6"></path><path d="M15 15h.01"></path></svg></span><span>Coupons</span></a></li><li><a href="account.html#saved-address"><span class="account-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.6 6-10a6 6 0 1 0-12 0c0 5.4 6 10 6 10Z"></path><circle cx="12" cy="11" r="2.3"></circle></svg></span><span>Saved Address</span></a></li></ul></div></span>`;
 }
 window.addEventListener("load", function(){ swadraHeaderUpdateStickyCart(); swadraHeaderUpdateAccountNav(); });
 window.addEventListener("cartUpdated", swadraHeaderUpdateStickyCart);
-window.addEventListener("storage", function(event){
-  if(["cart","currentUser","userPhone"].includes(event.key)){
-    swadraHeaderUpdateStickyCart();
-    swadraHeaderUpdateAccountNav();
-  }
-  if(["offers","homeContent"].includes(event.key)){
-    renderOfferBar(true);
-  }
+window.addEventListener("focus", function(){
+  swadraHeaderUpdateStickyCart();
+  swadraHeaderUpdateAccountNav();
+  renderOfferBar(true);
 });
 </script>
 </body>
 </html>
-
-
-
-
-
-
-

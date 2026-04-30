@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Swadra Organics - Admin Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <style>
     *{box-sizing:border-box}
 
@@ -330,8 +333,6 @@
   </style>
 <link rel="stylesheet" href="swadra-responsive.css">
 <link rel="stylesheet" href="mobile.css">
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="api-config.js"></script></head>
 <body>
 <div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Callback Requests</a></div>
@@ -406,11 +407,11 @@
           </div>
           <div class="summary-card green">
             <div class="label">Paid Amount</div>
-            <div class="value" id="paidAmountView">â‚¹0</div>
+            <div class="value" id="paidAmountView">₹0</div>
           </div>
           <div class="summary-card gold">
             <div class="label">Pending Amount</div>
-            <div class="value" id="pendingAmountView">â‚¹0</div>
+            <div class="value" id="pendingAmountView">₹0</div>
           </div>
         </div>
 
@@ -420,7 +421,7 @@
         <div class="list" id="systemHealthList"></div>
 
         <div class="small-note">
-          Dashboard common localStorage keys aur live Firestore products ko read karta hai. Isliye current admin status ka quick overview yahan auto show hota hai.
+    Dashboard live Firestore users, orders, products aur site content ko read karta hai. Isliye current admin status ka quick overview yahan auto show hota hai.
         </div>
       </div>
 
@@ -439,12 +440,9 @@
   </div>
 
   <script>
-    const CUSTOMER_KEYS = ["users","customers","accounts","registeredUsers","userAccounts","swadraUsers","swadraCustomers","allUsers"];
-    const ORDER_KEYS = ["adminOrders","orders","swadraOrders","customerOrders","allOrders"];
-    const PAYMENT_KEYS = ["payments","adminPayments","swadraPayments","orders","adminOrders","swadraOrders","customerOrders","allOrders"];
-    const COUPON_KEYS = ["adminCoupons"];
-    const CUSTOMER_PAUSE_KEY = "adminPausedCustomers";
-    const PAYMENT_REVIEW_KEY = "adminPaymentReviewMap";
+    const authApi = window.SWADRA_AUTH || null;
+    const dataApi = window.SWADRA_DATA || null;
+    const siteContentApi = window.SWADRA_SITE_CONTENT || null;
 
     function safeJsonParse(value, fallback){
       try{
@@ -456,7 +454,7 @@
     }
 
     function rupee(value){
-      return "â‚¹" + Number(value || 0).toFixed(0);
+      return "₹" + Number(value || 0).toFixed(0);
     }
 
     function normalizeText(value){
@@ -541,38 +539,30 @@
       return Array.from(uniqueMap.values());
     }
 
-    function getCustomers(){
-      const pausedMap = safeJsonParse(localStorage.getItem(CUSTOMER_PAUSE_KEY), {});
-      let merged = [];
-      const seen = new Set();
-
-      CUSTOMER_KEYS.forEach((key)=>{
-        const parsed = safeJsonParse(localStorage.getItem(key), []);
-        if(!Array.isArray(parsed)) return;
-
-        parsed.forEach((item, index)=>{
-          if(!item || typeof item !== "object") return;
-
-          const name = String(getValueByPossibleKeys(item, ["name","fullName","username","userName"])).trim() || "Unnamed Customer";
-          const email = String(getValueByPossibleKeys(item, ["email","emailId","mail"])).trim();
-          const mobile = String(getValueByPossibleKeys(item, ["mobile","phone","phoneNumber","mobileNumber","contactNumber"])).trim();
-          const id = String(getValueByPossibleKeys(item, ["id","userId","uid","customerId","accountId"])) || `${key}_${email}_${mobile}_${index}`;
-          const dedupeKey = [email.toLowerCase(), mobile, name.toLowerCase()].join("|");
-
-          if(seen.has(dedupeKey)) return;
-          seen.add(dedupeKey);
-
-          merged.push({
+    async function getCustomers(){
+      if(!authApi || typeof authApi.ready !== "function" || typeof authApi.getUsers !== "function"){
+        return [];
+      }
+      try{
+        await authApi.ready();
+        const users = authApi.getUsers() || {};
+        return Object.values(users).map((item, index)=>{
+          const name = String(getValueByPossibleKeys(item, ["name","fullName","username","userName"]) || item.profile && item.profile.name).trim() || "Unnamed Customer";
+          const email = String(getValueByPossibleKeys(item, ["email","emailId","mail"]) || item.profile && item.profile.email).trim();
+          const mobile = String(getValueByPossibleKeys(item, ["mobile","phone","phoneNumber","mobileNumber","contactNumber"]) || item.profile && item.profile.phone).trim();
+          const id = String(getValueByPossibleKeys(item, ["id","userId","uid","customerId","accountId"]) || email || mobile || ("user_" + index)).trim();
+          return {
             id,
             name,
             email,
             mobile,
-            paused: Boolean(pausedMap[id])
-          });
+            paused: String(item.status || item.accountStatus || "").toLowerCase() === "paused"
+          };
         });
-      });
-
-      return merged;
+      }catch(error){
+        console.error("dashboard customers fetch failed", error);
+        return [];
+      }
     }
 
     function normalizePaymentStatus(raw){
@@ -601,67 +591,48 @@
       return 0;
     }
 
-    function getPayments(){
-      const reviewMap = safeJsonParse(localStorage.getItem(PAYMENT_REVIEW_KEY), {});
-      let merged = [];
-      const seen = new Set();
-
-      PAYMENT_KEYS.forEach((key)=>{
-        const parsed = safeJsonParse(localStorage.getItem(key), []);
-        if(!Array.isArray(parsed)) return;
-
-        parsed.forEach((item, index)=>{
-          if(!item || typeof item !== "object") return;
-
-          const paymentId = String(getValueByPossibleKeys(item, ["paymentId","txnId","transactionId","razorpayPaymentId","id"])).trim() || `${key}_payment_${index}`;
-          const orderId = String(getValueByPossibleKeys(item, ["orderId","orderID","invoiceId","order_id"])).trim();
-          const name = String(getValueByPossibleKeys(item, ["name","customerName","fullName","username"])).trim() || "Unknown Customer";
-          const status = normalizePaymentStatus(getValueByPossibleKeys(item, ["paymentStatus","status","payment_state"]));
-          const amount = extractAmount(item);
-          const createdAt = getValueByPossibleKeys(item, ["createdAt","date","orderedAt","timestamp","time","paidAt"]);
-          const dedupeKey = [paymentId, orderId, amount].join("|");
-
-          if(seen.has(dedupeKey)) return;
-          seen.add(dedupeKey);
-
-          merged.push({
+    async function getPayments(){
+      if(!dataApi || typeof dataApi.fetchOrders !== "function"){
+        return [];
+      }
+      try{
+        const orders = await dataApi.fetchOrders();
+        return (Array.isArray(orders) ? orders : []).map((item, index)=>{
+          const paymentId = String(getValueByPossibleKeys(item, ["paymentId","txnId","transactionId","razorpayPaymentId","id"])).trim() || `firestore_payment_${index}`;
+          const orderId = String(getValueByPossibleKeys(item, ["orderId","orderID","invoiceId","order_id","id"])).trim();
+          const name = String(getValueByPossibleKeys(item, ["name","customerName","fullName","username","shippingName"])).trim() || "Unknown Customer";
+          return {
             id: paymentId,
             orderId,
             name,
-            status,
-            amount,
-            reviewed: Boolean(reviewMap[paymentId]),
-            createdAt
-          });
+            status: normalizePaymentStatus(getValueByPossibleKeys(item, ["paymentStatus","status","payment_state"])),
+            amount: extractAmount(item),
+            reviewed: Boolean(item.adminPaymentReviewed),
+            createdAt: getValueByPossibleKeys(item, ["createdAt","date","orderedAt","timestamp","time","paidAt"])
+          };
         });
-      });
-
-      return merged;
+      }catch(error){
+        console.error("dashboard payments fetch failed", error);
+        return [];
+      }
     }
 
-    function getCoupons(){
-      const parsed = safeJsonParse(localStorage.getItem("adminCoupons"), []);
-      if(Array.isArray(parsed) && parsed.length) return parsed;
-
-      const single = safeJsonParse(localStorage.getItem("adminCoupon"), null);
-      if(single && single.code){
-        return [{
-          id: "single_coupon",
-          code: single.code,
-          discount: Number(single.discount || 0),
-          status: single.status || "active",
-          createdAt: Date.now()
-        }];
+    async function getCoupons(){
+      if(!siteContentApi || typeof siteContentApi.fetch !== "function"){
+        return [];
       }
-
-      return [];
+      try{
+        const state = await siteContentApi.fetch(true);
+        return Array.isArray(state && state.coupons) ? state.coupons.slice() : [];
+      }catch(error){
+        console.error("dashboard coupons fetch failed", error);
+        return [];
+      }
     }
 
     async function buildDashboardData(){
       const [products] = await Promise.all([getProducts()]);
-      const customers = getCustomers();
-      const payments = getPayments();
-      const coupons = getCoupons();
+      const [customers, payments, coupons] = await Promise.all([getCustomers(), getPayments(), getCoupons()]);
 
       const activeProducts = products.filter(item => !item.isOut).length;
       const outProducts = products.filter(item => item.isOut).length;
@@ -865,7 +836,7 @@
       renderRecentCoupons(data);
     }
 
-    window.addEventListener("storage", function(){
+    window.addEventListener("focus", function(){
       refreshDashboard();
     });
 
@@ -873,6 +844,7 @@
   </script>
 </body>
 </html>
+
 
 
 

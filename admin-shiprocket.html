@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Swadra Organics - Shiprocket Orders</title>
+<meta name="description" content="Admin courier panel for Swadra Organics Shiprocket orders, tracking, delivery ETA settings and shipment status.">
   <style>
     *{box-sizing:border-box}
     body{margin:0;font-family:Arial,sans-serif;background:#f8f5f2;color:#1f1f1f}
@@ -36,6 +37,13 @@
     .filters input,.filters select{
       flex:1 1 220px;padding:12px 13px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:14px
     }
+    .settings-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+    .settings-grid label{display:grid;gap:6px;font-size:12px;font-weight:800;color:#765f57;text-transform:uppercase;letter-spacing:.06em}
+    .settings-grid input{width:100%;padding:12px 13px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:14px}
+    .eta-table{display:grid;gap:10px;margin-top:14px}
+    .eta-row{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:10px;align-items:center}
+    .eta-row span{font-weight:800;color:#3b2b2b}
+    .save-note{margin-top:10px;color:var(--muted);font-size:13px;font-weight:700}
     .stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
     .stat-card{padding:16px}
     .stat-card .label{font-size:12px;color:var(--muted);font-weight:700}
@@ -64,36 +72,41 @@
       .stats-grid,.meta-grid{grid-template-columns:1fr}
     }
   </style>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="api-config.js"></script>
 <link rel="stylesheet" href="mobile.css">
+<style id="adminGlobalNavPadFix">body{padding-top:118px !important;}</style>
 </head>
 <body>
-<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;">
-  <a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a>
-  <a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a>
-  <a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a>
-  <a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a>
-  <a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a>
-  <a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Shiprocket</a>
-  <a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a>
-  <a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a>
-  <a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a>
-  <a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a>
-</div>
+<div id="adminTopBar" style="position:fixed;top:0;left:0;right:0;z-index:100000;height:44px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;font-weight:700;font-size:22px;line-height:44px;text-align:center;border-bottom:1px solid rgba(122,61,61,.18);">Swadra Organics Admin Pannel</div>
+<div class="admin-global-nav" id="adminGlobalNav" style="position:fixed;top:44px;left:0;right:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Home</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Main</a><a href="backend/ai.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Add Product</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="backend/saved-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Edit Products</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payment</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupan</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Call Back</a><a href="backend/backend.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Backend</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Courier</a><span id="backendLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Backend</span><span id="firestoreLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Firestore</span><details style="margin-left:auto;position:relative;"><summary style="list-style:none;cursor:pointer;color:#fff;font-size:18px;line-height:1;padding:4px 6px;">👤</summary><div style="position:absolute;right:0;top:30px;min-width:210px;background:#fff;border:1px solid #ece1de;border-radius:14px;box-shadow:0 16px 35px rgba(0,0,0,.18);padding:8px;"><a href="admin-index.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Admin Home</a><a href="admin-profit.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Shiprocket</a><a href="index.html" style="display:block;padding:10px 12px;color:#991b1b;text-decoration:none;font-weight:800;border-radius:10px;background:#fff7f7;">Logout</a></div></details></div>
 <div class="wrap">
-  <div class="topbar">
-    <h1>Shiprocket Orders</h1>
-    <p>Jin orders me AWB, shipment ID ya courier details aa chuki hain, woh yahan alag se show honge. Yahin se aap shipment status dekh sakte ho, tracking page khol sakte ho aur label print kar sakte ho.</p>
-  </div>
-
   <div class="toolbar">
     <button class="btn-primary" onclick="renderShiprocketOrders()">Refresh Shiprocket</button>
     <a class="btn-light" href="admin-orders.html">Open Orders</a>
     <a class="btn-dark" href="trackorder.html">Open Tracking Page</a>
-    <a class="btn-light" href="admin-index.html">Back to Admin</a>
   </div>
 
   <div class="stats-grid" id="statsGrid"></div>
+
+  <div class="panel">
+    <h2>Delivery ETA Settings</h2>
+    <div class="settings-grid">
+      <label>Pickup Pincode<input id="pickupPincode" maxlength="6" inputmode="numeric"></label>
+      <label>Pickup City<input id="pickupCity"></label>
+      <label>Pickup State<input id="pickupState"></label>
+      <label>Charge Multiplier<input id="customerChargeMultiplier" type="number" min="0" step="0.05"></label>
+      <label>Hidden Buffer<input id="hiddenDeliveryBuffer" type="number" min="0" step="1"></label>
+    </div>
+    <div class="eta-table" id="etaRules"></div>
+    <div class="toolbar" style="margin-top:14px">
+      <button class="btn-primary" type="button" onclick="saveDeliveryEtaSettings()">Save ETA Settings</button>
+      <button class="btn-light" type="button" onclick="loadDeliveryEtaSettings(true)">Reload</button>
+    </div>
+    <div class="save-note" id="etaSettingsStatus">ETA settings will reflect on product, cart, checkout and payment pages.</div>
+  </div>
 
   <div class="panel">
     <h2>Filters</h2>
@@ -116,240 +129,82 @@
   </div>
 </div>
 
+<script src="admin-shiprocket-page.js"></script>
 <script>
-const ORDER_SOURCE_KEYS = ["adminOrders","orders","swadraOrders","customerOrders","allOrders"];
-
-function safeJsonParse(value, fallback){
-  try{
-    const parsed = JSON.parse(value);
-    return parsed == null ? fallback : parsed;
-  }catch(error){
-    return fallback;
-  }
+const ETA_ZONE_LABELS = {
+  within_city: "Within City",
+  metro: "Metro",
+  regional: "Regional",
+  rest_of_india: "Rest of India",
+  special_region: "Special Region"
+};
+const ETA_DEFAULT_RULES = {
+  within_city: { min:1, max:2 },
+  metro: { min:2, max:4 },
+  regional: { min:3, max:5 },
+  rest_of_india: { min:4, max:7 },
+  special_region: { min:6, max:10 }
+};
+function etaStatus(message, tone){
+  const el = document.getElementById("etaSettingsStatus");
+  if(!el) return;
+  el.textContent = message;
+  el.style.color = tone === "error" ? "#c62828" : tone === "success" ? "#137a43" : "#6c6c6c";
 }
-
-function getUsersMap(){
-  const authApi = window.SWADRA_AUTH || null;
-  if(authApi && typeof authApi.getUsers === "function"){
-    return authApi.getUsers() || {};
-  }
-  return safeJsonParse(localStorage.getItem("users"), {});
-}
-
-function normalizeText(value){
-  return String(value || "").trim().toLowerCase();
-}
-
-function getValueByPossibleKeys(source, keys){
-  for(const key of keys){
-    const value = source && source[key];
-    if(value !== undefined && value !== null && String(value).trim()){
-      return value;
-    }
-  }
-  return "";
-}
-
-function buildShippingAddress(raw){
-  const shipping = raw && typeof raw.shipping === "object" ? raw.shipping : {};
-  const address = getValueByPossibleKeys(raw, ["shippingAddress","address","fullAddress"]);
-  if(address) return String(address).trim();
-  return [
-    shipping.house,
-    shipping.area,
-    shipping.nearby,
-    shipping.city,
-    shipping.pincode,
-    shipping.postOffice,
-    shipping.district,
-    shipping.state
-  ].map(item=>String(item || "").trim()).filter(Boolean).join(", ");
-}
-
-function normalizeOrderStatus(raw){
-  const value = normalizeText(raw);
-  if(!value) return "pending";
-  if(value.includes("deliver")) return "delivered";
-  if(value.includes("cancel")) return "cancelled";
-  if(value.includes("ship")) return "shipped";
-  if(value.includes("confirm")) return "confirmed";
-  return "pending";
-}
-
-function extractAmount(raw){
-  const possible = [
-    raw.amount, raw.totalAmount, raw.grandTotal, raw.total, raw.finalAmount, raw.payableAmount
-  ];
-  for(const value of possible){
-    const numeric = Number(value);
-    if(Number.isFinite(numeric) && numeric > 0){
-      return numeric;
-    }
-  }
-  return 0;
-}
-
-function normalizeOrder(raw, sourceKey, index){
-  const id = String(getValueByPossibleKeys(raw, ["id","orderId","orderID","razorpayOrderId"]) || `${sourceKey}-${index + 1}`).trim();
-  const status = normalizeOrderStatus(getValueByPossibleKeys(raw, ["orderStatus","status","deliveryStatus"]));
-  const customerName = String(getValueByPossibleKeys(raw, ["shippingName","customerName","name","fullName","username"])).trim() || "Unknown Customer";
-  const email = String(getValueByPossibleKeys(raw, ["email","emailId","mail"])).trim();
-  const mobile = String(getValueByPossibleKeys(raw, ["shippingPhone","mobile","phone","phoneNumber","mobileNumber","contactNumber"])).trim();
-  const awb = String(getValueByPossibleKeys(raw, ["awb","trackingId","awbCode"])).trim();
-  const shipmentId = String(getValueByPossibleKeys(raw, ["shipment_id","shipmentId"])).trim();
-  const courierName = String(getValueByPossibleKeys(raw, ["courierName","courier","courier_company_name"])).trim();
-  const expectedDelivery = String(getValueByPossibleKeys(raw, ["expectedDelivery","edd","estimatedDeliveryDate"])).trim();
-  const trackingUpdatedAt = String(getValueByPossibleKeys(raw, ["trackingUpdatedAt","updatedAt","date","createdAt"])).trim();
-  const shippingAddress = buildShippingAddress(raw);
-  return {
-    id,
-    status,
-    customerName,
-    email,
-    mobile,
-    amount: extractAmount(raw),
-    awb,
-    shipmentId,
-    courierName,
-    expectedDelivery,
-    trackingUpdatedAt,
-    shippingAddress,
-    searchText: normalizeText([id, customerName, email, mobile, awb, shipmentId, courierName, shippingAddress].join(" "))
-  };
-}
-
-function getAllOrders(){
-  const merged = [];
-  const seen = new Set();
-  ORDER_SOURCE_KEYS.forEach((key)=>{
-    const list = safeJsonParse(localStorage.getItem(key), []);
-    if(!Array.isArray(list)) return;
-    list.forEach((item, index)=>{
-      const normalized = normalizeOrder(item, key, index);
-      const dedupeKey = `${normalized.id}::${normalized.awb}::${normalized.shipmentId}`;
-      if(seen.has(dedupeKey)) return;
-      seen.add(dedupeKey);
-      merged.push(normalized);
-    });
-  });
-
-  const users = getUsersMap();
-  Object.entries(users).forEach(([email, user])=>{
-    const list = Array.isArray(user && user.orders) ? user.orders : [];
-    list.forEach((item, index)=>{
-      const normalized = normalizeOrder(Object.assign({ email }, item), "users", index);
-      const dedupeKey = `${normalized.id}::${normalized.awb}::${normalized.shipmentId}`;
-      if(seen.has(dedupeKey)) return;
-      seen.add(dedupeKey);
-      merged.push(normalized);
-    });
-  });
-
-  return merged;
-}
-
-function getShiprocketOrders(){
-  return getAllOrders().filter(order=>order.awb || order.shipmentId || order.courierName);
-}
-
-function rupee(value){
-  return `₹${Math.round(Number(value || 0))}`;
-}
-
-function escapeHtml(value){
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function openPrintLabel(order){
-  const labelWindow = window.open("", "_blank", "width=900,height=700");
-  if(!labelWindow) return;
-  const qrText = encodeURIComponent([order.id, order.shipmentId || "-", order.awb || "-", order.customerName, order.mobile, order.shippingAddress].join(" | "));
-  const qrUrl = `https://chart.googleapis.com/chart?cht=qr&chs=180x180&chl=${qrText}`;
-  labelWindow.document.write(`<!DOCTYPE html><html><head><title>Print Label</title><style>
-    body{font-family:Arial,sans-serif;padding:24px;color:#1f1f1f}
-    .box{border:2px solid #7a3d3d;border-radius:18px;padding:22px}
-    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:20px;align-items:start}
-    .brand{font-size:28px;font-weight:800;color:#7a3d3d}
-    .muted{color:#6c6c6c}
-    .section{margin-top:18px;padding:16px;border:1px solid #e7dfd7;border-radius:14px}
-    .label{font-size:12px;font-weight:800;color:#8a7468;text-transform:uppercase;letter-spacing:.08em}
-    .value{margin-top:6px;font-size:18px;font-weight:700}
-    img{max-width:180px}
-  </style></head><body onload="window.print()"><div class="box"><div class="grid"><div><div class="brand">Swadra Organics</div><div class="muted">Shiprocket shipment label</div><div class="section"><div class="label">Ship To</div><div class="value">${escapeHtml(order.customerName)}</div><div>${escapeHtml(order.mobile || "-")}</div><div>${escapeHtml(order.shippingAddress || "Address not available")}</div></div><div class="section"><div class="label">Shipment</div><div class="value">Shipment ID: ${escapeHtml(order.shipmentId || "-")}</div><div>AWB: ${escapeHtml(order.awb || "-")}</div><div>Courier: ${escapeHtml(order.courierName || "Shiprocket")}</div><div>Order: ${escapeHtml(order.id)}</div></div></div><div><img src="${qrUrl}" alt="QR"><div class="section"><div class="label">Ship From</div><div class="value">Swadra Organics</div><div>Dispatch Team</div></div></div></div></div></body></html>`);
-  labelWindow.document.close();
-}
-
-function renderStats(orders){
-  const shipped = orders.filter(item=>item.status === "shipped").length;
-  const delivered = orders.filter(item=>item.status === "delivered").length;
-  const pending = orders.filter(item=>item.status === "pending" || item.status === "confirmed").length;
-  const totalAmount = orders.reduce((sum, item)=>sum + Number(item.amount || 0), 0);
-  document.getElementById("statsGrid").innerHTML = `
-    <div class="stat-card"><div class="label">Shiprocket Orders</div><div class="value">${orders.length}</div></div>
-    <div class="stat-card"><div class="label">In Transit</div><div class="value">${shipped}</div></div>
-    <div class="stat-card"><div class="label">Delivered</div><div class="value">${delivered}</div></div>
-    <div class="stat-card"><div class="label">Shipment Value</div><div class="value">${rupee(totalAmount)}</div></div>
-  `;
-}
-
-function renderShiprocketOrders(){
-  const query = normalizeText(document.getElementById("searchInput").value);
-  const statusFilter = normalizeText(document.getElementById("statusFilter").value);
-  const all = getShiprocketOrders();
-  const filtered = all.filter(order=>{
-    const queryMatch = !query || order.searchText.includes(query);
-    const statusMatch = !statusFilter || order.status === statusFilter;
-    return queryMatch && statusMatch;
-  });
-  renderStats(filtered);
-  const list = document.getElementById("shipList");
-  if(!filtered.length){
-    list.innerHTML = `<div class="empty">No Shiprocket synced orders found yet. AWB / shipment ID aate hi yahan show ho jayenge.</div>`;
-    return;
-  }
-  list.innerHTML = filtered.map(order=>{
-    const badgeClass = ["delivered","cancelled","shipped"].includes(order.status) ? order.status : "pending";
-    return `
-      <div class="ship-card">
-        <div class="head-row">
-          <div>
-            <div class="title">${escapeHtml(order.customerName)}</div>
-            <div class="muted">Order ID: ${escapeHtml(order.id)}${order.email ? ` • ${escapeHtml(order.email)}` : ""}</div>
-          </div>
-          <span class="badge ${badgeClass}">${escapeHtml(order.status)}</span>
-        </div>
-        <div class="meta-grid">
-          <div class="meta-box"><div class="k">Shipment ID</div><div class="v">${escapeHtml(order.shipmentId || "-")}</div></div>
-          <div class="meta-box"><div class="k">AWB</div><div class="v">${escapeHtml(order.awb || "-")}</div></div>
-          <div class="meta-box"><div class="k">Courier</div><div class="v">${escapeHtml(order.courierName || "Shiprocket")}</div></div>
-          <div class="meta-box"><div class="k">Amount</div><div class="v">${rupee(order.amount)}</div></div>
-          <div class="meta-box"><div class="k">Mobile</div><div class="v">${escapeHtml(order.mobile || "-")}</div></div>
-          <div class="meta-box"><div class="k">Expected Delivery</div><div class="v">${escapeHtml(order.expectedDelivery || "-")}</div></div>
-          <div class="meta-box"><div class="k">Tracking Updated</div><div class="v">${escapeHtml(order.trackingUpdatedAt || "-")}</div></div>
-          <div class="meta-box"><div class="k">Address</div><div class="v">${escapeHtml(order.shippingAddress || "Address not available")}</div></div>
-        </div>
-        <div class="ship-actions" style="margin-top:16px">
-          <a class="btn-primary" href="trackorder.html">Open Tracking</a>
-          <a class="btn-light" href="admin-orders.html">Open Order</a>
-          <button class="btn-success" onclick='openPrintLabel(${JSON.stringify(order)})'>Print Label</button>
-        </div>
-      </div>
-    `;
+function renderEtaRows(rules){
+  const wrap = document.getElementById("etaRules");
+  if(!wrap) return;
+  const source = rules && typeof rules === "object" ? rules : ETA_DEFAULT_RULES;
+  wrap.innerHTML = Object.keys(ETA_DEFAULT_RULES).map(function(zone){
+    const row = source[zone] || ETA_DEFAULT_RULES[zone];
+    return `<div class="eta-row"><span>${ETA_ZONE_LABELS[zone]}</span><input id="eta_${zone}_min" type="number" min="1" step="1" value="${Number(row.min || row[0] || ETA_DEFAULT_RULES[zone].min)}"><input id="eta_${zone}_max" type="number" min="1" step="1" value="${Number(row.max || row[1] || ETA_DEFAULT_RULES[zone].max)}"></div>`;
   }).join("");
 }
-
-window.addEventListener("storage", function(event){
-  if(ORDER_SOURCE_KEYS.includes(event.key) || event.key === "users"){
-    renderShiprocketOrders();
+async function loadDeliveryEtaSettings(force){
+  try{
+    etaStatus("Loading ETA settings...");
+    const api = window.SWADRA_SITE_CONTENT;
+    const state = api && typeof api.fetch === "function" ? await api.fetch(!!force) : {};
+    const settings = state && state.shippingSettings && typeof state.shippingSettings === "object" ? state.shippingSettings : {};
+    document.getElementById("pickupPincode").value = settings.pickupPincode || "126102";
+    document.getElementById("pickupCity").value = settings.pickupCity || "Jind";
+    document.getElementById("pickupState").value = settings.pickupState || "Haryana";
+    document.getElementById("customerChargeMultiplier").value = settings.customerChargeMultiplier !== undefined ? settings.customerChargeMultiplier : 0.5;
+    document.getElementById("hiddenDeliveryBuffer").value = settings.hiddenDeliveryBuffer !== undefined ? settings.hiddenDeliveryBuffer : 5;
+    renderEtaRows(settings.etaRules);
+    etaStatus("ETA settings loaded.", "success");
+  }catch(error){
+    renderEtaRows(ETA_DEFAULT_RULES);
+    etaStatus(error.message || "ETA settings load failed.", "error");
   }
-});
-
-renderShiprocketOrders();
+}
+async function saveDeliveryEtaSettings(){
+  try{
+    const etaRules = {};
+    Object.keys(ETA_DEFAULT_RULES).forEach(function(zone){
+      let min = Math.max(1, Math.round(Number(document.getElementById("eta_" + zone + "_min").value || ETA_DEFAULT_RULES[zone].min)));
+      let max = Math.max(min, Math.round(Number(document.getElementById("eta_" + zone + "_max").value || ETA_DEFAULT_RULES[zone].max)));
+      etaRules[zone] = { min, max };
+    });
+    const settings = {
+      pickupPincode: String(document.getElementById("pickupPincode").value || "").replace(/\D/g, "").slice(0, 6) || "126102",
+      pickupCity: document.getElementById("pickupCity").value.trim() || "Jind",
+      pickupState: document.getElementById("pickupState").value.trim() || "Haryana",
+      customerChargeMultiplier: Math.max(0, Number(document.getElementById("customerChargeMultiplier").value || 0.5)),
+      hiddenDeliveryBuffer: Math.max(0, Math.round(Number(document.getElementById("hiddenDeliveryBuffer").value || 5))),
+      etaRules
+    };
+    etaStatus("Saving ETA settings...");
+    const api = window.SWADRA_SITE_CONTENT;
+    if(!api || typeof api.save !== "function") throw new Error("Site content API unavailable");
+    await api.save({ shippingSettings: settings });
+    etaStatus("ETA settings saved.", "success");
+  }catch(error){
+    etaStatus(error.message || "ETA settings save failed.", "error");
+  }
+}
+loadDeliveryEtaSettings(false);
 </script>
+<script src="admin-nav-active.js"></script>
 </body>
 </html>

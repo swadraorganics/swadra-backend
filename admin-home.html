@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Swadra Organics Home Panel</title>
+<meta name="description" content="Admin home controls for Swadra Organics homepage content, offers, compliance, email templates and policy pages.">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -294,6 +295,20 @@ select:focus{
   accent-color:var(--primary);
 }
 
+.compliance-row{
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:14px;
+  background:#fffdfa;
+  margin-bottom:12px;
+}
+
+.mini-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
 textarea{
   min-height:110px;
   resize:vertical;
@@ -404,23 +419,18 @@ textarea{
 </style>
 <link rel="stylesheet" href="swadra-responsive.css">
 <link rel="stylesheet" href="mobile.css">
+<style id="adminGlobalNavPadFix">body{padding-top:118px !important;}</style>
 </head>
 
 <body>
-<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Callback Requests</a></div>
+<div id="adminTopBar" style="position:fixed;top:0;left:0;right:0;z-index:100000;height:44px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;font-weight:700;font-size:22px;line-height:44px;text-align:center;border-bottom:1px solid rgba(122,61,61,.18);">Swadra Organics Admin Pannel</div>
+<div class="admin-global-nav" id="adminGlobalNav" style="position:fixed;top:44px;left:0;right:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Home</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Main</a><a href="backend/ai.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Add Product</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="backend/saved-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Edit Products</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payment</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupan</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Call Back</a><a href="backend/backend.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Backend</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Courier</a><span id="backendLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Backend</span><span id="firestoreLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Firestore</span><details style="margin-left:auto;position:relative;"><summary style="list-style:none;cursor:pointer;color:#fff;font-size:18px;line-height:1;padding:4px 6px;">👤</summary><div style="position:absolute;right:0;top:30px;min-width:210px;background:#fff;border:1px solid #ece1de;border-radius:14px;box-shadow:0 16px 35px rgba(0,0,0,.18);padding:8px;"><a href="admin-index.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Admin Home</a><a href="admin-profit.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Shiprocket</a><a href="index.html" style="display:block;padding:10px 12px;color:#991b1b;text-decoration:none;font-weight:800;border-radius:10px;background:#fff7f7;">Logout</a></div></details></div>
 <div class="wrap">
-
-  <div class="topbar">
-    <h1>Swadra Organics Home Panel</h1>
-    <p>Manage hero images, homepage video, offers, and customer reviews from here. Existing save, delete, and sync functions remain unchanged.</p>
-  </div>
 
   <div id="saveStatus" class="status">Panel ready. Add data to save it.</div>
 
   <div class="toolbar">
     <button class="btn-primary" onclick="renderAll()">Refresh Panel</button>
-    <a class="btn-light" href="admin-dashboard.html">Dashboard</a>
-    <a class="btn-dark" href="admin-index.html">Back to Admin</a>
   </div>
 
   <div class="stats-grid">
@@ -495,6 +505,22 @@ textarea{
       </div>
 
       <div class="panel">
+        <div class="title">About Founder Image</div>
+        <div class="sub">Control the founder photo shown on the About Us page. Existing About layout will stay the same.</div>
+        <div class="story-admin-preview">
+          <img id="founderPreviewImage" alt="About founder preview">
+          <div>
+            <strong>About Us Founder Photo</strong>
+            <span id="founderPreviewMeta">Upload an image and save to update About Us.</span>
+          </div>
+        </div>
+        <div class="upload" onclick="founderImageInput.click()">Upload Founder Image</div>
+        <input type="file" id="founderImageInput" accept="image/*" hidden>
+        <input id="founderImageAltInput" placeholder="Founder of Swadra Organics">
+        <button class="main" onclick="saveFounderImageSettings()">Save Founder Image</button>
+      </div>
+
+      <div class="panel">
         <div class="title">Hero Text Control</div>
         <div class="sub">Control the heading, subtitle, trust line, badges, and button text for the main hero section on the index page from here.</div>
         <div class="hero-control-row">
@@ -530,8 +556,50 @@ textarea{
       <div class="panel">
         <div class="title">Free Delivery Control</div>
         <div class="sub">Control the minimum cart amount for free delivery across the website.</div>
-        <input id="freeDeliveryThresholdInput" type="number" min="0" step="1" placeholder="399">
+        <label style="display:block;font-size:13px;font-weight:700;color:#5c6574;margin-bottom:6px;">Free Delivery Above Amount</label>
+        <input id="freeDeliveryThresholdInput" type="number" min="0" step="1" placeholder="499">
         <button class="main" onclick="saveFreeDeliverySettings()">Save Free Delivery Amount</button>
+      </div>
+
+      <div class="panel">
+        <div class="title">Trust & Compliance</div>
+        <div class="sub">Manage GST, FSSAI, MSME, certificates and lab reports shown on the About page.</div>
+        <div id="complianceEditor"></div>
+        <button class="ghost" onclick="addComplianceRegistration()">Add Registration</button>
+        <button class="ghost" onclick="addComplianceDocument()">Add Certificate / Lab Report</button>
+        <button class="main" onclick="saveComplianceSettings()">Save Compliance</button>
+      </div>
+
+      <div class="panel">
+        <div class="title">Email Templates</div>
+        <div class="sub">Manage order placed, packed, cancelled, refunded and delivered email copy.</div>
+        <select id="emailTemplateStatus" onchange="renderEmailTemplateEditor()">
+          <option>Confirmed</option>
+          <option>Packed</option>
+          <option>Dispatched</option>
+          <option>Out for Delivery</option>
+          <option>Delivered</option>
+          <option>Cancelled</option>
+          <option>Refund</option>
+        </select>
+        <input id="emailTemplateSubject" placeholder="Subject e.g. Order confirmed - {{orderId}}">
+        <input id="emailTemplateHeading" placeholder="Heading">
+        <textarea id="emailTemplateMessage" placeholder="Message. Variables: {{customerName}}, {{orderId}}, {{status}}, {{total}}, {{trackingId}}, {{courier}}"></textarea>
+        <input id="emailTemplateFooter" placeholder="Footer">
+        <button class="main" onclick="saveEmailTemplateSettings()">Save Email Template</button>
+      </div>
+
+      <div class="panel">
+        <div class="title">Policy Pages</div>
+        <div class="sub">Control Shipping, Return and Refund page content without changing layout.</div>
+        <h3 style="margin:0 0 10px;color:#7a3d3d;">Shipping Policy</h3>
+        <input id="shippingPolicySummaryInput" placeholder="Shipping summary">
+        <textarea id="shippingPolicyBodyInput" placeholder="Shipping full policy content"></textarea>
+        <h3 style="margin:10px 0;color:#7a3d3d;">Return & Refund Policy</h3>
+        <input id="returnPolicySummaryInput" placeholder="Return summary">
+        <input id="refundPolicySummaryInput" placeholder="Refund summary">
+        <textarea id="returnRefundPolicyBodyInput" placeholder="Return/refund full policy content"></textarea>
+        <button class="main" onclick="savePolicyPageSettings()">Save Policy Pages</button>
       </div>
 
       <div class="panel">
@@ -602,6 +670,8 @@ alert("Please open this page from http://localhost:5500/admin-home.html using st
 const heroInput = document.getElementById("heroInput");
 const videoInput = document.getElementById("videoInput");
 const storyImageInput = document.getElementById("storyImageInput");
+const founderImageInput = document.getElementById("founderImageInput");
+const founderImageAltInput = document.getElementById("founderImageAltInput");
 const storyTitleInput = document.getElementById("storyTitleInput");
 const storySubtitleInput = document.getElementById("storySubtitleInput");
 const storyBaseCountInput = document.getElementById("storyBaseCountInput");
@@ -621,6 +691,17 @@ const heroTextEnabledInput = document.getElementById("heroTextEnabledInput");
 const heroTextPositionInput = document.getElementById("heroTextPositionInput");
 const offerText = document.getElementById("offerText");
 const freeDeliveryThresholdInput = document.getElementById("freeDeliveryThresholdInput");
+const complianceEditor = document.getElementById("complianceEditor");
+const emailTemplateStatus = document.getElementById("emailTemplateStatus");
+const emailTemplateSubject = document.getElementById("emailTemplateSubject");
+const emailTemplateHeading = document.getElementById("emailTemplateHeading");
+const emailTemplateMessage = document.getElementById("emailTemplateMessage");
+const emailTemplateFooter = document.getElementById("emailTemplateFooter");
+const shippingPolicySummaryInput = document.getElementById("shippingPolicySummaryInput");
+const shippingPolicyBodyInput = document.getElementById("shippingPolicyBodyInput");
+const returnPolicySummaryInput = document.getElementById("returnPolicySummaryInput");
+const refundPolicySummaryInput = document.getElementById("refundPolicySummaryInput");
+const returnRefundPolicyBodyInput = document.getElementById("returnRefundPolicyBodyInput");
 const cName = document.getElementById("cName");
 const cProduct = document.getElementById("cProduct");
 const cReview = document.getElementById("cReview");
@@ -634,6 +715,8 @@ const videoPreview = document.getElementById("videoPreview");
 const storyPreviewImage = document.getElementById("storyPreviewImage");
 const storyPreviewTitle = document.getElementById("storyPreviewTitle");
 const storyPreviewMeta = document.getElementById("storyPreviewMeta");
+const founderPreviewImage = document.getElementById("founderPreviewImage");
+const founderPreviewMeta = document.getElementById("founderPreviewMeta");
 const heroAssets = document.getElementById("heroAssets");
 const videoAssets = document.getElementById("videoAssets");
 const offerPreview = document.getElementById("offerPreview");
@@ -688,7 +771,19 @@ offers: [],
 heroImages: [],
 customers: [],
 familyCards: [],
-storyCounter: {}
+storyCounter: {},
+compliance: {},
+emailTemplates: {}
+,
+policyPages: {}
+};
+const DEFAULT_COMPLIANCE = {
+registrations:[
+{ type:"FSSAI", title:"FSSAI Registration", label:"Registration ID", number:"20826008000171", details:["Valid Upto: 13-03-2027","Name: Swadra Enterprise","Activity: General Manufacturing, Retailer"] },
+{ type:"MSME", title:"MSME / Udyam Registration", label:"Udyam Registration Number", number:"UDYAM-HR-08-0056106", details:["Enterprise Name: Swadra Enterprise","Activity: Manufacturing"] },
+{ type:"GST", title:"GST Registration", label:"Registration Number", number:"06KUAPS6728H1Z5", details:["Trade Name: Swadra Enterprise"] }
+],
+documents:[]
 };
 
 function syncRemoteCollectionsFromHomeContent(){
@@ -710,6 +805,9 @@ remoteState.heroImages = Array.isArray(state.heroImages) ? state.heroImages.slic
 remoteState.customers = Array.isArray(state.customers) ? state.customers.slice() : [];
 remoteState.familyCards = Array.isArray(state.familyCards) ? state.familyCards.slice() : [];
 remoteState.storyCounter = state[STORY_COUNTER_KEY] && typeof state[STORY_COUNTER_KEY] === "object" ? state[STORY_COUNTER_KEY] : {};
+remoteState.compliance = state.compliance && typeof state.compliance === "object" ? state.compliance : {};
+remoteState.emailTemplates = state.emailTemplates && typeof state.emailTemplates === "object" ? state.emailTemplates : {};
+remoteState.policyPages = state.policyPages && typeof state.policyPages === "object" ? state.policyPages : {};
 syncRemoteCollectionsFromHomeContent();
 }
 
@@ -746,7 +844,15 @@ return true;
 }
 if(key === STORY_COUNTER_KEY){
 remoteState.storyCounter = data && typeof data === "object" ? { ...data } : {};
-await siteContentApi.save({ [STORY_COUNTER_KEY]: remoteState.storyCounter });
+await siteContentApi.save({
+  [STORY_COUNTER_KEY]: remoteState.storyCounter,
+  homeContent: {
+    ...(remoteState.homeContent || {}),
+    [STORY_COUNTER_KEY]: remoteState.storyCounter,
+    storyCounterUpdatedAt: Date.now()
+  }
+});
+await reloadRemoteState();
 setStatus(`${key} saved successfully`, false);
 return true;
 }
@@ -791,6 +897,183 @@ familyCards: remoteState.familyCards.slice(),
 [STORY_COUNTER_KEY]: remoteState.storyCounter ? { ...remoteState.storyCounter } : {}
 });
 await reloadRemoteState();
+}
+
+function getComplianceSettings(){
+let data = remoteState.compliance && typeof remoteState.compliance === "object" ? remoteState.compliance : {};
+return {
+registrations: Array.isArray(data.registrations) && data.registrations.length ? data.registrations.map(item=>({ ...item })) : DEFAULT_COMPLIANCE.registrations.map(item=>({ ...item, details:item.details.slice() })),
+documents: Array.isArray(data.documents) ? data.documents.map(item=>({ ...item })) : []
+};
+}
+
+function renderComplianceAdmin(){
+if(!complianceEditor) return;
+let data = getComplianceSettings();
+let regHtml = data.registrations.map((item,index)=>`
+<div class="compliance-row" data-kind="registration" data-index="${index}">
+  <div class="mini-grid">
+    <input class="comp-type" placeholder="Type e.g. FSSAI" value="${String(item.type || "").replace(/"/g,"&quot;")}">
+    <input class="comp-title" placeholder="Title" value="${String(item.title || "").replace(/"/g,"&quot;")}">
+  </div>
+  <div class="mini-grid">
+    <input class="comp-label" placeholder="Number label" value="${String(item.label || "Registration Number").replace(/"/g,"&quot;")}">
+    <input class="comp-number" placeholder="Registration number" value="${String(item.number || "").replace(/"/g,"&quot;")}">
+  </div>
+  <textarea class="comp-details" placeholder="One detail per line">${(Array.isArray(item.details) ? item.details : []).join("\n")}</textarea>
+  <button class="ghost" onclick="removeComplianceRegistration(${index})">Remove</button>
+</div>`).join("");
+let docHtml = data.documents.map((item,index)=>`
+<div class="compliance-row" data-kind="document" data-index="${index}">
+  <div class="mini-grid">
+    <input class="doc-title" placeholder="Certificate / Lab report title" value="${String(item.title || "").replace(/"/g,"&quot;")}">
+    <input class="doc-type" placeholder="Type" value="${String(item.type || "Certificate / Report").replace(/"/g,"&quot;")}">
+  </div>
+  <input class="doc-url" placeholder="Public document URL" value="${String(item.url || "").replace(/"/g,"&quot;")}">
+  <button class="ghost" onclick="removeComplianceDocument(${index})">Remove</button>
+</div>`).join("");
+complianceEditor.innerHTML = `<div class="sub">Registrations</div>${regHtml || "<p class='empty-note'>No registrations added.</p>"}<div class="sub">Certificates / Lab Reports</div>${docHtml || "<p class='empty-note'>No documents added.</p>"}`;
+}
+
+function collectComplianceSettings(){
+let registrations = Array.from(document.querySelectorAll('[data-kind="registration"]')).map(row=>({
+type: row.querySelector(".comp-type").value.trim(),
+title: row.querySelector(".comp-title").value.trim(),
+label: row.querySelector(".comp-label").value.trim() || "Registration Number",
+number: row.querySelector(".comp-number").value.trim(),
+details: row.querySelector(".comp-details").value.split("\n").map(line=>line.trim()).filter(Boolean)
+})).filter(item=>item.type || item.title || item.number);
+let documents = Array.from(document.querySelectorAll('[data-kind="document"]')).map(row=>({
+title: row.querySelector(".doc-title").value.trim(),
+type: row.querySelector(".doc-type").value.trim() || "Certificate / Report",
+url: row.querySelector(".doc-url").value.trim()
+})).filter(item=>item.title || item.url);
+return { registrations, documents, updatedAt: Date.now() };
+}
+
+function addComplianceRegistration(){
+remoteState.compliance = collectComplianceSettings();
+remoteState.compliance.registrations.push({ type:"", title:"", label:"Registration Number", number:"", details:[] });
+renderComplianceAdmin();
+}
+
+function removeComplianceRegistration(index){
+remoteState.compliance = collectComplianceSettings();
+remoteState.compliance.registrations.splice(index, 1);
+renderComplianceAdmin();
+}
+
+function addComplianceDocument(){
+remoteState.compliance = collectComplianceSettings();
+remoteState.compliance.documents.push({ title:"", type:"Certificate / Report", url:"" });
+renderComplianceAdmin();
+}
+
+function removeComplianceDocument(index){
+remoteState.compliance = collectComplianceSettings();
+remoteState.compliance.documents.splice(index, 1);
+renderComplianceAdmin();
+}
+
+async function saveComplianceSettings(){
+remoteState.compliance = collectComplianceSettings();
+await siteContentApi.save({ compliance: remoteState.compliance });
+await reloadRemoteState();
+renderComplianceAdmin();
+setStatus("Compliance details saved successfully", false);
+}
+
+function getDefaultEmailTemplate(status){
+return {
+subject: "Order update - {{orderId}}",
+heading: "Swadra Organics Order Update",
+message: "Your Swadra Organics order status is: {{status}}",
+footer: "Thank you for shopping with Swadra Organics."
+};
+}
+
+async function loadEmailTemplates(){
+try{
+const base = window.SWADRA_API_BASE || "";
+if(!base) return;
+const response = await fetch(base + "/api/app-state?keys=emailTemplates", { cache:"no-store" });
+const data = await response.json();
+remoteState.emailTemplates = data && data.state && data.state.emailTemplates && typeof data.state.emailTemplates === "object" ? data.state.emailTemplates : {};
+}catch(error){
+remoteState.emailTemplates = remoteState.emailTemplates || {};
+}
+}
+
+function renderEmailTemplateEditor(){
+if(!emailTemplateStatus) return;
+const status = emailTemplateStatus.value || "Confirmed";
+const template = Object.assign(getDefaultEmailTemplate(status), remoteState.emailTemplates && remoteState.emailTemplates[status] || {});
+emailTemplateSubject.value = template.subject || "";
+emailTemplateHeading.value = template.heading || "";
+emailTemplateMessage.value = template.message || "";
+emailTemplateFooter.value = template.footer || "";
+}
+
+function renderPolicyPageAdmin(){
+const pages = remoteState.policyPages && typeof remoteState.policyPages === "object" ? remoteState.policyPages : {};
+const shipping = pages.shipping || {};
+const returns = pages.returnRefund || {};
+if(shippingPolicySummaryInput) shippingPolicySummaryInput.value = shipping.summary || "Orders are processed within 1-3 working days and delivered as per location timelines.";
+if(shippingPolicyBodyInput) shippingPolicyBodyInput.value = shipping.body || "";
+if(returnPolicySummaryInput) returnPolicySummaryInput.value = returns.returnSummary || returns.summary || "Returns are accepted only for damaged, defective, or incorrect items.";
+if(refundPolicySummaryInput) refundPolicySummaryInput.value = returns.refundSummary || returns.summary || "Refunds are processed after verification for eligible cases.";
+if(returnRefundPolicyBodyInput) returnRefundPolicyBodyInput.value = returns.body || "";
+}
+
+async function savePolicyPageSettings(){
+try{
+remoteState.policyPages = {
+...(remoteState.policyPages || {}),
+shipping:{
+summary: shippingPolicySummaryInput.value.trim(),
+body: shippingPolicyBodyInput.value.trim(),
+updatedAt: Date.now()
+},
+returnRefund:{
+returnSummary: returnPolicySummaryInput.value.trim(),
+refundSummary: refundPolicySummaryInput.value.trim(),
+body: returnRefundPolicyBodyInput.value.trim(),
+updatedAt: Date.now()
+}
+};
+await siteContentApi.save({ policyPages: remoteState.policyPages });
+await reloadRemoteState();
+renderPolicyPageAdmin();
+setStatus("Policy pages saved successfully", false);
+}catch(error){
+setStatus(`Policy pages save failed: ${error.message}`, true);
+}
+}
+
+async function saveEmailTemplateSettings(){
+try{
+const status = emailTemplateStatus.value || "Confirmed";
+remoteState.emailTemplates = remoteState.emailTemplates && typeof remoteState.emailTemplates === "object" ? remoteState.emailTemplates : {};
+remoteState.emailTemplates[status] = {
+subject: emailTemplateSubject.value.trim(),
+heading: emailTemplateHeading.value.trim(),
+message: emailTemplateMessage.value.trim(),
+footer: emailTemplateFooter.value.trim(),
+updatedAt: Date.now()
+};
+const base = window.SWADRA_API_BASE || "";
+if(!base) throw new Error("Backend URL missing");
+const response = await fetch(base + "/api/app-state", {
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body: JSON.stringify({ state:{ emailTemplates: remoteState.emailTemplates } })
+});
+const data = await response.json().catch(()=>({}));
+if(!response.ok || data.ok === false) throw new Error(data.error || "Email template save failed");
+setStatus("Email template saved successfully", false);
+}catch(error){
+setStatus(`Email template save failed: ${error.message}`, true);
+}
 }
 
 function canUseStorage(){
@@ -853,6 +1136,20 @@ storyPreviewTitle.style.color = normalizeHexColor(data.titleColor, "#17100c");
     storyPreviewMeta.textContent = `Live count: ${getStoryCurrentCount(data).toLocaleString("en-IN")} = base + orders + customers. The image will appear as the full background.`;
 }
 
+function renderFounderImageAdmin(){
+let content = remoteState.homeContent || {};
+let image = String(content.aboutFounderImage || content.founderImage || "").trim();
+if(founderPreviewImage){
+founderPreviewImage.src = image || "aboutus-images/founder.jpg";
+}
+if(founderImageAltInput){
+founderImageAltInput.value = cleanUiText(content.aboutFounderImageAlt, "Founder of Swadra Organics");
+}
+if(founderPreviewMeta){
+founderPreviewMeta.textContent = image ? "Live image is controlled from Admin Home." : "Default About Us founder image is active.";
+}
+}
+
 function getHeroTextSettings(){
 let content = remoteState.homeContent || {};
 return {
@@ -870,7 +1167,7 @@ button: cleanUiText(content.heroButton, "Explore Products →")
 function getFreeDeliverySettings(){
 let content = remoteState.homeContent || {};
 return {
-threshold: Math.max(0, Number(content.freeDeliveryThreshold ?? 399) || 399)
+threshold: Math.max(0, Number(content.freeDeliveryThreshold ?? content.freeDeliveryMinimum ?? 499) || 499)
 };
 }
 
@@ -923,8 +1220,10 @@ setStatus("Hero text disabled successfully", false);
 }
 
 async function saveFreeDeliverySettings(){
+let thresholdValue = Math.max(0, Number(freeDeliveryThresholdInput.value || 0) || 499);
 await saveHomeContent({
-freeDeliveryThreshold: Math.max(0, Number(freeDeliveryThresholdInput.value || 0) || 399),
+freeDeliveryThreshold: thresholdValue,
+freeDeliveryMinimum: thresholdValue,
 freeDeliveryUpdatedAt: Date.now()
 });
 renderFreeDeliveryAdmin();
@@ -940,6 +1239,20 @@ storyImageInput.value = "";
 return;
 }
 storyPreviewImage.src = URL.createObjectURL(file);
+};
+
+founderImageInput.onchange = async function(){
+let file = founderImageInput.files[0];
+if(!file) return renderFounderImageAdmin();
+if(!file.type.startsWith("image/")){
+alert("Please upload valid image file");
+founderImageInput.value = "";
+return;
+}
+founderPreviewImage.src = URL.createObjectURL(file);
+if(founderPreviewMeta){
+founderPreviewMeta.textContent = "Preview ready. Click Save Founder Image.";
+}
 };
 
 async function saveStoryCounterSettings(){
@@ -969,6 +1282,35 @@ storyImageInput.value = "";
 await saveHomeContent({storyCounterUpdatedAt: Date.now()});
 renderStoryCounterAdmin();
 setStatus("Family counter banner saved successfully", false);
+}
+}
+
+async function saveFounderImageSettings(){
+try{
+let content = remoteState.homeContent || {};
+let image = String(content.aboutFounderImage || content.founderImage || "").trim();
+let file = founderImageInput.files[0];
+if(file){
+if(!file.type.startsWith("image/")){
+alert("Please upload valid image file");
+return;
+}
+image = await uploadMediaFile(file, { preserveQuality: true });
+}
+if(!image){
+setStatus("Please upload founder image first", true);
+return;
+}
+await saveHomeContent({
+aboutFounderImage: image,
+aboutFounderImageAlt: cleanUiText(founderImageAltInput.value, "Founder of Swadra Organics"),
+aboutFounderImageUpdatedAt: Date.now()
+});
+founderImageInput.value = "";
+renderFounderImageAdmin();
+setStatus("About founder image saved successfully", false);
+}catch(error){
+setStatus(`Founder image save failed: ${error.message}`, true);
 }
 }
 
@@ -1190,8 +1532,12 @@ console.error(e);
 async function renderAll(){
 revokePreviewUrls();
 renderStoryCounterAdmin();
+renderFounderImageAdmin();
 renderHeroTextAdmin();
 renderFreeDeliveryAdmin();
+renderComplianceAdmin();
+renderEmailTemplateEditor();
+renderPolicyPageAdmin();
 let hero = remoteState.heroImages.slice();
 let customers = remoteState.customers.slice();
 let familyCards = remoteState.familyCards.slice();
@@ -1253,6 +1599,9 @@ videoAssets.innerHTML=videoPreview.innerHTML || "<p class='empty-note'>No video 
 
 reloadRemoteState()
 .then(()=>{
+return loadEmailTemplates();
+})
+.then(()=>{
 loadVideo();
 return renderAll();
 })
@@ -1266,10 +1615,6 @@ renderAll();
 });
 </script>
 
+<script src="admin-nav-active.js"></script>
 </body>
 </html>
-
-
-
-
-

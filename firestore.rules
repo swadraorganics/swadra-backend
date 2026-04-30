@@ -2,16 +2,91 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /products/{document=**} {
-      allow read, write: if true;
+    function signedIn() {
+      return request.auth != null;
     }
 
-    match /siteContent/homepage {
-      allow read, write: if true;
+    function userEmail() {
+      return signedIn() && request.auth.token.email != null
+        ? request.auth.token.email
+        : "";
     }
 
-    match /users/{document=**} {
-      allow read, write: if true;
+    function isAdmin() {
+      return signedIn() && (
+        request.auth.token.admin == true ||
+        request.auth.token.role in ["owner", "admin", "manager"]
+      );
+    }
+
+    function ownsDoc(docId) {
+      return signedIn() && docId == userEmail();
+    }
+
+    function ownsUserPayload() {
+      return !("email" in request.resource.data) || request.resource.data.email == userEmail();
+    }
+
+    function ownsOrderPayload() {
+      return signedIn() && (
+        ("userId" in request.resource.data && request.resource.data.userId == userEmail()) ||
+        ("user" in request.resource.data && request.resource.data.user == userEmail()) ||
+        ("email" in request.resource.data && request.resource.data.email == userEmail()) ||
+        ("customerEmail" in request.resource.data && request.resource.data.customerEmail == userEmail())
+      );
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /siteContent/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isAdmin() || ownsDoc(userId);
+      allow create, update: if isAdmin() || (ownsDoc(userId) && ownsUserPayload());
+      allow delete: if isAdmin() || ownsDoc(userId);
+    }
+
+    match /carts/{userId} {
+      allow read, write: if isAdmin() || ownsDoc(userId);
+    }
+
+    match /checkoutDrafts/{userId} {
+      allow read, write: if isAdmin() || ownsDoc(userId);
+    }
+
+    match /orders/{orderId} {
+      allow read: if isAdmin() || (
+        signedIn() &&
+        resource.data != null &&
+        (
+          ("userId" in resource.data && resource.data.userId == userEmail()) ||
+          ("user" in resource.data && resource.data.user == userEmail()) ||
+          ("email" in resource.data && resource.data.email == userEmail()) ||
+          ("customerEmail" in resource.data && resource.data.customerEmail == userEmail())
+        )
+      );
+      allow create: if isAdmin() || ownsOrderPayload();
+      allow update, delete: if isAdmin();
+    }
+
+    match /productReviews/{reviewId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.productId is string
+        && request.resource.data.rating is number
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow update, delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

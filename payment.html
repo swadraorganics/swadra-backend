@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Payment - Swadra Organics</title>
+<meta name="description" content="Complete secure Swadra Organics payment with Razorpay, order summary, delivery details and payment verification.">
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,18 +33,23 @@ body{
   min-height:100vh;
   font-family:Inter,Arial,sans-serif;
   color:var(--ink);
+  padding-top:72px;
   background:
     radial-gradient(circle at 10% 7%, rgba(122,61,61,.22), transparent 26%),
     radial-gradient(circle at 88% 10%, rgba(212,175,55,.19), transparent 22%),
     linear-gradient(135deg,var(--page) 0%,#f2e5e5 46%,#e5cfcf 100%);
 }
 .nav{
-  position:sticky;top:0;z-index:20;
+  position:fixed !important;top:0 !important;left:0 !important;right:0 !important;z-index:9999 !important;width:100%;
   display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
   padding:16px 28px;color:#fff;
   background:linear-gradient(135deg,var(--wine),var(--wine-dark));
   box-shadow:0 10px 28px rgba(40,16,16,.18);
 }
+.sale-bar{display:block;position:sticky;top:72px;z-index:7001;overflow:hidden;white-space:nowrap;min-height:44px;padding:10px 0;background:#ffffff;color:#7a3d3d;font-size:16px;font-weight:700;line-height:20px;border-top:1px solid rgba(198,40,40,0.12);border-bottom:1px solid rgba(198,40,40,0.18);font-family:Arial,sans-serif}
+.sale-bar-track{display:flex;align-items:center;width:max-content;min-width:max-content;min-height:44px;padding-left:0;animation:offerTicker 52s linear infinite;will-change:transform}
+.sale-bar-item{display:inline-flex;align-items:center;flex:0 0 auto;margin-right:84px}
+@keyframes offerTicker{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 .brand{font-size:26px;font-weight:900;letter-spacing:.2px}
 .nav-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .secure-pill,.ghost-link{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;font-size:13px;font-weight:800;text-decoration:none}
@@ -67,43 +73,32 @@ body{
 .section-title{font-size:24px;font-weight:900;margin-bottom:18px;color:var(--wine)}
 .stack{display:grid;gap:16px}
 .box,.state-box{border:1px solid var(--line);border-radius:22px;padding:20px;background:var(--card)}
+.address-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .box h3,.state-box h3{font-size:17px;font-weight:900;margin-bottom:9px;color:#2b2020}
 .box p,.state-box p{color:#594d4d;line-height:1.75;font-size:14px}
 .state-box{display:none;border-color:rgba(122,61,61,.22);background:linear-gradient(135deg,#fff,#fff8f4)}
 .state-box.show{display:block}
 .state-box.success{border-color:rgba(15,138,59,.28);background:#f2fff6}
 .state-box.failed{border-color:rgba(179,38,30,.28);background:#fff3f1}
-.payment-methods{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.method-card{min-height:128px;padding:18px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,#fff,#fff8f6);transition:.22s ease;position:relative;overflow:hidden}
-.method-card.active{border:2px solid var(--wine);box-shadow:0 14px 34px rgba(122,61,61,.14)}
-.method-card strong{display:block;font-size:16px;margin-bottom:6px}.method-card span{display:block;color:var(--muted);font-size:12px;line-height:1.5}
-.method-icon{font-size:22px;margin-bottom:10px}
-.upi-entry{display:grid;gap:10px;margin-top:14px;padding:18px;border:1px solid var(--line);border-radius:22px;background:#fff}
-.upi-entry label{font-size:14px;font-weight:900;color:var(--wine)}
-.upi-row{display:flex;gap:10px;flex-wrap:wrap}
-.upi-row input{flex:1 1 260px;border:1px solid var(--line);border-radius:14px;padding:14px 15px;font-size:15px;outline:none;background:#fffaf8}
-.upi-row input:focus{border-color:var(--wine);box-shadow:0 0 0 4px rgba(122,61,61,.1)}
-.upi-row button{border:none;border-radius:14px;padding:14px 18px;background:var(--wine);color:#fff;font-weight:900;cursor:pointer}
-.upi-status{font-size:12px;font-weight:800;color:var(--muted)}.upi-status.valid{color:var(--green)}.upi-status.invalid{color:var(--red)}
-.trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.trust{padding:16px;border-radius:20px;background:#fff;border:1px solid var(--line)}
-.trust strong{display:block;color:var(--wine);font-size:14px;margin-bottom:5px}.trust span{font-size:12px;color:var(--muted);line-height:1.5}
 .summary-panel{position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height) + var(--sale-bar-height) + 18px)}
+.pay-panel{position:sticky;top:calc(var(--top-bar-height) + var(--navbar-height) + var(--sale-bar-height) + 18px)}
 .summary-list{display:grid;gap:13px;margin-bottom:16px}
 .summary-item{display:flex;justify-content:space-between;gap:16px;font-size:14px;color:#504545}
 .summary-item strong{color:#201717}.summary-item.discount strong{color:var(--green)}
 .summary-item.gst span{color:#6c5c5c}.summary-item.gst strong{color:#6c5c5c;font-size:13px}
-.grand-total{margin:16px -26px 0;padding:20px 26px;display:flex;justify-content:space-between;align-items:center;gap:16px;background:linear-gradient(135deg,var(--wine),var(--wine-dark));color:#fff}
+.grand-total{margin:16px -26px 0;padding:20px 26px;display:flex;justify-content:space-between;align-items:center;gap:16px;background:#7a3d3d;color:#fff}
 .grand-total span{font-weight:700;opacity:.9}.grand-total strong{font-size:30px}
 .order-items{display:grid;gap:12px;margin-top:18px;max-height:330px;overflow:auto;padding-right:4px}
 .order-row{display:grid;grid-template-columns:54px 1fr auto;gap:12px;align-items:center;padding:12px;border-radius:18px;background:#fff8f6;border:1px solid var(--line)}
 .order-row img{width:54px;height:54px;border-radius:14px;object-fit:cover;background:#fff}.order-row img.placeholder{padding:10px;object-fit:contain;background:#f5e8e8}
 .order-row strong{font-size:14px}.order-row span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.order-price{font-weight:900;color:var(--wine);white-space:nowrap}
-.payment-cta{width:100%;margin-top:18px;padding:18px 20px;border:none;border-radius:18px;background:linear-gradient(135deg,var(--wine),var(--rose),var(--gold));color:#fff;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 16px 36px rgba(122,61,61,.26);transition:.22s ease}
-.payment-cta:hover{transform:translateY(-2px);box-shadow:0 22px 44px rgba(122,61,61,.32)}.payment-cta:disabled{opacity:.72;cursor:not-allowed;transform:none}
+.payment-cta{width:100%;margin-top:18px;padding:18px 20px;border:none;border-radius:18px;background:linear-gradient(135deg,var(--wine),var(--rose),var(--gold));color:#fff;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 16px 36px rgba(122,61,61,.26);transition:.35s ease;position:relative;overflow:hidden}
+.payment-cta:hover{transform:translateY(-3px) scale(1.02);background:linear-gradient(135deg,#d4af37,#f7e7a9,#ffd700);color:#000;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 4px 15px rgba(212,175,55,.6),inset 0 0 10px rgba(255,255,255,.4)}
+.payment-cta::before{content:"";position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,.6),transparent);transition:.6s}
+.payment-cta:hover::before{left:100%}
+.payment-cta:disabled{opacity:.72;cursor:not-allowed;transform:none}
 .mini-note{font-size:12px;color:var(--muted);line-height:1.6;margin-top:12px;text-align:center}
-.support-strip{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-.support-strip a,.support-strip button{flex:1 1 140px;border:1px solid var(--line);background:#fff;color:var(--wine);border-radius:14px;padding:12px;text-decoration:none;font-weight:900;cursor:pointer;text-align:center}
+.brand-signoff{margin-top:14px;text-align:center;font-size:13px;font-weight:800;color:#7a3d3d;letter-spacing:.02em}
 .success-shell{display:none}
 .success-hero{background:linear-gradient(135deg,var(--wine),var(--wine-dark));color:#fff;border-radius:34px;padding:34px;margin-bottom:22px;box-shadow:var(--shadow)}
 .success-hero h1{font-family:"Playfair Display",serif;font-size:48px;margin-bottom:10px}
@@ -115,40 +110,37 @@ body{
 .timeline{display:grid;gap:12px;margin-top:10px}.timeline-step{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start}
 .timeline-dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--wine);color:#fff;font-weight:900}
 .timeline-step strong{display:block;color:#2a1f1f}.timeline-step span{display:block;color:var(--muted);font-size:13px;margin-top:4px;line-height:1.5}
-@media(max-width:1050px){.hero,.checkout-layout,.success-grid{grid-template-columns:1fr}.summary-panel{position:static}.payment-methods,.trust-grid{grid-template-columns:1fr}}
-@media(max-width:640px){.page{padding:16px 12px 34px}.hero{padding:24px}.hero h1{font-size:38px}.checkout-steps{grid-template-columns:1fr}.panel-body{padding:20px}.grand-total{margin:16px -20px 0;padding:18px 20px}.nav{padding:14px 16px}.brand{font-size:22px}}
+@media(max-width:1050px){.hero,.checkout-layout,.success-grid,.address-grid{grid-template-columns:1fr}.summary-panel,.pay-panel{position:static}}
+@media(max-width:640px){body{padding-top:68px}.page{padding:16px 12px 34px}.hero{padding:24px}.hero h1{font-size:38px}.checkout-steps{grid-template-columns:1fr}.panel-body{padding:20px}.grand-total{margin:16px -20px 0;padding:18px 20px}.nav{padding:14px 16px}.brand{font-size:22px}}
 </style>
 <style>html,body{background:#f1e3e3 !important;}</style>
 <link rel="stylesheet" href="swadra-responsive.css">
 <link rel="stylesheet" href="mobile.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="api-config.js"></script></head>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="api-config.js"></script><link rel="manifest" href="manifest.json">`r`n</head>
 <body>
 <div class="nav">
   <div class="brand">Swadra Secure Checkout</div>
   <div class="nav-actions">
+    <a class="ghost-link" href="index.html">Home</a>
     <a class="ghost-link" href="cart.html">Back to Cart</a>
     <div class="secure-pill" id="serverPill">Checking server...</div>
   </div>
 </div>
+<div class="sale-bar"><div class="sale-bar-track" id="saleBarTrack"></div></div>
 
 <div class="page">
   <section class="hero">
     <div>
       <div class="eyebrow">Final Step</div>
       <h1>Review, Pay, Relax.</h1>
-      <p>Your order snapshot is frozen before payment, so price, items, address and payable amount stay safe while Razorpay checkout is open.</p>
       <div class="hero-badges">
         <span class="badge">100% prepaid checkout</span>
         <span class="badge">Razorpay secure</span>
         <span class="badge" id="reservedTimer">Cart reserved 10:00</span>
       </div>
-    </div>
-    <div class="checkout-steps">
-      <div class="step"><span>1</span><strong>Cart frozen</strong><small>Items and amount locked.</small></div>
-      <div class="step"><span>2</span><strong>Payment verified</strong><small>Backend verifies if secret is configured.</small></div>
-      <div class="step"><span>3</span><strong>Order saved</strong><small>Success creates invoice-ready order.</small></div>
     </div>
   </section>
 
@@ -158,56 +150,31 @@ body{
         <div class="section-title">Delivery and payment details</div>
         <div class="stack">
           <div class="state-box show" id="paymentStateBox"><h3>Checkout ready</h3><p>Review the order and pay securely.</p></div>
-          <div class="box" id="userInfoBox"></div>
-          <div>
-            <div class="section-title" style="font-size:20px;margin-bottom:12px">Choose payment mode</div>
-            <div class="payment-methods">
-              <div class="method-card active"><div class="method-icon">UPI</div><strong>UPI Apps</strong><span>Pay with PhonePe, GPay, Paytm or any UPI app.</span></div>
-              <div class="method-card active"><div class="method-icon">CARD</div><strong>Cards</strong><span>Debit and credit cards through secure Razorpay checkout.</span></div>
-              <div class="method-card active"><div class="method-icon">BANK</div><strong>Netbanking</strong><span>Use supported Indian banks through encrypted gateway.</span></div>
-            </div>
-            <div class="upi-entry">
-              <label for="upiId">Enter UPI ID before payment</label>
-              <div class="upi-row">
-                <input id="upiId" type="text" inputmode="email" placeholder="example@upi / mobile@paytm">
-                <button type="button" onclick="validateUpiId()">Verify UPI</button>
-              </div>
-              <div id="upiStatus" class="upi-status">Optional but recommended. Razorpay will confirm the final UPI payment securely.</div>
-            </div>
-          </div>
-          <div class="trust-grid">
-            <div class="trust"><strong>Secure gateway</strong><span>Payment ID, order ID and timestamp are recorded for support.</span></div>
-            <div class="trust"><strong>Estimated delivery</strong><span id="deliveryEstimate">Delivery estimate loading...</span></div>
-            <div class="trust"><strong>Refund support</strong><span>Failed/cancelled attempts are logged separately from paid orders.</span></div>
-          </div>
+          <div class="address-grid" id="userInfoBox"></div>
           <div class="box">
-            <h3>What happens after payment?</h3>
-            <p>On success, the cart becomes a confirmed order, invoice data is generated, cart is cleared, and order history is updated. If payment fails, you can retry without creating duplicate paid orders.</p>
+            <div class="section-title" style="font-size:20px;margin-bottom:12px">Order summary</div>
+            <div class="summary-list">
+              <div class="summary-item"><span>MRP total</span><strong id="mrpTotalText">&#8377;0</strong></div>
+              <div class="summary-item"><span>Selling total</span><strong id="itemsTotal">&#8377;0</strong></div>
+              <div class="summary-item discount"><span>Product savings</span><strong id="productSavingsText">-&#8377;0</strong></div>
+              <div class="summary-item discount"><span>Coupon savings</span><strong id="discountText">-&#8377;0</strong></div>
+              <div class="summary-item gst"><span>GST</span><strong id="gstText">Included</strong></div>
+              <div class="summary-item"><span>Delivery</span><strong id="deliveryText">&#8377;0</strong></div>
+              <div class="summary-item"><span>Payment mode</span><strong id="modeText">Online</strong></div>
+            </div>
+            <div class="order-items" id="invoicePreview"></div>
+            <div class="grand-total"><span>Final payable</span><strong id="amountText">&#8377;0</strong></div>
           </div>
         </div>
       </div>
     </section>
 
-    <aside class="panel summary-panel">
+    <aside class="panel pay-panel">
       <div class="panel-body">
-        <div class="section-title">Order summary</div>
-        <div class="summary-list">
-          <div class="summary-item"><span>MRP total</span><strong id="mrpTotalText">&#8377;0</strong></div>
-          <div class="summary-item"><span>Selling total</span><strong id="itemsTotal">&#8377;0</strong></div>
-          <div class="summary-item discount"><span>Product savings</span><strong id="productSavingsText">-&#8377;0</strong></div>
-          <div class="summary-item discount"><span>Coupon savings</span><strong id="discountText">-&#8377;0</strong></div>
-          <div class="summary-item gst"><span>GST</span><strong id="gstText">Included</strong></div>
-          <div class="summary-item"><span>Delivery</span><strong id="deliveryText">&#8377;0</strong></div>
-          <div class="summary-item"><span>Payment mode</span><strong id="modeText">Online</strong></div>
-        </div>
-        <div class="order-items" id="invoicePreview"></div>
-        <div class="grand-total"><span>Final payable</span><strong id="amountText">&#8377;0</strong></div>
+        <div class="section-title">Payment</div>
         <button id="payButton" class="payment-cta" onclick="payOnline()">Pay Securely Now</button>
         <p class="mini-note" id="gatewayNote">Razorpay checkout opens after this. Please do not refresh while payment is processing.</p>
-        <div class="support-strip">
-          <a href="order.html">My Orders</a>
-          <button type="button" onclick="copyPaymentSummary()">Copy Summary</button>
-        </div>
+        <p class="brand-signoff">If it's not pure, it's not Swadra.</p>
       </div>
     </aside>
   </div>
@@ -232,6 +199,8 @@ const SESSION_KEY = "swadraPaymentSession";
 const ATTEMPTS_KEY = "swadraPaymentAttempts";
 const ANALYTICS_KEY = "swadraPaymentAnalytics";
 const authApi = window.SWADRA_AUTH || null;
+const dataApi = window.SWADRA_DATA || null;
+const runtimePaymentStore = Object.create(null);
 
 function getCurrentUser(){ return authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : ""; }
 function getUsers(){ try{ return authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : {}; }catch(error){ return {}; } }
@@ -242,9 +211,45 @@ function getItemDisplayLineTotal(item){
   const originalLineTotal = Math.round((Number(item.price) || 0) * qty);
   return Math.round(Number(item.discountedLineTotal || item.displayLineTotal || originalLineTotal));
 }
+function getDisplayCartTotal(items){
+  return Math.round((Array.isArray(items) ? items : []).reduce((sum,item)=>sum + getItemDisplayLineTotal(item),0));
+}
 function escapeHtml(value){ return String(value ?? "").replace(/[&<>"']/g, char => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;" }[char])); }
-function safeJson(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) || fallback; }catch(error){ return fallback; } }
+function normalizeIndianPhone(value){
+  const digits = String(value || "").replace(/\D/g, "");
+  if(!digits) return "";
+  return digits.length > 10 ? digits.slice(-10) : digits;
+}
+function safeJson(key, fallback){
+  try{
+    const value = runtimePaymentStore[key];
+    if(value === undefined || value === null || value === "") return fallback;
+    return JSON.parse(value) || fallback;
+  }catch(error){
+    return fallback;
+  }
+}
 function nowIso(){ return new Date().toISOString(); }
+function getItemSizeLabel(item){
+  return String(
+    item?.size
+    || item?.productSize
+    || item?.selectedSize
+    || item?.variant
+    || item?.weight
+    || item?.packSize
+    || item?.unit
+    || ""
+  ).trim();
+}
+function normalizeOrderItem(item){
+  const normalizedSize = getItemSizeLabel(item);
+  return {
+    ...(item || {}),
+    size: normalizedSize,
+    productSize: normalizedSize
+  };
+}
 
 const placeholderImage = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><rect width="120" height="120" rx="22" fill="#f5e8e8"/><text x="60" y="54" text-anchor="middle" font-family="Arial" font-size="13" font-weight="700" fill="#7a3d3d">Swadra</text><text x="60" y="73" text-anchor="middle" font-family="Arial" font-size="11" fill="#7a3d3d">Product</text></svg>`);
 
@@ -279,51 +284,150 @@ async function resolveItemImage(item){
 }
 function imageError(img){ img.onerror = null; img.src = placeholderImage; img.classList.add("placeholder"); }
 
-let currentUser = getCurrentUser();
-if(!currentUser){
-  if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
-    authApi.setRedirectAfterLogin("payment.html");
-  }else{
-    localStorage.setItem("redirectAfterLogin","payment.html");
+async function waitForPaymentUser(){
+  if(authApi && typeof authApi.ready === "function"){
+    try{
+      await authApi.ready();
+    }catch(error){
+      console.error("payment auth bootstrap failed", error);
+    }
   }
-  location.href = "account.html";
-  throw new Error("Redirecting to account");
-}
-
-let users = getUsers();
-if(!users[currentUser]){
-  users[currentUser] = { cart:[], orders:[] };
-  saveUsers(users);
-}
-
-let user = users[currentUser];
-if((!user.cart || user.cart.length === 0)){
-  const localCart = safeJson("cart", []);
-  if(localCart.length){
-    user.cart = localCart;
-    users[currentUser] = user;
-    saveUsers(users);
+  let nextUser = getCurrentUser();
+  if(nextUser) return nextUser;
+  for(let attempt = 0; attempt < 10; attempt += 1){
+    await new Promise(resolve=>setTimeout(resolve, 150));
+    nextUser = getCurrentUser();
+    if(nextUser) return nextUser;
   }
+  return "";
 }
 
+let currentUser = "";
+let users = {};
+let user = {};
 let cart = user.cart || [];
-let checkoutData = safeJson("checkoutData", {});
-let cartSummary = safeJson("cartSummary", {});
-let displayCart = Array.isArray(cartSummary.discountedItems) && cartSummary.discountedItems.length ? cartSummary.discountedItems : cart;
-let rawSubtotal = cart.reduce((sum,item)=>sum + ((Number(item.price)||0) * (Number(item.qty)||1)),0);
-let sellingTotal = Math.round(Number(cartSummary.sellingTotal || rawSubtotal) || rawSubtotal);
-let couponAdjustedSellingTotal = Math.round(Number(cartSummary.couponAdjustedSellingTotal || displayCart.reduce((sum,item)=>sum + getItemDisplayLineTotal(item),0)) || sellingTotal);
-let mrpTotal = Math.round(Number(cartSummary.mrpTotal) || cart.reduce((sum,item)=>sum + ((Number(item.mrp || item.originalPrice || item.price)||0) * (Number(item.qty)||1)),0) || sellingTotal);
-let delivery = Math.round(Number(cartSummary.delivery || localStorage.getItem("delivery")) || 0);
-let couponDiscount = Math.round(Number(cartSummary.couponDiscount || localStorage.getItem("couponDiscount")) || 0);
-let finalTotal = Math.round(Number(cartSummary.finalTotal || localStorage.getItem("finalTotal")) || Math.max(0, sellingTotal + delivery - couponDiscount));
-let productSavings = Math.max(0, mrpTotal - sellingTotal);
+let checkoutData = {};
+let cartSummary = {};
+let displayCart = [];
+let rawSubtotal = 0;
+let sellingTotal = 0;
+let couponAdjustedSellingTotal = 0;
+let mrpTotal = 0;
+let delivery = 0;
+let couponDiscount = 0;
+let finalTotal = 0;
+let productSavings = 0;
+let deliveryDetails = null;
 let paymentSession = null;
 let lastSuccessOrder = null;
 let paymentGatewayKey = RAZORPAY_KEY;
 
+async function initializePaymentPage(){
+  currentUser = await waitForPaymentUser();
+  if(!currentUser){
+    if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
+      authApi.setRedirectAfterLogin("payment.html");
+    }
+    location.href = "account.html";
+    return;
+  }
+  users = getUsers();
+  if(!users[currentUser]){
+    users[currentUser] = { cart:[], orders:[] };
+    saveUsers(users);
+  }
+  user = users[currentUser];
+  cart = user.cart || [];
+  return bootstrapPaymentData().then(function(){
+    renderUserInfo();
+    renderOrderSummary();
+    renderDeliveryEstimate();
+    startReserveTimer();
+    checkBackend();
+    trackPaymentEvent("payment_page_view");
+  }).catch(handlePaymentBootstrapError);
+}
+
+async function bootstrapPaymentData(){
+  if(currentUser && dataApi && typeof dataApi.fetchCart === "function"){
+    try{
+      const firestoreCart = await dataApi.fetchCart(currentUser);
+      if(Array.isArray(firestoreCart)){
+        cart = firestoreCart;
+        user.cart = firestoreCart;
+        users[currentUser] = user;
+        saveUsers(users);
+      }
+    }catch(error){
+      console.error("payment firestore cart fetch failed", error);
+    }
+  }
+  if(currentUser && dataApi && typeof dataApi.fetchCheckoutDraft === "function"){
+    try{
+      const draft = await dataApi.fetchCheckoutDraft(currentUser);
+      if(draft){
+        checkoutData = draft.address || {};
+        cartSummary = draft.summary || {};
+        deliveryDetails = draft.deliveryDetails || null;
+        if(Array.isArray(draft.cartSnapshot) && draft.cartSnapshot.length){
+          displayCart = draft.cartSnapshot;
+        }
+      }
+    }catch(error){
+      console.error("payment checkout draft fetch failed", error);
+    }
+  }
+  if((!cartSummary || !Object.keys(cartSummary).length) && user && user.checkoutSummary && typeof user.checkoutSummary === "object"){
+    cartSummary = user.checkoutSummary;
+  }
+  if(!Array.isArray(displayCart) || !displayCart.length){
+    displayCart = Array.isArray(cartSummary.discountedItems) && cartSummary.discountedItems.length ? cartSummary.discountedItems : cart;
+  }
+  rawSubtotal = cart.reduce((sum,item)=>sum + ((Number(item.price)||0) * (Number(item.qty)||1)),0);
+  sellingTotal = Math.round(Number(cartSummary.sellingTotal || rawSubtotal) || rawSubtotal);
+  couponAdjustedSellingTotal = Math.round(Number(cartSummary.couponAdjustedSellingTotal || getDisplayCartTotal(displayCart)) || sellingTotal);
+  mrpTotal = Math.round(Number(cartSummary.mrpTotal) || cart.reduce((sum,item)=>sum + ((Number(item.mrp || item.originalPrice || item.price)||0) * (Number(item.qty)||1)),0) || sellingTotal);
+  delivery = Math.round(Number(cartSummary.delivery || 0) || 0);
+  couponDiscount = Math.round(Number(cartSummary.couponDiscount || 0) || 0);
+  finalTotal = Math.round(Number(cartSummary.finalTotal || 0) || Math.max(0, couponAdjustedSellingTotal + delivery));
+  productSavings = Math.max(0, mrpTotal - sellingTotal);
+  deliveryDetails = cartSummary.deliveryDetails || checkoutData.deliveryDetails || deliveryDetails || null;
+}
+
+function handlePaymentBootstrapError(error){
+  console.error("payment bootstrap failed", error);
+  const box = document.getElementById("paymentStateBox");
+  if(box){
+    box.className = "state-box show failed";
+    box.innerHTML = "<h3>Payment setup issue</h3><p>Please refresh the page once. If the issue continues, go back to checkout and try again.</p>";
+  }
+  setPayButtonLoading(false, "Retry Payment");
+}
+
 function getShippingAddress(){
   return checkoutData.address || [checkoutData.house, checkoutData.area, checkoutData.postoffice, checkoutData.city, checkoutData.state, checkoutData.pincode].filter(Boolean).join(", ") || "Address not available";
+}
+
+function getDeliverySummary(){
+  const details = deliveryDetails && typeof deliveryDetails === "object" ? deliveryDetails : null;
+  const deliveryCharge = Math.round(Number(details && details.finalDeliveryCharge !== undefined ? details.finalDeliveryCharge : delivery) || 0);
+  return {
+    details,
+    deliveryCharge,
+    freeDeliveryApplied: !!(details && details.freeDeliveryApplied),
+    etaLabel: details && details.etaLabel ? details.etaLabel : ""
+  };
+}
+
+function getOrderDeliveryCharge(order){
+  const details = order && (order.deliveryDetails || (order.shipping && order.shipping.deliveryDetails));
+  if(details && typeof details === "object" && details.finalDeliveryCharge !== undefined){
+    return Math.round(Number(details.finalDeliveryCharge || 0) || 0);
+  }
+  if(order && typeof order.delivery === "object" && order.delivery.finalDeliveryCharge !== undefined){
+    return Math.round(Number(order.delivery.finalDeliveryCharge || 0) || 0);
+  }
+  return Math.round(Number((order && (order.deliveryCharge ?? order.delivery)) || 0) || 0);
 }
 
 function hashSnapshot(snapshot){
@@ -347,7 +451,7 @@ function trackPaymentEvent(type, payload = {}){
     time: nowIso(),
     ...payload
   });
-  localStorage.setItem(ANALYTICS_KEY, JSON.stringify(events.slice(0, 300)));
+  runtimePaymentStore[ANALYTICS_KEY] = JSON.stringify(events.slice(0, 300));
 }
 
 async function apiPost(path, body){
@@ -375,7 +479,7 @@ function saveAttempt(status, detail = {}){
     createdAt: detail.createdAt || nowIso()
   };
   attempts.unshift(attempt);
-  localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(attempts.slice(0, 120)));
+  runtimePaymentStore[ATTEMPTS_KEY] = JSON.stringify(attempts.slice(0, 120));
   apiPost("/api/payments/attempts", attempt).catch(()=>{});
 }
 
@@ -403,18 +507,21 @@ function getOrderID(increment = true){
   const counts = safeJson("orderCounts", {});
   if(increment){
     counts[key] = (counts[key] || 0) + 1;
-    localStorage.setItem("orderCounts", JSON.stringify(counts));
+    runtimePaymentStore.orderCounts = JSON.stringify(counts);
   }
   return "SWO" + key + String((counts[key] || 0) + (increment ? 0 : 1)).padStart(3,"0");
 }
 
 function buildFrozenSnapshot(){
+  const deliverySummary = getDeliverySummary();
+  const normalizedCart = (Array.isArray(displayCart) ? displayCart : []).map(normalizeOrderItem);
   const snapshot = {
     user: currentUser,
-    cart: JSON.parse(JSON.stringify(displayCart)),
+    cart: JSON.parse(JSON.stringify(normalizedCart)),
     checkoutData: JSON.parse(JSON.stringify(checkoutData)),
-    totals: { mrpTotal, sellingTotal, couponAdjustedSellingTotal, productSavings, couponDiscount, delivery, finalTotal, gst: "Included" },
-    upiId: localStorage.getItem("checkoutUpiId") || document.getElementById("upiId")?.value || "",
+    totals: { mrpTotal, sellingTotal, couponAdjustedSellingTotal, productSavings, couponDiscount, delivery: deliverySummary.deliveryCharge, finalTotal, gst: "Included" },
+    deliveryDetails: JSON.parse(JSON.stringify(deliverySummary.details || null)),
+    upiId: runtimePaymentStore.checkoutUpiId || document.getElementById("upiId")?.value || "",
     createdAt: nowIso()
   };
   return { ...snapshot, hash: hashSnapshot(snapshot) };
@@ -438,13 +545,13 @@ function getOrCreatePaymentSession(){
     createdAt: nowIso(),
     updatedAt: nowIso()
   };
-  localStorage.setItem(SESSION_KEY, JSON.stringify(paymentSession));
+  runtimePaymentStore[SESSION_KEY] = JSON.stringify(paymentSession);
   return paymentSession;
 }
 
 function updatePaymentSession(patch){
   paymentSession = { ...(paymentSession || getOrCreatePaymentSession()), ...patch, updatedAt: nowIso() };
-  localStorage.setItem(SESSION_KEY, JSON.stringify(paymentSession));
+  runtimePaymentStore[SESSION_KEY] = JSON.stringify(paymentSession);
 }
 
 async function checkBackend(){
@@ -463,19 +570,38 @@ function renderUserInfo(){
   const shippingName = checkoutData.name || displayName;
   const shippingPhone = checkoutData.phone || user.phone || "No phone";
   const shippingAddress = getShippingAddress();
+  const billingAddress = (user.address && user.address.house)
+    ? [
+        user.address.house,
+        user.address.area,
+        user.address.nearby ? "Near " + user.address.nearby : "",
+        user.address.postoffice,
+        user.address.city,
+        user.address.state,
+        user.address.pincode
+      ].filter(Boolean).join(", ")
+    : shippingAddress;
+  const deliverySummary = getDeliverySummary();
   document.getElementById("userInfoBox").innerHTML = `
-    <h3>Deliver to</h3>
-    <p><strong>${escapeHtml(shippingName)}</strong><br>${escapeHtml(shippingPhone)}<br>${escapeHtml(shippingAddress)}</p>
+    <div class="box">
+      <h3>Deliver to</h3>
+      <p><strong>${escapeHtml(shippingName)}</strong><br>${escapeHtml(shippingPhone)}<br>${escapeHtml(shippingAddress)}<br>${deliverySummary.freeDeliveryApplied ? "Free Delivery Applied" : "Delivery Charge: " + escapeHtml(money(deliverySummary.deliveryCharge))}${deliverySummary.etaLabel ? "<br>" + escapeHtml(deliverySummary.etaLabel) : ""}</p>
+    </div>
+    <div class="box">
+      <h3>Billing address</h3>
+      <p><strong>${escapeHtml(displayName)}</strong><br>${escapeHtml(shippingPhone)}<br>${escapeHtml(billingAddress)}</p>
+    </div>
   `;
 }
 
 async function renderOrderSummary(){
+  const deliverySummary = getDeliverySummary();
   document.getElementById("amountText").innerText = money(finalTotal);
   document.getElementById("mrpTotalText").innerText = money(mrpTotal);
   document.getElementById("itemsTotal").innerHTML = couponDiscount > 0 ? `<span style="display:block;font-size:12px;color:#888;text-decoration:line-through;">${money(sellingTotal)}</span>${money(couponAdjustedSellingTotal)}` : money(sellingTotal);
   document.getElementById("productSavingsText").innerText = "-" + money(productSavings);
   document.getElementById("discountText").innerText = "-" + money(couponDiscount);
-  document.getElementById("deliveryText").innerText = delivery > 0 ? money(delivery) : "Free";
+  document.getElementById("deliveryText").innerText = deliverySummary.freeDeliveryApplied ? "₹0" : (deliverySummary.deliveryCharge > 0 ? money(deliverySummary.deliveryCharge) : "Free");
   document.getElementById("gstText").innerText = "Included";
 
   const box = document.getElementById("invoicePreview");
@@ -484,12 +610,14 @@ async function renderOrderSummary(){
     const qty = Number(item.qty) || 1;
     const originalLineTotal = Math.round((Number(item.price)||0) * qty);
     const lineTotal = Math.round(Number(item.discountedLineTotal || item.displayLineTotal || originalLineTotal));
+    const couponLineDiscount = Math.round(Number(item.couponLineDiscount || 0));
     const image = await resolveItemImage(item);
+    const itemSize = getItemSizeLabel(item);
     box.innerHTML += `
       <div class="order-row">
         <img src="${escapeHtml(image)}" alt="${escapeHtml(item.name || "Product")}" onerror="imageError(this)">
-        <div><strong>${escapeHtml(item.name || "Swadra Product")}</strong><span>Qty ${qty} • ${escapeHtml(item.size || item.productSize || "")}</span></div>
-        <div class="order-price">${lineTotal < originalLineTotal ? `<span style="display:block;font-size:11px;color:#8a7777;text-decoration:line-through;">${money(originalLineTotal)}</span>` : ""}${money(lineTotal)}</div>
+<div><strong>${escapeHtml(item.name || "Swadra Product")}${itemSize ? ` <span style="font-size:12px;color:#6b5c5c;font-weight:700;">(${escapeHtml(itemSize)})</span>` : ""}</strong><span>Qty ${qty}</span></div>
+        <div class="order-price">${lineTotal < originalLineTotal ? `<span style="display:block;font-size:11px;color:#b3261e;text-decoration:line-through;">${money(originalLineTotal)}</span><span style="display:block;">${money(lineTotal)}</span><span style="display:block;font-size:11px;color:#0f8a47;">Coupon -${money(couponLineDiscount)}</span>` : `${money(lineTotal)}`}</div>
       </div>
     `;
   }
@@ -514,8 +642,14 @@ function validateUpiId(){
   }
   status.classList.add("valid");
   status.textContent = "UPI format saved. The final UPI, card, bank, or wallet details are verified during secure Razorpay checkout.";
-  localStorage.setItem("checkoutUpiId", value);
+  runtimePaymentStore.checkoutUpiId = value;
   return true;
+}
+
+function trackEcommerceEvent(name, payload){
+  if(window.SWADRA_ANALYTICS && typeof window.SWADRA_ANALYTICS.track === "function"){
+    window.SWADRA_ANALYTICS.track(name, payload || {});
+  }
 }
 
 function getInstrumentSummary(verification, fallbackUpiId){
@@ -613,17 +747,25 @@ async function payOnline(){
   session.retryCount = Number(session.retryCount || 0) + 1;
   updatePaymentSession({ retryCount: session.retryCount, status:"initiated", startedAt: nowIso() });
   trackPaymentEvent("payment_initiated", { retryCount: session.retryCount });
+  trackEcommerceEvent("add_payment_info", {
+    value: finalTotal,
+    currency: "INR",
+    items: displayCart,
+    payment_type: "Razorpay"
+  });
   saveAttempt("initiated", { retryCount: session.retryCount });
   setPaymentState("processing","Opening secure payment","Razorpay checkout is opening. Please do not refresh until the payment is complete.");
   setPayButtonLoading(true);
 
   const backendOrder = await createBackendPaymentOrder(session);
+  const checkoutPhone = normalizeIndianPhone(checkoutData.phone || user.phone || "");
+  const checkoutEmail = String(user.email || currentUser || "").trim().toLowerCase();
   const options = {
     key: paymentGatewayKey,
     amount: session.amountPaise,
     currency: "INR",
     name: "Swadra Organics",
-    description: "Order Payment",
+    description: "Premium Secure Checkout",
     order_id: String(backendOrder?.id || "").startsWith("order_") ? backendOrder.id : undefined,
     handler: async function(response){
       setPaymentState("processing","Verifying payment","Payment received. Your order is now being securely verified and saved.");
@@ -637,7 +779,7 @@ async function payOnline(){
         setPayButtonLoading(false, "Retry Payment");
         return;
       }
-      saveOrder(response, verified);
+      await saveOrder(response, verified);
     },
     modal: {
       ondismiss: function(){
@@ -649,20 +791,19 @@ async function payOnline(){
       }
     },
     prefill: {
-      name: checkoutData.name || currentUser,
-      email: user.email || currentUser,
-      contact: checkoutData.phone || user.phone || "",
-      vpa: upiValue || localStorage.getItem("checkoutUpiId") || ""
+      contact: checkoutPhone,
+      email: checkoutEmail,
+      vpa: upiValue || runtimePaymentStore.checkoutUpiId || ""
     },
     notes: {
       local_order_id: session.orderId,
       snapshot_hash: session.snapshotHash,
       delivery_name: checkoutData.name || currentUser,
-      delivery_phone: checkoutData.phone || user.phone || "",
-      upi_id: upiValue || localStorage.getItem("checkoutUpiId") || "",
+      delivery_phone: checkoutPhone,
+      upi_id: upiValue || runtimePaymentStore.checkoutUpiId || "",
       order_source: "Swadra Website"
     },
-    theme: { color: "#7A3D3D" }
+    theme: { color: "#7A3D3D", backdrop_color: "rgba(32,23,23,0.78)" }
   };
 
   const rzp = new Razorpay(options);
@@ -678,12 +819,22 @@ async function payOnline(){
   rzp.open();
 }
 
-function saveOrder(paymentResponse, verification){
+async function saveOrder(paymentResponse, verification){
+  const runtimeCurrentUser = (authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "") || currentUser || user.email || "";
+  const normalizedCurrentUser = String(runtimeCurrentUser || "").trim().toLowerCase();
   const session = paymentSession || getOrCreatePaymentSession();
   const paymentId = paymentResponse.razorpay_payment_id || paymentResponse || "";
-  const instrumentSummary = getInstrumentSummary(verification, localStorage.getItem("checkoutUpiId") || document.getElementById("upiId")?.value || "");
+  const currentUpiValue = document.getElementById("upiId")?.value || "";
+  const instrumentSummary = getInstrumentSummary(verification, currentUpiValue);
+  const deliverySummary = getDeliverySummary();
+  const shippingCalculation = deliverySummary.details ? JSON.parse(JSON.stringify(deliverySummary.details)) : null;
   const order = {
     id: session.orderId,
+    userId: normalizedCurrentUser,
+    email: (user.email || normalizedCurrentUser),
+    customerEmail: (user.email || normalizedCurrentUser),
+    phone: checkoutData.phone || user.phone || "",
+    customerPhone: checkoutData.phone || user.phone || "",
     payment: "Paid Successfully",
     payment_id: paymentId,
     razorpay_order_id: paymentResponse.razorpay_order_id || session.orderId,
@@ -696,7 +847,9 @@ function saveOrder(paymentResponse, verification){
     sellingTotal,
     couponAdjustedSellingTotal,
     productSavings,
-    delivery,
+    delivery: shippingCalculation || deliverySummary.deliveryCharge,
+    deliveryCharge: deliverySummary.deliveryCharge,
+    deliveryDetails: shippingCalculation,
     couponDiscount,
     gst: "Included",
     status: "Confirmed",
@@ -708,51 +861,120 @@ function saveOrder(paymentResponse, verification){
     paymentMethod: verification?.instrument?.method || "online",
     paymentInstrument: verification?.instrument || null,
     paymentInstrumentLabel: instrumentSummary.instrumentLabel,
-    shipping: checkoutData,
-    upiId: localStorage.getItem("checkoutUpiId") || document.getElementById("upiId")?.value || "",
+    shipping: { ...checkoutData, deliveryDetails: shippingCalculation },
+    upiId: currentUpiValue,
+    finalAmount: finalTotal,
     paymentStartedAt: session.startedAt || "",
     paymentCompletedAt: nowIso(),
     date: new Date().toLocaleString()
   };
 
   users = getUsers();
-  users[currentUser] = users[currentUser] || { cart:[], orders:[] };
-  users[currentUser].orders = users[currentUser].orders || [];
-  const existingIndex = users[currentUser].orders.findIndex(item => String(item.id) === String(order.id));
-  if(existingIndex > -1) users[currentUser].orders[existingIndex] = order;
-  else users[currentUser].orders.push(order);
-  users[currentUser].cart = [];
-  saveUsers(users);
+  const existingUserKey = Object.keys(users || {}).find(function(key){
+    return String(key || "").trim().toLowerCase() === normalizedCurrentUser;
+  });
+  const userKey = existingUserKey || normalizedCurrentUser;
+  users[userKey] = users[userKey] || { cart:[], orders:[] };
+  users[userKey].email = users[userKey].email || normalizedCurrentUser;
+  users[userKey].orders = users[userKey].orders || [];
+  const existingIndex = users[userKey].orders.findIndex(item => String(item.id) === String(order.id));
+  if(existingIndex > -1) users[userKey].orders[existingIndex] = order;
+  else users[userKey].orders.push(order);
+  users[userKey].cart = [];
+  if(authApi && typeof authApi.saveUserRecord === "function"){
+    try{
+      await authApi.saveUserRecord(users[userKey]);
+      if(typeof authApi.refreshUsers === "function"){
+        await authApi.refreshUsers();
+      }
+    }catch(error){
+      console.error("payment user order save failed", error);
+      await Promise.resolve(saveUsers(users));
+    }
+  }else{
+    await Promise.resolve(saveUsers(users));
+  }
 
   updatePaymentSession({ status:"paid", paidAt: nowIso(), paymentId });
   saveAttempt("paid", { paymentId, orderId: order.id });
   trackPaymentEvent("payment_success", { paymentId, orderId: order.id });
-  apiPost("/api/orders", { ...order, userId: currentUser })
-    .then(data=>{
-      if(!data || !data.ok || !data.order) return;
+  trackEcommerceEvent("purchase", {
+    transaction_id: order.id,
+    value: finalTotal,
+    currency: "INR",
+    shipping: deliverySummary.deliveryCharge,
+    coupon: couponDiscount ? "Coupon Discount" : "",
+    items: order.items
+  });
+  if(window.SWADRA_RECOVERY && typeof window.SWADRA_RECOVERY.markRecovered === "function"){
+    window.SWADRA_RECOVERY.markRecovered({
+      userId: normalizedCurrentUser,
+      email: user.email || normalizedCurrentUser,
+      phone: user.phone || checkoutData.phone || "",
+      orderId: order.id
+    }).catch(function(error){ console.error("abandoned cart recovered sync failed", error); });
+  }
+  if(dataApi && typeof dataApi.saveOrder === "function"){
+    try{
+      await dataApi.saveOrder(order.id, order);
+    }catch(error){
+      console.error("firestore order save failed", error);
+    }
+  }
+  try{
+    const data = await apiPost("/api/orders", order);
+    if(data && data.ok && data.order){
       const latestUsers = getUsers();
-      latestUsers[currentUser] = latestUsers[currentUser] || { cart:[], orders:[] };
-      latestUsers[currentUser].orders = latestUsers[currentUser].orders || [];
-      const orderIndex = latestUsers[currentUser].orders.findIndex(item => String(item.id) === String(order.id));
-      if(orderIndex > -1) latestUsers[currentUser].orders[orderIndex] = data.order;
-      else latestUsers[currentUser].orders.push(data.order);
-      saveUsers(latestUsers);
+      const latestExistingKey = Object.keys(latestUsers || {}).find(function(key){
+        return String(key || "").trim().toLowerCase() === normalizedCurrentUser;
+      });
+      const latestUserKey = latestExistingKey || userKey;
+      latestUsers[latestUserKey] = latestUsers[latestUserKey] || { cart:[], orders:[] };
+      latestUsers[latestUserKey].email = latestUsers[latestUserKey].email || normalizedCurrentUser;
+      latestUsers[latestUserKey].orders = latestUsers[latestUserKey].orders || [];
+      const orderIndex = latestUsers[latestUserKey].orders.findIndex(item => String(item.id) === String(order.id));
+      if(orderIndex > -1) latestUsers[latestUserKey].orders[orderIndex] = data.order;
+      else latestUsers[latestUserKey].orders.push(data.order);
+
+      if(authApi && typeof authApi.saveUserRecord === "function"){
+        try{
+          await authApi.saveUserRecord(latestUsers[latestUserKey]);
+          if(typeof authApi.refreshUsers === "function"){
+            await authApi.refreshUsers();
+          }
+        }catch(error){
+          console.error("backend-synced user order save failed", error);
+          await Promise.resolve(saveUsers(latestUsers));
+        }
+      }else{
+        await Promise.resolve(saveUsers(latestUsers));
+      }
+
+      if(dataApi && typeof dataApi.saveOrder === "function"){
+        try{
+          await dataApi.saveOrder(data.order.id, data.order);
+        }catch(error){
+          console.error("backend-synced firestore order save failed", error);
+        }
+      }
+
       lastSuccessOrder = data.order;
-      localStorage.setItem("currentOrderId", data.order.id);
       trackPaymentEvent("shiprocket_order_synced", {
         orderId: data.order.id,
         awb: data.order.awb || data.order.trackingId || "",
         shipment_id: data.order.shipment_id || ""
       });
-    })
-    .catch(error=>{
-      trackPaymentEvent("shiprocket_order_sync_failed", { orderId: order.id, message:error.message });
-      console.error("Backend order save failed", error);
-    });
-  localStorage.removeItem("cart");
-  localStorage.removeItem("finalTotal");
-  localStorage.removeItem("checkoutUpiId");
-  localStorage.removeItem(SESSION_KEY);
+    }
+  }catch(error){
+    trackPaymentEvent("shiprocket_order_sync_failed", { orderId: order.id, message:error.message });
+    console.error("Backend order save failed", error);
+  }
+  if(dataApi && typeof dataApi.clearCart === "function"){
+    dataApi.clearCart(normalizedCurrentUser).catch(function(error){ console.error("firestore cart clear failed", error); });
+  }
+  if(dataApi && typeof dataApi.clearCheckoutDraft === "function"){
+    dataApi.clearCheckoutDraft(normalizedCurrentUser).catch(function(error){ console.error("firestore checkout draft clear failed", error); });
+  }
   showSuccess(order);
 }
 
@@ -770,7 +992,7 @@ function downloadReceipt(order){
     "Selling Total: " + money(order.couponAdjustedSellingTotal || order.sellingTotal),
     "Product Savings: -" + money(order.productSavings),
     "Coupon Savings: -" + money(order.couponDiscount),
-    "Delivery: " + (order.delivery > 0 ? money(order.delivery) : "Free"),
+    "Delivery: " + (getOrderDeliveryCharge(order) > 0 ? money(getOrderDeliveryCharge(order)) : "Free"),
     "GST: Included",
     "Final Paid: " + money(order.total),
     "",
@@ -804,7 +1026,7 @@ function showSuccess(order){
     <p><strong>Delivery:</strong> ${escapeHtml(order.shipping.name || "Customer")}, ${escapeHtml(order.shipping.phone || "No phone")}, ${escapeHtml(getShippingAddress())}</p>
     <div class="success-actions">
       <a class="link-btn link-primary" href="order.html">Track Order</a>
-      <button class="link-btn link-secondary" onclick="window.print()">Print Invoice</button>
+      <a class="link-btn link-secondary" href="invoice.html?orderId=${encodeURIComponent(order.id || "")}">View Invoice</a>
       <button class="link-btn link-secondary" onclick="downloadReceipt(lastSuccessOrder)">Download Receipt</button>
       <a class="link-btn link-secondary" href="index.html">Continue Shopping</a>
     </div>
@@ -817,10 +1039,17 @@ function showSuccess(order){
     <p><strong>Product savings:</strong> -${money(order.productSavings)}</p>
     <p><strong>Coupon savings:</strong> -${money(order.couponDiscount)}</p>
     <p><strong>GST:</strong> Included</p>
-    <p><strong>Delivery:</strong> ${order.delivery > 0 ? money(order.delivery) : "Free"}</p>
+    <p><strong>Delivery:</strong> ${getOrderDeliveryCharge(order) > 0 ? money(getOrderDeliveryCharge(order)) : "Free"}</p>
     <p><strong>Final paid:</strong> ${money(order.total)}</p>
     <h2 style="margin-top:18px">Items purchased</h2>
-    ${order.items.map(item=>`<p><strong>${escapeHtml(item.name || "Swadra Product")}</strong><br>Qty ${Number(item.qty)||1} - ${money(getItemDisplayLineTotal(item))}${Number(item.couponLineDiscount || 0) > 0 ? ` <span style="color:#0f8a47;font-weight:700;">(coupon -${money(item.couponLineDiscount)})</span>` : ""}</p>`).join("")}
+    ${order.items.map(item=>{
+      const qty = Number(item.qty) || 1;
+      const originalLine = Math.round((Number(item.price) || 0) * qty);
+      const discountedLine = Math.round(Number(item.discountedLineTotal || item.displayLineTotal || originalLine));
+      const couponLine = Math.round(Number(item.couponLineDiscount || 0));
+      const itemSize = item.size || item.productSize || item.selectedSize || item.variant || item.weight || "";
+      return `<p><strong>${escapeHtml(item.name || "Swadra Product")}${itemSize ? ` <span style="font-size:12px;color:#6b5c5c;font-weight:700;">(${escapeHtml(itemSize)})</span>` : ""}</strong><br>Qty ${qty}<br>${discountedLine < originalLine ? `<span style="color:#b3261e;text-decoration:line-through;">${money(originalLine)}</span> <strong>${money(discountedLine)}</strong> <span style="color:#0f8a47;font-weight:700;">Coupon -${money(couponLine)}</span>` : `<strong>${money(discountedLine)}</strong>`}</p>`;
+    }).join("")}
   `;
 
   document.getElementById("successTimelineCard").innerHTML = `
@@ -857,6 +1086,12 @@ function renderDeliveryEstimate(){
   if(target) target.textContent = "Estimated delivery by " + label + ".";
 }
 
+async function renderOfferBar(forceRefresh){
+  if(window.SWADRA_OFFERS && typeof window.SWADRA_OFFERS.renderSaleBar === "function"){
+    await window.SWADRA_OFFERS.renderSaleBar("saleBarTrack", !!forceRefresh);
+  }
+}
+
 function startReserveTimer(){
   const start = Date.now();
   const target = document.getElementById("reservedTimer");
@@ -868,24 +1103,8 @@ function startReserveTimer(){
   }, 1000);
 }
 
-renderUserInfo();
-renderOrderSummary();
-renderDeliveryEstimate();
-startReserveTimer();
-checkBackend();
-trackPaymentEvent("payment_page_view");
-const savedUpi = localStorage.getItem("checkoutUpiId") || "";
-if(savedUpi){
-  const upiInput = document.getElementById("upiId");
-  if(upiInput) upiInput.value = savedUpi;
-  validateUpiId();
-}
+initializePaymentPage();
+renderOfferBar(true);
 </script>
 </body>
 </html>
-
-
-
-
-
-

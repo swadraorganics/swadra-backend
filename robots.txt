@@ -1,4 +1,15 @@
 User-agent: *
 Allow: /
+Disallow: /admin-
+Disallow: /backend/
+Disallow: /account.html
+Disallow: /cart.html
+Disallow: /checkout.html
+Disallow: /dashboard.html
+Disallow: /invoice.html
+Disallow: /order.html
+Disallow: /payment.html
+Disallow: /trackorder.html
+Disallow: /offline.html
 
 Sitemap: https://swadraorganics.com/sitemap.xml

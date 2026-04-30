@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -54,19 +54,16 @@ button,a{border:none;outline:none;cursor:pointer;border-radius:12px;padding:12px
 </style>
 <link rel="stylesheet" href="swadra-responsive.css">
 <link rel="stylesheet" href="mobile.css">
-<script src="api-config.js"></script></head>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="api-config.js"></script><style id="adminGlobalNavPadFix">body{padding-top:118px !important;}</style>
+</head>
 <body>
-<div class="admin-global-nav" style="position:sticky;top:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Admin Hub</a><a href="admin-dashboard.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Dashboard</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Home Controls</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payments</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupons</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Callback Requests</a></div>
+<div id="adminTopBar" style="position:fixed;top:0;left:0;right:0;z-index:100000;height:44px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;font-weight:700;font-size:22px;line-height:44px;text-align:center;border-bottom:1px solid rgba(122,61,61,.18);">Swadra Organics Admin Pannel</div>
+<div class="admin-global-nav" id="adminGlobalNav" style="position:fixed;top:44px;left:0;right:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Home</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Main</a><a href="backend/ai.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Add Product</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="backend/saved-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Edit Products</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payment</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupan</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Call Back</a><a href="backend/backend.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Backend</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Courier</a><span id="backendLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Backend</span><span id="firestoreLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Firestore</span><details style="margin-left:auto;position:relative;"><summary style="list-style:none;cursor:pointer;color:#fff;font-size:18px;line-height:1;padding:4px 6px;">👤</summary><div style="position:absolute;right:0;top:30px;min-width:210px;background:#fff;border:1px solid #ece1de;border-radius:14px;box-shadow:0 16px 35px rgba(0,0,0,.18);padding:8px;"><a href="admin-index.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Admin Home</a><a href="admin-profit.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Shiprocket</a><a href="index.html" style="display:block;padding:10px 12px;color:#991b1b;text-decoration:none;font-weight:800;border-radius:10px;background:#fff7f7;">Logout</a></div></details></div>
 <div class="wrap">
-  <div class="topbar">
-    <h1>Callback & Contact Requests</h1>
-    <p>About us contact section se aayi hui verified support requests yahan visible hongi. Callback, email support, issue detail, attached order aur preferred time sab yahin manage hoga.</p>
-  </div>
-
   <div class="toolbar">
     <button class="btn-primary" onclick="renderRequests()">Refresh Requests</button>
-    <a class="btn-dark" href="admin-index.html">Back to Admin</a>
-    <a class="btn-light" href="aboutus.html#contact">Open Contact Page</a>
   </div>
 
   <div class="stats-grid" id="requestStats"></div>
@@ -93,32 +90,73 @@ button,a{border:none;outline:none;cursor:pointer;border-radius:12px;padding:12px
 
 <script>
 const SUPPORT_REQUESTS_KEY = "supportRequests";
+const SUPPORT_REQUEST_KEYS = ["supportRequests","callbackRequests","contactRequests"];
 const APP_STATE_URL = window.SWADRA_APP_STATE_URL || "";
+const siteContentApi = window.SWADRA_SITE_CONTENT || null;
 async function readRequests(){
-  if(!APP_STATE_URL) return [];
-  try{
-    const response = await fetch(APP_STATE_URL + "?keys=" + encodeURIComponent(SUPPORT_REQUESTS_KEY), { cache:"no-store" });
-    const data = await response.json().catch(()=>({ ok:false }));
-    const list = data && data.ok && data.state ? data.state[SUPPORT_REQUESTS_KEY] : [];
-    return Array.isArray(list) ? list : [];
-  }catch(error){
-    console.error("callback requests fetch failed", error);
-    return [];
+  if(APP_STATE_URL){
+    try{
+      const response = await fetch(APP_STATE_URL + "?keys=" + encodeURIComponent(SUPPORT_REQUEST_KEYS.join(",")), { cache:"no-store" });
+      const data = await response.json().catch(()=>({ ok:false }));
+      const state = data && data.ok && data.state ? data.state : {};
+      const list = state[SUPPORT_REQUESTS_KEY] || state.callbackRequests || state.contactRequests || [];
+      if(Array.isArray(list)) return list;
+    }catch(error){
+      console.error("callback requests fetch failed", error);
+    }
   }
+  if(siteContentApi && typeof siteContentApi.fetch === "function"){
+    try{
+      const state = await siteContentApi.fetch(true);
+      const list = state && (
+        state[SUPPORT_REQUESTS_KEY]
+        || state.callbackRequests
+        || state.contactRequests
+        || (state.homeContent && (state.homeContent[SUPPORT_REQUESTS_KEY] || state.homeContent.callbackRequests || state.homeContent.contactRequests))
+      );
+      return Array.isArray(list) ? list : [];
+    }catch(error){
+      console.error("callback requests fallback fetch failed", error);
+    }
+  }
+  return [];
 }
 async function saveRequests(list){
-  if(!APP_STATE_URL) throw new Error("Support request storage unavailable");
   const next = Array.isArray(list) ? list : [];
-  const response = await fetch(APP_STATE_URL, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ state: { [SUPPORT_REQUESTS_KEY]: next } })
-  });
-  const data = await response.json().catch(()=>({ ok:false }));
-  if(!response.ok || !data.ok){
-    throw new Error((data && data.error) || "Support request save failed");
+  if(APP_STATE_URL){
+    try{
+      const response = await fetch(APP_STATE_URL, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ state: { supportRequests: next, callbackRequests: next, contactRequests: next } })
+      });
+      const data = await response.json().catch(()=>({ ok:false }));
+      if(response.ok && data && data.ok){
+        return next;
+      }
+      console.error("callback requests primary save failed", data && data.error ? data.error : "app-state save failed");
+    }catch(error){
+      console.error("callback requests primary save failed", error);
+    }
   }
-  return next;
+  if(siteContentApi && typeof siteContentApi.save === "function"){
+    try{
+      await siteContentApi.save({
+        supportRequests: next,
+        callbackRequests: next,
+        contactRequests: next,
+        homeContent: {
+          supportRequests: next,
+          callbackRequests: next,
+          contactRequests: next
+        }
+      });
+      return next;
+    }catch(error){
+      console.error("callback requests fallback save failed", error);
+    }
+  }
+  throw new Error("Support request storage unavailable");
 }
 function escapeHtml(value){
   return String(value == null ? "" : value).replace(/[&<>"']/g, function(char){
@@ -235,5 +273,10 @@ async function renderRequests(){
 renderRequests();
 window.addEventListener("focus", function(){ renderRequests(); });
 </script>
+<script src="admin-nav-active.js"></script>
 </body>
 </html>
+
+
+
+

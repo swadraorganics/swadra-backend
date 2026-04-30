@@ -1,0 +1,43 @@
+{
+  "name": "Swadra Organics",
+  "short_name": "Swadra",
+  "description": "Premium spices, dry fruits, ghee and Indian kitchen essentials from Swadra Organics.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#f1e3e3",
+  "theme_color": "#7a3d3d",
+  "orientation": "portrait-primary",
+  "categories": ["shopping", "food", "lifestyle"],
+  "lang": "en-IN",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48 64x64 128x128 256x256",
+      "type": "image/x-icon",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Shop Spices",
+      "short_name": "Spices",
+      "url": "/spices.html",
+      "description": "Browse Swadra Organics spices"
+    },
+    {
+      "name": "Open Cart",
+      "short_name": "Cart",
+      "url": "/cart.html",
+      "description": "Review your cart"
+    },
+    {
+      "name": "Track Order",
+      "short_name": "Track",
+      "url": "/trackorder.html",
+      "description": "Track your Swadra order"
+    }
+  ]
+}

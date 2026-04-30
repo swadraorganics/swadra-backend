@@ -92,9 +92,62 @@ app.use(cors({
     callback(new Error("CORS origin not allowed"));
   }
 }));
+app.use("/api/payments/webhook", express.raw({ type: "application/json", limit: "2mb" }));
 app.use(express.json({ limit: "12mb" }));
 app.use(express.urlencoded({ extended: true, limit: "12mb" }));
 app.use(express.static(__dirname));
+
+const rateLimitStore = new Map();
+
+function clientIp(req) {
+  const forwarded = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  return forwarded || req.ip || req.socket?.remoteAddress || "unknown";
+}
+
+function createRateLimiter({ windowMs, max, keyPrefix }) {
+  return function rateLimiter(req, res, next) {
+    const now = Date.now();
+    const key = `${keyPrefix}:${clientIp(req)}`;
+    const record = rateLimitStore.get(key);
+    if (!record || now > record.resetAt) {
+      rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+    if (record.count >= max) {
+      const retryAfter = Math.max(1, Math.ceil((record.resetAt - now) / 1000));
+      res.set("Retry-After", String(retryAfter));
+      return res.status(429).json({
+        ok: false,
+        error: "Too many requests. Please try again shortly."
+      });
+    }
+    record.count += 1;
+    rateLimitStore.set(key, record);
+    return next();
+  };
+}
+
+const authRateLimit = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 10, keyPrefix: "auth" });
+const couponRateLimit = createRateLimiter({ windowMs: 5 * 60 * 1000, max: 30, keyPrefix: "coupon" });
+const paymentRateLimit = createRateLimiter({ windowMs: 5 * 60 * 1000, max: 25, keyPrefix: "payment" });
+const webhookRateLimit = createRateLimiter({ windowMs: 60 * 1000, max: 120, keyPrefix: "webhook" });
+
+function createSerialMiddleware() {
+  let tail = Promise.resolve();
+  return async function serialMiddleware(req, res, next) {
+    let release;
+    const current = new Promise((resolve) => { release = resolve; });
+    const previous = tail;
+    tail = tail.then(() => current, () => current);
+    await previous;
+    const done = () => release();
+    res.once("finish", done);
+    res.once("close", done);
+    next();
+  };
+}
+
+const inventorySerial = createSerialMiddleware();
 
 function getDefaultDB() {
   return {
@@ -127,7 +180,10 @@ function normalizeDB(data) {
   db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
   db.admin = db.admin && typeof db.admin === "object" ? db.admin : {};
   db.admin.username = String(db.admin.username || "admin").trim() || "admin";
-  db.admin.password = String(db.admin.password || "1234");
+  db.admin.passwordHash = String(db.admin.passwordHash || "");
+  db.admin.passwordSalt = String(db.admin.passwordSalt || "");
+  db.admin.passwordAlgo = String(db.admin.passwordAlgo || (db.admin.passwordHash ? "scrypt" : ""));
+  db.admin.password = db.admin.passwordHash ? String(db.admin.password || "") : String(db.admin.password || "1234");
   db.meta = db.meta && typeof db.meta === "object" ? db.meta : {};
   return db;
 }
@@ -244,6 +300,170 @@ function productPersistenceDisabledResponse(res) {
   });
 }
 
+function hashAdminToken(token = "") {
+  return crypto.createHash("sha256").update(String(token || "")).digest("hex");
+}
+
+function hashAdminPassword(password = "", salt = crypto.randomBytes(16).toString("hex")) {
+  const cleanSalt = String(salt || "").trim() || crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(String(password || ""), cleanSalt, 64).toString("hex");
+  return {
+    passwordHash: hash,
+    passwordSalt: cleanSalt,
+    passwordAlgo: "scrypt"
+  };
+}
+
+function safeEqualHex(left = "", right = "") {
+  const a = Buffer.from(String(left || ""), "hex");
+  const b = Buffer.from(String(right || ""), "hex");
+  return a.length > 0 && a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+function verifyAdminPassword(db = {}, password = "") {
+  const admin = db.admin && typeof db.admin === "object" ? db.admin : {};
+  if (admin.passwordHash && admin.passwordSalt) {
+    const candidate = hashAdminPassword(password, admin.passwordSalt);
+    return {
+      ok: safeEqualHex(candidate.passwordHash, admin.passwordHash),
+      legacy: false
+    };
+  }
+  return {
+    ok: String(password || "") === String(admin.password || ""),
+    legacy: true
+  };
+}
+
+function setAdminPasswordHash(db = {}, password = "") {
+  db.admin = db.admin && typeof db.admin === "object" ? db.admin : {};
+  const hashed = hashAdminPassword(password);
+  db.admin.passwordHash = hashed.passwordHash;
+  db.admin.passwordSalt = hashed.passwordSalt;
+  db.admin.passwordAlgo = hashed.passwordAlgo;
+  db.admin.password = "";
+  return db.admin;
+}
+
+function ensureAdminSecurity(db = {}) {
+  db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+  db.appState.adminSessions = Array.isArray(db.appState.adminSessions) ? db.appState.adminSessions : [];
+  db.appState.adminAudit = Array.isArray(db.appState.adminAudit) ? db.appState.adminAudit : [];
+  db.admin = db.admin && typeof db.admin === "object" ? db.admin : {};
+  db.admin.role = String(db.admin.role || "owner").trim() || "owner";
+  return db.appState;
+}
+
+function getAdminTokenFromRequest(req) {
+  const auth = String(req.get("authorization") || "").trim();
+  if (/^Bearer\s+/i.test(auth)) return auth.replace(/^Bearer\s+/i, "").trim();
+  return String(req.get("x-admin-session-token") || req.body?.adminToken || req.query?.adminToken || "").trim();
+}
+
+function findValidAdminSession(db = {}, req) {
+  const token = getAdminTokenFromRequest(req);
+  if (!token) return null;
+  const state = ensureAdminSecurity(db);
+  const tokenHash = hashAdminToken(token);
+  const now = Date.now();
+  return state.adminSessions.find((session) => {
+    return session &&
+      session.tokenHash === tokenHash &&
+      Date.parse(session.expiresAt || "") > now &&
+      String(session.status || "active") === "active";
+  }) || null;
+}
+
+function revokeAdminSessionForRequest(db = {}, req) {
+  const token = getAdminTokenFromRequest(req);
+  if (!token) return false;
+  const state = ensureAdminSecurity(db);
+  const tokenHash = hashAdminToken(token);
+  let revoked = false;
+  state.adminSessions = state.adminSessions.map((session) => {
+    if (session && session.tokenHash === tokenHash && String(session.status || "active") === "active") {
+      revoked = true;
+      return {
+        ...session,
+        status: "revoked",
+        revokedAt: new Date().toISOString()
+      };
+    }
+    return session;
+  });
+  return revoked;
+}
+
+function getCustomerAccessFields(req) {
+  return [
+    req.query?.userId,
+    req.query?.email,
+    req.query?.customerEmail,
+    req.query?.phone,
+    req.body?.userId,
+    req.body?.email,
+    req.body?.customerEmail,
+    req.body?.phone,
+    req.get("x-customer-user"),
+    req.get("x-customer-email"),
+    req.get("x-customer-phone")
+  ].map((value) => String(value || "").trim().toLowerCase()).filter(Boolean);
+}
+
+function orderMatchesCustomerAccess(order = {}, req) {
+  const values = getCustomerAccessFields(req);
+  if (!values.length) return false;
+  const shipping = order.shipping && typeof order.shipping === "object" ? order.shipping : {};
+  const candidates = [
+    order.userId,
+    order.user,
+    order.email,
+    order.customerEmail,
+    order.userEmail,
+    order.phone,
+    order.mobile,
+    order.customerPhone,
+    shipping.email,
+    shipping.phone,
+    shipping.mobile
+  ].map((value) => String(value || "").trim().toLowerCase()).filter(Boolean);
+  return candidates.some((value) => values.includes(value));
+}
+
+function auditAdminAction(db = {}, req, action, status = "success", details = {}) {
+  const state = ensureAdminSecurity(db);
+  const session = findValidAdminSession(db, req) || {};
+  state.adminAudit.unshift({
+    id: "audit_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+    action,
+    status,
+    username: session.username || String(req.body?.username || "unknown"),
+    role: session.role || "unknown",
+    ip: clientIp(req),
+    userAgent: String(req.get("user-agent") || "").slice(0, 180),
+    details,
+    time: new Date().toISOString()
+  });
+  state.adminAudit = state.adminAudit.slice(0, 1000);
+}
+
+async function requireAdminSession(req, res, next) {
+  try {
+    const db = await readDB();
+    const session = findValidAdminSession(db, req);
+    if (!session) {
+      auditAdminAction(db, req, req.method + " " + req.path, "blocked", { reason: "missing-or-expired-session" });
+      await writeDB(db);
+      return res.status(401).json({ ok: false, error: "Admin session required" });
+    }
+    req.adminSession = session;
+    next();
+  } catch (error) {
+    addLog("Admin session check failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to verify admin session" });
+  }
+}
+
 function requireDurablePersistence(res) {
   if (USE_FIRESTORE || !IS_HOSTED_RUNTIME) {
     return true;
@@ -253,6 +473,150 @@ function requireDurablePersistence(res) {
     error: "Durable Firestore persistence is required for hosted backend writes. Set USE_FIRESTORE=true and configure firebase-admin credentials."
   });
   return false;
+}
+
+const PUBLIC_APP_STATE_KEYS = new Set([
+  "homeContent",
+  "offers",
+  "heroImages",
+  "customers",
+  "familyCards",
+  "swadra_home_family_story_v1",
+  "shippingSettings",
+  "compliance",
+  "policyPages",
+  "supportRequests",
+  "callbackRequests",
+  "contactRequests"
+]);
+
+const PUBLIC_APP_STATE_WRITE_KEYS = new Set([
+  "supportRequests",
+  "callbackRequests",
+  "contactRequests"
+]);
+
+function filterPublicAppStateKeys(keys = []) {
+  return (Array.isArray(keys) ? keys : []).filter((key) => PUBLIC_APP_STATE_KEYS.has(String(key || "")));
+}
+
+function isPublicAppStateWrite(state = {}, removeKeys = []) {
+  const stateKeys = Object.keys(state || {});
+  const deleteKeys = Array.isArray(removeKeys) ? removeKeys : [];
+  return [...stateKeys, ...deleteKeys].every((key) => PUBLIC_APP_STATE_WRITE_KEYS.has(String(key || "")));
+}
+
+function redactBackupSecrets(value) {
+  if (Array.isArray(value)) return value.map(redactBackupSecrets);
+  if (!value || typeof value !== "object") return value;
+  const output = {};
+  Object.keys(value).forEach((key) => {
+    if (/password|secret|token|apikey|api_key|salt|hash/i.test(key)) {
+      output[key] = "[REDACTED]";
+    } else {
+      output[key] = redactBackupSecrets(value[key]);
+    }
+  });
+  return output;
+}
+
+function ensureReconciliationReports(db = {}) {
+  db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+  db.appState.reconciliationReports = Array.isArray(db.appState.reconciliationReports) ? db.appState.reconciliationReports : [];
+  return db.appState.reconciliationReports;
+}
+
+function moneyNumber(value) {
+  return Math.round(toNumber(value || 0));
+}
+
+function getReportOrderValue(order = {}) {
+  return moneyNumber(order.finalAmount || order.payableAmount || order.total || order.amount || order.totalAmount || order.paidAmount || 0);
+}
+
+function getReportPaidAmount(order = {}) {
+  const status = String(order.paymentStatus || order.payment || order.status || "").toLowerCase();
+  if (String(order.status || "").toLowerCase().includes("cancel")) return 0;
+  if (status.includes("paid") || status.includes("success")) return getReportOrderValue(order);
+  return moneyNumber(order.paidAmount || 0);
+}
+
+function getReportRefundAmount(order = {}) {
+  return moneyNumber(order.refundAmount || order.refundRaw?.amount && toNumber(order.refundRaw.amount) / 100 || 0);
+}
+
+function getReportCourierCharge(order = {}) {
+  const delivery = order.deliveryDetails || order.shipping?.deliveryDetails || {};
+  const shiprocket = order.shiprocket || {};
+  return moneyNumber(
+    shiprocket.freight_charge ||
+    shiprocket.courier_charge ||
+    shiprocket.shipping_charge ||
+    order.freight_charge ||
+    order.courier_charge ||
+    delivery.lowestCourierCharge ||
+    order.lowestCourierCharge ||
+    0
+  );
+}
+
+function buildReconciliationReport(db = {}, input = {}) {
+  const now = new Date().toISOString();
+  const from = String(input.from || "").trim();
+  const to = String(input.to || "").trim();
+  const fromTime = from ? Date.parse(from) : 0;
+  const toTime = to ? Date.parse(to) + 24 * 60 * 60 * 1000 - 1 : Infinity;
+  const orders = (Array.isArray(db.orders) ? db.orders : []).filter((order) => {
+    const rawDate = order.createdAt || order.date || order.updatedAt || "";
+    const t = Date.parse(rawDate);
+    if (!t) return true;
+    return t >= fromTime && t <= toTime;
+  });
+  const attempts = Array.isArray(db.paymentAttempts) ? db.paymentAttempts : [];
+  const rows = orders.map((order) => {
+    const id = String(order.id || order.orderId || "");
+    const paidAmount = getReportPaidAmount(order);
+    const refundAmount = getReportRefundAmount(order);
+    return {
+      id,
+      userId: String(order.userId || order.user || order.email || order.customerEmail || ""),
+      date: order.createdAt || order.date || order.updatedAt || "",
+      status: String(order.status || order.orderStatus || ""),
+      paymentStatus: String(order.paymentStatus || order.payment || ""),
+      orderValue: getReportOrderValue(order),
+      paidAmount,
+      refundAmount,
+      courierCharge: getReportCourierCharge(order),
+      netReceivable: Math.max(0, paidAmount - refundAmount),
+      razorpayOrderId: String(order.razorpayOrderId || order.paymentOrderId || ""),
+      razorpayPaymentId: String(order.razorpayPaymentId || order.paymentId || order.payment_id || "")
+    };
+  });
+  const paymentPaid = attempts.filter((attempt) => String(attempt.status || "").toLowerCase().includes("paid")).reduce((sum, attempt) => {
+    return sum + moneyNumber((attempt.amountPaise ? toNumber(attempt.amountPaise) / 100 : attempt.amount || attempt.snapshot?.amount || 0));
+  }, 0);
+  const totals = {
+    orders: rows.length,
+    orderValue: rows.reduce((sum, row) => sum + row.orderValue, 0),
+    paidAmount: rows.reduce((sum, row) => sum + row.paidAmount, 0),
+    refundAmount: rows.reduce((sum, row) => sum + row.refundAmount, 0),
+    courierCharge: rows.reduce((sum, row) => sum + row.courierCharge, 0),
+    netReceivable: rows.reduce((sum, row) => sum + row.netReceivable, 0),
+    paymentAttempts: attempts.length,
+    paymentAttemptPaidAmount: paymentPaid
+  };
+  const fingerprint = hashPayload({ from, to, totals, rows });
+  return {
+    id: String(input.id || "rec_" + now.slice(0, 10) + "_" + fingerprint.slice(0, 10)),
+    from,
+    to,
+    createdAt: now,
+    createdBy: String(input.createdBy || "admin"),
+    immutable: true,
+    fingerprint,
+    totals,
+    rows
+  };
 }
 
 async function readDB() {
@@ -320,6 +684,7 @@ async function addLog(message, level = "info") {
   }
   try {
     const db = await readDB();
+    cleanupInventoryLocks(db);
     db.logs.unshift({
       id: "log_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
       time: new Date().toISOString(),
@@ -327,6 +692,20 @@ async function addLog(message, level = "info") {
       message
     });
     db.logs = db.logs.slice(0, 500);
+    if (shouldTriggerOpsAlert(message, level)) {
+      const state = db.appState && typeof db.appState === "object" ? db.appState : {};
+      const cooldownSec = Math.max(60, Math.round(toNumber(state.alertCooldownSec || 300)));
+      const now = Date.now();
+      const lastAt = Number(state.lastAlertAtTs || 0);
+      if (!lastAt || now - lastAt >= cooldownSec * 1000) {
+        const alertResp = await sendOpsAlert(db, message, level);
+        if (alertResp && alertResp.ok) {
+          db.appState = state;
+          db.appState.lastAlertAtTs = now;
+          db.appState.lastAlertAt = new Date(now).toISOString();
+        }
+      }
+    }
     await writeDB(db);
   } catch (error) {
     console.error("[log failed]", level, message, error.message);
@@ -350,10 +729,223 @@ function normalizeAppStateValue(value) {
   return String(value);
 }
 
+function getEmailConfig(db = {}) {
+  const appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+  return {
+    resendApiKey: String(process.env.RESEND_API_KEY || appState.resendApiKey || "").trim(),
+    fromEmail: String(process.env.RESEND_FROM_EMAIL || appState.resendFromEmail || "Swadra Organics <orders@swadraorganics.com>").trim(),
+    replyTo: String(process.env.RESEND_REPLY_TO || appState.resendReplyTo || "").trim()
+  };
+}
+
+function pickOrderEmail(order = {}) {
+  return String(
+    order.customerEmail ||
+    order.email ||
+    order.userEmail ||
+    (String(order.userId || "").includes("@") ? order.userId : "") ||
+    order.shipping?.email ||
+    ""
+  ).trim().toLowerCase();
+}
+
+function pickOrderName(order = {}) {
+  return String(order.shipping?.name || order.customerName || order.name || "Customer").trim();
+}
+
+function normalizeEmailStatus(status) {
+  const value = String(status || "").trim().toLowerCase();
+  if (value.includes("refund")) return "Refund";
+  if (value.includes("cancel")) return "Cancelled";
+  if (value.includes("deliver")) return "Delivered";
+  if (value.includes("out")) return "Out for Delivery";
+  if (value.includes("dispatch") || value.includes("ship")) return "Dispatched";
+  if (value.includes("pack")) return "Packed";
+  if (value.includes("confirm") || value.includes("paid")) return "Confirmed";
+  return status ? String(status) : "Updated";
+}
+
+function getEmailTemplateConfig(db = {}, label = "Updated") {
+  const appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+  const templates = appState.emailTemplates && typeof appState.emailTemplates === "object" ? appState.emailTemplates : {};
+  const template = templates[label] && typeof templates[label] === "object" ? templates[label] : {};
+  return {
+    subject: String(template.subject || "").trim(),
+    heading: String(template.heading || "").trim(),
+    message: String(template.message || "").trim(),
+    footer: String(template.footer || "").trim()
+  };
+}
+
+function applyEmailTemplate(value = "", vars = {}) {
+  return String(value || "").replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (match, key) => {
+    const next = vars[key];
+    return next === undefined || next === null ? "" : String(next);
+  });
+}
+
+function buildOrderEmail(order = {}, status = "Confirmed", db = {}) {
+  const label = normalizeEmailStatus(status);
+  const id = String(order.id || order.orderId || "");
+  const total = Math.round(toNumber(order.total || order.finalAmount || order.amount || 0));
+  const tracking = String(order.awb || order.trackingId || order.awbCode || "").trim();
+  const courier = String(order.courierName || order.courier_name || "").trim();
+  const items = (Array.isArray(order.items) ? order.items : []).map((item) => {
+    const qty = Math.max(1, Math.round(toNumber(item.qty || item.quantity || 1)));
+    const size = String(item.size || item.productSize || item.selectedSize || item.variant || item.weight || item.packSize || item.unit || "").trim();
+    return `${item.name || "Swadra Product"}${size ? " (" + size + ")" : ""} x ${qty}`;
+  });
+  const subjectMap = {
+    Confirmed: `Order confirmed - ${id}`,
+    Packed: `Order packed - ${id}`,
+    Dispatched: `Order dispatched - ${id}`,
+    "Out for Delivery": `Order out for delivery - ${id}`,
+    Delivered: `Order delivered - ${id}`,
+    Cancelled: `Order cancelled - ${id}`,
+    Refund: `Refund update - ${id}`
+  };
+  const template = getEmailTemplateConfig(db, label);
+  const vars = {
+    customerName: pickOrderName(order),
+    orderId: id,
+    status: label,
+    total: total ? `₹${total}` : "",
+    trackingId: tracking,
+    courier,
+    brandName: "Swadra Organics"
+  };
+  const subject = applyEmailTemplate(template.subject, vars) || subjectMap[label] || `Order update - ${id}`;
+  const customMessage = applyEmailTemplate(template.message, vars);
+  const footer = applyEmailTemplate(template.footer, vars) || "Thank you for shopping with Swadra Organics.";
+  const text = [
+    `Hello ${pickOrderName(order)},`,
+    "",
+    customMessage || `Your Swadra Organics order status is: ${label}`,
+    `Order ID: ${id}`,
+    total ? `Total: ₹${total}` : "",
+    tracking ? `Tracking ID: ${tracking}` : "",
+    courier ? `Courier: ${courier}` : "",
+    items.length ? "" : "",
+    items.length ? "Items:" : "",
+    ...items.map((item) => `- ${item}`),
+    "",
+    footer
+  ].filter((line, index, arr) => line !== "" || arr[index - 1] !== "").join("\n");
+  const htmlItems = items.length ? `<ul>${items.map((item) => `<li>${escapeHtmlForEmail(item)}</li>`).join("")}</ul>` : "";
+  const html = `
+    <div style="font-family:Arial,sans-serif;color:#222;line-height:1.6">
+      <h2 style="color:#7a3d3d;margin:0 0 12px">${escapeHtmlForEmail(applyEmailTemplate(template.heading, vars) || "Swadra Organics Order Update")}</h2>
+      <p>Hello ${escapeHtmlForEmail(pickOrderName(order))},</p>
+      <p>${escapeHtmlForEmail(customMessage || "Your order status is")} <strong>${escapeHtmlForEmail(label)}</strong>.</p>
+      <p><strong>Order ID:</strong> ${escapeHtmlForEmail(id)}<br>
+      ${total ? `<strong>Total:</strong> ₹${total}<br>` : ""}
+      ${tracking ? `<strong>Tracking ID:</strong> ${escapeHtmlForEmail(tracking)}<br>` : ""}
+      ${courier ? `<strong>Courier:</strong> ${escapeHtmlForEmail(courier)}<br>` : ""}</p>
+      ${htmlItems}
+      <p>${escapeHtmlForEmail(footer)}</p>
+    </div>
+  `;
+  return { subject, text, html };
+}
+
+function escapeHtmlForEmail(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function resendRequest(apiKey, payload) {
+  const body = JSON.stringify(payload);
+  return new Promise((resolve) => {
+    const req = https.request({
+      hostname: "api.resend.com",
+      path: "/emails",
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + apiKey,
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(body)
+      }
+    }, (response) => {
+      let data = "";
+      response.on("data", (chunk) => { data += chunk; });
+      response.on("end", () => {
+        let parsed = data;
+        try { parsed = JSON.parse(data || "{}"); } catch (error) {}
+        resolve({ ok: response.statusCode >= 200 && response.statusCode < 300, statusCode: response.statusCode, data: parsed });
+      });
+    });
+    req.on("error", (error) => resolve({ ok: false, statusCode: 0, data: { message: error.message } }));
+    req.write(body);
+    req.end();
+  });
+}
+
+async function sendOrderEmail(db, order, status, reason = "") {
+  const to = pickOrderEmail(order);
+  if (!to) return { ok: false, skipped: true, reason: "missing-recipient" };
+  const config = getEmailConfig(db);
+  if (!config.resendApiKey) return { ok: false, skipped: true, reason: "missing-resend-key" };
+  const content = buildOrderEmail(order, status, db);
+  const response = await resendRequest(config.resendApiKey, {
+    from: config.fromEmail,
+    to: [to],
+    ...(config.replyTo ? { reply_to: config.replyTo } : {}),
+    subject: content.subject,
+    text: content.text,
+    html: content.html
+  });
+  if (!response.ok) {
+    addLog(`Order email failed for ${order.id || "unknown"} ${status}: ${JSON.stringify(response.data).slice(0, 220)}`, "error");
+  } else {
+    addLog(`Order email sent for ${order.id || "unknown"} ${status}${reason ? " (" + reason + ")" : ""}`, "success");
+  }
+  return response;
+}
+
+function shouldTriggerOpsAlert(message = "", level = "info") {
+  const text = String(message || "").toLowerCase();
+  if (level === "error") return true;
+  return [
+    "otp",
+    "payment verification failed",
+    "payment verify blocked",
+    "razorpay webhook failed",
+    "shiprocket webhook failed",
+    "refund failed",
+    "coupon save failed"
+  ].some((token) => text.includes(token));
+}
+
+async function sendOpsAlert(db, message, level = "error") {
+  const appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+  const toEmail = String(process.env.ALERT_EMAIL || appState.alertEmail || "").trim().toLowerCase();
+  if (!toEmail) return { ok: false, skipped: true, reason: "missing-alert-email" };
+  const config = getEmailConfig(db);
+  if (!config.resendApiKey) return { ok: false, skipped: true, reason: "missing-resend-key" };
+  const subject = `[Swadra Alert] ${String(level || "error").toUpperCase()} ${new Date().toISOString()}`;
+  const text = `Backend alert\nLevel: ${level}\nTime: ${new Date().toISOString()}\nMessage: ${message}`;
+  return resendRequest(config.resendApiKey, {
+    from: config.fromEmail,
+    to: [toEmail],
+    ...(config.replyTo ? { reply_to: config.replyTo } : {}),
+    subject,
+    text,
+    html: `<pre style="font-family:ui-monospace,Consolas,monospace">${escapeHtmlForEmail(text)}</pre>`
+  });
+}
+
 function pickAppState(db, keys = []) {
   const source = db.appState && typeof db.appState === "object" ? db.appState : {};
   const result = {};
   (Array.isArray(keys) ? keys : []).forEach((key) => {
+    if (key === "coupons") {
+      result.coupons = Array.isArray(db.coupons) ? db.coupons.map((coupon) => normalizeCoupon(coupon)).slice(0, 50) : [];
+      return;
+    }
     if (typeof key === "string" && key in source) {
       result[key] = source[key];
     }
@@ -392,6 +984,84 @@ function verifyRazorpaySignature({ razorpay_order_id, razorpay_payment_id, razor
     configured: true,
     message: expected === razorpay_signature ? "Payment verified" : "Invalid Razorpay signature"
   };
+}
+
+function verifyRazorpayWebhookSignature(rawBody, signature) {
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET || "";
+  if (!secret) {
+    return {
+      verified: false,
+      configured: false,
+      message: "RAZORPAY_WEBHOOK_SECRET is not configured"
+    };
+  }
+  const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+  const received = String(signature || "").trim();
+  const verified = Boolean(
+    received &&
+    expected.length === received.length &&
+    crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(received))
+  );
+  return {
+    verified,
+    configured: true,
+    message: verified ? "Razorpay webhook verified" : "Invalid Razorpay webhook signature"
+  };
+}
+
+function getRazorpayWebhookEntity(payload = {}, type = "payment") {
+  return payload?.payload?.[type]?.entity || payload?.[type] || payload?.entity || {};
+}
+
+function findPaymentAttemptIndexByRazorpay(db = {}, fields = {}) {
+  const attempts = Array.isArray(db.paymentAttempts) ? db.paymentAttempts : [];
+  const orderId = String(fields.orderId || "").trim();
+  const paymentId = String(fields.paymentId || "").trim();
+  const refundId = String(fields.refundId || "").trim();
+  return attempts.findIndex((attempt) => {
+    const ids = [
+      attempt.id,
+      attempt.localOrderId,
+      attempt.orderId,
+      attempt.razorpayOrderId,
+      attempt.razorpayPaymentId,
+      attempt.paymentId,
+      attempt.refundId,
+      attempt.razorpayRefundId,
+      attempt.snapshot?.orderId,
+      attempt.snapshot?.id,
+      attempt.snapshot?.localOrderId
+    ].map((value) => String(value || "").trim()).filter(Boolean);
+    return Boolean(
+      (orderId && ids.includes(orderId)) ||
+      (paymentId && ids.includes(paymentId)) ||
+      (refundId && ids.includes(refundId))
+    );
+  });
+}
+
+function findOrderIndexByRazorpay(db = {}, fields = {}) {
+  const orderId = String(fields.orderId || "").trim();
+  const paymentId = String(fields.paymentId || "").trim();
+  const refundId = String(fields.refundId || "").trim();
+  return findOrderIndex(db, (order) => {
+    const ids = [
+      order.id,
+      order.orderId,
+      order.localOrderId,
+      order.razorpayOrderId,
+      order.paymentOrderId,
+      order.razorpayPaymentId,
+      order.paymentId,
+      order.refundId,
+      order.razorpayRefundId
+    ].map((value) => String(value || "").trim()).filter(Boolean);
+    return Boolean(
+      (orderId && ids.includes(orderId)) ||
+      (paymentId && ids.includes(paymentId)) ||
+      (refundId && ids.includes(refundId))
+    );
+  });
 }
 
 function readShiprocketEnv() {
@@ -536,7 +1206,7 @@ function normalizeOrderForDb(input = {}) {
     id,
     userId: String(input.userId || input.user || input.email || ""),
     items: Array.isArray(input.items) ? input.items : [],
-    total: toNumber(input.total),
+    total: toNumber(input.finalAmount || input.payableAmount || input.total || input.amount || input.paidAmount),
     status: input.status || "Confirmed",
     payment: input.payment || "Paid Successfully",
     shipping: input.shipping || input.checkoutData || {},
@@ -584,8 +1254,8 @@ function buildShiprocketOrderPayload(order) {
   const orderItems = (order.items || []).map((item, index) => ({
     name: String(item.name || item.productName || `Item ${index + 1}`).slice(0, 190),
     sku: String(item.sku || item.id || item.productId || `SKU-${index + 1}`),
-    units: Math.max(1, Math.round(toNumber(item.qty || 1))),
-    selling_price: Math.max(1, Math.round(toNumber(item.discountedUnitPrice || item.displayPrice || item.price || 1)))
+    units: Math.max(1, Math.round(toNumber(item.quantity || item.qty || item.count || 1))),
+    selling_price: Math.max(1, Math.round(toNumber(item.discountedUnitPrice || item.finalUnitPrice || item.couponUnitPrice || item.displayPrice || item.price || 1)))
   }));
 
   return {
@@ -605,11 +1275,11 @@ function buildShiprocketOrderPayload(order) {
     shipping_is_billing: true,
     order_items: orderItems.length ? orderItems : [{ name: "Swadra Product", sku: "SWADRA", units: 1, selling_price: Math.max(1, Math.round(order.total || 1)) }],
     payment_method: String(order.payment || "").toLowerCase().includes("cod") ? "COD" : "Prepaid",
-    shipping_charges: toNumber(order.delivery || order.shippingFee || 0),
+    shipping_charges: toNumber(order.deliveryCharge || order.delivery || order.shippingFee || 0),
     giftwrap_charges: 0,
     transaction_charges: 0,
     total_discount: toNumber(order.couponDiscount || order.discount || 0),
-    sub_total: Math.max(1, Math.round(toNumber(order.total || 1))),
+    sub_total: Math.max(1, Math.round(toNumber(order.finalAmount || order.payableAmount || order.total || order.amount || order.paidAmount || 1))),
     length: toNumber(config.SHIPROCKET_DEFAULT_LENGTH) || 10,
     breadth: toNumber(config.SHIPROCKET_DEFAULT_BREADTH) || 10,
     height: toNumber(config.SHIPROCKET_DEFAULT_HEIGHT) || 10,
@@ -671,14 +1341,213 @@ async function createShiprocketShipmentForOrder(order) {
     });
   }
 
+  if (!assigned.ok) {
+    return {
+      ok: false,
+      step: "assign-awb",
+      error: assigned.data?.message || assigned.data?.error || "Shiprocket AWB assignment failed",
+      raw: assigned.data,
+      created: created.data
+    };
+  }
+
+  let label = { ok: false, data: {} };
+  if (shipmentId) {
+    label = await shiprocketRequest({
+      method: "POST",
+      path: "/v1/external/courier/generate/label",
+      token: auth.token,
+      body: { shipment_id: [shipmentId] }
+    });
+  }
+
   const shipment = extractShiprocketShipment(created, assigned);
   return {
     ok: true,
     createPayload,
     created: created.data,
     assigned: assigned.data,
+    label: label.data,
+    labelError: label.ok ? "" : (label.data?.message || label.data?.error || "Shiprocket label generation failed"),
     shipment
   };
+}
+
+function ensureReturnWorkflow(db = {}) {
+  db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+  db.appState.returnRequests = Array.isArray(db.appState.returnRequests) ? db.appState.returnRequests : [];
+  return db.appState.returnRequests;
+}
+
+function normalizeReturnRequest(input = {}, order = {}) {
+  const now = new Date().toISOString();
+  return {
+    id: String(input.id || "ret_" + Date.now() + "_" + Math.floor(Math.random() * 1000)),
+    orderId: String(input.orderId || order.id || ""),
+    userId: String(input.userId || order.userId || order.email || ""),
+    type: String(input.type || "Return").trim(),
+    reason: String(input.reason || input.note || "Customer requested return/refund support.").trim().slice(0, 500),
+    status: String(input.status || "Requested").trim(),
+    requestedAmount: Math.round(toNumber(input.requestedAmount || order.finalAmount || order.total || order.amount || 0)),
+    createdAt: input.createdAt || now,
+    updatedAt: now,
+    history: Array.isArray(input.history) && input.history.length
+      ? input.history
+      : [{ status: "Requested", time: now, note: "Customer submitted return/refund request." }]
+  };
+}
+
+function ensureAbandonedCarts(db = {}) {
+  db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+  db.appState.abandonedCarts = Array.isArray(db.appState.abandonedCarts) ? db.appState.abandonedCarts : [];
+  return db.appState.abandonedCarts;
+}
+
+function normalizeAbandonedCart(input = {}, existing = {}) {
+  const now = new Date().toISOString();
+  const items = Array.isArray(input.items || input.cartItems || input.cart) ? (input.items || input.cartItems || input.cart) : [];
+  const summary = input.summary && typeof input.summary === "object" ? input.summary : {};
+  const email = String(input.email || input.userId || input.user || existing.email || existing.userId || "").trim().toLowerCase();
+  const status = String(input.status || existing.status || "open").trim() || "open";
+  const idSource = input.id || input.cartId || existing.id || email || input.phone || Date.now();
+  return {
+    ...existing,
+    id: String(idSource).replace(/[^a-z0-9_.@-]/gi, "_").slice(0, 120),
+    userId: String(input.userId || input.user || existing.userId || email || "").trim().toLowerCase(),
+    email,
+    phone: String(input.phone || existing.phone || "").trim(),
+    name: String(input.name || existing.name || "").trim(),
+    pincode: String(input.pincode || summary.pincode || existing.pincode || "").trim(),
+    postoffice: String(input.postoffice || input.postOffice || existing.postoffice || "").trim(),
+    status,
+    source: String(input.source || existing.source || "cart").trim(),
+    items: items.map((item) => ({
+      id: String(item.id || item.productId || item.sku || "").trim(),
+      productId: String(item.productId || item.id || item.sku || "").trim(),
+      name: String(item.name || item.title || "Swadra Product").trim(),
+      size: String(item.size || item.productSize || item.variant || "").trim(),
+      qty: getItemQty(item),
+      price: Math.round(toNumber(item.price || item.sellingPrice || item.discountedUnitPrice || 0)),
+      image: String(item.image || item.productImage || "").trim()
+    })).filter((item) => item.name || item.id || item.productId),
+    totals: {
+      subtotal: Math.round(toNumber(summary.sellingTotal || input.subtotal || 0)),
+      discount: Math.round(toNumber(summary.couponDiscount || input.discount || 0)),
+      delivery: Math.round(toNumber(summary.delivery || input.delivery || 0)),
+      total: Math.round(toNumber(summary.finalTotal || input.total || 0))
+    },
+    checkoutUrl: String(input.checkoutUrl || existing.checkoutUrl || "/cart.html").trim(),
+    reminderCount: Math.max(0, Math.round(toNumber(existing.reminderCount || input.reminderCount || 0))),
+    lastReminderAt: existing.lastReminderAt || input.lastReminderAt || "",
+    createdAt: existing.createdAt || input.createdAt || now,
+    updatedAt: now,
+    history: Array.isArray(existing.history) && existing.history.length
+      ? existing.history
+      : [{ status, time: now, note: "Cart recovery tracking started." }]
+  };
+}
+
+function findAbandonedCartIndex(carts = [], input = {}) {
+  const keys = [input.id, input.cartId, input.userId, input.user, input.email]
+    .map((value) => String(value || "").trim().toLowerCase())
+    .filter(Boolean);
+  if (!keys.length) return -1;
+  return carts.findIndex((cart) => {
+    const cartKeys = [cart.id, cart.userId, cart.email]
+      .map((value) => String(value || "").trim().toLowerCase())
+      .filter(Boolean);
+    return cartKeys.some((key) => keys.includes(key));
+  });
+}
+
+async function sendAbandonedCartEmail(db = {}, cart = {}) {
+  const config = getEmailConfig(db);
+  const to = String(cart.email || "").trim().toLowerCase();
+  if (!to) return { ok: false, skipped: true, reason: "missing-email" };
+  if (!config.resendApiKey) return { ok: false, skipped: true, reason: "missing-resend-key" };
+  const itemLines = (Array.isArray(cart.items) ? cart.items : []).slice(0, 6).map((item) => {
+    return `- ${item.name || "Swadra Product"} x ${item.qty || 1}`;
+  }).join("\n");
+  const total = Math.round(toNumber(cart.totals?.total || 0));
+  return resendRequest(config.resendApiKey, {
+    from: config.fromEmail,
+    to: [to],
+    reply_to: config.replyTo || undefined,
+    subject: "Your Swadra cart is waiting",
+    text: [
+      `Hi ${cart.name || "there"},`,
+      "",
+      "You left these Swadra products in your cart:",
+      itemLines || "- Your selected Swadra products",
+      "",
+      total ? `Cart total: Rs. ${total}` : "",
+      "Complete your order here: https://swadraorganics.com/cart.html",
+      "",
+      "If you already placed the order, please ignore this message."
+    ].filter(Boolean).join("\n"),
+    html: `<p>Hi ${escapeHtmlForEmail(cart.name || "there")},</p><p>You left these Swadra products in your cart.</p><ul>${(Array.isArray(cart.items) ? cart.items : []).slice(0, 6).map((item) => `<li>${escapeHtmlForEmail(item.name || "Swadra Product")} x ${escapeHtmlForEmail(item.qty || 1)}</li>`).join("")}</ul>${total ? `<p><strong>Cart total:</strong> Rs. ${total}</p>` : ""}<p><a href="https://swadraorganics.com/cart.html">Complete your order</a></p>`
+  });
+}
+
+const INVENTORY_LOCK_TTL_MS = 15 * 60 * 1000;
+
+function getInventoryKey(item = {}) {
+  const productId = String(item.productId || item.id || item.sku || item.name || "").trim().toLowerCase();
+  const variant = String(item.size || item.productSize || item.variant || "").trim().toLowerCase();
+  if (!productId) return "";
+  return `${productId}::${variant}`;
+}
+
+function getItemQty(item = {}) {
+  return Math.max(1, Math.round(toNumber(item.quantity || item.qty || item.count || 1)));
+}
+
+function getItemStock(item = {}) {
+  const raw = item.stockQty ?? item.stock ?? item.availableStock;
+  if (raw === undefined || raw === null || raw === "") return null;
+  return Math.max(0, Math.round(toNumber(raw)));
+}
+
+function cleanupInventoryLocks(db = {}) {
+  const now = Date.now();
+  const locks = Array.isArray(db.appState?.inventoryLocks) ? db.appState.inventoryLocks : [];
+  db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+  db.appState.inventoryLocks = locks.filter((lock) => {
+    const isActive = String(lock.status || "reserved") === "reserved";
+    const expiresAt = Date.parse(lock.expiresAt || "");
+    return !(isActive && expiresAt && expiresAt < now);
+  });
+}
+
+function getReservedQty(db = {}, inventoryKey = "") {
+  if (!inventoryKey) return 0;
+  const locks = Array.isArray(db.appState?.inventoryLocks) ? db.appState.inventoryLocks : [];
+  return locks
+    .filter((lock) => String(lock.status || "reserved") === "reserved" && String(lock.inventoryKey) === inventoryKey)
+    .reduce((sum, lock) => sum + Math.max(0, Math.round(toNumber(lock.qty))), 0);
+}
+
+function releaseInventoryLock(db = {}, orderId = "", status = "released") {
+  const locks = Array.isArray(db.appState?.inventoryLocks) ? db.appState.inventoryLocks : [];
+  db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+  db.appState.inventoryLocks = locks.map((lock) => {
+    if (String(lock.orderId) !== String(orderId)) return lock;
+    if (String(lock.status || "") !== "reserved") return lock;
+    return { ...lock, status, releasedAt: new Date().toISOString() };
+  });
+}
+
+function pickInventoryLockOrderId(attempt = {}, fallback = "") {
+  return String(
+    attempt.id ||
+    attempt.localOrderId ||
+    attempt.orderId ||
+    attempt.snapshot?.orderId ||
+    attempt.snapshot?.id ||
+    attempt.snapshot?.localOrderId ||
+    fallback ||
+    ""
+  ).trim();
 }
 
 function extractWebhookFields(payload = {}) {
@@ -898,6 +1767,119 @@ async function fetchRazorpayPaymentDetails(paymentId) {
   };
 }
 
+function pickRazorpayPaymentId(order = {}) {
+  return String(
+    order.razorpayPaymentId ||
+    order.paymentId ||
+    order.payment_id ||
+    order.transactionId ||
+    order.txnId ||
+    order.detail?.razorpayPaymentId ||
+    order.detail?.paymentId ||
+    order.razorpay?.payment_id ||
+    order.razorpay?.paymentId ||
+    ""
+  ).trim();
+}
+
+function findPaymentAttemptForOrder(db = {}, order = {}) {
+  const attempts = Array.isArray(db.paymentAttempts) ? db.paymentAttempts : [];
+  const ids = [
+    order.id,
+    order.orderId,
+    order.localOrderId,
+    order.razorpayOrderId,
+    order.paymentOrderId
+  ].map((item) => String(item || "").trim()).filter(Boolean);
+
+  return attempts.find((attempt) => {
+    const candidateIds = [
+      attempt.id,
+      attempt.localOrderId,
+      attempt.orderId,
+      attempt.razorpayOrderId,
+      attempt.snapshot?.orderId,
+      attempt.snapshot?.id,
+      attempt.snapshot?.localOrderId
+    ].map((item) => String(item || "").trim()).filter(Boolean);
+    return candidateIds.some((candidate) => ids.includes(candidate));
+  }) || null;
+}
+
+function mergePaymentAttemptIntoOrder(order = {}, attempt = null) {
+  if (!attempt) return order;
+  return {
+    ...order,
+    razorpayOrderId: order.razorpayOrderId || attempt.razorpayOrderId || "",
+    razorpayPaymentId: order.razorpayPaymentId || attempt.razorpayPaymentId || "",
+    paymentId: order.paymentId || attempt.razorpayPaymentId || attempt.paymentId || "",
+    paymentInstrument: order.paymentInstrument || attempt.paymentInstrument || null,
+    razorpayPaymentDetails: order.razorpayPaymentDetails || attempt.razorpayPaymentDetails || null
+  };
+}
+
+async function createRazorpayRefundForOrder(order = {}) {
+  const paymentId = pickRazorpayPaymentId(order);
+  const amountRupees = Math.round(toNumber(order.refundAmount || order.finalAmount || order.payableAmount || order.total || order.amount || order.paidAmount || 0));
+
+  if (order.refundId || order.razorpayRefundId) {
+    return {
+      ok: true,
+      skipped: true,
+      status: order.razorpayRefundStatus || order.refundStatus || "Refund Already Created",
+      refund: null,
+      message: "Refund already created"
+    };
+  }
+
+  if (!paymentId) {
+    return {
+      ok: false,
+      configured: Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
+      status: "Refund Pending",
+      refund: null,
+      message: "Razorpay payment ID missing"
+    };
+  }
+
+  if (amountRupees <= 0) {
+    return {
+      ok: false,
+      configured: Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
+      status: "Refund Pending",
+      refund: null,
+      message: "Refund amount missing"
+    };
+  }
+
+  const response = await razorpayApiRequest({
+    method: "POST",
+    path: "/v1/payments/" + encodeURIComponent(paymentId) + "/refund",
+    body: {
+      amount: amountRupees * 100,
+      speed: "normal",
+      notes: {
+        order_id: String(order.id || order.orderId || ""),
+        reason: "Order cancelled"
+      }
+    }
+  });
+
+  const refund = response.data || {};
+  const rawStatus = String(refund.status || "").trim();
+  const status = response.ok
+    ? (rawStatus ? "Razorpay " + rawStatus : "Razorpay Refund Created")
+    : "Razorpay Refund Failed";
+
+  return {
+    ok: response.ok,
+    configured: response.configured,
+    status,
+    refund,
+    message: response.message
+  };
+}
+
 function normalizeSearchText(value) {
   return encodeURIComponent(
     String(value || "")
@@ -948,7 +1930,7 @@ function parseCurrencyCandidates(text) {
   const input = String(text || "");
   const values = [];
   const patterns = [
-    /â‚¹\s*([0-9][0-9,]{1,8}(?:\.\d{1,2})?)/g,
+    /₹\s*([0-9][0-9,]{1,8}(?:\.\d{1,2})?)/g,
     /Rs\.?\s*([0-9][0-9,]{1,8}(?:\.\d{1,2})?)/gi,
     /INR\s*([0-9][0-9,]{1,8}(?:\.\d{1,2})?)/gi
   ];
@@ -1408,7 +2390,7 @@ app.get("/api/products", async (req, res) => {
   return productPersistenceDisabledResponse(res);
 });
 
-app.get("/api/logs", async (req, res) => {
+app.get("/api/logs", requireAdminSession, async (req, res) => {
   try {
     const db = await readDB();
     res.json({
@@ -1436,22 +2418,153 @@ app.get("/api/admin/config", async (req, res) => {
   }
 });
 
-app.post("/api/admin/login", async (req, res) => {
+app.post("/api/admin/login", authRateLimit, async (req, res) => {
   try {
     const db = await readDB();
+    const state = ensureAdminSecurity(db);
     const username = String(req.body?.username || req.body?.email || "").trim();
     const password = String(req.body?.password || "");
-    const success = username === db.admin.username && password === db.admin.password;
+    const passwordCheck = verifyAdminPassword(db, password);
+    const success = username === db.admin.username && passwordCheck.ok;
+    let session = null;
+    if (success) {
+      if (passwordCheck.legacy || !db.admin.passwordHash) {
+        setAdminPasswordHash(db, password);
+      }
+      const token = crypto.randomBytes(32).toString("hex");
+      const now = new Date();
+      session = {
+        token,
+        username,
+        role: db.admin.role || "owner",
+        expiresAt: new Date(now.getTime() + 12 * 60 * 60 * 1000).toISOString()
+      };
+      state.adminSessions = state.adminSessions.filter((item) => Date.parse(item.expiresAt || "") > Date.now()).slice(0, 20);
+      state.adminSessions.unshift({
+        tokenHash: hashAdminToken(token),
+        username,
+        role: session.role,
+        status: "active",
+        ip: clientIp(req),
+        userAgent: String(req.get("user-agent") || "").slice(0, 180),
+        createdAt: now.toISOString(),
+        expiresAt: session.expiresAt
+      });
+    }
+    auditAdminAction(db, req, "admin.login", success ? "success" : "failed", { username });
+    await writeDB(db);
     addLog(`Admin login ${success ? "success" : "failed"} for ${username || "unknown"}`, success ? "success" : "warn");
     res.status(success ? 200 : 401).json({
       ok: success,
       success,
       message: success ? "Login successful" : "Wrong credentials",
-      redirectTo: success ? "admin-index.html" : ""
+      redirectTo: success ? "admin-index.html" : "",
+      session
     });
   } catch (error) {
     addLog("Admin login failed: " + error.message, "error");
     res.status(500).json({ ok: false, error: "Failed to login" });
+  }
+});
+
+app.get("/api/admin/audit", requireAdminSession, async (req, res) => {
+  try {
+    const db = await readDB();
+    ensureAdminSecurity(db);
+    res.json({ ok: true, audit: db.appState.adminAudit || [] });
+  } catch (error) {
+    addLog("Admin audit fetch failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to load admin audit" });
+  }
+});
+
+app.post("/api/admin/logout", requireAdminSession, async (req, res) => {
+  try {
+    const db = await readDB();
+    const revoked = revokeAdminSessionForRequest(db, req);
+    auditAdminAction(db, req, "admin.logout", revoked ? "success" : "noop", { revoked });
+    await writeDB(db);
+    res.json({ ok: true, revoked });
+  } catch (error) {
+    addLog("Admin logout failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to logout" });
+  }
+});
+
+app.post("/api/admin/logout-all", requireAdminSession, async (req, res) => {
+  try {
+    const db = await readDB();
+    const state = ensureAdminSecurity(db);
+    const now = new Date().toISOString();
+    let count = 0;
+    state.adminSessions = state.adminSessions.map((session) => {
+      if (session && String(session.status || "active") === "active") {
+        count += 1;
+        return { ...session, status: "revoked", revokedAt: now };
+      }
+      return session;
+    });
+    auditAdminAction(db, req, "admin.logout-all", "success", { count });
+    await writeDB(db);
+    res.json({ ok: true, revoked: count });
+  } catch (error) {
+    addLog("Admin logout-all failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to revoke sessions" });
+  }
+});
+
+app.get("/api/admin/backup/export", requireAdminSession, async (req, res) => {
+  try {
+    const db = await readDB();
+    const includeSecrets = String(req.query.includeSecrets || "").toLowerCase() === "true";
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      version: "swadra-backup-v1",
+      source: USE_FIRESTORE ? "firestore" : "file",
+      data: includeSecrets ? cloneDB(db) : redactBackupSecrets(cloneDB(db))
+    };
+    auditAdminAction(db, req, "backup.export", "success", { includeSecrets });
+    await writeDB(db);
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="swadra-backup-${new Date().toISOString().slice(0, 10)}.json"`);
+    res.send(JSON.stringify(payload, null, 2));
+  } catch (error) {
+    addLog("Backup export failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to export backup" });
+  }
+});
+
+app.get("/api/admin/reconciliation-reports", requireAdminSession, async (req, res) => {
+  try {
+    const db = await readDB();
+    res.json({ ok: true, reports: ensureReconciliationReports(db) });
+  } catch (error) {
+    addLog("Reconciliation report fetch failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to fetch reconciliation reports" });
+  }
+});
+
+app.post("/api/admin/reconciliation-reports", requireAdminSession, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const db = await readDB();
+    const reports = ensureReconciliationReports(db);
+    const report = buildReconciliationReport(db, {
+      from: req.body?.from,
+      to: req.body?.to,
+      createdBy: req.adminSession?.username || "admin"
+    });
+    if (reports.some((item) => String(item.fingerprint || "") === report.fingerprint)) {
+      return res.status(409).json({ ok: false, error: "Same reconciliation snapshot already exists" });
+    }
+    reports.unshift(report);
+    db.appState.reconciliationReports = reports.slice(0, 365);
+    auditAdminAction(db, req, "reconciliation.create", "success", { reportId: report.id, totals: report.totals });
+    await writeDB(db);
+    res.json({ ok: true, report });
+  } catch (error) {
+    addLog("Reconciliation report create failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to create reconciliation report" });
   }
 });
 
@@ -1464,15 +2577,17 @@ app.post("/admin/login", async (req, res) => {
   });
 });
 
-app.post("/api/admin/credentials", async (req, res) => {
+app.post("/api/admin/credentials", requireAdminSession, async (req, res) => {
   try {
     const db = await readDB();
     const username = String(req.body?.username || db.admin.username).trim();
-    const password = String(req.body?.password || db.admin.password);
+    const password = String(req.body?.password || "");
     if (!username || !password) {
       return res.status(400).json({ ok: false, error: "Username and password are required" });
     }
-    db.admin = { username, password };
+    db.admin = { ...db.admin, username, role: db.admin.role || "owner" };
+    setAdminPasswordHash(db, password);
+    auditAdminAction(db, req, "admin.credentials.update", "success", { username });
     await writeDB(db);
     addLog("Admin credentials updated", "success");
     res.json({ ok: true, username });
@@ -1500,10 +2615,17 @@ app.get("/api/coupons", async (req, res) => {
 app.get("/api/app-state", async (req, res) => {
   try {
     const db = await readDB();
+    const isAdmin = Boolean(findValidAdminSession(db, req));
     const rawKeys = String(req.query.keys || "").trim();
-    const keys = rawKeys
+    let keys = rawKeys
       ? rawKeys.split(",").map((item) => item.trim()).filter(Boolean)
       : Object.keys(db.appState || {});
+    if (!rawKeys && Array.isArray(db.coupons) && db.coupons.length && !keys.includes("coupons")) {
+      keys.push("coupons");
+    }
+    if (!isAdmin) {
+      keys = filterPublicAppStateKeys(keys);
+    }
     res.json({
       ok: true,
       state: pickAppState(db, keys),
@@ -1518,7 +2640,8 @@ app.get("/api/app-state", async (req, res) => {
 app.get("/api/app-state/bootstrap", async (req, res) => {
   try {
     const db = await readDB();
-    const keys = [
+    const isAdmin = Boolean(findValidAdminSession(db, req));
+    let keys = [
       "users",
       "homeContent",
       "adminCustomersUpdatedAt",
@@ -1530,6 +2653,9 @@ app.get("/api/app-state/bootstrap", async (req, res) => {
       "CUSTOMER_PAUSE_KEY",
       "DELETED_CUSTOMERS_KEY"
     ];
+    if (!isAdmin) {
+      keys = filterPublicAppStateKeys(keys);
+    }
     res.json({
       ok: true,
       state: pickAppState(db, keys),
@@ -1547,16 +2673,29 @@ app.post("/api/app-state", async (req, res) => {
     const db = await readDB();
     const state = req.body && typeof req.body.state === "object" ? req.body.state : {};
     const removeKeys = Array.isArray(req.body?.removeKeys) ? req.body.removeKeys : [];
+    const isAdmin = Boolean(findValidAdminSession(db, req));
+    if (!isAdmin && !isPublicAppStateWrite(state, removeKeys)) {
+      auditAdminAction(db, req, "app-state.write", "blocked", { keys: Object.keys(state || {}), removeKeys });
+      await writeDB(db);
+      return res.status(401).json({ ok: false, error: "Admin session required for protected app state" });
+    }
     db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
 
     Object.keys(state).forEach((key) => {
       if (!key) return;
       db.appState[key] = normalizeAppStateValue(state[key]);
     });
+    if (Array.isArray(state.coupons)) {
+      db.coupons = state.coupons.map((coupon) => normalizeCoupon(coupon)).filter((coupon) => coupon.code).slice(0, 50);
+      db.appState.coupons = db.coupons;
+    }
 
     removeKeys.forEach((key) => {
       if (!key) return;
       delete db.appState[key];
+      if (key === "coupons") {
+        db.coupons = [];
+      }
     });
 
     await writeDB(db);
@@ -1571,7 +2710,7 @@ app.post("/api/app-state", async (req, res) => {
   }
 });
 
-app.post("/api/coupons", async (req, res) => {
+app.post("/api/coupons", couponRateLimit, requireAdminSession, async (req, res) => {
   try {
     if (!requireDurablePersistence(res)) return;
     const coupon = normalizeCoupon(req.body || {});
@@ -1593,6 +2732,7 @@ app.post("/api/coupons", async (req, res) => {
       db.coupons.unshift(coupon);
     }
     db.coupons = db.coupons.slice(0, 50);
+    auditAdminAction(db, req, "coupon.save", "success", { code: coupon.code });
     await writeDB(db);
     addLog(`Coupon saved: ${coupon.code}`, "success");
     res.json({
@@ -1606,12 +2746,13 @@ app.post("/api/coupons", async (req, res) => {
   }
 });
 
-app.delete("/api/coupons/:code", async (req, res) => {
+app.delete("/api/coupons/:code", couponRateLimit, requireAdminSession, async (req, res) => {
   try {
     if (!requireDurablePersistence(res)) return;
     const code = String(req.params.code || "").trim().toUpperCase();
     const db = await readDB();
     db.coupons = db.coupons.filter((coupon) => String(coupon.code || "").trim().toUpperCase() !== code);
+    auditAdminAction(db, req, "coupon.delete", "success", { code });
     await writeDB(db);
     addLog(`Coupon deleted: ${code}`, "warn");
     res.json({
@@ -1645,70 +2786,15 @@ app.post("/api/orders", async (req, res) => {
       status: existing.shiprocket?.status || "pending"
     };
 
-    try {
-      if (order.awb || order.trackingId || order.shipment_id) {
-        order.shiprocket = {
-          ...(order.shiprocket || {}),
-          status: order.shiprocket?.status || "created",
-          skippedDuplicateCreate: true
-        };
-      } else {
-      const shipmentResult = await createShiprocketShipmentForOrder(order);
-      if (shipmentResult.ok) {
-        const shipment = shipmentResult.shipment || {};
-        order = {
-          ...order,
-          shipment_id: shipment.shipment_id || order.shipment_id || "",
-          shiprocketOrderId: shipment.shiprocketOrderId || order.shiprocketOrderId || "",
-          awb: shipment.awb || order.awb || "",
-          trackingId: shipment.awb || order.trackingId || "",
-          courier_name: shipment.courier_name || order.courier_name || "",
-          courierName: shipment.courier_name || order.courierName || "",
-          tracking_url: shipment.tracking_url || order.tracking_url || "",
-          trackingUrl: shipment.tracking_url || order.trackingUrl || "",
-          trackingStatus: shipment.trackingStatus || order.trackingStatus || "Shipment Created",
-          estimatedDelivery: shipment.estimatedDelivery || order.estimatedDelivery || "",
-          status: shipment.awb ? "Dispatched" : order.status,
-          shiprocket: {
-            status: "created",
-            createdAt: new Date().toISOString(),
-            createResponse: shipmentResult.created,
-            awbResponse: shipmentResult.assigned
-          },
-          statusHistory: [
-            ...(order.statusHistory || []),
-            {
-              status: shipment.awb ? "Dispatched" : "Shipment Created",
-              time: new Date().toISOString(),
-              note: shipment.awb ? `AWB ${shipment.awb} assigned.` : "Shiprocket shipment created."
-            }
-          ]
-        };
-        addLog(`Shiprocket shipment created for order ${order.id} AWB ${order.awb || "pending"}`, "success");
-      } else {
-        order.shiprocket = {
-          status: "failed",
-          error: shipmentResult.error,
-          step: shipmentResult.step || "",
-          raw: shipmentResult.raw || null,
-          failedAt: new Date().toISOString()
-        };
-        addLog(`Shiprocket shipment failed for order ${order.id}: ${shipmentResult.error}`, "error");
-      }
-      }
-    } catch (shiprocketError) {
-      order.shiprocket = {
-        status: "failed",
-        error: shiprocketError.message,
-        failedAt: new Date().toISOString()
-      };
-      addLog(`Shiprocket shipment exception for order ${order.id}: ${shiprocketError.message}`, "error");
-    }
-
     if (existingIndex > -1) db.orders[existingIndex] = order;
     else db.orders.unshift(order);
     db.orders = db.orders.slice(0, 5000);
     await writeDB(db);
+    if (existingIndex < 0) {
+      await sendOrderEmail(db, order, "Confirmed", "order-created").catch((emailError) => {
+        addLog("Order confirmation email failed: " + emailError.message, "error");
+      });
+    }
 
     res.json({
       ok: true,
@@ -1731,6 +2817,9 @@ app.get("/api/orders/:id", async (req, res) => {
     if (!order) {
       return res.status(404).json({ ok: false, error: "Order not found" });
     }
+    if (!findValidAdminSession(db, req) && !orderMatchesCustomerAccess(order, req)) {
+      return res.status(403).json({ ok: false, error: "Order access verification required" });
+    }
     res.json({ ok: true, order });
   } catch (error) {
     addLog("Order fetch failed: " + error.message, "error");
@@ -1738,7 +2827,469 @@ app.get("/api/orders/:id", async (req, res) => {
   }
 });
 
-app.get("/api/orders", async (req, res) => {
+app.post("/api/orders/:id/cancel", paymentRateLimit, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const db = await readDB();
+    const orderId = String(req.params.id || "");
+    const index = findOrderIndex(db, (order) => String(order.id) === orderId);
+    if (index < 0) return res.status(404).json({ ok: false, error: "Order not found" });
+
+    const now = new Date().toISOString();
+    const current = normalizeOrderForDb(db.orders[index] || {});
+    if (!findValidAdminSession(db, req) && !orderMatchesCustomerAccess(current, req)) {
+      return res.status(403).json({ ok: false, error: "Order access verification required" });
+    }
+    const normalizedStatus = normalizeEmailStatus(current.status || "");
+    if (["Delivered", "Dispatched", "Out for Delivery"].includes(normalizedStatus)) {
+      return res.status(409).json({ ok: false, error: "Cancellation is closed for this order. Please request return/support." });
+    }
+    const nextOrder = {
+      ...current,
+      status: "Cancelled",
+      orderStatus: "Cancelled",
+      cancelledAt: now,
+      paymentStatus: current.paymentStatus || current.payment || "Refund Initiated",
+      payment: "Refund Initiated",
+      refundStatus: current.refundStatus || "Refund Initiated",
+      refundAmount: current.refundAmount || Math.round(toNumber(current.finalAmount || current.total || current.amount || 0)),
+      refundDate: current.refundDate || now,
+      refundMode: current.refundMode || "Original payment method",
+      refundMessage: current.refundMessage || "Refund has been initiated after order cancellation.",
+      statusHistory: [
+        ...(Array.isArray(current.statusHistory) ? current.statusHistory : []),
+        { status: "Cancelled", time: now, note: String(req.body?.note || "Cancelled by customer.").trim() }
+      ],
+      updatedAt: now
+    };
+    const refundResult = await createRazorpayRefundForOrder(nextOrder);
+    nextOrder.razorpayRefundConfigured = refundResult.configured !== false;
+    nextOrder.razorpayRefundStatus = refundResult.status;
+    nextOrder.refundStatus = refundResult.status || nextOrder.refundStatus;
+    nextOrder.refundRaw = refundResult.refund || nextOrder.refundRaw || null;
+    if (refundResult.refund && refundResult.refund.id) {
+      nextOrder.refundId = refundResult.refund.id;
+      nextOrder.razorpayRefundId = refundResult.refund.id;
+    }
+    db.orders[index] = nextOrder;
+    await writeDB(db);
+    await sendOrderEmail(db, nextOrder, "Cancelled", "customer-cancel").catch((emailError) => {
+      addLog("Customer cancel email failed: " + emailError.message, "error");
+    });
+    res.json({ ok: true, order: nextOrder, refund: refundResult });
+  } catch (error) {
+    addLog("Customer cancel failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to cancel order" });
+  }
+});
+
+app.post("/api/orders/:id/return-request", paymentRateLimit, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const db = await readDB();
+    const orderId = String(req.params.id || "");
+    const index = findOrderIndex(db, (order) => String(order.id) === orderId);
+    if (index < 0) return res.status(404).json({ ok: false, error: "Order not found" });
+    const now = new Date().toISOString();
+    const order = normalizeOrderForDb(db.orders[index] || {});
+    if (!findValidAdminSession(db, req) && !orderMatchesCustomerAccess(order, req)) {
+      return res.status(403).json({ ok: false, error: "Order access verification required" });
+    }
+    const requests = ensureReturnWorkflow(db);
+    const existing = requests.find((item) => String(item.orderId) === orderId && !["Rejected", "Completed"].includes(String(item.status || "")));
+    if (existing) return res.json({ ok: true, request: existing, order });
+    const request = normalizeReturnRequest({
+      orderId,
+      userId: req.body?.userId || order.userId,
+      type: req.body?.type || "Return",
+      reason: req.body?.reason || req.body?.note,
+      requestedAmount: req.body?.requestedAmount
+    }, order);
+    requests.unshift(request);
+    db.orders[index] = {
+      ...order,
+      returnStatus: request.status,
+      returnRequestId: request.id,
+      statusHistory: [
+        ...(Array.isArray(order.statusHistory) ? order.statusHistory : []),
+        { status: "Return Requested", time: now, note: request.reason }
+      ],
+      updatedAt: now
+    };
+    await writeDB(db);
+    await sendOrderEmail(db, db.orders[index], "Refund", "return-request").catch((emailError) => {
+      addLog("Return request email failed: " + emailError.message, "error");
+    });
+    res.json({ ok: true, request, order: db.orders[index] });
+  } catch (error) {
+    addLog("Return request failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to submit return request" });
+  }
+});
+
+app.post("/api/abandoned-cart", paymentRateLimit, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const db = await readDB();
+    const carts = ensureAbandonedCarts(db);
+    const incoming = req.body || {};
+    const index = findAbandonedCartIndex(carts, incoming);
+    const existing = index > -1 ? carts[index] : {};
+    const cart = normalizeAbandonedCart(incoming, existing);
+    const now = new Date().toISOString();
+    if (!cart.items.length) {
+      cart.status = "cleared";
+      cart.history = [
+        ...(Array.isArray(cart.history) ? cart.history : []),
+        { status: "cleared", time: now, note: "Cart became empty." }
+      ];
+    } else if (String(existing.status || "").toLowerCase() !== "open") {
+      cart.status = "open";
+      cart.history = [
+        ...(Array.isArray(cart.history) ? cart.history : []),
+        { status: "open", time: now, note: "Cart activity resumed." }
+      ];
+    }
+    if (index > -1) carts[index] = cart;
+    else carts.unshift(cart);
+    db.appState.abandonedCarts = carts.slice(0, 2000);
+    await writeDB(db);
+    res.json({ ok: true, cart });
+  } catch (error) {
+    addLog("Abandoned cart save failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to save abandoned cart" });
+  }
+});
+
+app.post("/api/abandoned-cart/recovered", paymentRateLimit, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const db = await readDB();
+    const carts = ensureAbandonedCarts(db);
+    const index = findAbandonedCartIndex(carts, req.body || {});
+    if (index < 0) return res.json({ ok: true, recovered: false });
+    const now = new Date().toISOString();
+    carts[index] = {
+      ...carts[index],
+      status: "recovered",
+      recoveredAt: now,
+      recoveredOrderId: String(req.body?.orderId || req.body?.id || carts[index].recoveredOrderId || "").trim(),
+      updatedAt: now,
+      history: [
+        ...(Array.isArray(carts[index].history) ? carts[index].history : []),
+        { status: "recovered", time: now, note: "Customer completed checkout." }
+      ]
+    };
+    await writeDB(db);
+    res.json({ ok: true, recovered: true, cart: carts[index] });
+  } catch (error) {
+    addLog("Abandoned cart recover failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to update abandoned cart" });
+  }
+});
+
+app.get("/api/admin/abandoned-carts", requireAdminSession, async (req, res) => {
+  try {
+    const db = await readDB();
+    res.json({ ok: true, carts: ensureAbandonedCarts(db) });
+  } catch (error) {
+    addLog("Abandoned carts fetch failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to fetch abandoned carts" });
+  }
+});
+
+app.post("/api/admin/abandoned-carts/:id/remind", requireAdminSession, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const db = await readDB();
+    const carts = ensureAbandonedCarts(db);
+    const cartId = String(req.params.id || "").trim();
+    const index = carts.findIndex((cart) => String(cart.id || "") === cartId);
+    if (index < 0) return res.status(404).json({ ok: false, error: "Abandoned cart not found" });
+    const response = await sendAbandonedCartEmail(db, carts[index]);
+    if (!response.ok && response.skipped) {
+      return res.status(400).json({ ok: false, error: response.reason || "Reminder email not configured" });
+    }
+    const now = new Date().toISOString();
+    carts[index] = {
+      ...carts[index],
+      status: "reminded",
+      reminderCount: Math.max(0, Math.round(toNumber(carts[index].reminderCount || 0))) + 1,
+      lastReminderAt: now,
+      updatedAt: now,
+      history: [
+        ...(Array.isArray(carts[index].history) ? carts[index].history : []),
+        { status: "reminded", time: now, note: "Recovery reminder sent by admin." }
+      ]
+    };
+    auditAdminAction(db, req, "abandoned-cart.remind", "success", { cartId });
+    await writeDB(db);
+    res.json({ ok: true, cart: carts[index], email: response });
+  } catch (error) {
+    addLog("Abandoned cart reminder failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to send abandoned cart reminder" });
+  }
+});
+
+app.post("/api/admin/resend-config", requireAdminSession, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const apiKey = String(req.body?.apiKey || "").trim();
+    const fromEmail = String(req.body?.fromEmail || "Swadra Organics <orders@swadraorganics.com>").trim();
+    const replyTo = String(req.body?.replyTo || "").trim();
+    if (!apiKey || !apiKey.startsWith("re_")) {
+      return res.status(400).json({ ok: false, error: "Valid Resend API key is required" });
+    }
+    const db = await readDB();
+    db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+    db.appState.resendApiKey = apiKey;
+    db.appState.resendFromEmail = fromEmail;
+    db.appState.resendReplyTo = replyTo;
+    auditAdminAction(db, req, "admin.resend-config.update", "success", { fromEmail, replyTo });
+    await writeDB(db);
+    addLog("Resend email config saved", "success");
+    res.json({ ok: true, configured: true, fromEmail, replyTo });
+  } catch (error) {
+    addLog("Resend config save failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to save Resend config" });
+  }
+});
+
+app.post("/api/orders/:id/packed", requireAdminSession, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const db = await readDB();
+    const orderId = String(req.params.id || "");
+    const index = findOrderIndex(db, (order) => String(order.id) === orderId);
+    if (index < 0) return res.status(404).json({ ok: false, error: "Order not found" });
+
+    let order = normalizeOrderForDb(db.orders[index] || {});
+    if (!Array.isArray(order.statusHistory)) order.statusHistory = [];
+
+    order.status = "Packed";
+    order.statusHistory.push({ status: "Packed", time: new Date().toISOString(), note: "Packed by admin." });
+
+    if (!order.awb && !order.trackingId && !order.shipment_id) {
+      const shipmentResult = await createShiprocketShipmentForOrder(order);
+      if (!shipmentResult.ok) {
+        order.shiprocket = {
+          status: "failed",
+          error: shipmentResult.error,
+          step: shipmentResult.step || "",
+          raw: shipmentResult.raw || null,
+          createResponse: shipmentResult.created || null,
+          awbResponse: shipmentResult.assigned || null,
+          failedAt: new Date().toISOString()
+        };
+      } else {
+        const shipment = shipmentResult.shipment || {};
+        const labelData = shipmentResult.label || {};
+        const labelUrl = labelData?.label_url || labelData?.labelUrl || labelData?.data?.label_url || labelData?.data?.labelUrl || labelData?.response?.label_url || labelData?.response?.labelUrl || labelData?.data?.label_url_download || "";
+        order = {
+          ...order,
+          shipment_id: shipment.shipment_id || order.shipment_id || "",
+          shiprocketOrderId: shipment.shiprocketOrderId || order.shiprocketOrderId || "",
+          awb: shipment.awb || order.awb || "",
+          trackingId: shipment.awb || order.trackingId || "",
+          courier_name: shipment.courier_name || order.courier_name || "",
+          courierName: shipment.courier_name || order.courierName || "",
+          tracking_url: shipment.tracking_url || order.tracking_url || "",
+          trackingUrl: shipment.tracking_url || order.trackingUrl || "",
+          trackingStatus: shipment.trackingStatus || order.trackingStatus || "Shipment Created",
+          estimatedDelivery: shipment.estimatedDelivery || order.estimatedDelivery || "",
+          shiprocketLabelUrl: labelUrl,
+          shiprocket: {
+            status: "created",
+            createdAt: new Date().toISOString(),
+            labelStatus: shipmentResult.labelError ? "failed" : "created",
+            labelError: shipmentResult.labelError || "",
+            createResponse: shipmentResult.created,
+            awbResponse: shipmentResult.assigned,
+            labelResponse: shipmentResult.label || {}
+          }
+        };
+      }
+    }
+
+    db.orders[index] = { ...order, updatedAt: new Date().toISOString() };
+    auditAdminAction(db, req, "order.packed", "success", { orderId });
+    await writeDB(db);
+    await sendOrderEmail(db, db.orders[index], "Packed", "packed-status").catch((emailError) => {
+      addLog("Packed email failed: " + emailError.message, "error");
+    });
+    res.json({ ok: true, order: db.orders[index], shiprocket: db.orders[index].shiprocket || {} });
+  } catch (error) {
+    addLog("Packed->Shiprocket failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to process packed status" });
+  }
+});
+
+app.patch("/api/orders/:id/status", requireAdminSession, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const db = await readDB();
+    const orderId = String(req.params.id || "");
+    const index = findOrderIndex(db, (order) => String(order.id) === orderId);
+    if (index < 0) return res.status(404).json({ ok: false, error: "Order not found" });
+
+    const current = normalizeOrderForDb(db.orders[index] || {});
+    const nextStatus = normalizeEmailStatus(req.body?.status || current.status || "Confirmed");
+    const now = new Date().toISOString();
+    const historyEntry = {
+      status: nextStatus,
+      time: now,
+      note: String(req.body?.note || "Updated by admin.").trim()
+    };
+
+    const paymentAttempt = findPaymentAttemptForOrder(db, current);
+    const currentWithPayment = mergePaymentAttemptIntoOrder(current, paymentAttempt);
+
+    const nextOrder = {
+      ...currentWithPayment,
+      status: nextStatus,
+      orderStatus: nextStatus,
+      statusHistory: [...(Array.isArray(current.statusHistory) ? current.statusHistory : []), historyEntry],
+      updatedAt: now
+    };
+
+    if (nextStatus === "Cancelled") {
+      nextOrder.cancelledAt = now;
+      nextOrder.refundStatus = nextOrder.refundStatus || "Refund Initiated";
+      nextOrder.paymentStatus = nextOrder.paymentStatus || nextOrder.payment || "Refund Initiated";
+      nextOrder.payment = "Refund Initiated";
+      nextOrder.refundAmount = nextOrder.refundAmount || Math.round(toNumber(nextOrder.finalAmount || nextOrder.payableAmount || nextOrder.total || nextOrder.amount || nextOrder.paidAmount || 0));
+      nextOrder.refundDate = nextOrder.refundDate || now;
+      nextOrder.refundMode = nextOrder.refundMode || "Original payment method";
+      nextOrder.refundMessage = nextOrder.refundMessage || "Refund has been initiated after order cancellation.";
+      const refundResult = await createRazorpayRefundForOrder(nextOrder);
+      nextOrder.razorpayRefundConfigured = refundResult.configured !== false;
+      nextOrder.razorpayRefundStatus = refundResult.status;
+      nextOrder.refundStatus = refundResult.status || nextOrder.refundStatus;
+      nextOrder.refundMessage = refundResult.ok
+        ? (refundResult.skipped ? nextOrder.refundMessage : "Razorpay refund request has been created.")
+        : (refundResult.message || "Razorpay refund could not be created right now.");
+      nextOrder.refundRaw = refundResult.refund || nextOrder.refundRaw || null;
+      if (refundResult.refund && refundResult.refund.id) {
+        nextOrder.refundId = refundResult.refund.id;
+        nextOrder.razorpayRefundId = refundResult.refund.id;
+      }
+      if (refundResult.refund && refundResult.refund.status) {
+        nextOrder.razorpayRefundGatewayStatus = refundResult.refund.status;
+      }
+      if (paymentAttempt) {
+        const attemptIndex = db.paymentAttempts.findIndex((attempt) => attempt === paymentAttempt);
+        if (attemptIndex > -1) {
+          db.paymentAttempts[attemptIndex] = {
+            ...db.paymentAttempts[attemptIndex],
+            status: "refunded",
+            refundStatus: nextOrder.refundStatus,
+            refundId: nextOrder.refundId || "",
+            razorpayRefundId: nextOrder.razorpayRefundId || "",
+            refundAmount: nextOrder.refundAmount || 0,
+            refundRaw: nextOrder.refundRaw || null,
+            updatedAt: now
+          };
+        }
+      }
+      nextOrder.statusHistory.push({
+        status: nextOrder.refundStatus,
+        time: now,
+        note: nextOrder.refundMessage
+      });
+    }
+    if (nextStatus === "Refund") {
+      nextOrder.refundStatus = "Refund Initiated";
+      nextOrder.refundDate = now;
+    }
+
+    db.orders[index] = nextOrder;
+    auditAdminAction(db, req, "order.status.update", "success", { orderId, status: nextStatus });
+    await writeDB(db);
+    await sendOrderEmail(db, db.orders[index], nextStatus, "status-update").catch((emailError) => {
+      addLog("Order status email failed: " + emailError.message, "error");
+    });
+    res.json({ ok: true, order: db.orders[index] });
+  } catch (error) {
+    addLog("Order status update failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to update order status" });
+  }
+});
+
+app.get("/api/admin/return-requests", requireAdminSession, async (req, res) => {
+  try {
+    const db = await readDB();
+    res.json({ ok: true, requests: ensureReturnWorkflow(db) });
+  } catch (error) {
+    addLog("Return requests fetch failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to fetch return requests" });
+  }
+});
+
+app.patch("/api/admin/return-requests/:id", requireAdminSession, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const db = await readDB();
+    const requestId = String(req.params.id || "");
+    const requests = ensureReturnWorkflow(db);
+    const requestIndex = requests.findIndex((item) => String(item.id) === requestId);
+    if (requestIndex < 0) return res.status(404).json({ ok: false, error: "Return request not found" });
+    const now = new Date().toISOString();
+    const nextStatus = String(req.body?.status || "Approved").trim();
+    const note = String(req.body?.note || "Updated by admin.").trim();
+    const request = {
+      ...requests[requestIndex],
+      status: nextStatus,
+      updatedAt: now,
+      history: [
+        ...(Array.isArray(requests[requestIndex].history) ? requests[requestIndex].history : []),
+        { status: nextStatus, time: now, note }
+      ]
+    };
+    requests[requestIndex] = request;
+    const orderIndex = findOrderIndex(db, (order) => String(order.id) === String(request.orderId));
+    let refundResult = null;
+    if (orderIndex > -1) {
+      const order = normalizeOrderForDb(db.orders[orderIndex] || {});
+      const patch = {
+        returnStatus: nextStatus,
+        returnRequestId: request.id,
+        statusHistory: [
+          ...(Array.isArray(order.statusHistory) ? order.statusHistory : []),
+          { status: "Return " + nextStatus, time: now, note }
+        ],
+        updatedAt: now
+      };
+      if (nextStatus.toLowerCase() === "approved") {
+        patch.refundStatus = "Refund Initiated";
+        patch.refundAmount = request.requestedAmount || Math.round(toNumber(order.finalAmount || order.total || order.amount || 0));
+        patch.refundDate = now;
+        patch.refundMode = order.refundMode || "Original payment method";
+        patch.refundMessage = "Return request approved. Refund has been initiated.";
+        refundResult = await createRazorpayRefundForOrder({ ...order, ...patch });
+        patch.razorpayRefundConfigured = refundResult.configured !== false;
+        patch.razorpayRefundStatus = refundResult.status;
+        patch.refundStatus = refundResult.status || patch.refundStatus;
+        patch.refundRaw = refundResult.refund || order.refundRaw || null;
+        if (refundResult.refund && refundResult.refund.id) {
+          patch.refundId = refundResult.refund.id;
+          patch.razorpayRefundId = refundResult.refund.id;
+        }
+      }
+      db.orders[orderIndex] = { ...order, ...patch };
+      await sendOrderEmail(db, db.orders[orderIndex], "Refund", "return-request-admin").catch((emailError) => {
+        addLog("Return admin email failed: " + emailError.message, "error");
+      });
+    }
+    auditAdminAction(db, req, "return-request.update", "success", { requestId, status: nextStatus });
+    await writeDB(db);
+    res.json({ ok: true, request, order: orderIndex > -1 ? db.orders[orderIndex] : null, refund: refundResult });
+  } catch (error) {
+    addLog("Return request update failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to update return request" });
+  }
+});
+
+app.get("/api/orders", requireAdminSession, async (req, res) => {
   try {
     const db = await readDB();
     res.json({
@@ -1756,6 +3307,10 @@ app.get("/api/orders/user/:userId", async (req, res) => {
   try {
     const db = await readDB();
     const userId = decodeURIComponent(req.params.userId || "");
+    const requester = getCustomerAccessFields(req);
+    if (!findValidAdminSession(db, req) && !requester.includes(String(userId || "").trim().toLowerCase())) {
+      return res.status(403).json({ ok: false, error: "Order access verification required" });
+    }
     const orders = db.orders.filter((order) => String(order.userId || order.user || "") === String(userId));
     res.json({ ok: true, count: orders.length, orders });
   } catch (error) {
@@ -1764,7 +3319,7 @@ app.get("/api/orders/user/:userId", async (req, res) => {
   }
 });
 
-app.post("/api/payments/create-order", async (req, res) => {
+app.post("/api/payments/create-order", paymentRateLimit, inventorySerial, async (req, res) => {
   try {
     if (!requireDurablePersistence(res)) return;
     const payload = req.body || {};
@@ -1778,6 +3333,28 @@ app.post("/api/payments/create-order", async (req, res) => {
     }
 
     const db = await readDB();
+    cleanupInventoryLocks(db);
+    const orderId = payload.orderId || makePaymentOrderId();
+    const items = Array.isArray(payload.snapshot?.items) ? payload.snapshot.items : [];
+    const validationErrors = [];
+    const lockRows = [];
+    for (const item of items) {
+      const inventoryKey = getInventoryKey(item);
+      if (!inventoryKey) continue;
+      const qty = getItemQty(item);
+      const stock = getItemStock(item);
+      if (stock === null) continue;
+      const reserved = getReservedQty(db, inventoryKey);
+      const available = Math.max(0, stock - reserved);
+      if (qty > available) {
+        validationErrors.push({ item: item.name || item.productName || item.id || item.productId || "Item", requested: qty, available });
+      } else {
+        lockRows.push({ inventoryKey, qty, stock });
+      }
+    }
+    if (validationErrors.length) {
+      return res.status(409).json({ ok: false, error: "Some items are no longer available in requested quantity.", items: validationErrors });
+    }
     const razorpay = await createRazorpayOrder({
       amount,
       currency: payload.currency || "INR",
@@ -1790,7 +3367,7 @@ app.post("/api/payments/create-order", async (req, res) => {
     });
 
     const order = {
-      id: payload.orderId || makePaymentOrderId(),
+      id: orderId,
       amount,
       currency: payload.currency || "INR",
       status: razorpay.ok ? "razorpay_order_created" : "created_local",
@@ -1805,6 +3382,19 @@ app.post("/api/payments/create-order", async (req, res) => {
     };
 
     db.paymentAttempts.unshift(order);
+    db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+    const existingLocks = Array.isArray(db.appState.inventoryLocks) ? db.appState.inventoryLocks : [];
+    const nowIso = new Date().toISOString();
+    const newLocks = lockRows.map((row) => ({
+      orderId,
+      inventoryKey: row.inventoryKey,
+      qty: row.qty,
+      stock: row.stock,
+      status: "reserved",
+      createdAt: nowIso,
+      expiresAt: new Date(Date.now() + INVENTORY_LOCK_TTL_MS).toISOString()
+    }));
+    db.appState.inventoryLocks = [...existingLocks, ...newLocks].slice(-10000);
     db.paymentAttempts = db.paymentAttempts.slice(0, 1000);
     await writeDB(db);
     addLog(`Payment order created: ${order.id} amount ${amount}`, "info");
@@ -1835,7 +3425,7 @@ app.post("/api/payments/create-order", async (req, res) => {
   }
 });
 
-app.post("/api/payments/verify", async (req, res) => {
+app.post("/api/payments/verify", paymentRateLimit, async (req, res) => {
   try {
     const payload = req.body || {};
     const verification = verifyRazorpaySignature(payload);
@@ -1844,8 +3434,12 @@ app.post("/api/payments/verify", async (req, res) => {
       paymentDetails = await fetchRazorpayPaymentDetails(payload.razorpay_payment_id);
     }
     const db = await readDB();
+    cleanupInventoryLocks(db);
     const attemptId = payload.razorpay_order_id || payload.localOrderId || "";
-    const index = db.paymentAttempts.findIndex((attempt) => String(attempt.id) === String(attemptId));
+    const index = findPaymentAttemptIndexByRazorpay(db, {
+      orderId: payload.razorpay_order_id || payload.localOrderId || "",
+      paymentId: payload.razorpay_payment_id || ""
+    });
 
     if (index > -1) {
       db.paymentAttempts[index] = {
@@ -1873,6 +3467,9 @@ app.post("/api/payments/verify", async (req, res) => {
       });
     }
 
+    const lockOrderId = pickInventoryLockOrderId(index > -1 ? db.paymentAttempts[index] : {}, payload.localOrderId || attemptId);
+    if (verification.verified) releaseInventoryLock(db, lockOrderId, "committed");
+    else releaseInventoryLock(db, lockOrderId, "released");
     await writeDB(db);
     addLog(`Payment verify ${verification.verified ? "passed" : "blocked"}: ${attemptId || "unknown"}`, verification.verified ? "success" : "warn");
 
@@ -1895,7 +3492,122 @@ app.post("/api/payments/verify", async (req, res) => {
   }
 });
 
-app.post("/api/payments/attempts", async (req, res) => {
+app.post("/api/payments/webhook", webhookRateLimit, async (req, res) => {
+  try {
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body || {}));
+    const signature = req.get("x-razorpay-signature") || "";
+    const verification = verifyRazorpayWebhookSignature(rawBody, signature);
+    if (!verification.verified) {
+      addLog("Razorpay webhook rejected: " + verification.message, "error");
+      return res.status(401).json({ ok: false, ...verification });
+    }
+
+    const payload = JSON.parse(rawBody.toString("utf8") || "{}");
+    const event = String(payload.event || "").trim();
+    const payment = getRazorpayWebhookEntity(payload, "payment");
+    const refund = getRazorpayWebhookEntity(payload, "refund");
+    const orderId = payment.order_id || refund.order_id || "";
+    const paymentId = payment.id || refund.payment_id || "";
+    const refundId = refund.id || "";
+    const now = new Date().toISOString();
+    const db = await readDB();
+
+    const attemptIndex = findPaymentAttemptIndexByRazorpay(db, { orderId, paymentId, refundId });
+    const paymentStatus = event.includes("failed")
+      ? "failed"
+      : event.includes("refund")
+        ? "refunded"
+        : event.includes("captured")
+          ? "paid"
+          : event || "webhook_received";
+
+    const attemptPatch = {
+      status: paymentStatus,
+      razorpayOrderId: orderId,
+      razorpayPaymentId: paymentId,
+      razorpayWebhookEvent: event,
+      razorpayWebhookAt: now,
+      razorpayPaymentDetails: Object.keys(payment || {}).length ? payment : undefined,
+      updatedAt: now
+    };
+    if (refundId) {
+      attemptPatch.refundId = refundId;
+      attemptPatch.razorpayRefundId = refundId;
+      attemptPatch.refundStatus = refund.status || paymentStatus;
+      attemptPatch.refundAmount = refund.amount ? Math.round(toNumber(refund.amount) / 100) : undefined;
+      attemptPatch.refundRaw = refund;
+    }
+
+    if (attemptIndex > -1) {
+      db.paymentAttempts[attemptIndex] = {
+        ...db.paymentAttempts[attemptIndex],
+        ...Object.fromEntries(Object.entries(attemptPatch).filter(([, value]) => value !== undefined))
+      };
+    } else {
+      db.paymentAttempts.unshift({
+        id: orderId || paymentId || refundId || makePaymentOrderId(),
+        createdAt: now,
+        ...Object.fromEntries(Object.entries(attemptPatch).filter(([, value]) => value !== undefined))
+      });
+    }
+
+    const orderIndex = findOrderIndexByRazorpay(db, { orderId, paymentId, refundId });
+    if (orderIndex > -1) {
+      const current = db.orders[orderIndex];
+      const history = Array.isArray(current.statusHistory) ? current.statusHistory : [];
+      const orderPatch = {
+        razorpayOrderId: current.razorpayOrderId || orderId,
+        razorpayPaymentId: current.razorpayPaymentId || paymentId,
+        razorpayWebhookEvent: event,
+        razorpayWebhookAt: now,
+        updatedAt: now
+      };
+      if (event.includes("payment.captured")) {
+        orderPatch.payment = "Paid Successfully";
+        orderPatch.paymentStatus = "Paid Successfully";
+      }
+      if (event.includes("payment.failed")) {
+        orderPatch.payment = "Failed";
+        orderPatch.paymentStatus = "Failed";
+      }
+      if (event.includes("refund")) {
+        orderPatch.payment = "Refund Initiated";
+        orderPatch.paymentStatus = "Refund Initiated";
+        orderPatch.refundStatus = refund.status || "Refund Updated";
+        orderPatch.refundId = refundId || current.refundId || "";
+        orderPatch.razorpayRefundId = refundId || current.razorpayRefundId || "";
+        orderPatch.refundAmount = refund.amount ? Math.round(toNumber(refund.amount) / 100) : current.refundAmount;
+        orderPatch.refundRaw = refund;
+      }
+      db.orders[orderIndex] = {
+        ...current,
+        ...orderPatch,
+        statusHistory: [
+          ...history,
+          {
+            status: orderPatch.refundStatus || orderPatch.paymentStatus || event,
+            time: now,
+            note: "Razorpay webhook: " + event
+          }
+        ]
+      };
+    }
+
+    const matchedAttempt = attemptIndex > -1 ? db.paymentAttempts[attemptIndex] : {};
+    const lockOrderId = pickInventoryLockOrderId(matchedAttempt, orderId);
+    if (paymentStatus === "paid") releaseInventoryLock(db, lockOrderId, "committed");
+    if (paymentStatus === "failed" || paymentStatus === "refunded") releaseInventoryLock(db, lockOrderId, "released");
+    db.paymentAttempts = db.paymentAttempts.slice(0, 1000);
+    await writeDB(db);
+    addLog("Razorpay webhook processed: " + (event || "unknown"), "success");
+    res.json({ ok: true, event, paymentId, orderId, refundId, matchedOrder: orderIndex > -1 });
+  } catch (error) {
+    addLog("Razorpay webhook failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Razorpay webhook processing failed" });
+  }
+});
+
+app.post("/api/payments/attempts", paymentRateLimit, async (req, res) => {
   try {
     if (!requireDurablePersistence(res)) return;
     const payload = req.body || {};
@@ -1922,7 +3634,7 @@ app.post("/api/payments/attempts", async (req, res) => {
   }
 });
 
-app.get("/api/payments/attempts", async (req, res) => {
+app.get("/api/payments/attempts", requireAdminSession, async (req, res) => {
   try {
     const db = await readDB();
     res.json({
@@ -2109,7 +3821,7 @@ app.post("/api/pricing/fetch-all-competitor-prices", async (req, res) => {
   }
 });
 
-app.get("/api/shiprocket/config", async (req, res) => {
+app.get("/api/shiprocket/config", requireAdminSession, async (req, res) => {
   const config = getShiprocketConfig();
   res.json({
     ok: true,
@@ -2118,7 +3830,7 @@ app.get("/api/shiprocket/config", async (req, res) => {
   });
 });
 
-app.get("/api/shiprocket/auth-token", async (req, res) => {
+app.get("/api/shiprocket/auth-token", requireAdminSession, async (req, res) => {
   try {
     const auth = await getShiprocketToken();
     if (!auth.ok) {
@@ -2188,7 +3900,7 @@ app.get(["/api/shiprocket/track", "/api/shiprocket/track/:awb"], async (req, res
   }
 });
 
-app.post("/api/shiprocket/webhook", async (req, res) => {
+app.post("/api/shiprocket/webhook", webhookRateLimit, async (req, res) => {
   try {
     const config = getShiprocketConfig();
     const expectedToken = config.SHIPROCKET_WEBHOOK_TOKEN || "";
@@ -2236,6 +3948,9 @@ app.post("/api/shiprocket/webhook", async (req, res) => {
     };
 
     await writeDB(db);
+    await sendOrderEmail(db, db.orders[index], event.status, "shiprocket-webhook").catch((emailError) => {
+      addLog("Shiprocket update email failed: " + emailError.message, "error");
+    });
     addLog(`Shiprocket webhook updated order ${db.orders[index].id}: ${event.status}`, "info");
     res.json({ ok: true, matched: true, order: db.orders[index] });
   } catch (error) {
@@ -2272,6 +3987,11 @@ const ROOT_HTML = `<!doctype html>
         <li><code>GET /api/logs</code></li>
         <li><code>GET /api/admin/config</code></li>
         <li><code>POST /api/admin/login</code></li>
+        <li><code>POST /api/admin/logout</code></li>
+        <li><code>POST /api/admin/logout-all</code></li>
+        <li><code>GET /api/admin/backup/export</code></li>
+        <li><code>GET /api/admin/reconciliation-reports</code></li>
+        <li><code>POST /api/admin/reconciliation-reports</code></li>
         <li><code>POST /api/admin/credentials</code></li>
         <li><code>GET /api/coupons</code></li>
         <li><code>POST /api/coupons</code></li>
@@ -2281,9 +4001,18 @@ const ROOT_HTML = `<!doctype html>
         <li><code>POST /api/app-state</code></li>
         <li><code>POST /api/orders</code></li>
         <li><code>GET /api/orders/:id</code></li>
+        <li><code>POST /api/orders/:id/cancel</code></li>
+        <li><code>POST /api/orders/:id/return-request</code></li>
         <li><code>GET /api/orders/user/:userId</code></li>
+        <li><code>POST /api/abandoned-cart</code></li>
+        <li><code>POST /api/abandoned-cart/recovered</code></li>
+        <li><code>GET /api/admin/abandoned-carts</code></li>
+        <li><code>POST /api/admin/abandoned-carts/:id/remind</code></li>
+        <li><code>GET /api/admin/return-requests</code></li>
+        <li><code>PATCH /api/admin/return-requests/:id</code></li>
         <li><code>POST /api/payments/create-order</code></li>
         <li><code>POST /api/payments/verify</code></li>
+        <li><code>POST /api/payments/webhook</code></li>
         <li><code>POST /api/payments/attempts</code></li>
         <li><code>GET /api/payments/attempts</code></li>
         <li><code>POST /api/pricing/fetch-competitor-prices</code></li>
@@ -2395,5 +4124,3 @@ module.exports = {
 if (require.main === module) {
   startServer();
 }
-
-

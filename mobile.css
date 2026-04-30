@@ -393,6 +393,12 @@
     display: block !important;
   }
 
+  .mobile-nav-menu[open]:not(:focus-within) .mobile-nav-panel {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
   .mobile-nav-panel a {
     display: block !important;
     padding: 10px 14px !important;
@@ -517,9 +523,7 @@
   .hero-frame img,
   .hero-video video,
   .hero-video iframe,
-  #heroVideo,
-  #familyCounterImage,
-  .family-counter-image {
+  #heroVideo {
     object-fit: contain !important;
     background-position: center center !important;
     background-size: contain !important;
@@ -529,9 +533,7 @@
   .hero,
   .hero-media,
   .hero-frame,
-  .hero-video,
-  .family-counter-banner,
-  #familyCounterBanner {
+  .hero-video {
     height: auto !important;
     min-height: auto !important;
   }
@@ -574,12 +576,6 @@
     padding-bottom: 0 !important;
   }
 
-  #familyCounterBanner + .hero-video,
-  .family-counter-banner + .hero-video {
-    margin-top: 1mm !important;
-    padding-top: 0 !important;
-  }
-
   .hero-video + .family-section {
     margin-top: 0.5in !important;
     padding-top: 0 !important;
@@ -616,6 +612,7 @@
   .bestsellers {
     margin-top: calc(-1.5in - 12mm) !important;
     padding-top: 0 !important;
+    margin-bottom: 0 !important;
   }
 
   .bestsellers h2 {
@@ -625,18 +622,20 @@
 
   #bestsellersGrid {
     margin-top: 0 !important;
-    transform: translateY(2mm) !important;
+    transform: none !important;
+    margin-bottom: 32px !important;
   }
 
   .special-products {
-    margin-top: -15mm !important;
+    margin-top: 0 !important;
     padding-top: 0 !important;
+    margin-bottom: 0 !important;
   }
 
   .special-products .special-title,
   .special-products h2 {
     margin-top: 0 !important;
-    margin-bottom: 36px !important;
+    margin-bottom: 18px !important;
   }
 
   #specialProductsGrid {
@@ -645,7 +644,8 @@
 
   #specialProductsGrid,
   .special-products .product-grid {
-    margin-bottom: 20px !important;
+    margin-top: 0 !important;
+    margin-bottom: 32px !important;
   }
 
   .why-title {
@@ -694,8 +694,8 @@
   #specialProductsGrid .spices-card-final,
   #comboContainer .spices-card-final,
   #pickleGrid .spices-card-final {
-    min-height: calc(252px + 4mm) !important;
-    height: calc(252px + 4mm) !important;
+    min-height: 332px !important;
+    height: auto !important;
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
@@ -706,8 +706,8 @@
   .product-card,
   #productsContainer .product-card,
   .page .product-grid .product-card {
-    min-height: calc(252px + 4mm) !important;
-    height: calc(252px + 4mm) !important;
+    min-height: 332px !important;
+    height: auto !important;
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
@@ -716,20 +716,20 @@
   }
 
   .spices-card-final .spices-img-wrap {
-    height: 152px !important;
-    min-height: 152px !important;
-    max-height: 152px !important;
-    flex: 0 0 152px !important;
-    padding-top: 4px !important;
+    height: 176px !important;
+    min-height: 176px !important;
+    max-height: 176px !important;
+    flex: 0 0 176px !important;
+    padding-top: 8px !important;
   }
 
   .product-card .product-img,
   #productsContainer .product-card .product-img {
-    height: 152px !important;
-    min-height: 152px !important;
-    max-height: 152px !important;
-    flex: 0 0 152px !important;
-    padding-top: 4px !important;
+    height: 176px !important;
+    min-height: 176px !important;
+    max-height: 176px !important;
+    flex: 0 0 176px !important;
+    padding-top: 8px !important;
     padding-left: 1px !important;
     padding-right: 1px !important;
     margin: 0 !important;
@@ -738,9 +738,9 @@
   }
 
   .spices-card-final .spices-img-wrap img {
-    width: 118% !important;
+    width: 100% !important;
     height: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
   }
 
   .product-card,
@@ -756,9 +756,9 @@
 
   .product-card .product-img img,
   #productsContainer .product-card .product-img img {
-    width: 118% !important;
+    width: 100% !important;
     height: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
   }
 
   .product-info,
@@ -786,34 +786,34 @@
   }
 
   .spices-card-final .product-title-row {
-    min-height: 34px !important;
-    height: calc(34px + 4mm) !important;
-    gap: 1px !important;
+    min-height: 42px !important;
+    height: auto !important;
+    gap: 6px !important;
     position: static !important;
-    align-items: flex-end !important;
+    align-items: flex-start !important;
     justify-content: space-between !important;
     flex-direction: row !important;
-    margin-top: 4mm !important;
+    margin-top: 8px !important;
   }
 
   .product-card .product-title-row,
   #productsContainer .product-card .product-title-row {
-    min-height: 34px !important;
-    height: calc(34px + 4mm) !important;
-    gap: 1px !important;
+    min-height: 42px !important;
+    height: auto !important;
+    gap: 6px !important;
     position: relative !important;
-    align-items: flex-end !important;
+    align-items: flex-start !important;
     justify-content: space-between !important;
     flex-direction: row !important;
-    margin: 4mm 10px 2px !important;
+    margin: 8px 10px 2px !important;
   }
 
   .spices-card-final h3 {
-    font-size: 13px !important;
+    font-size: 14px !important;
     padding-top: 0 !important;
     line-height: 1.2 !important;
-    min-height: 31px !important;
-    max-height: 31px !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
     overflow: hidden !important;
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important;
@@ -824,10 +824,10 @@
 
   .product-card h3,
   .product-info h3 {
-    font-size: 13px !important;
+    font-size: 14px !important;
     line-height: 1.2 !important;
-    min-height: 31px !important;
-    max-height: 31px !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
     overflow: hidden !important;
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important;
@@ -841,14 +841,14 @@
   .spices-card-final .old,
   .spices-card-final .off,
   .spices-card-final .out {
-    font-size: 11px !important;
+    font-size: 12px !important;
   }
 
   .product-card .size,
   .product-card .old-price,
   .product-card .discount-badge,
   .product-card .out-stock-text {
-    font-size: 10px !important;
+    font-size: 11px !important;
   }
 
   .product-card .product-title-row .size,
@@ -954,13 +954,13 @@
   }
 
   .spices-card-final .price {
-    font-size: 12px !important;
+    font-size: 14px !important;
   }
 
   .product-card .price,
   .price,
   .product-info .price {
-    font-size: 11px !important;
+    font-size: 13px !important;
   }
 
   .spices-card-final .cart,
@@ -974,15 +974,15 @@
     justify-content: center !important;
     align-self: center !important;
     flex: 0 0 auto !important;
-    min-width: 44px !important;
+    min-width: 72px !important;
     width: auto !important;
-    max-width: 56px !important;
-    min-height: 24px !important;
-    height: 24px !important;
-    padding: 5px 7px !important;
-    font-size: 7px !important;
+    max-width: none !important;
+    min-height: 30px !important;
+    height: 30px !important;
+    padding: 6px 10px !important;
+    font-size: 9px !important;
     line-height: 1 !important;
-    border-radius: 10px !important;
+    border-radius: 12px !important;
     transform: none !important;
     white-space: nowrap !important;
     box-sizing: border-box !important;
@@ -1026,7 +1026,7 @@
   .product-card .cart-btn,
   .product-card .add-to-cart,
   .product-card .cart-btn {
-    padding: 5px 7px !important;
+    padding: 6px 10px !important;
   }
 
   .product-card .product-bottom .left,
@@ -1076,32 +1076,37 @@
     width: calc((100% - 10px) / 2) !important;
     min-width: calc((100% - 10px) / 2) !important;
     max-width: calc((100% - 10px) / 2) !important;
+    aspect-ratio: 1 / 1 !important;
     height: auto !important;
-    min-height: 220px !important;
-    padding: 8px !important;
+    min-height: 0 !important;
+    padding: 0 !important;
     margin: 0 !important;
-    border-radius: 14px !important;
+    border-radius: 0 !important;
     box-sizing: border-box !important;
     overflow: hidden !important;
     background: #ffffff !important;
+    border: 0.5px solid rgba(122, 61, 61, 0.2) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   #why-different-section .why-box:last-child,
   .why-box:last-child {
     flex-basis: calc((100% - 10px) / 2) !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 
   #why-different-section .why-box img,
   .why-box img {
     width: 100% !important;
-    height: 148px !important;
-    min-height: 148px !important;
-    max-height: 148px !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
     max-width: 100% !important;
-    object-fit: contain !important;
-    margin: 0 auto !important;
+    object-fit: cover !important;
+    margin: 0 !important;
     display: block !important;
   }
 
@@ -1194,112 +1199,6 @@
     height: auto !important;
     margin-top: 0 !important;
     align-self: stretch !important;
-  }
-
-  .family-counter-banner,
-  #familyCounterBanner,
-  #familyCounterBanner.family-counter-banner {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    justify-content: flex-start !important;
-    grid-template-columns: 1fr !important;
-    grid-template-rows: auto auto !important;
-    height: auto !important;
-    min-height: 0 !important;
-    overflow: visible !important;
-    position: relative !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    background: #efe6e6 !important;
-  }
-
-  #familyCounterBanner {
-    margin-bottom: 1mm !important;
-    padding-bottom: 0 !important;
-  }
-
-  .family-counter-banner::before,
-  .family-counter-banner::after,
-  #familyCounterBanner::before,
-  #familyCounterBanner::after {
-    display: none !important;
-    content: none !important;
-  }
-
-  #familyCounterImage,
-  .family-counter-image {
-    position: relative !important;
-    inset: auto !important;
-    width: 100% !important;
-    height: 260px !important;
-    min-height: 260px !important;
-    max-height: none !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
-    display: block !important;
-    flex: 0 0 260px !important;
-    overflow: hidden !important;
-    z-index: 0 !important;
-    background-image: url("images/background.jpg") !important;
-    background-position: center center !important;
-    background-size: contain !important;
-    background-repeat: no-repeat !important;
-    background-color: #efe6e6 !important;
-    filter: none !important;
-  }
-
-  .family-counter-content,
-  #familyCounterBanner .family-counter-content {
-    position: relative !important;
-    z-index: 2 !important;
-    grid-column: auto !important;
-    grid-row: auto !important;
-    width: 100% !important;
-    padding: 12px 14px 8px !important;
-    margin: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    text-align: center !important;
-    background: transparent !important;
-  }
-
-  .family-counter-title,
-  #familyCounterBanner .family-counter-title {
-    font-size: 24px !important;
-    line-height: 1.15 !important;
-  }
-
-  .family-counter-subtitle,
-  #familyCounterBanner .family-counter-subtitle {
-    font-size: 20px !important;
-    line-height: 1.15 !important;
-    margin-bottom: 8px !important;
-  }
-
-  .family-counter-number,
-  #familyCounterBanner .family-counter-number {
-    gap: 6px !important;
-    flex-wrap: wrap !important;
-    margin-bottom: 8px !important;
-  }
-
-  .family-counter-digit,
-  #familyCounterBanner .family-counter-digit {
-    width: 34px !important;
-    height: 44px !important;
-    font-size: 24px !important;
-  }
-
-  .family-counter-caption,
-  #familyCounterBanner .family-counter-caption {
-    font-size: 18px !important;
-    line-height: 1.2 !important;
-    margin-bottom: 0 !important;
   }
 
   .family-slider {
@@ -1658,28 +1557,6 @@
     max-width: 56px !important;
     min-height: 24px !important;
     height: 24px !important;
-  }
-
-  .family-counter-title,
-  #familyCounterBanner .family-counter-title {
-    font-size: 20px !important;
-  }
-
-  .family-counter-subtitle,
-  #familyCounterBanner .family-counter-subtitle {
-    font-size: 16px !important;
-  }
-
-  .family-counter-digit,
-  #familyCounterBanner .family-counter-digit {
-    width: 28px !important;
-    height: 38px !important;
-    font-size: 20px !important;
-  }
-
-  .family-counter-caption,
-  #familyCounterBanner .family-counter-caption {
-    font-size: 15px !important;
   }
 
   #stickyCart {
@@ -2085,5 +1962,1193 @@
     padding: 6px 10px !important;
     font-size: 10px !important;
     border-radius: 999px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  html body #familyCounterBanner.family-counter-banner {
+    position: relative !important;
+    display: grid !important;
+    grid-template-columns: 48.5% 51.5% !important;
+    grid-template-rows: auto !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 270px !important;
+    max-height: none !important;
+    margin: 12px 0 92px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    color: #19110d !important;
+  }
+
+  html body #familyCounterBanner.family-counter-banner::before,
+  html body #familyCounterBanner.family-counter-banner::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  html body #familyCounterBanner > #familyCounterImage.family-counter-image {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    flex: none !important;
+    background-size: cover !important;
+    background-position: left center !important;
+    background-repeat: no-repeat !important;
+    background-color: transparent !important;
+    filter: saturate(.92) sepia(.06) contrast(.95) !important;
+    z-index: 0 !important;
+  }
+
+  html body #familyCounterBanner > .family-counter-content {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    left: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    z-index: 2 !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 24px 18px 20px 8px !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0 !important;
+    text-align: center !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  html body #familyCounterBanner > .family-counter-content > #familyCounterTitle.family-counter-title {
+    margin: 0 !important;
+    font-family: Georgia, "Times New Roman", serif !important;
+    font-size: 24px !important;
+    line-height: 1.04 !important;
+    font-weight: 500 !important;
+    max-width: 100% !important;
+    word-break: break-word !important;
+    letter-spacing: .01em !important;
+    text-shadow: none !important;
+  }
+
+  html body #familyCounterBanner > .family-counter-content > #familyCounterSubtitle.family-counter-subtitle {
+    margin: 8px 0 20px !important;
+    font-size: 20px !important;
+    line-height: 1.08 !important;
+    font-weight: 900 !important;
+    max-width: 100% !important;
+    word-break: break-word !important;
+    text-shadow: none !important;
+  }
+
+  html body #familyCounterBanner > .family-counter-content > #familyCounterNumber.family-counter-number {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    gap: 6px !important;
+    margin: 0 0 10px !important;
+    overflow: visible !important;
+    font-family: Georgia, "Times New Roman", serif !important;
+  }
+
+  html body #familyCounterBanner > .family-counter-content > #familyCounterNumber .family-counter-digit {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 30px !important;
+    min-width: 30px !important;
+    max-width: 30px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    background: #a56413 !important;
+    color: #fff !important;
+    font-size: 26px !important;
+    line-height: 1 !important;
+    font-weight: 500 !important;
+    flex: 0 0 30px !important;
+    box-shadow: none !important;
+  }
+
+  html body #familyCounterBanner > .family-counter-content > #familyCounterCaption.family-counter-caption {
+    margin: 0 !important;
+    font-family: Georgia, "Times New Roman", serif !important;
+    font-size: 16px !important;
+    line-height: 1.12 !important;
+    font-weight: 500 !important;
+    max-width: 100% !important;
+    word-break: break-word !important;
+    letter-spacing: .02em !important;
+    text-shadow: none !important;
+  }
+
+  html body #stickyCart {
+    right: 8px !important;
+    bottom: 8px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  html body #familyCounterBanner.family-counter-banner {
+    margin: 10px 0 88px !important;
+    min-height: 220px !important;
+  }
+
+  html body #familyCounterBanner > #familyCounterImage.family-counter-image {
+    height: auto !important;
+    min-height: 0 !important;
+    background-size: cover !important;
+    background-position: left center !important;
+  }
+
+  html body #familyCounterBanner > .family-counter-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 16px 12px 14px 6px !important;
+  }
+
+  html body #familyCounterBanner > .family-counter-content > #familyCounterTitle.family-counter-title {
+    font-size: 18px !important;
+  }
+
+  html body #familyCounterBanner > .family-counter-content > #familyCounterSubtitle.family-counter-subtitle {
+    font-size: 14px !important;
+    margin: 6px 0 14px !important;
+  }
+
+  html body #familyCounterBanner > .family-counter-content > #familyCounterNumber.family-counter-number {
+    gap: 4px !important;
+    margin-bottom: 8px !important;
+  }
+
+  html body #familyCounterBanner > .family-counter-content > #familyCounterNumber .family-counter-digit {
+    width: 24px !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    border-radius: 7px !important;
+    font-size: 20px !important;
+    flex-basis: 24px !important;
+  }
+
+  html body #familyCounterBanner > .family-counter-content > #familyCounterCaption.family-counter-caption {
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  html body .bestsellers h2,
+  html body .special-products .special-title,
+  html body .special-products h2,
+  html body .why-title,
+  html body .combo-section h2,
+  html body .page-title,
+  html body .main-heading,
+  html body .contact-support-head h2,
+  html body .swadra-aboutus-quality h2,
+  html body .swadra-aboutus-premium h2,
+  html body .about-legal-head h2,
+  html body #legalComplianceTitle {
+    font-family: Arial, sans-serif !important;
+    font-size: 29px !important;
+    font-weight: 700 !important;
+    line-height: 1.12 !important;
+    letter-spacing: 0 !important;
+    color: #7a3d3d !important;
+    text-align: center !important;
+  }
+
+  html body .bestsellers h2,
+  html body .special-products .special-title,
+  html body .special-products h2,
+  html body .why-title,
+  html body .combo-section h2 {
+    margin-top: 0 !important;
+    margin-bottom: 18px !important;
+  }
+
+  html body .page-title,
+  html body .main-heading,
+  html body .contact-support-head h2,
+  html body .swadra-aboutus-quality h2,
+  html body .swadra-aboutus-premium h2,
+  html body .about-legal-head h2,
+  html body #legalComplianceTitle {
+    margin-top: 0 !important;
+    margin-bottom: 18px !important;
+  }
+
+  html body .bestsellers {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  html body #bestsellersGrid {
+    margin-bottom: 24px !important;
+    padding-bottom: 0 !important;
+  }
+
+  html body .special-products {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  html body .special-products .special-title,
+  html body .special-products h2 {
+    padding-top: 0 !important;
+  }
+
+  html body #specialProductsGrid,
+  html body .special-products .product-grid {
+    margin-top: 0 !important;
+    margin-bottom: 24px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  html body .bestsellers h2,
+  html body .special-products .special-title,
+  html body .special-products h2,
+  html body .why-title,
+  html body .combo-section h2,
+  html body .page-title,
+  html body .main-heading,
+  html body .contact-support-head h2,
+  html body .swadra-aboutus-quality h2,
+  html body .swadra-aboutus-premium h2,
+  html body .about-legal-head h2,
+  html body #legalComplianceTitle {
+    font-size: 25px !important;
+    line-height: 1.14 !important;
+    margin-bottom: 16px !important;
+  }
+
+  html body #bestsellersGrid,
+  html body #specialProductsGrid,
+  html body .special-products .product-grid {
+    margin-bottom: 22px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  html body .page {
+    margin: 12px auto 24px !important;
+    padding: 0 10px 24px !important;
+  }
+
+  html body .hero-card,
+  html body .card {
+    border-radius: 18px !important;
+    padding: 12px 14px !important;
+    box-shadow: 0 10px 24px rgba(122,61,61,0.07) !important;
+  }
+
+  html body .hero-card {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  html body .hero-left h1,
+  html body #welcomeText {
+    font-size: 18px !important;
+    line-height: 1.08 !important;
+  }
+
+  html body .hero-left p {
+    margin-top: 6px !important;
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
+
+  html body .hero-stats {
+    gap: 8px !important;
+    margin-top: 10px !important;
+  }
+
+  html body .stat-box {
+    min-width: 76px !important;
+    padding: 8px 10px !important;
+    border-radius: 12px !important;
+  }
+
+  html body .stat-box h3 {
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+  }
+
+  html body .stat-box span {
+    font-size: 9px !important;
+    line-height: 1.25 !important;
+  }
+
+  html body .hero-right {
+    border-radius: 16px !important;
+    padding: 10px !important;
+    gap: 6px !important;
+  }
+
+  html body .profile-mini {
+    gap: 8px !important;
+  }
+
+  html body .avatar {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    font-size: 16px !important;
+  }
+
+  html body .profile-name-row h3,
+  html body #profileName {
+    font-size: 12px !important;
+    line-height: 1.15 !important;
+  }
+
+  html body .profile-email {
+    font-size: 10px !important;
+    line-height: 1.3 !important;
+    margin-top: 2px !important;
+  }
+
+  html body .profile-secondary-action,
+  html body .edit-btn {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: max-content !important;
+    padding: 4px 10px !important;
+    border-radius: 10px !important;
+    font-size: 10px !important;
+    line-height: 1.1 !important;
+    align-self: flex-start !important;
+    justify-self: flex-start !important;
+  }
+
+  html body .grid {
+    margin-top: 14px !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  html body .card-title {
+    margin-bottom: 12px !important;
+    gap: 8px !important;
+  }
+
+  html body .card-title h2 {
+    font-size: 13px !important;
+    line-height: 1.12 !important;
+  }
+
+  html body .profile-details,
+  html body .quick-actions,
+  html body .address-list {
+    gap: 8px !important;
+  }
+
+  html body .info-row,
+  html body .address-card,
+  html body .address-empty {
+    border-radius: 12px !important;
+    padding: 10px !important;
+  }
+
+  html body .label {
+    font-size: 8px !important;
+    margin-bottom: 4px !important;
+  }
+
+  html body .value,
+  html body .address-card-title strong,
+  html body .address-card-copy,
+  html body .address-empty {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+
+  html body .address-card-copy .muted,
+  html body .address-card-title,
+  html body .address-card-head {
+    font-size: 10px !important;
+    line-height: 1.3 !important;
+  }
+
+  html body .address-card-actions {
+    gap: 6px !important;
+    margin-top: 8px !important;
+  }
+
+  html body .action-btn,
+  html body .logout-big {
+    border-radius: 12px !important;
+    padding: 10px 12px !important;
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+  }
+
+  html body .action-icon {
+    width: 14px !important;
+    margin-right: 6px !important;
+  }
+
+  html body .logout-big {
+    min-width: 0 !important;
+    width: auto !important;
+    padding: 6px 14px !important;
+    justify-self: center !important;
+    align-self: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    text-align: center !important;
+    background: #ffffff !important;
+    color: #7a3d3d !important;
+    border: 1px solid rgba(122, 61, 61, 0.16) !important;
+  }
+
+  html body .logout-big span,
+  html body .logout-big svg,
+  html body .logout-big i {
+    color: #7a3d3d !important;
+    fill: #7a3d3d !important;
+    stroke: #7a3d3d !important;
+  }
+}
+
+@media (max-width: 480px) {
+  html body .hero-left h1,
+  html body #welcomeText {
+    font-size: 16px !important;
+  }
+
+  html body .hero-left p {
+    font-size: 10px !important;
+  }
+
+  html body .stat-box {
+    min-width: 68px !important;
+    padding: 7px 8px !important;
+  }
+
+  html body .stat-box h3 {
+    font-size: 11px !important;
+  }
+
+  html body .stat-box span {
+    font-size: 8px !important;
+  }
+
+  html body .card-title h2 {
+    font-size: 12px !important;
+  }
+
+  html body .action-btn,
+  html body .logout-big,
+  html body .edit-btn,
+  html body .profile-secondary-action {
+    font-size: 9px !important;
+    padding: 4px 9px !important;
+  }
+
+  html body .logout-big {
+    padding: 5px 12px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  html body .modal {
+    padding: calc(var(--top-bar-height) + var(--navbar-height) + 18px) 10px 16px !important;
+    align-items: flex-start !important;
+  }
+
+  html body .modal-box {
+    position: relative !important;
+    max-width: 292px !important;
+    border-radius: 16px !important;
+    padding: 12px !important;
+  }
+
+  html body .modal-close-btn {
+    position: absolute !important;
+    top: 8px !important;
+    right: 8px !important;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    border: none !important;
+    border-radius: 999px !important;
+    background: #f7efed !important;
+    color: #7a3d3d !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+
+  html body .modal-box h3 {
+    font-size: 14px !important;
+    line-height: 1.15 !important;
+    margin-bottom: 8px !important;
+    padding-right: 26px !important;
+  }
+
+  html body .modal-note,
+  html body .otp-note,
+  html body #passwordChangeMessage {
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+  }
+
+  html body .form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  html body .modal-box input,
+  html body .modal-box select,
+  html body .modal-box .save-btn,
+  html body .modal-box .cancel-btn {
+    min-height: 38px !important;
+    height: 38px !important;
+    padding: 9px 10px !important;
+    font-size: 11px !important;
+    border-radius: 12px !important;
+  }
+
+  html body .modal-box .save-btn + .save-btn {
+    margin-top: 8px !important;
+  }
+
+  html body .toggle-row {
+    gap: 8px !important;
+    font-size: 10px !important;
+    line-height: 1.3 !important;
+  }
+
+  html body .toggle-row label[for="isDefaultAddress"] {
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    flex: 1 1 auto !important;
+  }
+
+  html body #isDefaultAddress {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    appearance: auto !important;
+    -webkit-appearance: checkbox !important;
+    accent-color: #7a3d3d !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  html body .modal-box {
+    max-width: 274px !important;
+    padding: 10px !important;
+  }
+
+  html body .modal-close-btn {
+    top: 6px !important;
+    right: 6px !important;
+    width: 22px !important;
+    height: 22px !important;
+    min-width: 22px !important;
+    font-size: 16px !important;
+  }
+
+  html body .modal-box h3 {
+    font-size: 13px !important;
+    padding-right: 22px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  html body .swadra-aboutus-founder,
+  html body .swadra-aboutus-quality,
+  html body .swadra-aboutus-premium,
+  html body .contact-support-section,
+  html body .about-legal-section {
+    margin: 18px auto 22px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  html body .swadra-aboutus-quality {
+    margin-top: 4px !important;
+  }
+
+  html body .swadra-aboutus-founder {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-bottom: 6px !important;
+  }
+
+  html body .main-heading {
+    font-size: 18px !important;
+    line-height: 1.08 !important;
+    margin: 0 auto 6px !important;
+    max-width: 100% !important;
+  }
+
+  html body .swadra-aboutus-container,
+  html body .support-grid,
+  html body .about-legal-grid,
+  html body .about-legal-policies {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  html body .swadra-aboutus-container {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    align-content: flex-start !important;
+    gap: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  html body .swadra-aboutus-founder-text {
+    display: contents !important;
+  }
+
+  html body .swadra-aboutus-founder-img {
+    order: 2 !important;
+    flex: 0 0 72px !important;
+    width: 72px !important;
+    max-width: 72px !important;
+    margin: 0 !important;
+    align-self: start !important;
+  }
+
+  html body .swadra-aboutus-founder-img img {
+    width: 100% !important;
+    max-width: 72px !important;
+    max-height: 72px !important;
+    object-fit: cover !important;
+    margin-top: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    display: block !important;
+  }
+
+  html body .swadra-aboutus-founder-text,
+  html body .contact-support-body,
+  html body .about-legal-shell,
+  html body .support-card,
+  html body .about-legal-card,
+  html body .about-legal-policy,
+  html body .about-legal-note {
+    padding: 12px !important;
+    border-radius: 16px !important;
+  }
+
+  html body .contact-support-shell,
+  html body .about-legal-shell {
+    border-radius: 18px !important;
+  }
+
+  html body .contact-support-head {
+    padding: 14px 14px 12px !important;
+  }
+
+  html body .contact-support-head h2,
+  html body .swadra-aboutus-quality h2,
+  html body .swadra-aboutus-premium h2,
+  html body .about-legal-head h2,
+  html body #legalComplianceTitle {
+    font-size: 18px !important;
+    line-height: 1.12 !important;
+    margin-bottom: 8px !important;
+  }
+
+  html body .contact-support-head p,
+  html body .about-legal-head p,
+  html body .story-highlight,
+  html body .swadra-aboutus-quality p,
+  html body .swadra-aboutus-premium p,
+  html body .support-card p,
+  html body .about-legal-policy p,
+  html body .about-legal-note p,
+  html body .about-legal-item,
+  html body .support-point,
+  html body .support-muted {
+    font-size: 10px !important;
+    line-height: 1.45 !important;
+  }
+
+  html body .story-highlight {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    position: static !important;
+    left: auto !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  html body .swadra-aboutus-founder-text .story-highlight:first-of-type {
+    order: 1 !important;
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    position: static !important;
+    left: auto !important;
+    transform: none !important;
+    margin-bottom: 2mm !important;
+  }
+
+  html body .swadra-aboutus-founder-text .story-highlight:nth-of-type(2) {
+    order: 3 !important;
+    flex: 1 1 0 !important;
+    margin-top: 0 !important;
+    position: static !important;
+    left: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 72px !important;
+    padding-left: 6px !important;
+    box-sizing: border-box !important;
+  }
+
+  html body .swadra-aboutus-founder-text .story-gold {
+    order: 4 !important;
+    flex: 0 0 100% !important;
+    text-align: center !important;
+    margin: 0 !important;
+  }
+
+  html body .swadra-aboutus-founder-text .story-sign {
+    order: 5 !important;
+    flex: 0 0 100% !important;
+    margin-top: 0 !important;
+  }
+
+  html body .bottom-tagline {
+    margin: 0 auto 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  html body .story-gold,
+  html body .story-sign,
+  html body .bottom-tagline {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+
+  html body .story-sign {
+    text-align: left !important;
+    margin-top: 4px !important;
+  }
+
+  html body .contact-option-tabs {
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+
+  html body .contact-option-tab,
+  html body .admin-footer-btn,
+  html body .admin-footer-btn a {
+    font-size: 10px !important;
+    padding: 8px 12px !important;
+    border-radius: 999px !important;
+  }
+
+  html body .admin-footer-btn {
+    gap: 8px !important;
+    margin: 0 auto 16px !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+  }
+
+  html body .admin-footer-btn span {
+    font-size: 10px !important;
+  }
+
+  html body .support-form {
+    gap: 10px !important;
+  }
+
+  html body .support-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  html body .support-field {
+    gap: 5px !important;
+  }
+
+  html body .support-field label,
+  html body .about-legal-reg,
+  html body .about-legal-card-head h3,
+  html body .about-legal-policy h4,
+  html body .about-legal-note h4,
+  html body .support-card h3 {
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+  }
+
+  html body .about-legal-badge {
+    min-width: 42px !important;
+    height: 24px !important;
+    padding: 0 8px !important;
+    font-size: 9px !important;
+  }
+
+  html body .support-field input,
+  html body .support-field select,
+  html body .support-field textarea,
+  html body .support-btn {
+    border-radius: 12px !important;
+    padding: 10px 12px !important;
+    font-size: 11px !important;
+  }
+
+  html body .support-field textarea {
+    min-height: 86px !important;
+  }
+
+  html body .otp-row {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  html body .main-heading,
+  html body .contact-support-head h2,
+  html body .swadra-aboutus-quality h2,
+  html body .swadra-aboutus-premium h2,
+  html body .about-legal-head h2,
+  html body #legalComplianceTitle {
+    font-size: 16px !important;
+  }
+
+  html body .contact-support-head p,
+  html body .about-legal-head p,
+  html body .story-highlight,
+  html body .swadra-aboutus-quality p,
+  html body .swadra-aboutus-premium p,
+  html body .support-card p,
+  html body .about-legal-policy p,
+  html body .about-legal-note p,
+  html body .about-legal-item,
+  html body .support-point,
+  html body .support-muted {
+    font-size: 9px !important;
+  }
+
+  html body .story-gold,
+  html body .story-sign,
+  html body .bottom-tagline,
+  html body .support-field label,
+  html body .about-legal-reg,
+  html body .about-legal-card-head h3,
+  html body .about-legal-policy h4,
+  html body .about-legal-note h4,
+  html body .support-card h3,
+  html body .contact-option-tab,
+  html body .admin-footer-btn,
+  html body .admin-footer-btn span,
+  html body .admin-footer-btn a {
+    font-size: 10px !important;
+  }
+
+  html body .bottom-tagline {
+    font-size: 20px !important;
+    line-height: 1.25 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  html body .top-row-left-badge,
+  html body .progress-box,
+  html body .info-box {
+    display: none !important;
+  }
+
+  html body .auth-overlay {
+    min-height: auto !important;
+    padding: 10px !important;
+  }
+
+  html body .auth-modal {
+    max-width: 320px !important;
+    border-radius: 18px !important;
+  }
+
+  html body .auth-right {
+    padding: 12px !important;
+  }
+
+  html body .auth-card {
+    max-width: 100% !important;
+  }
+
+  html body .auth-card::before {
+    width: 54px !important;
+    height: 3px !important;
+    margin: 0 auto 12px !important;
+  }
+
+  html body .form-shell {
+    padding: 14px !important;
+  }
+
+  html body .top-row {
+    margin-bottom: 10px !important;
+  }
+
+  html body .top-row-left-badge {
+    padding: 6px 10px !important;
+    font-size: 9px !important;
+    margin-bottom: 8px !important;
+  }
+
+  html body .auth-title {
+    font-size: 18px !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.4px !important;
+    margin-bottom: 6px !important;
+  }
+
+  html body .auth-subtitle {
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
+
+  html body .progress-panel,
+  html body .note-panel,
+  html body .step-card,
+  html body .account-hub,
+  html body .account-shortcut {
+    border-radius: 14px !important;
+  }
+
+  html body .progress-panel,
+  html body .note-panel,
+  html body .step-card {
+    padding: 12px !important;
+    margin-bottom: 12px !important;
+  }
+
+  html body .progress-panel span,
+  html body .step-card h3,
+  html body .step-card p,
+  html body .note-panel,
+  html body .label,
+  html body #message,
+  html body .footer-note {
+    font-size: 11px !important;
+    line-height: 1.45 !important;
+  }
+
+  html body .progress-steps {
+    gap: 8px !important;
+    margin-top: 8px !important;
+  }
+
+  html body .step-pill {
+    height: 10px !important;
+    border-radius: 999px !important;
+  }
+
+  html body .otp-row,
+  html body .phone-box {
+    gap: 8px !important;
+  }
+
+  html body input,
+  html body select,
+  html body textarea,
+  html body .country-code,
+  html body .primary-btn,
+  html body .secondary-btn,
+  html body .ghost-btn,
+  html body .ghost {
+    min-height: 42px !important;
+    height: 42px !important;
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+    border-radius: 14px !important;
+  }
+
+  html body textarea {
+    min-height: 90px !important;
+    height: auto !important;
+  }
+}
+
+@media (max-width: 480px) {
+  html body .auth-modal {
+    max-width: 292px !important;
+  }
+
+  html body .auth-right {
+    padding: 10px !important;
+  }
+
+  html body .form-shell {
+    padding: 12px !important;
+  }
+
+  html body .auth-title {
+    font-size: 16px !important;
+  }
+
+  html body .progress-panel,
+  html body .note-panel,
+  html body .step-card {
+    padding: 10px !important;
+  }
+
+  html body input,
+  html body select,
+  html body textarea,
+  html body .country-code,
+  html body .primary-btn,
+  html body .secondary-btn,
+  html body .ghost-btn,
+  html body .ghost {
+    min-height: 38px !important;
+    height: 38px !important;
+    font-size: 11px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  html body .swadra-aboutus-founder {
+    margin: 12px auto 10px !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  html body .swadra-aboutus-container {
+    display: grid !important;
+    grid-template-columns: 92px minmax(0, 1fr) !important;
+    grid-template-areas:
+      "first first"
+      "photo second"
+      "quote quote"
+      "sign sign" !important;
+    column-gap: 0 !important;
+    row-gap: 4px !important;
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    align-items: start !important;
+    align-content: start !important;
+  }
+
+  html body .swadra-aboutus-founder-text {
+    display: contents !important;
+  }
+
+  html body .swadra-aboutus-founder-text .story-highlight,
+  html body .swadra-aboutus-founder-text .story-gold,
+  html body .swadra-aboutus-founder-text .story-sign {
+    margin: 0 !important;
+  }
+
+  html body .swadra-aboutus-founder-text .story-highlight:first-of-type {
+    grid-area: first !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 0 2mm 0 !important;
+    padding: 0 !important;
+  }
+
+  html body .swadra-aboutus-founder-img {
+    grid-area: photo !important;
+    width: 92px !important;
+    max-width: 92px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    justify-self: start !important;
+    align-self: start !important;
+  }
+
+  html body .swadra-aboutus-founder-img img {
+    width: 92px !important;
+    max-width: 92px !important;
+    height: 92px !important;
+    margin: 0 !important;
+    display: block !important;
+    object-fit: cover !important;
+  }
+
+  html body .swadra-aboutus-founder-text .story-highlight:nth-of-type(2) {
+    grid-area: second !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 0 0 6px !important;
+  }
+
+  html body .swadra-aboutus-founder-text .story-gold {
+    grid-area: quote !important;
+    text-align: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  html body .swadra-aboutus-founder-text .story-sign {
+    grid-area: sign !important;
+    text-align: left !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  html body .bottom-tagline {
+    margin: 4px auto 0 !important;
+    padding: 0 !important;
   }
 }

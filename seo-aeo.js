@@ -44,11 +44,70 @@
       description: "Learn about Swadra Organics, a premium Indian food brand focused on spices, dry fruits, ghee, customer support and transparent business compliance information.",
       type: "about",
       name: "About Us"
+    },
+    "/privacy-policy.html": {
+      title: "Privacy Policy | Swadra Organics",
+      description: "Read how Swadra Organics collects, uses and protects customer information for orders, payments, delivery, OTP verification and support.",
+      type: "policy",
+      name: "Privacy Policy"
+    },
+    "/terms-conditions.html": {
+      title: "Terms & Conditions | Swadra Organics",
+      description: "Read Swadra Organics terms for website use, orders, pricing, payment, delivery, cancellation, refunds and customer responsibilities.",
+      type: "policy",
+      name: "Terms & Conditions"
+    },
+    "/shipping-policy.html": {
+      title: "Shipping Policy | Swadra Organics",
+      description: "Read Swadra Organics shipping policy for order processing, courier updates, tracking, delivery timelines and pincode serviceability.",
+      type: "policy",
+      name: "Shipping Policy"
+    },
+    "/return-refund-policy.html": {
+      title: "Return & Refund Policy | Swadra Organics",
+      description: "Read Swadra Organics return and refund policy for damaged, defective, incorrect, cancelled and refund-eligible orders.",
+      type: "policy",
+      name: "Return & Refund Policy"
+    },
+    "/cancellation-policy.html": {
+      title: "Cancellation Policy | Swadra Organics",
+      description: "Read Swadra Organics cancellation policy for customer cancellation, packed orders, dispatch status and refund handling.",
+      type: "policy",
+      name: "Cancellation Policy"
+    },
+    "/product-detail.html": {
+      title: "Product Details | Swadra Organics",
+      description: "View Swadra Organics product ingredients, nutrition, shelf life, batch details, FAQs, reviews and transparent pricing.",
+      type: "product",
+      name: "Product Details"
     }
   };
 
+  var NOINDEX_PATHS = [
+    /^\/admin-/i,
+    /^\/backend\//i,
+    /^\/account\.html$/i,
+    /^\/cart\.html$/i,
+    /^\/checkout\.html$/i,
+    /^\/dashboard\.html$/i,
+    /^\/invoice\.html$/i,
+    /^\/order\.html$/i,
+    /^\/payment\.html$/i,
+    /^\/trackorder\.html$/i,
+    /^\/offline\.html$/i,
+    /^\/404\.html$/i
+  ];
+
   function normalizeText(value){
     return String(value == null ? "" : value).trim();
+  }
+
+  function ensureLink(rel, href){
+    if(document.querySelector('link[rel="' + rel + '"]')) return;
+    var link = document.createElement("link");
+    link.rel = rel;
+    link.href = href;
+    document.head.appendChild(link);
   }
 
   function absoluteUrl(path){
@@ -67,12 +126,28 @@
     return PAGE_CONFIG[pagePath()] || PAGE_CONFIG["/index.html"];
   }
 
+  function shouldNoindex(){
+    var path = pagePath();
+    return NOINDEX_PATHS.some(function(pattern){ return pattern.test(path); });
+  }
+
   function ensureMeta(name, content){
     if(!content) return;
     var el = document.head.querySelector('meta[name="' + name + '"]');
     if(!el){
       el = document.createElement("meta");
       el.setAttribute("name", name);
+      document.head.appendChild(el);
+    }
+    el.setAttribute("content", content);
+  }
+
+  function ensurePropertyMeta(property, content){
+    if(!content) return;
+    var el = document.head.querySelector('meta[property="' + property + '"]');
+    if(!el){
+      el = document.createElement("meta");
+      el.setAttribute("property", property);
       document.head.appendChild(el);
     }
     el.setAttribute("content", content);
@@ -90,10 +165,25 @@
 
   function ensureBasicSeo(){
     var config = pageConfig();
+    var canonical = absoluteUrl(pagePath() === "/" ? "/index.html" : pagePath());
     document.title = config.title;
     ensureMeta("description", config.description);
-    ensureMeta("robots", "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1");
-    ensureCanonical(absoluteUrl(pagePath() === "/" ? "/index.html" : pagePath()));
+    ensureMeta("robots", shouldNoindex() ? "noindex,nofollow,noarchive" : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1");
+    ensureMeta("theme-color", "#7a3d3d");
+    ensureMeta("apple-mobile-web-app-capable", "yes");
+    ensureMeta("apple-mobile-web-app-title", BRAND_NAME);
+    ensureLink("manifest", "manifest.json");
+    ensureCanonical(canonical);
+    ensurePropertyMeta("og:title", config.title);
+    ensurePropertyMeta("og:description", config.description);
+    ensurePropertyMeta("og:type", config.type === "home" ? "website" : (config.type === "product" ? "product" : "article"));
+    ensurePropertyMeta("og:url", canonical);
+    ensurePropertyMeta("og:site_name", BRAND_NAME);
+    ensurePropertyMeta("og:image", LOGO_URL);
+    ensureMeta("twitter:card", "summary_large_image");
+    ensureMeta("twitter:title", config.title);
+    ensureMeta("twitter:description", config.description);
+    ensureMeta("twitter:image", LOGO_URL);
   }
 
   function safeJsonScript(id, payload){
@@ -146,7 +236,7 @@
 
   function productUrl(product){
     var id = encodeURIComponent(normalizeText(product && (product.id || product.docId || product.productId || product.productName || "product")));
-    return absoluteUrl("/index.html?product=" + id);
+    return absoluteUrl("/product-detail.html?id=" + id);
   }
 
   function buildOrganizationGraph(){
@@ -232,10 +322,10 @@
       };
     }
 
-    if(config.type === "about"){
+    if(config.type === "about" || config.type === "policy"){
       return {
         "@context": "https://schema.org",
-        "@type": "AboutPage",
+        "@type": config.type === "policy" ? "WebPage" : "AboutPage",
         name: config.name + " | " + BRAND_NAME,
         description: config.description,
         url: url,

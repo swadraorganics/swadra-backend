@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swadra Recovery Admin</title>
+<meta name="description" content="Admin recovery panel for Swadra Organics abandoned cart reminders and return/refund request workflow.">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f8f5f2;color:#1f1f1f;padding-top:118px}
+:root{--primary:#7a3d3d;--primary-dark:#5f2f2f;--card:#fff;--line:#e7dfd7;--muted:#6c6c6c;--success:#137a43;--warn:#b36b00;--danger:#c62828;--shadow:0 10px 30px rgba(0,0,0,.08)}
+.wrap{width:min(100%,1800px);margin:0 auto;padding:20px 24px 28px}
+.topbar{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;padding:24px 28px;border-radius:22px;box-shadow:var(--shadow);margin-bottom:18px}
+.topbar h1{margin:0;font-size:30px;line-height:1.2}
+.topbar p{margin:8px 0 0;opacity:.92;font-size:15px;line-height:1.6}
+.toolbar,.tabs,.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.toolbar{margin-bottom:18px}
+button,a.action-link{border:none;outline:none;cursor:pointer;border-radius:12px;padding:11px 16px;font-size:14px;font-weight:800;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.btn-primary{background:var(--primary);color:#fff}.btn-dark{background:#333;color:#fff}.btn-light{background:#eee7df;color:#3a2b2b}.btn-success{background:#e7f5ec;color:var(--success)}.btn-warn{background:#fff3dc;color:var(--warn)}.btn-danger{background:#fdeceb;color:var(--danger)}
+.tabs{margin:0 0 18px}.tab-btn{background:#f4ece8;color:#7a3d3d}.tab-btn.active{background:#7a3d3d;color:#fff}
+.stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.stat-card{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:16px}.stat-card .label{font-size:12px;color:var(--muted);font-weight:800}.stat-card .value{font-size:28px;font-weight:900;margin-top:8px;color:var(--primary)}
+.panel{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:22px 24px}.panel h2{margin:0 0 16px;font-size:24px}
+.filters{display:grid;grid-template-columns:1.1fr .7fr .7fr;gap:12px;margin-bottom:18px}.filters input,.filters select{width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 13px;font-size:14px;color:#1f1f1f;outline:none}
+.list{display:grid;gap:14px}.card{border:1px solid var(--line);border-radius:18px;background:#fffdfa;padding:16px;display:grid;gap:12px}.card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.card h3{margin:0;font-size:20px}.meta{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.mini{background:#faf6f2;border:1px solid var(--line);border-radius:14px;padding:12px}.mini .k{font-size:12px;color:var(--muted);font-weight:800;margin-bottom:5px}.mini .v{font-size:15px;font-weight:800;word-break:break-word}
+.badge{padding:7px 11px;border-radius:999px;font-size:12px;font-weight:800;background:#f2ebe4;color:#433}.badge.green{background:#e7f5ec;color:var(--success)}.badge.gold{background:#fff3dc;color:var(--warn)}.badge.red{background:#fdeceb;color:var(--danger)}
+.items,.history{padding:12px;border-radius:14px;background:#fcf8f6;border:1px solid var(--line);line-height:1.6}.empty{padding:20px;border:1px dashed #d8cdc2;border-radius:16px;color:var(--muted);text-align:center;background:#fffdfa}.status{min-height:20px;margin-bottom:10px;font-weight:800;color:#6b5c5c}
+@media(max-width:1100px){.stats-grid,.meta{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr}}
+@media(max-width:700px){.stats-grid,.meta{grid-template-columns:1fr}.wrap{padding:16px}.topbar h1{font-size:24px}}
+</style>
+<link rel="stylesheet" href="swadra-responsive.css">
+<link rel="stylesheet" href="mobile.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="api-config.js"></script>
+</head>
+<body>
+<div id="adminTopBar" style="position:fixed;top:0;left:0;right:0;z-index:100000;height:44px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;font-weight:700;font-size:22px;line-height:44px;text-align:center;border-bottom:1px solid rgba(122,61,61,.18);">Swadra Organics Admin Pannel</div>
+<div class="admin-global-nav" id="adminGlobalNav" style="position:fixed;top:44px;left:0;right:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Home</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Main</a><a href="backend/ai.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Add Product</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="backend/saved-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Edit Products</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payment</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupan</a><a href="admin-recovery.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Recovery</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Call Back</a><a href="backend/backend.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Backend</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Courier</a></div>
+<div class="wrap">
+  <div class="topbar"><h1>Recovery & Refund Workflow</h1><p>Abandoned carts, recovery reminders, return requests, refund approvals and customer status history in one place.</p></div>
+  <div class="toolbar">
+    <button class="btn-primary" onclick="loadAll()">Refresh</button>
+    <a class="action-link btn-light" href="admin-orders.html">Orders</a>
+    <a class="action-link btn-light" href="admin-payments.html">Payments</a>
+  </div>
+  <div class="tabs">
+    <button id="tabCarts" class="tab-btn active" onclick="setTab('carts')">Abandoned Carts</button>
+    <button id="tabReturns" class="tab-btn" onclick="setTab('returns')">Return / Refund Requests</button>
+  </div>
+  <div class="stats-grid" id="statsGrid"></div>
+  <div class="panel">
+    <h2 id="panelTitle">Abandoned Carts</h2>
+    <div id="status" class="status"></div>
+    <div class="filters">
+      <input id="searchInput" type="search" placeholder="Search email, phone, order, product or status" oninput="render()">
+      <select id="statusFilter" onchange="render()"><option value="">All Statuses</option></select>
+      <select id="sortFilter" onchange="render()"><option value="newest">Newest First</option><option value="oldest">Oldest First</option></select>
+    </div>
+    <div id="list" class="list"></div>
+  </div>
+</div>
+<script>
+const API_BASE = window.SWADRA_API_BASE || "";
+let activeTab = "carts";
+let abandonedCarts = [];
+let returnRequests = [];
+function safe(value){return String(value == null ? "" : value).replace(/[&<>"']/g,function(char){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char];});}
+function money(value){return "₹" + Math.round(Number(value)||0).toLocaleString("en-IN");}
+function fmt(value){if(!value)return "-";const d=new Date(value);return Number.isNaN(d.getTime())?safe(value):d.toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});}
+function setStatus(message,isError){const el=document.getElementById("status");if(!el)return;el.textContent=message||"";el.style.color=isError?"#c62828":"#6b5c5c";}
+async function api(path,options){const response=await fetch(API_BASE+path,Object.assign({cache:"no-store"},options||{}));const data=await response.json().catch(()=>({}));if(!response.ok||!data.ok)throw new Error(data.error||"Request failed");return data;}
+async function loadAll(){setStatus("Loading recovery data...");try{const [cartData,returnData]=await Promise.all([api("/api/admin/abandoned-carts"),api("/api/admin/return-requests")]);abandonedCarts=Array.isArray(cartData.carts)?cartData.carts:[];returnRequests=Array.isArray(returnData.requests)?returnData.requests:[];setStatus("Updated " + fmt(new Date().toISOString()));render();}catch(error){setStatus(error.message||"Failed to load recovery data",true);}}
+function setTab(tab){activeTab=tab;document.getElementById("tabCarts").classList.toggle("active",tab==="carts");document.getElementById("tabReturns").classList.toggle("active",tab==="returns");document.getElementById("panelTitle").textContent=tab==="carts"?"Abandoned Carts":"Return / Refund Requests";updateStatusFilter();render();}
+function updateStatusFilter(){const select=document.getElementById("statusFilter");const values=activeTab==="carts"?["open","reminded","recovered","cleared"]:["Requested","Approved","Rejected","Completed"];select.innerHTML='<option value="">All Statuses</option>'+values.map(v=>'<option value="'+safe(v)+'">'+safe(v)+'</option>').join("");}
+function badge(status){const s=String(status||"open");const low=s.toLowerCase();const cls=low.includes("recover")||low.includes("approved")||low.includes("complete")?"green":(low.includes("remind")||low.includes("requested")?"gold":(low.includes("reject")||low.includes("clear")?"red":""));return '<span class="badge '+cls+'">'+safe(s)+'</span>';}
+function getRows(){const query=String(document.getElementById("searchInput").value||"").toLowerCase().trim();const status=String(document.getElementById("statusFilter").value||"").toLowerCase();const sort=document.getElementById("sortFilter").value;let rows=(activeTab==="carts"?abandonedCarts:returnRequests).slice();rows=rows.filter(item=>{if(status&&String(item.status||"").toLowerCase()!==status)return false;if(!query)return true;return JSON.stringify(item).toLowerCase().includes(query);});rows.sort((a,b)=>{const av=Date.parse(a.updatedAt||a.createdAt||a.requestedAt||"")||0;const bv=Date.parse(b.updatedAt||b.createdAt||b.requestedAt||"")||0;return sort==="oldest"?av-bv:bv-av;});return rows;}
+function renderStats(rows){const open=rows.filter(x=>/open|requested/i.test(String(x.status||""))).length;const reminded=rows.filter(x=>/remind|approved/i.test(String(x.status||""))).length;const done=rows.filter(x=>/recover|complete/i.test(String(x.status||""))).length;const value=activeTab==="carts"?rows.reduce((sum,x)=>sum+(Number(x.totals&&x.totals.total||0)||0),0):rows.reduce((sum,x)=>sum+(Number(x.requestedAmount||0)||0),0);document.getElementById("statsGrid").innerHTML=[["Total",rows.length],["Open",open],["In Progress",reminded],["Value",money(value)]].map(x=>'<div class="stat-card"><div class="label">'+x[0]+'</div><div class="value">'+x[1]+'</div></div>').join("");}
+function render(){const rows=getRows();renderStats(activeTab==="carts"?abandonedCarts:returnRequests);const list=document.getElementById("list");if(!rows.length){list.innerHTML='<div class="empty">No records found.</div>';return;}list.innerHTML=rows.map(activeTab==="carts"?cartCard:returnCard).join("");}
+function cartCard(cart){const items=(Array.isArray(cart.items)?cart.items:[]).map(i=>safe(i.name||"Product")+" x "+safe(i.qty||1)).join("<br>")||"No items";return '<div class="card"><div class="card-head"><div><h3>'+safe(cart.email||cart.phone||cart.id||"Abandoned Cart")+'</h3><div>'+badge(cart.status)+'</div></div><div class="actions"><button class="btn-primary" onclick="sendReminder(&quot;'+safe(cart.id)+'&quot;)">Send Reminder</button></div></div><div class="meta"><div class="mini"><div class="k">Phone</div><div class="v">'+safe(cart.phone||"-")+'</div></div><div class="mini"><div class="k">Total</div><div class="v">'+money(cart.totals&&cart.totals.total)+'</div></div><div class="mini"><div class="k">Reminders</div><div class="v">'+safe(cart.reminderCount||0)+'</div></div><div class="mini"><div class="k">Updated</div><div class="v">'+fmt(cart.updatedAt||cart.createdAt)+'</div></div></div><div class="items">'+items+'</div></div>';}
+function returnCard(req){const history=(Array.isArray(req.history)?req.history:[]).slice(-4).map(h=>safe(h.status)+" - "+fmt(h.time)+"<br>"+safe(h.note||"")).join("<hr>")||"No history";return '<div class="card"><div class="card-head"><div><h3>'+safe(req.orderId||req.id)+'</h3><div>'+badge(req.status)+'</div></div><div class="actions"><button class="btn-success" onclick="updateReturn(&quot;'+safe(req.id)+'&quot;,&quot;Approved&quot;)">Approve</button><button class="btn-danger" onclick="updateReturn(&quot;'+safe(req.id)+'&quot;,&quot;Rejected&quot;)">Reject</button><button class="btn-warn" onclick="updateReturn(&quot;'+safe(req.id)+'&quot;,&quot;Completed&quot;)">Complete</button></div></div><div class="meta"><div class="mini"><div class="k">Customer</div><div class="v">'+safe(req.userId||"-")+'</div></div><div class="mini"><div class="k">Type</div><div class="v">'+safe(req.type||"Return")+'</div></div><div class="mini"><div class="k">Amount</div><div class="v">'+money(req.requestedAmount)+'</div></div><div class="mini"><div class="k">Updated</div><div class="v">'+fmt(req.updatedAt||req.createdAt)+'</div></div></div><div class="items"><strong>Reason:</strong> '+safe(req.reason||"-")+'</div><div class="history">'+history+'</div></div>';}
+async function sendReminder(id){if(!id)return;try{setStatus("Sending reminder...");await api("/api/admin/abandoned-carts/"+encodeURIComponent(id)+"/remind",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});await loadAll();setStatus("Reminder sent.");}catch(error){setStatus(error.message||"Reminder failed",true);}}
+async function updateReturn(id,status){const note=window.prompt("Admin note",status+" by admin.");if(note===null)return;try{setStatus("Updating return request...");await api("/api/admin/return-requests/"+encodeURIComponent(id),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:status,note:note})});await loadAll();setTab("returns");setStatus("Return request updated.");}catch(error){setStatus(error.message||"Return update failed",true);}}
+updateStatusFilter();
+loadAll();
+</script>
+<script src="admin-nav-active.js"></script>
+</body>
+</html>

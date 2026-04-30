@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="theme-color" content="#7a3d3d">
+  <title>Product Details | Swadra Organics</title>
+  <meta name="description" content="View Swadra Organics product ingredients, nutrition, shelf life, batch details, FAQs, reviews and ratings.">
+  <link rel="icon" href="favicon.ico">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="mobile.css">
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="api-config.js"></script>
+  <script src="seo-aeo.js"></script>
+  <style>
+    :root{--ink:#241d1d;--muted:#6e6262;--brand:#7a3d3d;--line:#eadfda;--paper:#fffaf7;--green:#18764a}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Georgia,"Times New Roman",serif;background:linear-gradient(180deg,#fffaf7 0%,#f7efea 100%);color:var(--ink)}
+    .top{position:sticky;top:0;z-index:20;background:rgba(255,250,247,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+    .top-inner{max-width:1180px;margin:auto;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{font-weight:900;color:var(--brand);font-size:22px;text-decoration:none;letter-spacing:.2px}
+    .nav{display:flex;gap:14px;flex-wrap:wrap}
+    .nav a{color:#463838;text-decoration:none;font-weight:700;font-size:14px}
+    main{max-width:1180px;margin:auto;padding:28px 18px 70px}
+    .crumb{font-size:13px;color:var(--muted);margin-bottom:18px}
+    .crumb a{color:var(--brand);text-decoration:none;font-weight:800}
+    .detail{display:grid;grid-template-columns:minmax(280px,1fr) minmax(320px,1.05fr);gap:34px;align-items:start}
+    .media{background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px}
+    .main-img{width:100%;aspect-ratio:1/1;object-fit:contain;background:#fff6f0;border-radius:6px}
+    .thumbs{display:flex;gap:10px;margin-top:12px;overflow:auto}
+    .thumbs button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px;width:72px;height:72px;flex:0 0 auto;cursor:pointer}
+    .thumbs img{width:100%;height:100%;object-fit:cover;border-radius:4px}
+    .panel{background:#fff;border:1px solid var(--line);border-radius:8px;padding:22px}
+    h1{margin:0 0 8px;font-size:clamp(30px,4vw,48px);line-height:1.05;color:#2d2222}
+    .meta{color:var(--muted);font-size:15px;margin-bottom:16px}
+    .rating{display:flex;align-items:center;gap:10px;color:#8a5a14;font-weight:900;margin-bottom:16px}
+    .price{display:flex;align-items:baseline;gap:12px;margin:16px 0}
+    .price strong{font-size:32px;color:var(--brand)}
+    .price span{text-decoration:line-through;color:#8b7b75}
+    .stock{display:inline-flex;padding:7px 10px;border-radius:999px;background:#edf8f1;color:var(--green);font-weight:900;font-size:13px}
+    .stock.out{background:#fff0f0;color:#b91c1c}
+    .actions{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap}
+    .btn{border:none;border-radius:6px;padding:13px 18px;font-weight:900;cursor:pointer;background:var(--brand);color:white}
+    .btn.secondary{background:#2f2727}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .eta-check{margin-top:18px;border:1px dashed #d9c4bc;background:#fffaf7;border-radius:8px;padding:14px;display:grid;gap:10px}
+    .eta-row{display:flex;gap:8px}
+    .eta-row input{max-width:180px}
+    .eta-result{font-size:14px;color:#4d3f3f;font-weight:800}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:22px}
+    .fact{border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--paper)}
+    .fact b{display:block;color:#3a2d2d;margin-bottom:5px}
+    .sections{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+    .section{background:#fff;border:1px solid var(--line);border-radius:8px;padding:20px}
+    .section h2{margin:0 0 12px;color:#3a2d2d;font-size:22px}
+    .section p,.section li{color:#544747;line-height:1.65}
+    .review-list{display:grid;gap:12px}
+    .review{border:1px solid var(--line);border-radius:8px;padding:14px;background:#fffaf7}
+    .review b{color:#342828}
+    .review-form{display:grid;gap:10px}
+    input,select,textarea{width:100%;border:1px solid #d7c7c0;border-radius:6px;padding:12px;font:inherit;background:white}
+    textarea{min-height:96px;resize:vertical}
+    .empty{color:var(--muted);font-style:italic}
+    @media(max-width:820px){.detail,.sections{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.top-inner{align-items:flex-start;flex-direction:column}h1{font-size:32px}}
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="top-inner">
+      <a class="brand" href="index.html">Swadra Organics</a>
+      <nav class="nav">
+        <a href="spices.html">Spices</a>
+        <a href="dryfruits.html">Dry Fruits</a>
+        <a href="oilghee.html">Oil & Ghee</a>
+        <a href="cart.html">Cart</a>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <div class="crumb"><a href="index.html">Home</a> / <span id="crumbCategory">Product</span> / <span id="crumbName">Details</span></div>
+    <section class="detail">
+      <div class="media">
+        <img id="mainImage" class="main-img" src="images/logo.png" alt="Product image">
+        <div id="thumbs" class="thumbs"></div>
+      </div>
+      <div class="panel">
+        <h1 id="productName">Loading product...</h1>
+        <div id="productMeta" class="meta"></div>
+        <div id="ratingSummary" class="rating">No reviews yet</div>
+        <div class="price"><strong id="price">-</strong><span id="mrp"></span></div>
+        <span id="stockBadge" class="stock">Checking stock</span>
+        <p id="summary"></p>
+        <div class="actions">
+          <button id="addCartBtn" class="btn" type="button">Add to Cart</button>
+          <button class="btn secondary" type="button" onclick="location.href='checkout.html'">Checkout</button>
+        </div>
+        <div class="eta-check" aria-live="polite">
+          <label for="deliveryPincode"><b>Check delivery ETA</b></label>
+          <div class="eta-row">
+            <input id="deliveryPincode" inputmode="numeric" maxlength="6" placeholder="Enter pincode">
+            <button id="etaBtn" class="btn secondary" type="button">Check</button>
+          </div>
+          <div id="etaResult" class="eta-result">Enter pincode to see estimated delivery days.</div>
+        </div>
+        <div class="grid">
+          <div class="fact"><b>Ingredients</b><span id="ingredients">Pure product ingredients updated batch-wise.</span></div>
+          <div class="fact"><b>Shelf Life</b><span id="shelfLife">Best before details on pack.</span></div>
+          <div class="fact"><b>Batch / Expiry</b><span id="batchInfo">Batch and expiry printed on packaging.</span></div>
+          <div class="fact"><b>Nutrition</b><span id="nutrition">Nutrition values vary by natural produce batch.</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="sections">
+      <div class="section">
+        <h2>Product FAQ</h2>
+        <div id="faqList"></div>
+      </div>
+      <div class="section">
+        <h2>Reviews & Ratings</h2>
+        <div id="reviewList" class="review-list"></div>
+      </div>
+      <div class="section">
+        <h2>Write a Review</h2>
+        <form id="reviewForm" class="review-form">
+          <input id="reviewName" placeholder="Your name" maxlength="60" required>
+          <select id="reviewRating" required>
+            <option value="5">5 stars</option>
+            <option value="4">4 stars</option>
+            <option value="3">3 stars</option>
+            <option value="2">2 stars</option>
+            <option value="1">1 star</option>
+          </select>
+          <input id="reviewTitle" placeholder="Short title" maxlength="90">
+          <textarea id="reviewComment" placeholder="Share your experience" maxlength="800" required></textarea>
+          <button class="btn" type="submit">Submit Review</button>
+        </form>
+      </div>
+      <div class="section">
+        <h2>Trust & Handling</h2>
+        <p>Packed hygienically with clear batch, expiry, price and customer support details. Store in a cool, dry place after opening.</p>
+      </div>
+    </section>
+  </main>
+  <script>
+    let currentProduct = null;
+    let currentReviews = [];
+    function qs(name){ return new URLSearchParams(location.search).get(name) || ""; }
+    function money(value){ return "₹" + Math.round(Number(value || 0)); }
+    function text(value, fallback){ return String(value || fallback || "").trim(); }
+    function imagesOf(product){
+      const imgs = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
+      if(product.image && !imgs.includes(product.image)) imgs.unshift(product.image);
+      return imgs.length ? imgs : ["images/logo.png"];
+    }
+    function averageRating(reviews){
+      if(!reviews.length) return 0;
+      return reviews.reduce((sum,item)=>sum + Number(item.rating || 0),0) / reviews.length;
+    }
+    function renderJsonLd(product, reviews){
+      const avg = averageRating(reviews);
+      const data = [{
+        "@context":"https://schema.org",
+        "@type":"Product",
+        "name": product.name,
+        "image": imagesOf(product),
+        "description": text(product.summary || product.productSummary || product.description, product.name),
+        "sku": String(product.id || product.docId || ""),
+        "brand": { "@type":"Brand", "name":"Swadra Organics" },
+        "offers": { "@type":"Offer", "priceCurrency":"INR", "price": String(product.price || product.sellingPrice || 0), "availability": product.outOfStock ? "https://schema.org/OutOfStock" : "https://schema.org/InStock" },
+        ...(avg ? { "aggregateRating": { "@type":"AggregateRating", "ratingValue": avg.toFixed(1), "reviewCount": reviews.length } } : {})
+      },{
+        "@context":"https://schema.org",
+        "@type":"BreadcrumbList",
+        "itemListElement":[
+          {"@type":"ListItem","position":1,"name":"Home","item":location.origin + "/index.html"},
+          {"@type":"ListItem","position":2,"name":text(product.category,"Product"),"item":location.href},
+          {"@type":"ListItem","position":3,"name":product.name,"item":location.href}
+        ]
+      }];
+      document.querySelectorAll("script[data-product-schema]").forEach(node=>node.remove());
+      const script = document.createElement("script");
+      script.type = "application/ld+json";
+      script.dataset.productSchema = "true";
+      script.textContent = JSON.stringify(data);
+      document.head.appendChild(script);
+    }
+    function renderProduct(product){
+      currentProduct = product;
+      document.title = product.name + " | Swadra Organics";
+      document.getElementById("productName").textContent = product.name;
+      document.getElementById("crumbName").textContent = product.name;
+      document.getElementById("crumbCategory").textContent = text(product.category, "Product");
+      document.getElementById("productMeta").textContent = [product.category, product.size || product.productSize].filter(Boolean).join(" • ");
+      document.getElementById("price").textContent = money(product.price || product.sellingPrice);
+      document.getElementById("mrp").textContent = Number(product.mrp || 0) > Number(product.price || product.sellingPrice || 0) ? money(product.mrp) : "";
+      document.getElementById("summary").textContent = text(product.summary || product.productSummary || product.description, "Premium Swadra Organics product packed fresh for everyday Indian kitchens.");
+      document.getElementById("ingredients").textContent = text(product.ingredients, "Single-origin natural ingredients; see pack for exact batch declaration.");
+      document.getElementById("shelfLife").textContent = text(product.shelfLife || product.shelf_life, "Best before details printed on pack.");
+      document.getElementById("batchInfo").textContent = text(product.batchInfo || product.batch || product.expiry, "Batch number and expiry are printed on each pack.");
+      document.getElementById("nutrition").textContent = text(product.nutrition || product.nutritionInfo, "Nutrition values are available on product packaging.");
+      const stock = document.getElementById("stockBadge");
+      const out = !!product.outOfStock || String(product.availability || "").toLowerCase().includes("out");
+      stock.textContent = out ? "Out of stock" : "In stock";
+      stock.classList.toggle("out", out);
+      document.getElementById("addCartBtn").disabled = out;
+      const imgs = imagesOf(product);
+      document.getElementById("mainImage").src = imgs[0];
+      document.getElementById("mainImage").alt = product.name;
+      document.getElementById("thumbs").innerHTML = imgs.map((src,i)=>`<button type="button" onclick="document.getElementById('mainImage').src='${String(src).replace(/'/g,"&#39;")}'"><img src="${src}" alt="${product.name} image ${i+1}"></button>`).join("");
+      const faq = Array.isArray(product.faq) && product.faq.length ? product.faq : [
+        { q:"How should I store it?", a:"Keep the pack sealed in a cool, dry place away from direct sunlight." },
+        { q:"Where can I see expiry?", a:"Batch number, packed date and expiry details are printed on the pack." },
+        { q:"Is this suitable for daily use?", a:"Yes, it is packed for regular home cooking and mindful everyday use." }
+      ];
+      document.getElementById("faqList").innerHTML = faq.map(item=>`<p><b>${text(item.q || item.question,"Question")}</b><br>${text(item.a || item.answer,"Details available on pack.")}</p>`).join("");
+    }
+    function renderReviews(){
+      const avg = averageRating(currentReviews);
+      document.getElementById("ratingSummary").textContent = avg ? `★ ${avg.toFixed(1)} from ${currentReviews.length} review${currentReviews.length > 1 ? "s" : ""}` : "No reviews yet";
+      document.getElementById("reviewList").innerHTML = currentReviews.length ? currentReviews.map(item=>`<div class="review"><b>${"★".repeat(item.rating)} ${item.title || item.name}</b><p>${item.comment}</p><small>${item.name} • ${new Date(item.createdAt).toLocaleDateString()}</small></div>`).join("") : '<p class="empty">No reviews yet. Be the first to review this product.</p>';
+      if(currentProduct) renderJsonLd(currentProduct, currentReviews);
+    }
+    function trackProductEvent(name, extra){
+      if(!window.SWADRA_ANALYTICS || typeof window.SWADRA_ANALYTICS.track !== "function" || !currentProduct) return;
+      window.SWADRA_ANALYTICS.track(name, Object.assign({
+        items: [currentProduct],
+        value: Number(currentProduct.price || currentProduct.sellingPrice || 0) || 0
+      }, extra || {}));
+    }
+    function productAsCartItem(){
+      if(!currentProduct) return null;
+      return {
+        id: currentProduct.id || currentProduct.docId,
+        name: currentProduct.name,
+        category: currentProduct.category || "",
+        qty: 1,
+        price: currentProduct.price || currentProduct.sellingPrice || 0,
+        size: currentProduct.size || currentProduct.productSize || "",
+        weight: currentProduct.weight || currentProduct.shippingWeight || currentProduct.shippingWeightKg || ""
+      };
+    }
+    async function checkDeliveryEta(){
+      const result = document.getElementById("etaResult");
+      const input = document.getElementById("deliveryPincode");
+      const pin = String(input.value || "").replace(/\D/g, "").slice(0, 6);
+      input.value = pin;
+      if(pin.length !== 6){
+        result.textContent = "Please enter a valid 6 digit pincode.";
+        return;
+      }
+      const shippingApi = window.SWADRA_SHIPPING || null;
+      if(!shippingApi || typeof shippingApi.estimateSurfaceDelivery !== "function"){
+        result.textContent = "Delivery ETA currently unavailable.";
+        return;
+      }
+      const details = await shippingApi.estimateSurfaceDelivery({
+        cartItems: [productAsCartItem()].filter(Boolean),
+        subtotal: Number(currentProduct && (currentProduct.price || currentProduct.sellingPrice) || 0),
+        deliveryAddress: { pincode: pin }
+      });
+      result.textContent = [
+        details.etaLabel || "Delivery ETA available",
+        details.zone ? "(" + details.zone + ")" : "",
+        details.finalDeliveryCharge > 0 ? "Delivery charge: " + money(details.finalDeliveryCharge) : "Free delivery eligible at checkout"
+      ].filter(Boolean).join(" ");
+      trackProductEvent("delivery_eta_check", { delivery_pincode: pin, delivery_eta: details.etaLabel || "" });
+    }
+    async function addToCart(){
+      if(!currentProduct) return;
+      const authApi = window.SWADRA_AUTH || null;
+      const cart = authApi && typeof authApi.getGuestCart === "function" ? authApi.getGuestCart() : [];
+      const id = String(currentProduct.id || currentProduct.docId);
+      const existing = cart.find(item=>String(item.id) === id);
+      if(existing) existing.qty = Number(existing.qty || 1) + 1;
+      else cart.push({ id, name: currentProduct.name, price: currentProduct.price || currentProduct.sellingPrice || 0, mrp: currentProduct.mrp || 0, qty:1, size: currentProduct.size || currentProduct.productSize || "", image: imagesOf(currentProduct)[0], stockQty: currentProduct.stockQty });
+      if(authApi && typeof authApi.saveGuestCart === "function"){
+        authApi.saveGuestCart(cart);
+      }
+      trackProductEvent("add_to_cart");
+      location.href = "cart.html";
+    }
+    async function init(){
+      const id = qs("id");
+      const products = await window.SWADRA_PRODUCT_DATA.fetchProducts();
+      const product = products.find(item=>String(item.id) === id || String(item.docId) === id) || products[0];
+      if(!product){ document.getElementById("productName").textContent = "Product not found"; return; }
+      renderProduct(product);
+      trackProductEvent("view_item");
+      currentReviews = await window.SWADRA_PRODUCT_REVIEWS.fetchReviews(product.id || product.docId);
+      renderReviews();
+    }
+    document.getElementById("addCartBtn").addEventListener("click", addToCart);
+    document.getElementById("etaBtn").addEventListener("click", function(){
+      checkDeliveryEta().catch(function(error){
+        document.getElementById("etaResult").textContent = error.message || "Delivery ETA unavailable.";
+      });
+    });
+    document.getElementById("deliveryPincode").addEventListener("input", function(event){
+      event.target.value = String(event.target.value || "").replace(/\D/g, "").slice(0, 6);
+    });
+    document.getElementById("reviewForm").addEventListener("submit", async function(event){
+      event.preventDefault();
+      if(!currentProduct) return;
+      const review = await window.SWADRA_PRODUCT_REVIEWS.saveReview(currentProduct.id || currentProduct.docId, {
+        name: document.getElementById("reviewName").value,
+        rating: document.getElementById("reviewRating").value,
+        title: document.getElementById("reviewTitle").value,
+        comment: document.getElementById("reviewComment").value
+      });
+      currentReviews.unshift(review);
+      event.target.reset();
+      renderReviews();
+    });
+    init().catch(function(error){
+      document.getElementById("productName").textContent = "Product unavailable";
+      document.getElementById("summary").textContent = error.message || "Unable to load product details.";
+    });
+  </script>
+</body>
+</html>
