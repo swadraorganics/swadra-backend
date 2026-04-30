@@ -624,7 +624,7 @@ let freeDeliveryMessage = sellingTotal >= freeDeliveryThreshold && sellingTotal 
 let productDiscount = Math.max(0, mrpTotal - sellingTotal);
 let couponDiscount = 0;
 if(appliedCoupon?.discount){
-couponDiscount = Math.min(Number(appliedCoupon.discount || 0), sellingTotal + delivery);
+couponDiscount = Math.min(Number(appliedCoupon.discount || 0), sellingTotal);
 }
 let finalTotal = Math.max(0, sellingTotal + delivery - couponDiscount);
 let discountedItems = distributeCouponAcrossItems(cart, couponDiscount);
@@ -637,7 +637,7 @@ couponAdjustedSellingTotal: Math.round(discountedItems.reduce((sum,item)=>sum + 
 delivery: Math.round(delivery),
 productDiscount: Math.round(productDiscount),
 couponDiscount: Math.round(couponDiscount),
-gstTotal: Math.round(adjustedGstTotal || gstTotal),
+gstTotal: Math.round(gstTotal),
 finalTotal: Math.round(finalTotal),
 totalSave: Math.round(productDiscount + couponDiscount),
 freeDeliveryThreshold: Math.round(freeDeliveryThreshold),
@@ -707,7 +707,7 @@ let shippingCharge = Math.round(Number(deliveryDetails && deliveryDetails.finalD
 if(!(deliveryDetails && deliveryDetails.freeDeliveryApplied) && shippingCharge <= 0 && summary.sellingTotal > 0){
 shippingCharge = getDeliveryCharge();
 }
-let couponDiscount = Math.min(Number(summary.couponDiscount || 0), summary.sellingTotal + shippingCharge);
+let couponDiscount = Math.min(Number(summary.couponDiscount || 0), summary.sellingTotal);
 let finalTotal = Math.max(0, summary.sellingTotal + shippingCharge - couponDiscount);
 return {
 ...summary,
@@ -741,6 +741,8 @@ deliveryDetails: summary.deliveryDetails || null,
 pincode: getCartDeliveryPincode(),
 city: (window.__swadraCartDraftAddress || {}).city || "",
 state: (window.__swadraCartDraftAddress || {}).state || "",
+appliedCoupon: appliedCoupon,
+coupon: appliedCoupon,
 cartSnapshot: summary.discountedItems || await getCart(),
 summary: summary || {}
 });
@@ -872,7 +874,7 @@ await saveUserCart(cart);
 loadCart();
 }
 
-function resolveCouponDiscount(code, sellingTotal, delivery){
+function resolveCouponDiscount(code, sellingTotal){
 let discount = 0;
 
 function checkMinimumAmount(coupon){
@@ -895,31 +897,8 @@ if(matchedCoupon){
 let minimumError = checkMinimumAmount(matchedCoupon);
 if(minimumError) return minimumError;
 discount = sellingTotal * (Number(matchedCoupon.discount || 0) / 100);
-return { valid:true, discount };
+return { valid:true, discount, coupon: matchedCoupon };
 }
-}
-
-if(code === "SWADRA2529"){
-if(sellingTotal < 999) return { valid:false, message:"Minimum ₹999 required" };
-discount = sellingTotal * 0.10;
-return { valid:true, discount };
-}
-
-if(code === "SWADRA0920"){
-if(sellingTotal < 1500) return { valid:false, message:"Minimum ₹1500 required" };
-discount = sellingTotal * 0.10;
-return { valid:true, discount };
-}
-
-if(code === "S123456R"){
-discount = Math.max(0, sellingTotal + delivery - 1);
-return { valid:true, discount };
-}
-
-if(code === "SWADRA1311"){
-if(sellingTotal < 4000) return { valid:false, message:"Minimum ₹4000 required" };
-discount = sellingTotal * 0.12;
-return { valid:true, discount };
 }
 
 return { valid:false, message:"Invalid Coupon" };
@@ -970,15 +949,34 @@ return alert("Enter coupon code");
 if(!availableCoupons.length){
 await fetchAvailableCoupons();
 }
-let result = resolveCouponDiscount(code, summary.sellingTotal, summary.delivery);
+let result = resolveCouponDiscount(code, summary.sellingTotal);
 if(!result.valid){
 appliedCoupon = null;
 updateSummary(summary);
 return alert(result.message);
 }
 
-appliedCoupon = { code, discount: result.discount };
-updateSummary(await buildCartBreakdown(cart));
+appliedCoupon = {
+code,
+discount: result.discount,
+percent: Number(result.coupon && result.coupon.discount || 0),
+minimumAmount: Number(result.coupon && (result.coupon.minimumAmount || result.coupon.minAmount) || 0)
+};
+let updatedSummary = await buildCartBreakdown(cart);
+updateSummary(updatedSummary);
+let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
+if(currentUser && dataApi && typeof dataApi.saveCheckoutDraft === "function"){
+try{
+await dataApi.saveCheckoutDraft(currentUser, {
+appliedCoupon: appliedCoupon,
+coupon: appliedCoupon,
+summary: updatedSummary,
+cartSnapshot: updatedSummary.discountedItems || cart
+});
+}catch(error){
+console.error("coupon checkout draft save failed", error);
+}
+}
 alert("Coupon Applied Successfully");
 }
 
@@ -1239,3 +1237,4 @@ console.error("cart direct render fallback failed", error);
 </script>
 </body>
 </html>
+

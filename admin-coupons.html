@@ -424,8 +424,14 @@
   <script>
     const MAX_COUPONS = 50;
     const RUPEE = "\u20b9";
-    const siteContentApi = window.SWADRA_SITE_CONTENT || null;
-    const couponsApiUrl = window.SWADRA_COUPONS_API_URL || (((window.SWADRA_API_BASE || "https://swadra-backend-production.up.railway.app").replace(/\/+$/, "")) + "/api/coupons");
+    const backendBaseUrl = (function(){
+      const configured = String(window.SWADRA_API_BASE || "").replace(/\/+$/, "");
+      if(configured && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(configured)){
+        return configured;
+      }
+      return "https://swadra-backend-production.up.railway.app";
+    })();
+    const couponsApiUrl = backendBaseUrl + "/api/coupons";
     let couponStore = [];
 
     async function fetchCouponsFromFirestore(forceRefresh){
@@ -437,24 +443,14 @@
           return getCoupons();
         }
       }catch(error){
-        console.error("backend coupon fetch failed", error);
+        console.warn("backend coupon fetch unavailable", error);
       }
-      if(!siteContentApi || typeof siteContentApi.fetch !== "function"){
-        throw new Error("Firestore coupon helper unavailable");
-      }
-      const state = await siteContentApi.fetch(!!forceRefresh);
-      couponStore = Array.isArray(state && state.coupons) ? state.coupons.slice(0, MAX_COUPONS) : [];
+      couponStore = [];
       return getCoupons();
     }
 
     async function saveCouponsToFirestore(coupons){
-      if(!siteContentApi || typeof siteContentApi.save !== "function"){
-        throw new Error("Firestore coupon helper unavailable");
-      }
-      const normalizedCoupons = (Array.isArray(coupons) ? coupons : []).slice(0, MAX_COUPONS);
-      const state = await siteContentApi.save({ coupons: normalizedCoupons });
-      couponStore = Array.isArray(state && state.coupons) ? state.coupons.slice(0, MAX_COUPONS) : normalizedCoupons;
-      return getCoupons();
+      throw new Error("Backend coupon save unavailable");
     }
 
     async function saveCouponToBackend(coupon){
@@ -648,16 +644,8 @@
               return coupon.id === existingCoupon.id ? nextCoupon : coupon;
             })
           : [nextCoupon].concat(coupons);
-        const backendCoupons = await saveCouponToBackend(nextCoupon).catch(function(error){
-          console.error("backend coupon save failed", error);
-          return null;
-        });
-        if(backendCoupons){
-          couponStore = backendCoupons;
-        }else{
-          await saveCouponsToFirestore(nextCoupons);
-          couponStore = nextCoupons;
-        }
+        const backendCoupons = await saveCouponToBackend(nextCoupon);
+        couponStore = backendCoupons || nextCoupons;
         couponStore.sort(function(a, b){
           return Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0);
         });
@@ -701,16 +689,8 @@
         const nextCoupons = coupons.filter(function(item){
           return item.id !== couponId;
         });
-        const backendCoupons = await deleteCouponFromBackend(coupon.code).catch(function(error){
-          console.error("backend coupon delete failed", error);
-          return null;
-        });
-        if(backendCoupons){
-          couponStore = backendCoupons;
-        }else{
-          await saveCouponsToFirestore(nextCoupons);
-          couponStore = nextCoupons;
-        }
+        const backendCoupons = await deleteCouponFromBackend(coupon.code);
+        couponStore = backendCoupons || nextCoupons;
         renderCoupons();
         if(String(document.getElementById("couponCode").value || "").trim().toUpperCase() === coupon.code){
           resetForm();

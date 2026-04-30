@@ -360,6 +360,9 @@ async function bootstrapPaymentData(){
       if(draft){
         checkoutData = draft.address || {};
         cartSummary = draft.summary || {};
+        if(draft.appliedCoupon || draft.coupon){
+          cartSummary.appliedCoupon = draft.appliedCoupon || draft.coupon;
+        }
         deliveryDetails = draft.deliveryDetails || null;
         if(Array.isArray(draft.cartSnapshot) && draft.cartSnapshot.length){
           displayCart = draft.cartSnapshot;
@@ -860,6 +863,7 @@ function buildOrderDraft(paymentResponse, verification){
     deliveryCharge: deliverySummary.deliveryCharge,
     deliveryDetails: shippingCalculation,
     couponDiscount,
+    appliedCoupon: cartSummary.appliedCoupon || null,
     gst: "Included",
     status: "Confirmed",
     progress: ["Confirmed","Packed","Out for Delivery","Delivered"],

@@ -2961,7 +2961,11 @@ app.post("/api/orders", async (req, res) => {
 app.get("/api/orders/:id", async (req, res) => {
   try {
     const db = await readDB();
-    const order = db.orders.find((item) => String(item.id) === String(req.params.id));
+    const orderId = String(req.params.id);
+    const nestedOrder = db.orders.find((item) => String(item.id) === orderId);
+    const topLevelOrders = await readTopLevelFirestoreCollection("orders");
+    const topLevelOrder = topLevelOrders.find((item) => String(item.id || item.docId) === orderId);
+    const order = topLevelOrder || nestedOrder ? { ...(nestedOrder || {}), ...(topLevelOrder || {}) } : null;
     if (!order) {
       return res.status(404).json({ ok: false, error: "Order not found" });
     }

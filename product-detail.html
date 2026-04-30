@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -82,7 +82,7 @@
     <div class="crumb"><a href="index.html">Home</a> / <span id="crumbCategory">Product</span> / <span id="crumbName">Details</span></div>
     <section class="detail">
       <div class="media">
-        <img id="mainImage" class="main-img" src="images/logo.png" alt="Product image">
+        <img id="mainImage" class="main-img" src="https://res.cloudinary.com/djimihrjf/image/upload/f_auto,q_auto,w_220,c_fill/v1777176206/q9q85rejnjtucc3e1nlr.png" alt="Product image">
         <div id="thumbs" class="thumbs"></div>
       </div>
       <div class="panel">
@@ -147,12 +147,12 @@
     let currentProduct = null;
     let currentReviews = [];
     function qs(name){ return new URLSearchParams(location.search).get(name) || ""; }
-    function money(value){ return "₹" + Math.round(Number(value || 0)); }
+    function money(value){ return "â‚¹" + Math.round(Number(value || 0)); }
     function text(value, fallback){ return String(value || fallback || "").trim(); }
     function imagesOf(product){
       const imgs = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
       if(product.image && !imgs.includes(product.image)) imgs.unshift(product.image);
-      return imgs.length ? imgs : ["images/logo.png"];
+      return imgs.length ? imgs : ["https://res.cloudinary.com/djimihrjf/image/upload/f_auto,q_auto,w_220,c_fill/v1777176206/q9q85rejnjtucc3e1nlr.png"];
     }
     function averageRating(reviews){
       if(!reviews.length) return 0;
@@ -192,7 +192,7 @@
       document.getElementById("productName").textContent = product.name;
       document.getElementById("crumbName").textContent = product.name;
       document.getElementById("crumbCategory").textContent = text(product.category, "Product");
-      document.getElementById("productMeta").textContent = [product.category, product.size || product.productSize].filter(Boolean).join(" • ");
+      document.getElementById("productMeta").textContent = [product.category, product.size || product.productSize].filter(Boolean).join(" â€¢ ");
       document.getElementById("price").textContent = money(product.price || product.sellingPrice);
       document.getElementById("mrp").textContent = Number(product.mrp || 0) > Number(product.price || product.sellingPrice || 0) ? money(product.mrp) : "";
       document.getElementById("summary").textContent = text(product.summary || product.productSummary || product.description, "Premium Swadra Organics product packed fresh for everyday Indian kitchens.");
@@ -218,8 +218,8 @@
     }
     function renderReviews(){
       const avg = averageRating(currentReviews);
-      document.getElementById("ratingSummary").textContent = avg ? `★ ${avg.toFixed(1)} from ${currentReviews.length} review${currentReviews.length > 1 ? "s" : ""}` : "No reviews yet";
-      document.getElementById("reviewList").innerHTML = currentReviews.length ? currentReviews.map(item=>`<div class="review"><b>${"★".repeat(item.rating)} ${item.title || item.name}</b><p>${item.comment}</p><small>${item.name} • ${new Date(item.createdAt).toLocaleDateString()}</small></div>`).join("") : '<p class="empty">No reviews yet. Be the first to review this product.</p>';
+      document.getElementById("ratingSummary").textContent = avg ? `â˜… ${avg.toFixed(1)} from ${currentReviews.length} review${currentReviews.length > 1 ? "s" : ""}` : "No reviews yet";
+      document.getElementById("reviewList").innerHTML = currentReviews.length ? currentReviews.map(item=>`<div class="review"><b>${"â˜…".repeat(item.rating)} ${item.title || item.name}</b><p>${item.comment}</p><small>${item.name} â€¢ ${new Date(item.createdAt).toLocaleDateString()}</small></div>`).join("") : '<p class="empty">No reviews yet. Be the first to review this product.</p>';
       if(currentProduct) renderJsonLd(currentProduct, currentReviews);
     }
     function trackProductEvent(name, extra){
@@ -330,3 +330,4 @@
   </script>
 </body>
 </html>
+

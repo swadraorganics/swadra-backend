@@ -661,7 +661,7 @@ async function loadOrders(){
       const couponLine = Number(item.couponLineDiscount || 0);
       return `
         <div class="item-row">
-          <img class="item-thumb" src="${safe(item.image) || "images/logo.png"}" alt="${safe(item.name)}">
+          <img class="item-thumb" src="${safe(item.image) || "https://res.cloudinary.com/djimihrjf/image/upload/f_auto,q_auto,w_220,c_fill/v1777176206/q9q85rejnjtucc3e1nlr.png"}" alt="${safe(item.name)}">
           <div>
             <div class="item-name">${safe(item.name)}${sizeLabel ? ` <span style="font-size:12px;color:#6b5c5c;font-weight:700;">(${safe(sizeLabel)})</span>` : ""}</div>
             <div class="item-qty">Qty ${qty}</div>
@@ -816,3 +816,4 @@ window.addEventListener("focus", function(){
 </script>
 </body>
 </html>
+

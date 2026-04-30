@@ -93,7 +93,7 @@
     base = readConfiguredBackendBase();
   }
   if(!base){
-    base = isLocal ? "http://127.0.0.1:3000" : DEFAULT_REMOTE_BASE;
+    base = DEFAULT_REMOTE_BASE;
   }
 
   if(!isLocal && isUnsafeProductionBase(base)){
@@ -879,6 +879,8 @@
       city: sanitizeText(source.city || source.address && source.address.city || ""),
       state: sanitizeText(source.state || source.address && source.address.state || ""),
       deliveryDetails: source.deliveryDetails && typeof source.deliveryDetails === "object" ? cloneValue(source.deliveryDetails) : null,
+      appliedCoupon: source.appliedCoupon && typeof source.appliedCoupon === "object" ? cloneValue(source.appliedCoupon) : (source.coupon && typeof source.coupon === "object" ? cloneValue(source.coupon) : null),
+      coupon: source.coupon && typeof source.coupon === "object" ? cloneValue(source.coupon) : (source.appliedCoupon && typeof source.appliedCoupon === "object" ? cloneValue(source.appliedCoupon) : null),
       cartSnapshot: compactAuthCartItems(source.cartSnapshot || source.items || []),
       summary: source.summary && typeof source.summary === "object" ? cloneValue(source.summary) : {},
       updatedAt: source.updatedAt || new Date().toISOString()
@@ -1504,8 +1506,15 @@
     syncInternalLinksWithAuth(document);
   }
 
+  async function authReady(){
+    await ensureFirebaseAuthSync();
+    return fetchCurrentAuthUserRecord().catch(function(){
+      return getCurrentUserRecord();
+    });
+  }
+
   window.SWADRA_AUTH = {
-    ready: loadUsersCache,
+    ready: authReady,
     refreshUsers: function(){ return loadUsersCache(true); },
     getUsers: getAuthUsers,
     saveUsers: saveAuthUsers,
@@ -3835,21 +3844,29 @@
 
   if(document.readyState === "loading"){
     document.addEventListener("DOMContentLoaded", function(){
+      var currentPath = String(window.location.pathname || "");
+      var isAdminPage = /^\/?admin-/i.test(currentPath.split("/").filter(Boolean).pop() || "") || /^\/?backend\//i.test(currentPath.replace(/^\/+/, ""));
       ensureFirebaseAuthSync().catch ? ensureFirebaseAuthSync().catch(function(){}) : ensureFirebaseAuthSync();
       syncAuthUserFromUrl();
       ensureAuthUserInUrl();
       installImagePerformanceObserver();
-      loadUsersCache(false).catch(function(error){ console.error("users bootstrap failed", error); });
+      if(!isAdminPage){
+        authReady().catch(function(error){ console.warn("users bootstrap unavailable", error); });
+      }
       installUnifiedSaleBar();
       installGlobalHeaderSearchSubmit();
       syncInternalLinksWithAuth(document);
     }, { once: true });
   }else{
+    var currentPath = String(window.location.pathname || "");
+    var isAdminPage = /^\/?admin-/i.test(currentPath.split("/").filter(Boolean).pop() || "") || /^\/?backend\//i.test(currentPath.replace(/^\/+/, ""));
     ensureFirebaseAuthSync().catch ? ensureFirebaseAuthSync().catch(function(){}) : ensureFirebaseAuthSync();
     syncAuthUserFromUrl();
     ensureAuthUserInUrl();
     installImagePerformanceObserver();
-    loadUsersCache(false).catch(function(error){ console.error("users bootstrap failed", error); });
+    if(!isAdminPage){
+      authReady().catch(function(error){ console.warn("users bootstrap unavailable", error); });
+    }
     installUnifiedSaleBar();
     installGlobalHeaderSearchSubmit();
     syncInternalLinksWithAuth(document);

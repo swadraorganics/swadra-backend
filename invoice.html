@@ -101,7 +101,6 @@ Choose Healthy â€¢ Be Swadra Family
 
 <script>
 const API_BASE = window.SWADRA_API_BASE || "";
-const dataApi = window.SWADRA_DATA || null;
 const authApi = window.SWADRA_AUTH || null;
 
 function getCurrentUser(){
@@ -133,17 +132,6 @@ function getCurrentOrderId(){
 }
 
 async function fetchOrder(orderId){
-  if(dataApi && typeof dataApi.fetchOrder === "function"){
-    try{
-      const firestoreOrder = await dataApi.fetchOrder(orderId);
-      if(firestoreOrder){
-        return firestoreOrder;
-      }
-    }catch(error){
-      console.error("invoice firestore fetch failed", error);
-    }
-  }
-
   const response = await fetch(`${API_BASE}/api/orders/${encodeURIComponent(orderId)}${buildOrderAccessQuery()}`, { cache:"no-store" });
   const data = await response.json().catch(()=>({}));
   if(!response.ok || !data?.order){
@@ -186,11 +174,11 @@ function getInvoiceItemSize(item){
 
 function renderInvoice(order){
   const items = Array.isArray(order?.items) ? order.items : [];
-  const subtotal = Math.round(Number(order?.couponAdjustedSellingTotal || order?.sellingTotal || order?.total || 0));
   const discount = Math.round(Number(order?.couponDiscount || 0));
   const deliveryDetails = order?.deliveryDetails || order?.shipping?.deliveryDetails || (order?.delivery && typeof order.delivery === "object" ? order.delivery : null);
   const delivery = Math.round(Number(deliveryDetails && deliveryDetails.finalDeliveryCharge !== undefined ? deliveryDetails.finalDeliveryCharge : (order?.deliveryCharge ?? order?.delivery) || 0));
-  const total = Math.round(Number(order?.total || (subtotal + delivery)));
+  const total = Math.round(Number(order?.total || order?.finalAmount || order?.paidAmount || order?.amount || 0));
+  const subtotal = Math.round(Number(order?.sellingTotal || order?.subtotal || Math.max(0, total - delivery + discount)));
   const gstTotal = Math.round(Number(order?.gstTotal || 0));
   const cgst = gstTotal / 2;
   const sgst = gstTotal / 2;

@@ -424,6 +424,8 @@ pincode: address.pincode,
 city: address.city,
 state: address.state,
 deliveryDetails: summary && summary.deliveryDetails ? summary.deliveryDetails : null,
+appliedCoupon: checkoutDraftCache && checkoutDraftCache.appliedCoupon ? checkoutDraftCache.appliedCoupon : null,
+coupon: checkoutDraftCache && checkoutDraftCache.coupon ? checkoutDraftCache.coupon : null,
 cartSnapshot: Array.isArray(summary && summary.discountedItems) ? summary.discountedItems : getCheckoutCartItems(),
 summary: summary || getCartSummary()
 };
@@ -501,7 +503,7 @@ let delivery = Math.round(Number(deliveryDetails && deliveryDetails.finalDeliver
 if(!(deliveryDetails && deliveryDetails.freeDeliveryApplied) && delivery <= 0 && Number(summary.sellingTotal || 0) > 0){
 delivery = Math.max(0, Math.round(Number(deliveryDetails && deliveryDetails.configuredDeliveryCharge || (shippingApi && typeof shippingApi.getDeliveryCharge === "function" ? shippingApi.getDeliveryCharge() : 0)) || 0));
 }
-let couponDiscount = Math.min(Number(summary.couponDiscount || 0), Number(summary.sellingTotal || 0) + delivery);
+let couponDiscount = Math.min(Number(summary.couponDiscount || 0), Number(summary.sellingTotal || 0));
 let couponAdjustedSellingTotal = Math.max(0, Math.round(Number(summary.sellingTotal || 0) - couponDiscount));
 return {
 ...summary,
@@ -586,7 +588,7 @@ sellingTotal += (Number(item.price || 0) * Number(item.qty || 0));
       let fallbackFreeDelivery = window.SWADRA_SHIPPING && typeof window.SWADRA_SHIPPING.getFreeDeliveryThreshold === "function" ? window.SWADRA_SHIPPING.getFreeDeliveryThreshold() : 499;
       let fallbackDeliveryCharge = window.SWADRA_SHIPPING && typeof window.SWADRA_SHIPPING.getDeliveryCharge === "function" ? window.SWADRA_SHIPPING.getDeliveryCharge() : 0;
       let delivery = sellingTotal >= fallbackFreeDelivery || sellingTotal === 0 ? 0 : fallbackDeliveryCharge;
-      let fallbackCouponDiscount = Math.min(Number(summary.couponDiscount || 0), sellingTotal + delivery);
+      let fallbackCouponDiscount = Math.min(Number(summary.couponDiscount || 0), sellingTotal);
       summary = {
         mrpTotal,
         sellingTotal,
