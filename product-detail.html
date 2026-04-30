@@ -270,13 +270,23 @@
     async function addToCart(){
       if(!currentProduct) return;
       const authApi = window.SWADRA_AUTH || null;
-      const cart = authApi && typeof authApi.getGuestCart === "function" ? authApi.getGuestCart() : [];
+      const dataApi = window.SWADRA_DATA || null;
+      const currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
+      if(!currentUser){
+        if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
+          authApi.setRedirectAfterLogin("cart.html");
+        }
+        alert("Please login to add products to cart.");
+        location.href = "account.html";
+        return;
+      }
+      const cart = dataApi && typeof dataApi.fetchCart === "function" ? await dataApi.fetchCart(currentUser) : [];
       const id = String(currentProduct.id || currentProduct.docId);
       const existing = cart.find(item=>String(item.id) === id);
       if(existing) existing.qty = Number(existing.qty || 1) + 1;
       else cart.push({ id, name: currentProduct.name, price: currentProduct.price || currentProduct.sellingPrice || 0, mrp: currentProduct.mrp || 0, qty:1, size: currentProduct.size || currentProduct.productSize || "", image: imagesOf(currentProduct)[0], stockQty: currentProduct.stockQty });
-      if(authApi && typeof authApi.saveGuestCart === "function"){
-        authApi.saveGuestCart(cart);
+      if(dataApi && typeof dataApi.saveCart === "function"){
+        await dataApi.saveCart(currentUser, cart);
       }
       trackProductEvent("add_to_cart");
       location.href = "cart.html";

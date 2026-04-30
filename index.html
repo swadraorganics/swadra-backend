@@ -5397,23 +5397,12 @@ function getIndexUsers(){
 
 async function refreshIndexCartState(){
   const currentUser = getCurrentIndexUser();
-  const users = getIndexUsers();
   let nextCart = [];
   if(currentUser && dataApi && typeof dataApi.fetchCart === "function"){
     try{
       nextCart = compactCartItems(await dataApi.fetchCart(currentUser));
     }catch(error){
       console.error("index firestore cart fetch failed", error);
-    }
-  }
-  if(!nextCart.length && currentUser && users[currentUser] && Array.isArray(users[currentUser].cart)){
-    nextCart = compactCartItems(users[currentUser].cart || []);
-  }
-  if(!currentUser && dataApi && typeof dataApi.getGuestCart === "function"){
-    try{
-      nextCart = compactCartItems(dataApi.getGuestCart());
-    }catch(error){
-      console.error("index guest cart fetch failed", error);
     }
   }
   runtimeIndexCartCache = compactCartItems(nextCart);
@@ -5428,25 +5417,15 @@ function saveCart(cart){
   let safeCart = compactCartItems(cart);
   runtimeIndexCartCache = safeCart.slice();
   let currentUser = getCurrentIndexUser();
-  let users = getIndexUsers();
-  if(!currentUser && dataApi && typeof dataApi.saveGuestCart === "function"){
-    try{
-      dataApi.saveGuestCart(safeCart);
-    }catch(error){
-      console.error("index guest cart save failed", error);
+  if(!currentUser){
+    if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
+      authApi.setRedirectAfterLogin("cart.html");
     }
+    alert("Please login to add products to cart.");
+    window.location.href = "account.html";
     return;
   }
   if(currentUser){
-    try{
-      users[currentUser] = users[currentUser] || {};
-      users[currentUser].cart = safeCart;
-      if(authApi && typeof authApi.saveUsers === "function"){
-        authApi.saveUsers(users);
-      }
-    }catch(error){
-      console.warn("cart user save skipped", error);
-    }
     if(dataApi && typeof dataApi.saveCart === "function"){
       dataApi.saveCart(currentUser, safeCart).catch(function(error){
         console.error("index firestore cart save failed", error);
@@ -8319,3 +8298,4 @@ window.addEventListener("focus", function(){
 </script>
 </body>
 </html>
+

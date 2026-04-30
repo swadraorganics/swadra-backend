@@ -619,6 +619,16 @@
     return String(getSessionValue("currentUser") || "").trim().toLowerCase();
   }
 
+  function getCurrentFirebaseUser(){
+    var auth = initFirebaseAuthIfNeeded();
+    return auth && auth.currentUser ? auth.currentUser : null;
+  }
+
+  function getCurrentUserId(){
+    var user = getCurrentFirebaseUser();
+    return user && user.uid ? String(user.uid) : "";
+  }
+
   function getAuthUsers(){
     return sanitizeUsersMap(usersCache);
   }
@@ -626,7 +636,7 @@
   async function loadUsersCache(forceRefresh){
     var db = initFirestore();
     if(!db){
-      return fetchUsersFromBackendFallback();
+      throw new Error("Firestore unavailable");
     }
     if(usersCacheLoaded && !forceRefresh){
       return getAuthUsers();
@@ -638,8 +648,9 @@
       var next = {};
       snapshot.forEach(function(doc){
         var data = doc.data() || {};
-        var user = sanitizeUserRecord(Object.assign({}, data, { email: data.email || doc.id }), doc.id);
+        var user = sanitizeUserRecord(Object.assign({}, data, { uid: data.uid || doc.id }), data.email || "");
         if(user.email){
+          user.uid = String(data.uid || doc.id || "");
           next[user.email] = user;
         }
       });
@@ -647,10 +658,6 @@
       usersCacheLoaded = true;
       return getAuthUsers();
     }).catch(function(error){
-      var code = String(error && error.code || "").toLowerCase();
-      if(code === "permission-denied" || code === "unauthenticated"){
-        return fetchUsersFromBackendFallback();
-      }
       throw error;
     }).finally(function(){
       usersCacheRequest = null;
@@ -674,22 +681,17 @@
     usersCache = nextUsers;
     usersCacheLoaded = true;
     if(!db){
-      await saveUsersToBackendFallback(nextUsers);
-      return getAuthUsers();
+      throw new Error("Firestore unavailable");
     }
     var batch = db.batch();
     Object.keys(nextUsers).forEach(function(email){
-      batch.set(db.collection(USERS_COLLECTION).doc(email), nextUsers[email], { merge: true });
-    });
-    try{
-      await batch.commit();
-    }catch(error){
-      var code = String(error && error.code || "").toLowerCase();
-      if(code !== "permission-denied" && code !== "unauthenticated"){
-        throw error;
+      var record = nextUsers[email] || {};
+      var docId = String(record.uid || "").trim();
+      if(docId){
+        batch.set(db.collection(USERS_COLLECTION).doc(docId), record, { merge: true });
       }
-      await saveUsersToBackendFallback(nextUsers);
-    }
+    });
+    await batch.commit();
     return getAuthUsers();
   }
 
@@ -703,21 +705,18 @@
     if(!record.createdAt){
       record.createdAt = record.updatedAt;
     }
+    var firebaseUser = getCurrentFirebaseUser();
+    var uid = String(record.uid || (firebaseUser && normalizeEmailValue(firebaseUser.email || "") === record.email ? firebaseUser.uid : "") || "").trim();
+    if(!uid){
+      throw new Error("Firebase user id is required");
+    }
+    record.uid = uid;
     usersCache[record.email] = record;
     usersCacheLoaded = true;
     if(!db){
-      await saveUsersToBackendFallback(usersCache);
-      return cloneValue(record);
+      throw new Error("Firestore unavailable");
     }
-    try{
-      await db.collection(USERS_COLLECTION).doc(record.email).set(record, { merge: true });
-    }catch(error){
-      var code = String(error && error.code || "").toLowerCase();
-      if(code !== "permission-denied" && code !== "unauthenticated"){
-        throw error;
-      }
-      await saveUsersToBackendFallback(usersCache);
-    }
+    await db.collection(USERS_COLLECTION).doc(uid).set(record, { merge: true });
     return cloneValue(record);
   }
 
@@ -757,6 +756,28 @@
     var email = getCurrentUserEmail();
     var users = getAuthUsers();
     return email && users[email] ? users[email] : null;
+  }
+
+  async function fetchCurrentAuthUserRecord(){
+    var db = initFirestore();
+    var firebaseUser = getCurrentFirebaseUser();
+    if(!db || !firebaseUser || !firebaseUser.uid){
+      return getCurrentUserRecord();
+    }
+    var snapshot = await db.collection(USERS_COLLECTION).doc(firebaseUser.uid).get();
+    if(!snapshot.exists){
+      return getCurrentUserRecord();
+    }
+    var record = sanitizeUserRecord(Object.assign({}, snapshot.data() || {}, {
+      uid: firebaseUser.uid,
+      email: (snapshot.data() || {}).email || firebaseUser.email || ""
+    }), firebaseUser.email || "");
+    if(record.email){
+      record.uid = firebaseUser.uid;
+      usersCache[record.email] = record;
+      usersCacheLoaded = true;
+    }
+    return cloneValue(record);
   }
 
   async function findUserRecordByIdentifiers(email, phone, options){
@@ -833,9 +854,24 @@
     return String(value || "").trim().toLowerCase();
   }
 
+  function resolveUserBusinessDocId(userId){
+    var source = String(userId || "").trim();
+    if(!source) return "";
+    var currentFirebaseUser = getCurrentFirebaseUser();
+    var normalizedEmail = normalizeEmailValue(source);
+    if(currentFirebaseUser && currentFirebaseUser.uid && normalizeEmailValue(currentFirebaseUser.email || "") === normalizedEmail){
+      return String(currentFirebaseUser.uid);
+    }
+    var users = getAuthUsers();
+    if(normalizedEmail && users[normalizedEmail] && users[normalizedEmail].uid){
+      return String(users[normalizedEmail].uid);
+    }
+    return getBusinessDocId(source);
+  }
+
   function sanitizeCheckoutDraftRecord(draft, userId){
     var source = draft && typeof draft === "object" ? draft : {};
-    var normalizedUserId = getBusinessDocId(source.userId || userId || "");
+    var normalizedUserId = resolveUserBusinessDocId(source.userId || userId || "");
     return {
       userId: normalizedUserId,
       address: source.address && typeof source.address === "object" ? cloneValue(source.address) : {},
@@ -850,7 +886,7 @@
   }
 
   async function fetchFirestoreCart(userId){
-    var normalizedUserId = getBusinessDocId(userId);
+    var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) return [];
     var db = initFirestore();
     if(!db) throw firebaseInitError || new Error("Firestore unavailable");
@@ -861,7 +897,7 @@
   }
 
   async function saveFirestoreCart(userId, items){
-    var normalizedUserId = getBusinessDocId(userId);
+    var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) throw new Error("User id required for cart save");
     var db = initFirestore();
     if(!db) throw firebaseInitError || new Error("Firestore unavailable");
@@ -871,7 +907,8 @@
       items: compactItems,
       updatedAt: new Date().toISOString()
     }, { merge: true });
-    var currentRecord = await findUserRecordByIdentifiers(normalizedUserId, "", { forceRefresh: false }).catch(function(){ return null; });
+    var currentEmail = normalizeEmailValue(userId);
+    var currentRecord = currentEmail ? (getAuthUsers()[currentEmail] || null) : getCurrentUserRecord();
     if(currentRecord){
       currentRecord.cart = compactItems.slice();
       currentRecord.updatedAt = new Date().toISOString();
@@ -887,7 +924,7 @@
   }
 
   async function fetchCheckoutDraft(userId){
-    var normalizedUserId = getBusinessDocId(userId);
+    var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) return null;
     var db = initFirestore();
     if(!db) throw firebaseInitError || new Error("Firestore unavailable");
@@ -897,7 +934,7 @@
   }
 
   async function saveCheckoutDraft(userId, draft){
-    var normalizedUserId = getBusinessDocId(userId);
+    var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) throw new Error("User id required for checkout draft save");
     var db = initFirestore();
     if(!db) throw firebaseInitError || new Error("Firestore unavailable");
@@ -908,7 +945,7 @@
   }
 
   async function clearCheckoutDraft(userId){
-    var normalizedUserId = getBusinessDocId(userId);
+    var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) return;
     var db = initFirestore();
     if(!db) throw firebaseInitError || new Error("Firestore unavailable");
@@ -1144,55 +1181,21 @@
     var users = getAuthUsers();
     var user = users[normalizedEmail];
     if(!user) return [];
-    var guestCart = compactAuthCartItems(tryParseJson(rawLocalGet("cart"), []));
     var userCart = compactAuthCartItems(user.cart || []);
-    var mergedCount = 0;
-    guestCart.forEach(function(item){
-      var existing = userCart.find(function(userItem){
-        return String(userItem.id) === String(item.id);
-      });
-      if(existing){
-        existing.qty = Number(existing.qty || 0) + Number(item.qty || 0);
-        if(item.price) existing.price = Number(item.price);
-        if(item.mrp) existing.mrp = Number(item.mrp);
-        if(item.image) existing.image = item.image;
-        if(Array.isArray(item.images) && item.images.length){
-          existing.images = item.images.slice(0, 4);
-        }
-        mergedCount += Math.max(1, Number(item.qty || 0) || 1);
-      }else{
-        userCart.push(item);
-        mergedCount += Math.max(1, Number(item.qty || 0) || 1);
-      }
-    });
     users[normalizedEmail].cart = compactAuthCartItems(userCart);
-    saveAuthUserRecord(users[normalizedEmail]).catch(function(error){
-      console.error("guest cart merge failed", error);
-    });
-    setCartMergeNotice(mergedCount > 0 ? {
-      mergedCount: mergedCount,
-      cartCount: users[normalizedEmail].cart.length,
-      message: "The new products you added have been added to your cart."
-    } : null);
+    setCartMergeNotice(null);
     return users[normalizedEmail].cart.slice();
   }
 
   function getGuestCart(){
-    return compactAuthCartItems(tryParseJson(rawLocalGet("cart"), []));
+    return [];
   }
 
   function saveGuestCart(items){
-    var compactItems = compactAuthCartItems(items);
-    if(compactItems.length){
-      rawLocalSet("cart", JSON.stringify(compactItems));
-    }else{
-      rawLocalRemove("cart");
-    }
-    return compactItems.slice();
+    return [];
   }
 
   function clearGuestCart(){
-    rawLocalRemove("cart");
     return [];
   }
 
@@ -1213,10 +1216,11 @@
         duplicateField: existingUser.phoneNormalized === normalizedPhone ? "phone" : "email"
       };
     }
+    var firebaseUid = getCurrentUserId();
     var nextRecord = sanitizeUserRecord({
-      id: existingUser.id || existingUser.userId || existingUser.uid || email,
-      userId: existingUser.userId || existingUser.uid || existingUser.id || email,
-      uid: existingUser.uid || existingUser.userId || existingUser.id || email,
+      id: firebaseUid || existingUser.id || existingUser.userId || existingUser.uid || email,
+      userId: firebaseUid || existingUser.userId || existingUser.uid || existingUser.id || email,
+      uid: firebaseUid || existingUser.uid || existingUser.userId || existingUser.id || "",
       email: existingEmail || email,
       phone: String(source.phone || existingUser.phone || "").trim(),
       password: String(source.password || existingUser.password || "").trim(),
@@ -1268,13 +1272,11 @@
     var result = await auth.signInWithEmailAndPassword(String(email || "").trim(), String(password || ""));
     var user = result && result.user ? result.user : auth.currentUser;
     var normalizedEmail = setCurrentUserSession(user && user.email ? user.email : email);
-    var currentRecord = getCurrentUserRecord();
+    var currentRecord = await fetchCurrentAuthUserRecord();
     if(currentRecord){
       currentRecord.lastLoginAt = new Date().toISOString();
       currentRecord.updatedAt = currentRecord.lastLoginAt;
-      saveAuthUserRecord(currentRecord).catch(function(error){
-        console.error("firebase login lastLogin save failed", error);
-      });
+      await saveAuthUserRecord(currentRecord);
     }
     return normalizedEmail;
   }
@@ -1510,6 +1512,8 @@
     saveUserRecord: saveAuthUserRecord,
     deleteUserRecord: deleteAuthUserRecord,
     getCurrentUserEmail: getCurrentUserEmail,
+    getCurrentUserId: getCurrentUserId,
+    getCurrentFirebaseUser: getCurrentFirebaseUser,
     getCurrentUser: getCurrentUserEmail,
     getCurrentUserRecord: getCurrentUserRecord,
     setCurrentUserSession: setCurrentUserSession,

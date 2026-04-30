@@ -215,13 +215,6 @@ images:getSafeCartImages(item.images)
 async function getCart(){
 let user=getCurrentUser();
 if(!user){
-if(dataApi && typeof dataApi.getGuestCart === "function"){
-try{
-const guestCart = compactCart(dataApi.getGuestCart());
-runtimeSpicesCartCache = guestCart;
-return guestCart;
-}catch(e){}
-}
 runtimeSpicesCartCache = [];
 return [];
 }
@@ -242,26 +235,20 @@ async function saveCart(cart){
 let safeCart=compactCart(cart);
 let user=getCurrentUser();
 if(!user){
-if(dataApi && typeof dataApi.saveGuestCart === "function"){
-try{
-dataApi.saveGuestCart(safeCart);
-runtimeSpicesCartCache = safeCart;
-await updateCartUI();
-return true;
-}catch(e){}
+if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
+authApi.setRedirectAfterLogin("cart.html");
 }
+alert("Please login to add products to cart.");
+window.location.href = "account.html";
 return false;
-}
-let users=getUsers();
-if(!users[user]) users[user]={ cart:[], orders:[] };
-users[user].cart=safeCart;
-if(authApi && typeof authApi.saveUsers === "function"){
-authApi.saveUsers(users);
 }
 if(dataApi && typeof dataApi.saveCart === "function"){
 try{
 await dataApi.saveCart(user, safeCart);
-}catch(e){}
+}catch(e){
+console.error("cart firestore save failed", e);
+return false;
+}
 }
 runtimeSpicesCartCache = safeCart;
 await updateCartUI();

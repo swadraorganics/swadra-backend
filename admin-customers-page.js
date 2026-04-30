@@ -64,11 +64,7 @@
     }
 
     function readUsersObject(){
-      const apiUsers = authApi && typeof authApi.getUsers === "function" ? (authApi.getUsers() || {}) : {};
-      if(backendUsersCache && typeof backendUsersCache === "object" && Object.keys(backendUsersCache).length){
-        return Object.assign({}, apiUsers, backendUsersCache);
-      }
-      return apiUsers;
+      return backendUsersCache && typeof backendUsersCache === "object" ? backendUsersCache : {};
     }
 
     function getBackendBaseUrl(){
@@ -986,8 +982,7 @@
         }
         return;
       }
-      users[userKey] = nextRecord;
-      await Promise.resolve(authApi && typeof authApi.saveUsers === "function" ? authApi.saveUsers(users) : users);
+      throw new Error("Firestore user save unavailable");
     }
 
     async function togglePauseCustomer(customerId){
@@ -1048,22 +1043,7 @@
 
     async function refreshCustomers(){
       await fetchBackendUsersForAdmin();
-      if(authApi && typeof authApi.refreshUsers === "function"){
-        try{
-          await authApi.refreshUsers();
-        }catch(error){
-          console.error("customers refresh failed", error);
-        }
-      }
       const orderSources = [];
-      if(dataApi && typeof dataApi.fetchOrders === "function"){
-        try{
-          const firestoreOrders = await dataApi.fetchOrders();
-          if(Array.isArray(firestoreOrders)) orderSources.push(...firestoreOrders);
-        }catch(error){
-          console.error("customer firestore order fetch failed", error);
-        }
-      }
       if(window.SWADRA_API_BASE){
         try{
           const response = await fetch(String(window.SWADRA_API_BASE || "") + "/api/orders", { cache:"no-store" });
@@ -1085,24 +1065,7 @@
       renderDeletedCustomers();
     }
 
-    window.addEventListener("storage", function(event){
-      if(
-        event.key === "users" ||
-        ARRAY_CUSTOMER_KEYS.includes(event.key) ||
-        ORDER_KEYS.includes(event.key)
-      ){
-        refreshCustomers();
-      }
-    });
-
     (async function initializeCustomersPage(){
-      if(authApi && typeof authApi.ready === "function"){
-        try{
-          await authApi.ready();
-        }catch(error){
-          console.error("customers auth bootstrap failed", error);
-        }
-      }
       await refreshCustomers();
     })();
   

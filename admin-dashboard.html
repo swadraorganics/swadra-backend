@@ -540,12 +540,15 @@
     }
 
     async function getCustomers(){
-      if(!authApi || typeof authApi.ready !== "function" || typeof authApi.getUsers !== "function"){
+      const base = String(window.SWADRA_API_BASE || "").replace(/\/+$/, "");
+      if(!base){
         return [];
       }
       try{
-        await authApi.ready();
-        const users = authApi.getUsers() || {};
+        const response = await fetch(base + "/api/admin/users", { cache:"no-store" });
+        const payload = await response.json().catch(()=>({}));
+        if(!response.ok || !payload.ok || !payload.users || typeof payload.users !== "object") return [];
+        const users = payload.users || {};
         return Object.values(users).map((item, index)=>{
           const name = String(getValueByPossibleKeys(item, ["name","fullName","username","userName"]) || item.profile && item.profile.name).trim() || "Unnamed Customer";
           const email = String(getValueByPossibleKeys(item, ["email","emailId","mail"]) || item.profile && item.profile.email).trim();
@@ -592,12 +595,15 @@
     }
 
     async function getPayments(){
-      if(!dataApi || typeof dataApi.fetchOrders !== "function"){
+      const base = String(window.SWADRA_API_BASE || "").replace(/\/+$/, "");
+      if(!base){
         return [];
       }
       try{
-        const orders = await dataApi.fetchOrders();
-        return (Array.isArray(orders) ? orders : []).map((item, index)=>{
+        const response = await fetch(base + "/api/orders", { cache:"no-store" });
+        const payload = await response.json().catch(()=>({}));
+        const orders = payload && payload.ok && Array.isArray(payload.orders) ? payload.orders : [];
+        return orders.map((item, index)=>{
           const paymentId = String(getValueByPossibleKeys(item, ["paymentId","txnId","transactionId","razorpayPaymentId","id"])).trim() || `firestore_payment_${index}`;
           const orderId = String(getValueByPossibleKeys(item, ["orderId","orderID","invoiceId","order_id","id"])).trim();
           const name = String(getValueByPossibleKeys(item, ["name","customerName","fullName","username","shippingName"])).trim() || "Unknown Customer";

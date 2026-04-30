@@ -204,7 +204,6 @@ const runtimePaymentStore = Object.create(null);
 
 function getCurrentUser(){ return authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : ""; }
 function getUsers(){ try{ return authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : {}; }catch(error){ return {}; } }
-function saveUsers(users){ return authApi && typeof authApi.saveUsers === "function" ? authApi.saveUsers(users) : users; }
 function money(value){ return "\u20B9" + Math.round(Number(value || 0)).toLocaleString("en-IN"); }
 function getItemDisplayLineTotal(item){
   const qty = Number(item.qty) || 1;
@@ -332,12 +331,8 @@ async function initializePaymentPage(){
     return;
   }
   users = getUsers();
-  if(!users[currentUser]){
-    users[currentUser] = { cart:[], orders:[] };
-    saveUsers(users);
-  }
-  user = users[currentUser];
-  cart = user.cart || [];
+  user = users[currentUser] || { email: currentUser, cart:[], orders:[] };
+  cart = [];
   return bootstrapPaymentData().then(function(){
     renderUserInfo();
     renderOrderSummary();
@@ -354,9 +349,6 @@ async function bootstrapPaymentData(){
       const firestoreCart = await dataApi.fetchCart(currentUser);
       if(Array.isArray(firestoreCart)){
         cart = firestoreCart;
-        user.cart = firestoreCart;
-        users[currentUser] = user;
-        saveUsers(users);
       }
     }catch(error){
       console.error("payment firestore cart fetch failed", error);
@@ -706,28 +698,33 @@ async function createBackendPaymentOrder(session){
       snapshot: session.snapshot
     });
     if(data.keyId) paymentGatewayKey = data.keyId;
+    const razorpayOrder = data.razorpayOrder || null;
+    if(!data.ok || !data.verificationConfigured || !data.razorpayConfigured || !razorpayOrder || !String(razorpayOrder.id || "").startsWith("order_") || razorpayOrder.localOnly){
+      throw new Error(data.razorpayMessage || data.error || "Backend payment verification is unavailable");
+    }
     updatePaymentSession({ backendOrderCreated: true, verificationConfigured: data.verificationConfigured });
-    return data.razorpayOrder || null;
+    return razorpayOrder;
   }catch(error){
     updatePaymentSession({ backendOrderCreated: false, backendError: error.message });
-    return null;
+    throw error;
   }
 }
 
 async function verifyPaymentIfPossible(response){
   if(!response.razorpay_order_id){
-    return { ok:true, skipped:true, message:"Frontend-only Razorpay success" };
+    return { ok:false, verified:false, message:"Backend Razorpay order id missing. Payment was not verified." };
   }
   try{
     const data = await apiPost("/api/payments/verify", {
       ...response,
       localOrderId: paymentSession?.orderId || "",
-      snapshotHash: paymentSession?.snapshotHash || ""
+      snapshotHash: paymentSession?.snapshotHash || "",
+      orderDraft: buildOrderDraft(response, {})
     });
-    if(data.configured && !data.verified) return { ok:false, message:data.message || "Payment verification failed" };
+    if(!data.verified || !data.order) return { ...data, ok:false, message:data.message || data.error || "Payment verification failed" };
     return { ...data, ok:true };
   }catch(error){
-    return { ok:true, skipped:true, message:"Backend verification unavailable, Razorpay success accepted" };
+    return { ok:false, verified:false, message:error.message || "Backend verification unavailable. Payment was not accepted." };
   }
 }
 
@@ -757,7 +754,16 @@ async function payOnline(){
   setPaymentState("processing","Opening secure payment","Razorpay checkout is opening. Please do not refresh until the payment is complete.");
   setPayButtonLoading(true);
 
-  const backendOrder = await createBackendPaymentOrder(session);
+  let backendOrder = null;
+  try{
+    backendOrder = await createBackendPaymentOrder(session);
+  }catch(error){
+    saveAttempt("backend_order_failed", { message:error.message });
+    trackPaymentEvent("backend_order_failed", { message:error.message });
+    setPaymentState("failed","Payment verification unavailable", error.message || "Secure backend payment verification is unavailable. Please try again later.");
+    setPayButtonLoading(false, "Retry Payment");
+    return;
+  }
   const checkoutPhone = normalizeIndianPhone(checkoutData.phone || user.phone || "");
   const checkoutEmail = String(user.email || currentUser || "").trim().toLowerCase();
   const options = {
@@ -766,7 +772,7 @@ async function payOnline(){
     currency: "INR",
     name: "Swadra Organics",
     description: "Premium Secure Checkout",
-    order_id: String(backendOrder?.id || "").startsWith("order_") ? backendOrder.id : undefined,
+    order_id: backendOrder.id,
     handler: async function(response){
       setPaymentState("processing","Verifying payment","Payment received. Your order is now being securely verified and saved.");
       trackPaymentEvent("payment_handler_success", { paymentId: response.razorpay_payment_id || "" });
@@ -819,9 +825,10 @@ async function payOnline(){
   rzp.open();
 }
 
-async function saveOrder(paymentResponse, verification){
+function buildOrderDraft(paymentResponse, verification){
   const runtimeCurrentUser = (authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "") || currentUser || user.email || "";
   const normalizedCurrentUser = String(runtimeCurrentUser || "").trim().toLowerCase();
+  const authUserId = authApi && typeof authApi.getCurrentUserId === "function" ? String(authApi.getCurrentUserId() || "").trim() : "";
   const session = paymentSession || getOrCreatePaymentSession();
   const paymentId = paymentResponse.razorpay_payment_id || paymentResponse || "";
   const currentUpiValue = document.getElementById("upiId")?.value || "";
@@ -831,6 +838,8 @@ async function saveOrder(paymentResponse, verification){
   const order = {
     id: session.orderId,
     userId: normalizedCurrentUser,
+    authUserId,
+    firebaseUid: authUserId,
     email: (user.email || normalizedCurrentUser),
     customerEmail: (user.email || normalizedCurrentUser),
     phone: checkoutData.phone || user.phone || "",
@@ -868,42 +877,25 @@ async function saveOrder(paymentResponse, verification){
     paymentCompletedAt: nowIso(),
     date: new Date().toLocaleString()
   };
+}
 
-  users = getUsers();
-  const existingUserKey = Object.keys(users || {}).find(function(key){
-    return String(key || "").trim().toLowerCase() === normalizedCurrentUser;
-  });
-  const userKey = existingUserKey || normalizedCurrentUser;
-  users[userKey] = users[userKey] || { cart:[], orders:[] };
-  users[userKey].email = users[userKey].email || normalizedCurrentUser;
-  users[userKey].orders = users[userKey].orders || [];
-  const existingIndex = users[userKey].orders.findIndex(item => String(item.id) === String(order.id));
-  if(existingIndex > -1) users[userKey].orders[existingIndex] = order;
-  else users[userKey].orders.push(order);
-  users[userKey].cart = [];
-  if(authApi && typeof authApi.saveUserRecord === "function"){
-    try{
-      await authApi.saveUserRecord(users[userKey]);
-      if(typeof authApi.refreshUsers === "function"){
-        await authApi.refreshUsers();
-      }
-    }catch(error){
-      console.error("payment user order save failed", error);
-      await Promise.resolve(saveUsers(users));
-    }
-  }else{
-    await Promise.resolve(saveUsers(users));
+async function saveOrder(paymentResponse, verification){
+  if(!verification || !verification.verified || !verification.order){
+    throw new Error("Verified backend order is required");
   }
-
+  const order = verification.order;
+  const normalizedCurrentUser = String(order.userId || order.email || currentUser || "").trim().toLowerCase();
+  const paymentId = order.payment_id || paymentResponse.razorpay_payment_id || "";
+  const deliverySummary = getDeliverySummary();
   updatePaymentSession({ status:"paid", paidAt: nowIso(), paymentId });
   saveAttempt("paid", { paymentId, orderId: order.id });
   trackPaymentEvent("payment_success", { paymentId, orderId: order.id });
   trackEcommerceEvent("purchase", {
     transaction_id: order.id,
-    value: finalTotal,
+    value: order.total || finalTotal,
     currency: "INR",
-    shipping: deliverySummary.deliveryCharge,
-    coupon: couponDiscount ? "Coupon Discount" : "",
+    shipping: order.deliveryCharge || deliverySummary.deliveryCharge,
+    coupon: order.couponDiscount ? "Coupon Discount" : "",
     items: order.items
   });
   if(window.SWADRA_RECOVERY && typeof window.SWADRA_RECOVERY.markRecovered === "function"){
@@ -914,67 +906,9 @@ async function saveOrder(paymentResponse, verification){
       orderId: order.id
     }).catch(function(error){ console.error("abandoned cart recovered sync failed", error); });
   }
-  if(dataApi && typeof dataApi.saveOrder === "function"){
-    try{
-      await dataApi.saveOrder(order.id, order);
-    }catch(error){
-      console.error("firestore order save failed", error);
-    }
-  }
-  try{
-    const data = await apiPost("/api/orders", order);
-    if(data && data.ok && data.order){
-      const latestUsers = getUsers();
-      const latestExistingKey = Object.keys(latestUsers || {}).find(function(key){
-        return String(key || "").trim().toLowerCase() === normalizedCurrentUser;
-      });
-      const latestUserKey = latestExistingKey || userKey;
-      latestUsers[latestUserKey] = latestUsers[latestUserKey] || { cart:[], orders:[] };
-      latestUsers[latestUserKey].email = latestUsers[latestUserKey].email || normalizedCurrentUser;
-      latestUsers[latestUserKey].orders = latestUsers[latestUserKey].orders || [];
-      const orderIndex = latestUsers[latestUserKey].orders.findIndex(item => String(item.id) === String(order.id));
-      if(orderIndex > -1) latestUsers[latestUserKey].orders[orderIndex] = data.order;
-      else latestUsers[latestUserKey].orders.push(data.order);
-
-      if(authApi && typeof authApi.saveUserRecord === "function"){
-        try{
-          await authApi.saveUserRecord(latestUsers[latestUserKey]);
-          if(typeof authApi.refreshUsers === "function"){
-            await authApi.refreshUsers();
-          }
-        }catch(error){
-          console.error("backend-synced user order save failed", error);
-          await Promise.resolve(saveUsers(latestUsers));
-        }
-      }else{
-        await Promise.resolve(saveUsers(latestUsers));
-      }
-
-      if(dataApi && typeof dataApi.saveOrder === "function"){
-        try{
-          await dataApi.saveOrder(data.order.id, data.order);
-        }catch(error){
-          console.error("backend-synced firestore order save failed", error);
-        }
-      }
-
-      lastSuccessOrder = data.order;
-      trackPaymentEvent("shiprocket_order_synced", {
-        orderId: data.order.id,
-        awb: data.order.awb || data.order.trackingId || "",
-        shipment_id: data.order.shipment_id || ""
-      });
-    }
-  }catch(error){
-    trackPaymentEvent("shiprocket_order_sync_failed", { orderId: order.id, message:error.message });
-    console.error("Backend order save failed", error);
-  }
-  if(dataApi && typeof dataApi.clearCart === "function"){
-    dataApi.clearCart(normalizedCurrentUser).catch(function(error){ console.error("firestore cart clear failed", error); });
-  }
-  if(dataApi && typeof dataApi.clearCheckoutDraft === "function"){
-    dataApi.clearCheckoutDraft(normalizedCurrentUser).catch(function(error){ console.error("firestore checkout draft clear failed", error); });
-  }
+  lastSuccessOrder = order;
+  trackPaymentEvent("backend_order_created", { orderId: order.id, userId: normalizedCurrentUser });
+  alert("Order Placed Successfully");
   showSuccess(order);
 }
 

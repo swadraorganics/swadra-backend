@@ -659,26 +659,7 @@
     }
 
     async function getFirestorePayments(){
-      const merged = [];
-      const seen = new Set();
-      if(!dataApi || typeof dataApi.fetchOrders !== "function") return merged;
-      try{
-        const orders = await dataApi.fetchOrders();
-        (Array.isArray(orders) ? orders : []).forEach((item, index) => {
-          if(!item || typeof item !== "object") return;
-          const normalized = normalizePayment(item, "firestoreOrders", index);
-          const dedupeKey = [normalized.paymentId, normalized.orderId, normalized.amount].join("|");
-          if(seen.has(dedupeKey)) return;
-          seen.add(dedupeKey);
-          merged.push(normalized);
-        });
-      }catch(error){
-        const errorCode = String(error && error.code || "").trim().toLowerCase();
-        if(errorCode !== "permission-denied" && errorCode !== "unauthenticated"){
-          console.error("firestore payments fetch failed", error);
-        }
-      }
-      return merged;
+      return [];
     }
 
     async function getBackendPayments(){

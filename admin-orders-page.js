@@ -91,9 +91,6 @@
     }
 
     function getUsersMap(){
-      if(authApi && typeof authApi.getUsers === "function"){
-        return authApi.getUsers() || {};
-      }
       return {};
     }
 
@@ -247,30 +244,6 @@
       };
     }
 
-    function getUserEmbeddedOrders(){
-      const merged = [];
-      const seen = new Set();
-      const users = getUsersMap();
-      Object.entries(users).forEach(([email, user]) => {
-        const userOrders = Array.isArray(user && user.orders) ? user.orders : [];
-        userOrders.forEach((item, index) => {
-          if(!item || typeof item !== "object") return;
-          const normalized = normalizeOrder({
-            email,
-            customerName: user?.profile?.name || user?.name || email,
-            mobile: user?.phone || user?.profile?.phone || "",
-            ...item
-          }, "users", index);
-          const dedupeKey = [normalized.id, normalized.amount, normalized.customerName].join("|");
-          if(seen.has(dedupeKey)) return;
-          seen.add(dedupeKey);
-          merged.push(normalized);
-        });
-      });
-
-      return merged;
-    }
-
     function mergeOrderLists(lists){
       const mergedMap = new Map();
       lists.flat().forEach(function(order){
@@ -286,7 +259,7 @@
       if(Array.isArray(firestoreOrdersCache) && firestoreOrdersCache.length){
         return firestoreOrdersCache;
       }
-      return getUserEmbeddedOrders();
+      return [];
     }
 
     function getSenderDetails(){
@@ -669,9 +642,6 @@ ${escapeHtml(senderAddress)}</div>
             alert(data.error || "Packed sync failed");
             return;
           }
-          if(dataApi && typeof dataApi.saveOrder === "function"){
-            await dataApi.saveOrder(orderId, { ...(data.order || nextOrder), userId: order.email || "" });
-          }
           await refreshOrders();
           return;
         }catch(error){
@@ -693,9 +663,6 @@ ${escapeHtml(senderAddress)}</div>
             alert(data.error || "Order status update failed.");
             return;
           }
-          if(dataApi && typeof dataApi.saveOrder === "function"){
-            await dataApi.saveOrder(orderId, { ...(data.order || nextOrder), userId: order.email || data.order?.userId || "" });
-          }
           await refreshOrders();
           return;
         }catch(error){
@@ -703,18 +670,6 @@ ${escapeHtml(senderAddress)}</div>
           alert("Order status update failed.");
           return;
         }
-      }
-
-      if(dataApi && typeof dataApi.saveOrder === "function"){
-        dataApi.saveOrder(orderId, { ...nextOrder, userId: order.email || "" })
-          .then(function(){
-            return refreshOrders();
-          })
-          .catch(function(error){
-            console.error("order status update failed", error);
-            alert("Order status update failed.");
-          });
-        return;
       }
 
       renderOrders();
@@ -728,28 +683,7 @@ ${escapeHtml(senderAddress)}</div>
     }
 
     async function refreshOrders(){
-      if(authApi && typeof authApi.refreshUsers === "function"){
-        try{
-          await authApi.refreshUsers();
-        }catch(error){
-          console.error("orders auth refresh failed", error);
-        }
-      }
-
       const orderLists = [];
-
-      if(dataApi && typeof dataApi.fetchOrders === "function"){
-        try{
-          const orders = await dataApi.fetchOrders();
-          orderLists.push(Array.isArray(orders)
-            ? orders.map(function(item, index){
-                return normalizeOrder(item, "firestore", index);
-              })
-            : []);
-        }catch(error){
-          console.error("firestore orders fetch failed", error);
-        }
-      }
 
       if(window.SWADRA_API_BASE){
         try{
@@ -764,16 +698,9 @@ ${escapeHtml(senderAddress)}</div>
         }
       }
 
-      orderLists.push(getUserEmbeddedOrders());
       firestoreOrdersCache = mergeOrderLists(orderLists);
       renderOrders();
     }
-
-    window.addEventListener("storage", function(event){
-      if(ORDER_SOURCE_KEYS.includes(event.key) || event.key === "users"){
-        refreshOrders();
-      }
-    });
 
     refreshOrders();
   

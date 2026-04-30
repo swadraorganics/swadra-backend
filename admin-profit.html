@@ -580,13 +580,6 @@
 
     async function getOrders(){
       const lists = [];
-      try{
-        if(dataApi && typeof dataApi.fetchOrders === "function"){
-          lists.push(await dataApi.fetchOrders());
-        }
-      }catch(error){
-        console.error("profit firestore orders fetch failed", error);
-      }
       if(API_BASE){
         try{
           const response = await fetch(API_BASE + "/api/orders", { cache:"no-store" });

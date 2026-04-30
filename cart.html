@@ -463,18 +463,8 @@ return "";
 async function syncUserCart(){
 let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
 if(!currentUser){
-if(dataApi && typeof dataApi.getGuestCart === "function"){
-try{
-return compactCart(dataApi.getGuestCart());
-}catch(error){
-console.error("cart guest fetch failed", error);
-}
-}
 return [];
 }
-if(!currentUser) return [];
-let users = authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : {};
-if(!users[currentUser]) users[currentUser] = {cart:[],orders:[]};
 let merged = [];
 if(dataApi && typeof dataApi.fetchCart === "function"){
 try{
@@ -483,15 +473,6 @@ merged = compactCart(await dataApi.fetchCart(currentUser));
 console.error("cart firestore fetch failed", error);
 }
 }
-if(!merged.length){
-merged = compactCart(users[currentUser].cart || []);
-}
-try{
-users[currentUser].cart = merged;
-if(authApi && typeof authApi.saveUsers === "function"){
-authApi.saveUsers(users).catch(function(error){ console.error("cart user mirror save failed", error); });
-}
-}catch(e){}
 if(dataApi && typeof dataApi.saveCart === "function"){
 try{
 await dataApi.saveCart(currentUser, merged);
@@ -506,13 +487,11 @@ async function saveUserCart(cart){
 let safeCart = compactCart(cart);
 let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
 if(!currentUser){
-if(dataApi && typeof dataApi.saveGuestCart === "function"){
-try{
-dataApi.saveGuestCart(safeCart);
-}catch(error){
-console.error("cart guest save failed", error);
+if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
+authApi.setRedirectAfterLogin("cart.html");
 }
-}
+alert("Please login to update cart.");
+window.location.href = "account.html";
 return safeCart;
 }
 if(currentUser && dataApi && typeof dataApi.saveCart === "function"){
@@ -522,40 +501,19 @@ await dataApi.saveCart(currentUser, safeCart);
 console.error("cart firestore save failed", error);
 }
 }
-if(!currentUser) return safeCart;
-let users = authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : {};
-if(!users[currentUser]) users[currentUser] = {cart:[],orders:[]};
-try{
-users[currentUser].cart = safeCart;
-if(authApi && typeof authApi.saveUsers === "function"){
-authApi.saveUsers(users).catch(function(error){ console.error("cart user mirror save failed", error); });
-}
-}catch(e){}
 return safeCart;
 }
 
 async function getCart(){
 let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
-if(!currentUser && dataApi && typeof dataApi.getGuestCart === "function"){
-try{
-return compactCart(dataApi.getGuestCart());
-}catch(error){
-console.error("cart guest read failed", error);
-}
-}
+if(!currentUser) return [];
 if(currentUser && dataApi && typeof dataApi.fetchCart === "function"){
 try{
 let firestoreCart = compactCart(await dataApi.fetchCart(currentUser));
-if(firestoreCart.length || firestoreCart.length === 0){
 return firestoreCart;
-}
 }catch(error){
 console.error("cart firestore read failed", error);
 }
-}
-let users = authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : null;
-if(currentUser && users && users[currentUser]){
-return compactCart(users[currentUser].cart || []);
 }
 return [];
 }
@@ -775,23 +733,16 @@ async function saveCheckoutSummary(summary){
 window.__swadraCartSummary = summary;
 syncCartDraftPincode();
 let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
-if(currentUser){
-try{
-let users = getUsers();
-users[currentUser] = users[currentUser] || { cart:[], orders:[] };
-users[currentUser].checkoutSummary = summary || {};
-saveUsers(users);
-}catch(error){
-console.error("checkout summary user save failed", error);
-}
-}
 if(currentUser && dataApi && typeof dataApi.saveCheckoutDraft === "function"){
 try{
 await dataApi.saveCheckoutDraft(currentUser, {
 address: window.__swadraCartDraftAddress || {},
 deliveryDetails: summary.deliveryDetails || null,
-cartSnapshot: summary.discountedItems || [],
-summary: summary
+pincode: getCartDeliveryPincode(),
+city: (window.__swadraCartDraftAddress || {}).city || "",
+state: (window.__swadraCartDraftAddress || {}).state || "",
+cartSnapshot: summary.discountedItems || await getCart(),
+summary: summary || {}
 });
 }catch(error){
 console.error("checkout draft save from cart failed", error);

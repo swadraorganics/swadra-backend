@@ -162,7 +162,6 @@ const authApi = window.SWADRA_AUTH || null;
 const dataApi = window.SWADRA_DATA || null;
 function getCurrentUser(){ return authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : ""; }
 function getUsers(){ return authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : {}; }
-function saveUsers(users){ return authApi && typeof authApi.saveUsers === "function" ? authApi.saveUsers(users) : users; }
 
 async function waitForCheckoutUser(){
 if(authApi && typeof authApi.ready === "function"){
@@ -193,11 +192,20 @@ return;
 }
 
 let users = getUsers();
-if(!users[currentUser]){
-users[currentUser] = { cart:[], orders:[] };
-saveUsers(users);
-}
 let user = users[currentUser] || {};
+user.email = user.email || currentUser;
+user.profile = Object.assign({}, user.profile || {}, { email: currentUser });
+if(!users[currentUser]){
+users[currentUser] = user;
+}
+if(dataApi && typeof dataApi.fetchCart === "function"){
+try{
+user.cart = await dataApi.fetchCart(currentUser);
+}catch(error){
+console.error("checkout cart fetch failed", error);
+user.cart = [];
+}
+}
 let userProfile = user.profile || {};
 let selectedCheckoutAddressId = "";
 let isNewCheckoutAddress = false;
@@ -412,6 +420,9 @@ return;
 const address = readCheckoutAddress();
 const payload = {
 address: address,
+pincode: address.pincode,
+city: address.city,
+state: address.state,
 deliveryDetails: summary && summary.deliveryDetails ? summary.deliveryDetails : null,
 cartSnapshot: Array.isArray(summary && summary.discountedItems) ? summary.discountedItems : getCheckoutCartItems(),
 summary: summary || getCartSummary()
@@ -435,11 +446,10 @@ users = getUsers();
 user = users[currentUser] || user;
 }
 }else{
-saveUsers(users);
+throw new Error("Firestore user save unavailable");
 }
 }catch(error){
 console.error("checkout user save failed", error);
-saveUsers(users);
 }
 }
 
@@ -717,13 +727,17 @@ checkoutAddress,
 selectedCheckoutAddressId = users[currentUser].defaultAddressId || checkoutAddress.id;
 user = users[currentUser];
 window.__swadraCheckoutSummary = summary;
-persistCheckoutUserRecord().finally(function(){
-saveCheckoutDraftToFirestore({
+persistCheckoutUserRecord().then(async function(){
+await saveCheckoutDraftToFirestore({
 ...summary,
 deliveryDetails: deliveryDetails,
 discountedItems: summary.discountedItems || getCheckoutCartItems()
 });
+alert("Address Updated Successfully");
 location.href = "payment.html";
+}).catch(function(error){
+console.error("checkout address save failed", error);
+alert("Address save failed. Please try again.");
 });
 }
 

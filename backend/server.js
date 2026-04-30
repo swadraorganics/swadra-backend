@@ -308,6 +308,31 @@ async function writeTopLevelUsers(users = {}) {
   if (count > 0) await batch.commit();
 }
 
+async function writeTopLevelOrder(order = {}) {
+  if (!USE_FIRESTORE || !order || typeof order !== "object") return;
+  const id = safeDocId(order.id || order.orderId || "");
+  await getFirestore().collection("orders").doc(id).set(order, { merge: true });
+}
+
+async function deleteTopLevelUserDocs(collectionName, ids = []) {
+  if (!USE_FIRESTORE) return;
+  const firestore = getFirestore();
+  const uniqueIds = Array.from(new Set(ids.map((id) => String(id || "").trim()).filter(Boolean)));
+  if (!uniqueIds.length) return;
+  let batch = firestore.batch();
+  let count = 0;
+  for (const id of uniqueIds) {
+    batch.delete(firestore.collection(collectionName).doc(safeDocId(id)));
+    count += 1;
+    if (count >= 400) {
+      await batch.commit();
+      batch = firestore.batch();
+      count = 0;
+    }
+  }
+  if (count > 0) await batch.commit();
+}
+
 function mergeRecordsById(primary = [], secondary = []) {
   const map = new Map();
   [...secondary, ...primary].forEach((item, index) => {
@@ -2912,6 +2937,7 @@ app.post("/api/orders", async (req, res) => {
     else db.orders.unshift(order);
     db.orders = db.orders.slice(0, 5000);
     await writeDB(db);
+    await writeTopLevelOrder(order);
     if (existingIndex < 0) {
       await sendOrderEmail(db, order, "Confirmed", "order-created").catch((emailError) => {
         addLog("Order confirmation email failed: " + emailError.message, "error");
@@ -2995,6 +3021,7 @@ app.post("/api/orders/:id/cancel", paymentRateLimit, async (req, res) => {
     }
     db.orders[index] = nextOrder;
     await writeDB(db);
+    await writeTopLevelOrder(nextOrder);
     await sendOrderEmail(db, nextOrder, "Cancelled", "customer-cancel").catch((emailError) => {
       addLog("Customer cancel email failed: " + emailError.message, "error");
     });
@@ -3039,6 +3066,7 @@ app.post("/api/orders/:id/return-request", paymentRateLimit, async (req, res) =>
       updatedAt: now
     };
     await writeDB(db);
+    await writeTopLevelOrder(db.orders[index]);
     await sendOrderEmail(db, db.orders[index], "Refund", "return-request").catch((emailError) => {
       addLog("Return request email failed: " + emailError.message, "error");
     });
@@ -3236,6 +3264,7 @@ app.post("/api/orders/:id/packed", requireAdminSession, async (req, res) => {
     db.orders[index] = { ...order, updatedAt: new Date().toISOString() };
     auditAdminAction(db, req, "order.packed", "success", { orderId });
     await writeDB(db);
+    await writeTopLevelOrder(db.orders[index]);
     await sendOrderEmail(db, db.orders[index], "Packed", "packed-status").catch((emailError) => {
       addLog("Packed email failed: " + emailError.message, "error");
     });
@@ -3327,6 +3356,7 @@ app.patch("/api/orders/:id/status", requireAdminSession, async (req, res) => {
     db.orders[index] = nextOrder;
     auditAdminAction(db, req, "order.status.update", "success", { orderId, status: nextStatus });
     await writeDB(db);
+    await writeTopLevelOrder(db.orders[index]);
     await sendOrderEmail(db, db.orders[index], nextStatus, "status-update").catch((emailError) => {
       addLog("Order status email failed: " + emailError.message, "error");
     });
@@ -3404,6 +3434,7 @@ app.patch("/api/admin/return-requests/:id", requireAdminSession, async (req, res
     }
     auditAdminAction(db, req, "return-request.update", "success", { requestId, status: nextStatus });
     await writeDB(db);
+    if (orderIndex > -1) await writeTopLevelOrder(db.orders[orderIndex]);
     res.json({ ok: true, request, order: orderIndex > -1 ? db.orders[orderIndex] : null, refund: refundResult });
   } catch (error) {
     addLog("Return request update failed: " + error.message, "error");
@@ -3459,7 +3490,12 @@ app.post("/api/payments/create-order", paymentRateLimit, inventorySerial, async 
     const db = await readDB();
     cleanupInventoryLocks(db);
     const orderId = payload.orderId || makePaymentOrderId();
-    const items = Array.isArray(payload.snapshot?.items) ? payload.snapshot.items : [];
+    const snapshotItems = Array.isArray(payload.snapshot?.items)
+      ? payload.snapshot.items
+      : Array.isArray(payload.snapshot?.cart)
+        ? payload.snapshot.cart
+        : [];
+    const items = snapshotItems;
     const validationErrors = [];
     const lockRows = [];
     for (const item of items) {
@@ -3591,10 +3627,96 @@ app.post("/api/payments/verify", paymentRateLimit, async (req, res) => {
       });
     }
 
-    const lockOrderId = pickInventoryLockOrderId(index > -1 ? db.paymentAttempts[index] : {}, payload.localOrderId || attemptId);
+    const paymentAttempt = index > -1 ? db.paymentAttempts[index] : {};
+    const lockOrderId = pickInventoryLockOrderId(paymentAttempt, payload.localOrderId || attemptId);
     if (verification.verified) releaseInventoryLock(db, lockOrderId, "committed");
     else releaseInventoryLock(db, lockOrderId, "released");
+    let order = null;
+    if (verification.verified) {
+      const draft = payload.orderDraft && typeof payload.orderDraft === "object" ? payload.orderDraft : null;
+      if (!draft) {
+        releaseInventoryLock(db, lockOrderId, "released");
+        await writeDB(db);
+        return res.status(400).json({
+          ok: false,
+          verified: true,
+          error: "Verified payment cannot create order without order draft"
+        });
+      }
+      const expectedAmount = Math.round(toNumber(paymentAttempt.amount || 0));
+      const draftAmount = Math.round(toNumber(draft.finalAmount || draft.total || draft.amount || draft.paidAmount) * 100);
+      if (expectedAmount > 0 && draftAmount > 0 && expectedAmount !== draftAmount) {
+        if (index > -1) {
+          db.paymentAttempts[index] = {
+            ...db.paymentAttempts[index],
+            status: "amount_mismatch",
+            verificationMessage: "Payment amount did not match checkout total",
+            updatedAt: new Date().toISOString()
+          };
+        }
+        releaseInventoryLock(db, lockOrderId, "released");
+        await writeDB(db);
+        return res.status(409).json({
+          ok: false,
+          verified: true,
+          error: "Payment amount did not match checkout total"
+        });
+      }
+      const orderId = String(draft.id || payload.localOrderId || paymentAttempt.id || makePaymentOrderId());
+      const existingIndex = findOrderIndex(db, (item) => String(item.id) === orderId);
+      const existing = existingIndex > -1 ? db.orders[existingIndex] : {};
+      order = normalizeOrderForDb({
+        ...existing,
+        ...draft,
+        id: orderId,
+        userId: String(draft.userId || draft.email || draft.customerEmail || ""),
+        authUserId: String(draft.authUserId || draft.firebaseUid || ""),
+        firebaseUid: String(draft.firebaseUid || draft.authUserId || ""),
+        payment: "Paid Successfully",
+        paymentStatus: "Paid Successfully",
+        payment_id: payload.razorpay_payment_id || "",
+        razorpay_order_id: payload.razorpay_order_id || "",
+        razorpay_signature: payload.razorpay_signature || "",
+        verification,
+        paymentMethod: paymentDetails && paymentDetails.instrument ? paymentDetails.instrument.method : draft.paymentMethod || "online",
+        paymentInstrument: paymentDetails && paymentDetails.instrument ? paymentDetails.instrument : draft.paymentInstrument || null,
+        paymentInstrumentLabel: draft.paymentInstrumentLabel || "",
+        razorpayPaymentDetails: paymentDetails && paymentDetails.ok ? paymentDetails.payment : null,
+        status: "Confirmed",
+        paymentCompletedAt: new Date().toISOString()
+      });
+      order.shiprocket = {
+        ...(existing.shiprocket || {}),
+        status: existing.shiprocket?.status || "pending"
+      };
+      if (existingIndex > -1) db.orders[existingIndex] = order;
+      else db.orders.unshift(order);
+      db.orders = db.orders.slice(0, 5000);
+      if (index > -1) {
+        db.paymentAttempts[index] = {
+          ...db.paymentAttempts[index],
+          createdOrderId: order.id
+        };
+      }
+      const orderUserIds = [
+        order.authUserId,
+        order.firebaseUid,
+        draft.authUserId,
+        draft.firebaseUid,
+        order.userId,
+        order.email,
+        order.customerEmail
+      ];
+      await writeTopLevelOrder(order);
+      await deleteTopLevelUserDocs("carts", orderUserIds);
+      await deleteTopLevelUserDocs("checkoutDrafts", orderUserIds);
+    }
     await writeDB(db);
+    if (order) {
+      await sendOrderEmail(db, order, "Confirmed", "order-created").catch((emailError) => {
+        addLog("Order confirmation email failed: " + emailError.message, "error");
+      });
+    }
     addLog(`Payment verify ${verification.verified ? "passed" : "blocked"}: ${attemptId || "unknown"}`, verification.verified ? "success" : "warn");
 
     res.status(verification.verified ? 200 : 202).json({
@@ -3603,6 +3725,7 @@ app.post("/api/payments/verify", paymentRateLimit, async (req, res) => {
       ,
       paymentDetails: paymentDetails && paymentDetails.ok ? paymentDetails.payment : null,
       instrument: paymentDetails && paymentDetails.instrument ? paymentDetails.instrument : null,
+      order,
       paymentLookupConfigured: paymentDetails ? paymentDetails.configured : Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
       paymentLookupMessage: paymentDetails ? paymentDetails.message : ""
     });

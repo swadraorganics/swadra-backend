@@ -1371,9 +1371,12 @@ let runtimeOtpRequiresPhone = false;
       showMsg(
         isPasswordResetFlow
           ? "Password reset successfully."
-          : "Account created successfully.",
+          : "Account Created Successfully",
         "success"
       );
+      if(!isPasswordResetFlow){
+        alert("Account Created Successfully");
+      }
 
       isPasswordResetFlow = false;
       document.getElementById("createAccountBtn").innerText = "Create Account";
@@ -1439,7 +1442,8 @@ let runtimeOtpRequiresPhone = false;
               status: "active"
             });
           }
-          showMsg("Login successful.", "success");
+          showMsg("Login Successful", "success");
+          alert("Login Successful");
           setTimeout(()=>{
             redirectAfterAuth("dashboard.html");
           },1000);
@@ -1467,7 +1471,8 @@ let runtimeOtpRequiresPhone = false;
           }
         }
 
-        showMsg("Login successful.", "success");
+        showMsg("Login Successful", "success");
+        alert("Login Successful");
 
         setTimeout(()=>{
           redirectAfterAuth("dashboard.html");
