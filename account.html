@@ -1000,6 +1000,32 @@ let runtimeOtpRequiresPhone = false;
       return error && error.message ? error.message : "Failed to send OTP on mobile number. Check Firebase authorized domain and SMS quota.";
     }
 
+    async function sendEmailOtpViaEmailJs(email, otp, purpose){
+      if(!window.emailjs || typeof window.emailjs.send !== "function"){
+        throw new Error("Email OTP service unavailable");
+      }
+      const cleanEmail = String(email || "").trim().toLowerCase();
+      const cleanOtp = String(otp || "").trim();
+      const subject = purpose === "reset" ? "Swadra password reset OTP" : "Swadra account verification OTP";
+      return window.emailjs.send(
+        "service_12k6w9q",
+        "template_qvyodce",
+        {
+          to_email: cleanEmail,
+          email: cleanEmail,
+          user_email: cleanEmail,
+          reply_to: cleanEmail,
+          to_name: cleanEmail.split("@")[0],
+          otp: cleanOtp,
+          otp_code: cleanOtp,
+          code: cleanOtp,
+          passcode: cleanOtp,
+          subject: subject,
+          message: "Your Swadra Organics OTP is " + cleanOtp + "."
+        }
+      );
+    }
+
     async function sendVerificationOtp(email, phone, purpose, options){
       const normalizedPurpose = purpose === "reset" ? "reset" : "signup";
       const config = options || {};
@@ -1036,14 +1062,7 @@ let runtimeOtpRequiresPhone = false;
       runtimeOtpCode = otp;
       runtimeEmailOtpCode = otp;
       runtimeOtpMode = requirePhoneOtp ? "dual" : "email";
-      return emailjs.send(
-        "service_12k6w9q",
-        "template_qvyodce",
-        {
-          to_email: email,
-          otp: otp
-        }
-      )
+      return sendEmailOtpViaEmailJs(email, otp, normalizedPurpose)
       .then(()=>{
         setOtpHelpText(
           requirePhoneOtp
@@ -1062,7 +1081,7 @@ let runtimeOtpRequiresPhone = false;
       })
       .catch((error)=>{
         console.error("email otp failed", error);
-        showMsg("Failed to send OTP.", "error");
+        showMsg(error && error.message ? error.message : "Failed to send email OTP.", "error");
         return false;
       });
     }
@@ -1191,6 +1210,24 @@ let runtimeOtpRequiresPhone = false;
         return;
       }
 
+      if(authApi && typeof authApi.fetchSignInMethodsForEmail === "function"){
+        try{
+          const methods = await authApi.fetchSignInMethodsForEmail(email);
+          if(Array.isArray(methods) && methods.length){
+            currentEmail = email;
+            currentPhone = phone;
+            isPasswordResetFlow = false;
+            document.getElementById("loginPass").value = "";
+            showMsg("Account already exists. Please enter password.", "success");
+            showStep("step4");
+            updateProgress(4);
+            return;
+          }
+        }catch(error){
+          console.error("firebase account method lookup failed", error);
+        }
+      }
+
       const isLinkedUser = !!(existingAccount && existingAccount.phone && existingAccount.phone === phone);
       await sendVerificationOtp(email, phone, "signup", { requirePhoneOtp: !isLinkedUser });
     }
@@ -1308,6 +1345,27 @@ let runtimeOtpRequiresPhone = false;
       const accountEmail = (temp.email || currentEmail || "").toLowerCase();
 
       if(authApi && typeof authApi.createOrUpdateUserAccount === "function"){
+        if(!isPasswordResetFlow && authApi && typeof authApi.registerUserWithPassword === "function"){
+          try{
+            await authApi.registerUserWithPassword({ email: accountEmail, password: pass });
+          }catch(authError){
+            const code = String(authError && authError.code || authError && authError.message || "").toLowerCase();
+            if(code.includes("email-already-in-use")){
+              document.getElementById("loginPass").value = "";
+              runtimeTempUser = null;
+              currentEmail = accountEmail;
+              currentPhone = temp.phone;
+              showMsg("Account already exists. Please login with password.", "error");
+              showStep("step4");
+              updateProgress(4);
+              return;
+            }
+            throw authError;
+          }
+        }
+        if(isPasswordResetFlow && authApi && typeof authApi.updateUserPassword === "function"){
+          await authApi.updateUserPassword(accountEmail, String(existingUser.password || ""), pass);
+        }
         const result = await authApi.createOrUpdateUserAccount({
           email: accountEmail,
           phone: temp.phone,
@@ -1339,11 +1397,7 @@ let runtimeOtpRequiresPhone = false;
         }
         const finalEmail = (result && result.record && result.record.email) || accountEmail;
         try{
-          if(isPasswordResetFlow && authApi && typeof authApi.updateUserPassword === "function"){
-            await authApi.updateUserPassword(finalEmail, String(existingUser.password || ""), pass);
-          }else if(authApi && typeof authApi.registerUserWithPassword === "function"){
-            await authApi.registerUserWithPassword({ email: finalEmail, password: pass });
-          }else if(authApi && typeof authApi.signInUser === "function"){
+          if(authApi && typeof authApi.signInUser === "function"){
             authApi.signInUser(finalEmail);
           }
         }catch(authError){
@@ -1419,6 +1473,38 @@ let runtimeOtpRequiresPhone = false;
         }
       }
       let users = getUsers();
+
+      if(authApi && typeof authApi.signInUserWithPassword === "function"){
+        try{
+          await authApi.signInUserWithPassword(currentEmail, pass);
+          if(authApi && typeof authApi.refreshUsers === "function"){
+            await authApi.refreshUsers().catch(function(error){
+              console.error("login post-auth refresh failed", error);
+            });
+          }
+          users = getUsers();
+          if((!users[currentEmail] || !users[currentEmail].email) && authApi && typeof authApi.createOrUpdateUserAccount === "function"){
+            await authApi.createOrUpdateUserAccount({
+              email: currentEmail,
+              phone: currentPhone || "",
+              password: pass,
+              profile: {
+                name: currentEmail.split("@")[0],
+                email: currentEmail,
+                phone: currentPhone || ""
+              },
+              status: "active"
+            });
+          }
+          showMsg("Login successful.", "success");
+          setTimeout(()=>{
+            redirectAfterAuth("dashboard.html");
+          },1000);
+          return;
+        }catch(firebaseLoginError){
+          console.error("firebase password login failed", firebaseLoginError);
+        }
+      }
 
       if(users[currentEmail] && users[currentEmail].password === pass){
         try{

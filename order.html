@@ -589,6 +589,13 @@ function syncOrdersToUserStore(currentUser, orders){
   users[userKey] = users[userKey] || { cart: [], orders: [] };
   users[userKey].orders = orders;
   saveUsers(users);
+  if(dataApi && typeof dataApi.syncOrderIntoUserProfile === "function"){
+    orders.forEach(order => {
+      dataApi.syncOrderIntoUserProfile({ email: currentUser, userId: currentUser, ...order }).catch(function(error){
+        console.warn("order profile sync failed", error);
+      });
+    });
+  }
 }
 
 async function loadOrders(){

@@ -259,6 +259,64 @@ async function readFirestoreCollection(rootRef, name) {
   });
 }
 
+async function readTopLevelFirestoreCollection(name) {
+  if (!USE_FIRESTORE) return [];
+  try {
+    const snap = await getFirestore().collection(name).get();
+    return snap.docs.map((doc) => {
+      const data = doc.data() || {};
+      return { ...data, id: data.id || data.email || doc.id, docId: doc.id };
+    });
+  } catch (error) {
+    addLog(`Top-level Firestore ${name} read failed: ${error.message}`, "warn");
+    return [];
+  }
+}
+
+async function readTopLevelSiteContent() {
+  if (!USE_FIRESTORE) return {};
+  try {
+    const snap = await getFirestore().collection("siteContent").doc("homepage").get();
+    return snap.exists ? snap.data() || {} : {};
+  } catch (error) {
+    addLog("Top-level siteContent read failed: " + error.message, "warn");
+    return {};
+  }
+}
+
+async function writeTopLevelSiteContentPatch(patch = {}) {
+  if (!USE_FIRESTORE) return;
+  await getFirestore().collection("siteContent").doc("homepage").set(patch, { merge: true });
+}
+
+async function writeTopLevelUsers(users = {}) {
+  if (!USE_FIRESTORE) return;
+  const firestore = getFirestore();
+  let batch = firestore.batch();
+  let count = 0;
+  for (const [email, record] of Object.entries(users || {})) {
+    const id = safeDocId(email);
+    batch.set(firestore.collection("users").doc(id), { ...record, email: record.email || email }, { merge: true });
+    count += 1;
+    if (count >= 400) {
+      await batch.commit();
+      batch = firestore.batch();
+      count = 0;
+    }
+  }
+  if (count > 0) await batch.commit();
+}
+
+function mergeRecordsById(primary = [], secondary = []) {
+  const map = new Map();
+  [...secondary, ...primary].forEach((item, index) => {
+    if (!item || typeof item !== "object") return;
+    const key = String(item.id || item.orderId || item.email || item.code || item.docId || `item_${index}`);
+    map.set(key, { ...(map.get(key) || {}), ...item });
+  });
+  return Array.from(map.values());
+}
+
 async function replaceFirestoreCollection(rootRef, name, items) {
   const existingSnap = await rootRef.collection(name).get();
   const wanted = new Map();
@@ -942,10 +1000,6 @@ function pickAppState(db, keys = []) {
   const source = db.appState && typeof db.appState === "object" ? db.appState : {};
   const result = {};
   (Array.isArray(keys) ? keys : []).forEach((key) => {
-    if (key === "coupons") {
-      result.coupons = Array.isArray(db.coupons) ? db.coupons.map((coupon) => normalizeCoupon(coupon)).slice(0, 50) : [];
-      return;
-    }
     if (typeof key === "string" && key in source) {
       result[key] = source[key];
     }
@@ -2600,7 +2654,9 @@ app.post("/api/admin/credentials", requireAdminSession, async (req, res) => {
 app.get("/api/coupons", async (req, res) => {
   try {
     const db = await readDB();
-    const coupons = db.coupons.map((coupon) => normalizeCoupon(coupon)).slice(0, 50);
+    const siteContent = await readTopLevelSiteContent();
+    const topCoupons = Array.isArray(siteContent.coupons) ? siteContent.coupons : [];
+    const coupons = mergeRecordsById(topCoupons, db.coupons).map((coupon) => normalizeCoupon(coupon)).slice(0, 50);
     res.json({
       ok: true,
       coupons,
@@ -2616,6 +2672,22 @@ app.get("/api/app-state", async (req, res) => {
   try {
     const db = await readDB();
     const isAdmin = Boolean(findValidAdminSession(db, req));
+    const siteContent = await readTopLevelSiteContent();
+    const topUsers = isAdmin ? await readTopLevelFirestoreCollection("users") : [];
+    if (Object.keys(siteContent).length) {
+      db.appState = { ...db.appState, ...siteContent };
+    }
+    if (isAdmin && topUsers.length) {
+      const usersMap = {};
+      topUsers.forEach((user) => {
+        const email = String(user.email || user.id || user.docId || "").trim().toLowerCase();
+        if (email) usersMap[email] = user;
+      });
+      db.appState.users = { ...(db.appState.users || {}), ...usersMap };
+    }
+    if (Array.isArray(db.coupons) || Array.isArray(siteContent.coupons)) {
+      db.appState.coupons = mergeRecordsById(siteContent.coupons || [], db.coupons || []).map((coupon) => normalizeCoupon(coupon)).slice(0, 50);
+    }
     const rawKeys = String(req.query.keys || "").trim();
     let keys = rawKeys
       ? rawKeys.split(",").map((item) => item.trim()).filter(Boolean)
@@ -2641,6 +2713,24 @@ app.get("/api/app-state/bootstrap", async (req, res) => {
   try {
     const db = await readDB();
     const isAdmin = Boolean(findValidAdminSession(db, req));
+    const siteContent = await readTopLevelSiteContent();
+    if (Object.keys(siteContent).length) {
+      db.appState = { ...db.appState, ...siteContent };
+    }
+    if (Array.isArray(db.coupons) || Array.isArray(siteContent.coupons)) {
+      db.appState.coupons = mergeRecordsById(siteContent.coupons || [], db.coupons || []).map((coupon) => normalizeCoupon(coupon)).slice(0, 50);
+    }
+    if (isAdmin) {
+      const topUsers = await readTopLevelFirestoreCollection("users");
+      if (topUsers.length) {
+        const usersMap = {};
+        topUsers.forEach((user) => {
+          const email = String(user.email || user.id || user.docId || "").trim().toLowerCase();
+          if (email) usersMap[email] = user;
+        });
+        db.appState.users = { ...(db.appState.users || {}), ...usersMap };
+      }
+    }
     let keys = [
       "users",
       "homeContent",
@@ -2688,6 +2778,10 @@ app.post("/api/app-state", async (req, res) => {
     if (Array.isArray(state.coupons)) {
       db.coupons = state.coupons.map((coupon) => normalizeCoupon(coupon)).filter((coupon) => coupon.code).slice(0, 50);
       db.appState.coupons = db.coupons;
+      await writeTopLevelSiteContentPatch({ coupons: db.coupons, homeContent: { coupons: db.coupons } });
+    }
+    if (state.users && typeof state.users === "object") {
+      await writeTopLevelUsers(state.users);
     }
 
     removeKeys.forEach((key) => {
@@ -2734,6 +2828,7 @@ app.post("/api/coupons", couponRateLimit, requireAdminSession, async (req, res) 
     db.coupons = db.coupons.slice(0, 50);
     auditAdminAction(db, req, "coupon.save", "success", { code: coupon.code });
     await writeDB(db);
+    await writeTopLevelSiteContentPatch({ coupons: db.coupons, homeContent: { coupons: db.coupons } });
     addLog(`Coupon saved: ${coupon.code}`, "success");
     res.json({
       ok: true,
@@ -2754,6 +2849,7 @@ app.delete("/api/coupons/:code", couponRateLimit, requireAdminSession, async (re
     db.coupons = db.coupons.filter((coupon) => String(coupon.code || "").trim().toUpperCase() !== code);
     auditAdminAction(db, req, "coupon.delete", "success", { code });
     await writeDB(db);
+    await writeTopLevelSiteContentPatch({ coupons: db.coupons, homeContent: { coupons: db.coupons } });
     addLog(`Coupon deleted: ${code}`, "warn");
     res.json({
       ok: true,
@@ -3292,10 +3388,12 @@ app.patch("/api/admin/return-requests/:id", requireAdminSession, async (req, res
 app.get("/api/orders", requireAdminSession, async (req, res) => {
   try {
     const db = await readDB();
+    const topLevelOrders = await readTopLevelFirestoreCollection("orders");
+    const orders = mergeRecordsById(topLevelOrders, Array.isArray(db.orders) ? db.orders : []);
     res.json({
       ok: true,
-      count: Array.isArray(db.orders) ? db.orders.length : 0,
-      orders: Array.isArray(db.orders) ? db.orders : []
+      count: orders.length,
+      orders
     });
   } catch (error) {
     addLog("Orders list fetch failed: " + error.message, "error");
@@ -3637,9 +3735,11 @@ app.post("/api/payments/attempts", paymentRateLimit, async (req, res) => {
 app.get("/api/payments/attempts", requireAdminSession, async (req, res) => {
   try {
     const db = await readDB();
+    const topLevelAttempts = await readTopLevelFirestoreCollection("paymentAttempts");
+    const attempts = mergeRecordsById(topLevelAttempts, db.paymentAttempts || []);
     res.json({
       ok: true,
-      attempts: db.paymentAttempts || []
+      attempts
     });
   } catch (error) {
     res.status(500).json({ ok: false, error: "Failed to load payment attempts" });

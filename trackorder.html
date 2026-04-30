@@ -438,6 +438,11 @@ function persistOrderUpdate(order){
   if(authApi && typeof authApi.saveUsers === "function"){
     authApi.saveUsers(users);
   }
+  if(dataApi && typeof dataApi.syncOrderIntoUserProfile === "function"){
+    dataApi.syncOrderIntoUserProfile({ email: currentUser, userId: currentUser, ...order }).catch(function(error){
+      console.warn("tracking profile sync failed", error);
+    });
+  }
 }
 
 function buildOrderAccessQuery(){

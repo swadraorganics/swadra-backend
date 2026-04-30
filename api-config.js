@@ -366,6 +366,7 @@
     window.fetch = function(input, init){
       var url = typeof input === "string" ? input : (input && input.url ? input.url : "");
       var target = String(url || "");
+      var normalizedTarget = target.indexOf(base) === 0 ? target.slice(base.length) : target;
       var isAdminApi = target.indexOf(base + "/api/admin/") === 0 ||
         target.indexOf(base + "/api/orders") === 0 ||
         target.indexOf(base + "/api/logs") === 0 ||
@@ -373,7 +374,15 @@
         target.indexOf(base + "/api/coupons") === 0 ||
         target.indexOf(base + "/api/payments/attempts") === 0 ||
         target.indexOf(base + "/api/shiprocket/config") === 0 ||
-        target.indexOf(base + "/api/shiprocket/auth-token") === 0;
+        target.indexOf(base + "/api/shiprocket/auth-token") === 0 ||
+        normalizedTarget.indexOf("/api/admin/") === 0 ||
+        normalizedTarget.indexOf("/api/orders") === 0 ||
+        normalizedTarget.indexOf("/api/logs") === 0 ||
+        normalizedTarget.indexOf("/api/app-state") === 0 ||
+        normalizedTarget.indexOf("/api/coupons") === 0 ||
+        normalizedTarget.indexOf("/api/payments/attempts") === 0 ||
+        normalizedTarget.indexOf("/api/shiprocket/config") === 0 ||
+        normalizedTarget.indexOf("/api/shiprocket/auth-token") === 0;
       if(isAdminApi){
         var token = readAdminToken();
         if(token){
@@ -387,11 +396,6 @@
     };
   }
 
-  var storageProto = window.Storage && window.Storage.prototype;
-  var browserLocalStoreRef = window["local" + "Storage"];
-  var rawGetItem = storageProto && storageProto.getItem;
-  var rawSetItem = storageProto && storageProto.setItem;
-  var rawRemoveItem = storageProto && storageProto.removeItem;
   var rawSessionGet = function(key){
     return Object.prototype.hasOwnProperty.call(runtimeSessionStore, key) ? String(runtimeSessionStore[key]) : null;
   };
@@ -413,31 +417,6 @@
   var rawLocalRemove = function(key){
     delete runtimeLocalStore[key];
     persistRuntimeStoresToWindowName();
-  };
-  var SESSION_PROXY_KEYS = {
-    currentUser: true,
-    userPhone: true,
-    tempUser: true,
-    otp: true,
-    redirectAfterLogin: true,
-    currentOrderId: true,
-    swadraCartMergeNotice: true
-  };
-  var BLOCKED_BUSINESS_KEYS = {
-    users: true,
-    orders: true,
-    adminOrders: true,
-    swadraOrders: true,
-    customerOrders: true,
-    allOrders: true
-  };
-  var UI_LOCAL_KEYS = {
-    cart: true,
-    checkoutUpiId: true,
-    swadraHeaderSearch: true,
-    adminPausedCustomers: true,
-    adminDeletedCustomers: true,
-    adminCustomersUpdatedAt: true
   };
   var usersCache = {};
   var usersCacheRequest = null;
@@ -525,6 +504,9 @@
       },
       cart: Array.isArray(source.cart) ? source.cart.map(compactCartItem) : [],
       orders: Array.isArray(source.orders) ? cloneValue(source.orders) : [],
+      payments: Array.isArray(source.payments) ? cloneValue(source.payments) : [],
+      invoices: Array.isArray(source.invoices) ? cloneValue(source.invoices) : [],
+      tracking: Array.isArray(source.tracking) ? cloneValue(source.tracking) : [],
       status: String(source.status || source.accountStatus || "active").trim().toLowerCase() || "active",
       createdAt: source.createdAt || source.registeredAt || source.signupAt || nowIso,
       updatedAt: source.updatedAt || source.modifiedAt || source.createdAt || nowIso,
@@ -543,75 +525,6 @@
     });
     return next;
   }
-
-  function installStorageGuards(){
-    if(!storageProto || storageProto.__swadraStorageGuardInstalled){
-      return;
-    }
-    storageProto.__swadraStorageGuardInstalled = true;
-
-    storageProto.getItem = function(key){
-      if(this === browserLocalStoreRef){
-        if(key === "users"){
-          return JSON.stringify(sanitizeUsersMap(usersCache));
-        }
-        if(SESSION_PROXY_KEYS[key]){
-          return rawSessionGet(key);
-        }
-        if(BLOCKED_BUSINESS_KEYS[key]){
-          return null;
-        }
-        if(UI_LOCAL_KEYS[key]){
-          return rawLocalGet(key);
-        }
-        return null;
-      }
-      return rawGetItem ? rawGetItem.call(this, key) : null;
-    };
-
-    storageProto.setItem = function(key, value){
-      if(this === browserLocalStoreRef){
-        if(key === "users"){
-          return;
-        }
-        if(SESSION_PROXY_KEYS[key]){
-          rawSessionSet(key, String(value));
-          return;
-        }
-        if(BLOCKED_BUSINESS_KEYS[key]){
-          console.warn("Blocked browser persistence for business-data key:", key);
-          return;
-        }
-        if(UI_LOCAL_KEYS[key]){
-          rawLocalSet(key, String(value));
-        }
-        return;
-      }
-      return rawSetItem ? rawSetItem.call(this, key, value) : undefined;
-    };
-
-    storageProto.removeItem = function(key){
-      if(this === browserLocalStoreRef){
-        if(key === "users"){
-          return;
-        }
-        if(SESSION_PROXY_KEYS[key]){
-          rawSessionRemove(key);
-          return;
-        }
-        if(BLOCKED_BUSINESS_KEYS[key]){
-          return;
-        }
-        if(UI_LOCAL_KEYS[key]){
-          rawLocalRemove(key);
-        }
-        return;
-      }
-      return rawRemoveItem ? rawRemoveItem.call(this, key) : undefined;
-    };
-  }
-
-  installStorageGuards();
 
   ["users", "orders", "adminOrders", "swadraOrders", "customerOrders", "allOrders"].forEach(function(key){
     rawLocalRemove(key);
@@ -1002,6 +915,152 @@
     await db.collection(CHECKOUT_DRAFTS_COLLECTION).doc(normalizedUserId).delete().catch(function(){});
   }
 
+  function findOrderCustomerEmail(order){
+    var source = order && typeof order === "object" ? order : {};
+    return normalizeEmailValue(
+      source.customerEmail ||
+      source.userEmail ||
+      source.email ||
+      source.userId ||
+      source.user ||
+      source.shipping && source.shipping.email ||
+      source.billing && source.billing.email ||
+      ""
+    );
+  }
+
+  function findOrderCustomerPhone(order){
+    var source = order && typeof order === "object" ? order : {};
+    return String(
+      source.customerPhone ||
+      source.phone ||
+      source.mobile ||
+      source.shipping && (source.shipping.phone || source.shipping.mobile) ||
+      source.billing && (source.billing.phone || source.billing.mobile) ||
+      ""
+    ).trim();
+  }
+
+  function buildOrderAddress(order){
+    var source = order && typeof order === "object" ? order : {};
+    var shipping = source.shipping && typeof source.shipping === "object" ? cloneValue(source.shipping) : {};
+    var directAddress = source.address && typeof source.address === "object" ? cloneValue(source.address) : {};
+    if(Object.keys(directAddress).length){
+      shipping = Object.assign({}, directAddress, shipping);
+    }
+    var addressText = String(
+      shipping.address ||
+      (typeof source.address === "string" ? source.address : "") ||
+      [shipping.house, shipping.area, shipping.postoffice, shipping.city, shipping.district, shipping.state, shipping.pincode].filter(Boolean).join(", ")
+    ).trim();
+    if(!addressText && !Object.keys(shipping).length) return {};
+    return Object.assign({
+      id: String(shipping.id || source.addressId || "addr_order_" + String(source.id || Date.now())),
+      address: addressText
+    }, shipping);
+  }
+
+  function mergeRecordList(list, incoming, matchKeys){
+    var next = Array.isArray(list) ? cloneValue(list) : [];
+    var record = incoming && typeof incoming === "object" ? cloneValue(incoming) : null;
+    if(!record) return next;
+    var keys = Array.isArray(matchKeys) && matchKeys.length ? matchKeys : ["id"];
+    var index = next.findIndex(function(item){
+      if(!item || typeof item !== "object") return false;
+      return keys.some(function(key){
+        return record[key] && item[key] && String(record[key]) === String(item[key]);
+      });
+    });
+    if(index >= 0) next[index] = Object.assign({}, next[index], record);
+    else next.unshift(record);
+    return next.slice(0, 300);
+  }
+
+  function buildPaymentFromOrder(order){
+    var source = order && typeof order === "object" ? order : {};
+    var orderId = String(source.id || source.orderId || "").trim();
+    var paymentId = String(source.payment_id || source.paymentId || source.razorpay_payment_id || source.razorpayPaymentId || orderId).trim();
+    return {
+      id: paymentId || orderId,
+      paymentId: paymentId,
+      orderId: orderId,
+      email: findOrderCustomerEmail(source),
+      phone: findOrderCustomerPhone(source),
+      amount: Number(source.finalAmount || source.total || source.amount || 0) || 0,
+      status: String(source.payment || source.paymentStatus || source.status || "").trim(),
+      method: String(source.paymentMethod || source.paymentInstrumentLabel || "online").trim(),
+      razorpayOrderId: String(source.razorpay_order_id || source.razorpayOrderId || "").trim(),
+      refundStatus: String(source.refundStatus || "").trim(),
+      refundAmount: Number(source.refundAmount || 0) || 0,
+      createdAt: source.paymentCompletedAt || source.createdAt || source.date || new Date().toISOString(),
+      updatedAt: source.updatedAt || new Date().toISOString()
+    };
+  }
+
+  function buildInvoiceFromOrder(order){
+    var source = order && typeof order === "object" ? order : {};
+    var orderId = String(source.id || source.orderId || "").trim();
+    return {
+      id: String(source.invoiceId || source.invoiceNumber || orderId).trim(),
+      invoiceId: String(source.invoiceId || source.invoiceNumber || orderId).trim(),
+      orderId: orderId,
+      email: findOrderCustomerEmail(source),
+      phone: findOrderCustomerPhone(source),
+      amount: Number(source.finalAmount || source.total || source.amount || 0) || 0,
+      status: String(source.invoiceStatus || "ready").trim(),
+      url: "invoice.html?orderId=" + encodeURIComponent(orderId),
+      createdAt: source.paymentCompletedAt || source.createdAt || source.date || new Date().toISOString(),
+      updatedAt: source.updatedAt || new Date().toISOString()
+    };
+  }
+
+  function buildTrackingFromOrder(order){
+    var source = order && typeof order === "object" ? order : {};
+    var orderId = String(source.id || source.orderId || "").trim();
+    return {
+      id: String(source.trackingId || source.awb || source.awb_code || orderId).trim(),
+      orderId: orderId,
+      email: findOrderCustomerEmail(source),
+      phone: findOrderCustomerPhone(source),
+      status: String(source.shiprocketStatus || source.deliveryStatus || source.status || "Confirmed").trim(),
+      awb: String(source.awb || source.awb_code || source.trackingId || "").trim(),
+      shipmentId: String(source.shipment_id || source.shipmentId || "").trim(),
+      courier: String(source.courier || source.courierName || "").trim(),
+      url: "trackorder.html?orderId=" + encodeURIComponent(orderId),
+      updatedAt: source.updatedAt || new Date().toISOString()
+    };
+  }
+
+  async function syncOrderIntoUserProfile(order){
+    var source = order && typeof order === "object" ? cloneValue(order) : {};
+    var email = findOrderCustomerEmail(source);
+    if(!email) return null;
+    var users = await loadUsersCache(true).catch(function(){ return getAuthUsers(); });
+    var user = sanitizeUserRecord(users[email] || { email: email }, email);
+    var phone = findOrderCustomerPhone(source);
+    if(phone){
+      user.phone = user.phone || phone;
+      user.phoneNormalized = normalizePhoneValue(user.phone);
+      user.profile.phone = user.profile.phone || phone;
+    }
+    var address = buildOrderAddress(source);
+    if(Object.keys(address).length){
+      var addressId = String(address.id || "addr_order_" + String(source.id || Date.now()));
+      address.id = addressId;
+      user.addresses = mergeRecordList(user.addresses, address, ["id", "address"]);
+      if(!user.defaultAddressId) user.defaultAddressId = addressId;
+      if(!user.address || !user.address.house && !user.address.address){
+        user.address = cloneValue(address);
+      }
+    }
+    user.orders = mergeRecordList(user.orders, source, ["id", "orderId"]);
+    user.payments = mergeRecordList(user.payments, buildPaymentFromOrder(source), ["id", "paymentId", "orderId"]);
+    user.invoices = mergeRecordList(user.invoices, buildInvoiceFromOrder(source), ["id", "invoiceId", "orderId"]);
+    user.tracking = mergeRecordList(user.tracking, buildTrackingFromOrder(source), ["id", "awb", "orderId"]);
+    user.updatedAt = new Date().toISOString();
+    return saveAuthUserRecord(user);
+  }
+
   async function saveFirestoreOrder(orderId, payload){
     var normalizedOrderId = sanitizeText(orderId || payload && payload.id || "");
     if(!normalizedOrderId) throw new Error("Order id required");
@@ -1014,6 +1073,9 @@
       orderPayload.createdAt = orderPayload.updatedAt;
     }
     await db.collection(ORDERS_COLLECTION).doc(normalizedOrderId).set(orderPayload, { merge: true });
+    await syncOrderIntoUserProfile(orderPayload).catch(function(error){
+      console.error("user ecommerce profile sync failed", error);
+    });
     return orderPayload;
   }
 
@@ -1253,6 +1315,20 @@
     return normalizedEmail;
   }
 
+  async function fetchSignInMethodsForEmail(email){
+    var auth = initFirebaseAuthIfNeeded();
+    if(!auth || typeof auth.fetchSignInMethodsForEmail !== "function"){
+      return [];
+    }
+    var normalizedEmail = String(email || "").trim().toLowerCase();
+    if(!normalizedEmail) return [];
+    return auth.fetchSignInMethodsForEmail(normalizedEmail).catch(function(error){
+      var code = String(error && error.code || "").toLowerCase();
+      if(code === "auth/invalid-email") throw error;
+      return [];
+    });
+  }
+
   async function updateUserPassword(email, currentPassword, nextPassword){
     var normalizedEmail = String(email || "").trim();
     var newPassword = String(nextPassword || "");
@@ -1456,6 +1532,7 @@
     signInUser: signInUser,
     signInUserWithPassword: signInUserWithPassword,
     registerUserWithPassword: registerUserWithPassword,
+    fetchSignInMethodsForEmail: fetchSignInMethodsForEmail,
     ensureAuthAccountForLegacyUser: ensureAuthAccountForLegacyUser,
     updateUserPassword: updateUserPassword,
     signOutUser: signOutUser
@@ -3327,7 +3404,8 @@
     clearCheckoutDraft: clearCheckoutDraft,
     saveOrder: saveFirestoreOrder,
     fetchOrder: fetchFirestoreOrder,
-    fetchOrders: fetchAllFirestoreOrders
+    fetchOrders: fetchAllFirestoreOrders,
+    syncOrderIntoUserProfile: syncOrderIntoUserProfile
   };
 
   window.SWADRA_OFFERS = {

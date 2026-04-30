@@ -861,6 +861,7 @@ margin:4px 0 0 !important;
 <script>
 emailjs.init("uqdnXG18txM1DBF6j");
 const authApi = window.SWADRA_AUTH || null;
+const dataApi = window.SWADRA_DATA || null;
 
 function getCurrentUser(){
   return authApi && typeof authApi.getCurrentUserEmail === "function"
@@ -1012,6 +1013,85 @@ function formatMoney(value){
   return "₹" + Math.round(Number(value || 0)).toLocaleString("en-IN");
 }
 
+function getOrderEmail(order){
+  const item = order && typeof order === "object" ? order : {};
+  return String(
+    item.customerEmail ||
+    item.userEmail ||
+    item.email ||
+    item.userId ||
+    item.user ||
+    item.shipping && item.shipping.email ||
+    ""
+  ).trim().toLowerCase();
+}
+
+function mergeDashboardRecords(list, incoming){
+  const next = Array.isArray(list) ? list.slice() : [];
+  const record = incoming && typeof incoming === "object" ? Object.assign({}, incoming) : null;
+  if(!record) return next;
+  const recordId = String(record.id || record.orderId || record.paymentId || record.invoiceId || record.awb || "");
+  const index = next.findIndex(item => {
+    const itemId = String(item && (item.id || item.orderId || item.paymentId || item.invoiceId || item.awb) || "");
+    return recordId && itemId && recordId === itemId;
+  });
+  if(index >= 0) next[index] = Object.assign({}, next[index], record);
+  else next.unshift(record);
+  return next;
+}
+
+async function refreshCustomerEcommerceData(){
+  const currentUser = getCurrentUser();
+  if(!currentUser || !dataApi || typeof dataApi.fetchOrders !== "function") return;
+  try{
+    const users = getUsers();
+    const user = users[currentUser] || { email: currentUser, profile: { email: currentUser }, cart: [], orders: [] };
+    const allOrders = await dataApi.fetchOrders();
+    const ownOrders = (Array.isArray(allOrders) ? allOrders : []).filter(order => getOrderEmail(order) === currentUser);
+
+    for(const order of ownOrders){
+      if(dataApi && typeof dataApi.syncOrderIntoUserProfile === "function"){
+        await dataApi.syncOrderIntoUserProfile(order).catch(()=>{});
+      }
+      user.orders = mergeDashboardRecords(user.orders, order);
+      const paymentRecord = {
+        id: order.payment_id || order.paymentId || order.id,
+        paymentId: order.payment_id || order.paymentId || "",
+        orderId: order.id || order.orderId || "",
+        amount: Number(order.finalAmount || order.total || order.amount || 0) || 0,
+        status: order.payment || order.paymentStatus || order.status || "",
+        method: order.paymentMethod || order.paymentInstrumentLabel || "online",
+        createdAt: order.paymentCompletedAt || order.createdAt || order.date || ""
+      };
+      user.payments = mergeDashboardRecords(user.payments, paymentRecord);
+      user.invoices = mergeDashboardRecords(user.invoices, {
+        id: order.invoiceId || order.id,
+        invoiceId: order.invoiceId || order.id,
+        orderId: order.id || order.orderId || "",
+        amount: Number(order.finalAmount || order.total || order.amount || 0) || 0,
+        status: order.invoiceStatus || "ready",
+        url: "invoice.html?orderId=" + encodeURIComponent(order.id || order.orderId || "")
+      });
+      user.tracking = mergeDashboardRecords(user.tracking, {
+        id: order.trackingId || order.awb || order.id,
+        orderId: order.id || order.orderId || "",
+        status: order.shiprocketStatus || order.deliveryStatus || order.status || "Confirmed",
+        awb: order.awb || order.awb_code || order.trackingId || "",
+        shipmentId: order.shipment_id || order.shipmentId || "",
+        url: "trackorder.html?orderId=" + encodeURIComponent(order.id || order.orderId || "")
+      });
+    }
+
+    if(ownOrders.length){
+      user.email = user.email || currentUser;
+      user.updatedAt = new Date().toISOString();
+      await persistCurrentUser(user, "", "");
+    }
+  }catch(error){
+    console.error("dashboard ecommerce sync failed", error);
+  }
+}
+
 async function renderOfferBar(forceRefresh){
   if(window.SWADRA_OFFERS && typeof window.SWADRA_OFFERS.renderSaleBar === "function"){
     await window.SWADRA_OFFERS.renderSaleBar("saleBarTrack", !!forceRefresh);
@@ -1052,6 +1132,7 @@ window.onload = async function(){
     };
   }
 
+  await refreshCustomerEcommerceData();
   loadProfile();
   loadAddress();
   loadStats();
