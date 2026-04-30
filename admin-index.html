@@ -468,6 +468,30 @@
           </div>
           <div id="bugFeed" style="margin-top:12px;display:grid;gap:10px;"></div>
         </div>
+        <div id="settingsBox" class="hidden" style="margin-top:20px;border-top:1px solid #eadfdd;padding-top:16px;">
+          <h2 style="margin:0 0 8px;">Admin Password Settings</h2>
+          <p class="muted">OTP verify karke admin username/password update karo. OTP registered admin email par jayega.</p>
+          <div class="row" style="margin-top:12px;">
+            <div>
+              <label>New Username</label>
+              <input id="newUser" placeholder="New admin username" value="admin">
+            </div>
+            <div>
+              <label>New Password</label>
+              <input id="newPass" type="password" placeholder="New admin password">
+            </div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <div>
+              <label>OTP</label>
+              <input id="otpInput" inputmode="numeric" maxlength="6" placeholder="Enter OTP">
+            </div>
+            <div class="actions" style="align-items:end;margin-top:24px;">
+              <button type="button" onclick="sendOTP()">Send OTP</button>
+              <button type="button" onclick="verifyOTP()">Update Password</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -794,7 +818,7 @@ function getApiBase(){
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-session-token": token
+          "Authorization": "Bearer " + token
         },
         body: JSON.stringify({})
       });
@@ -1221,30 +1245,68 @@ window.addEventListener("pageshow", restoreAdminSession);
       const els = getAdminElements();
       if(els.settingsBox){
         els.settingsBox.classList.toggle("hidden");
+        if(!els.settingsBox.classList.contains("hidden")){
+          els.settingsBox.scrollIntoView({ behavior:"smooth", block:"start" });
+          if(els.newUser && !String(els.newUser.value || "").trim()){
+            els.newUser.value = "admin";
+          }
+        }
       }
     }
 
     let generatedOTP = "";
+    const ADMIN_PASSWORD_OTP_EMAIL = "ajaysingroha1@gmail.com";
 
     function sendOTP(){
+      const els = getAdminElements();
+      if(!els.newUser || !String(els.newUser.value || "").trim()){
+        alert("New username enter karo.");
+        return;
+      }
+      if(!els.newPass || String(els.newPass.value || "").length < 6){
+        alert("New password minimum 6 characters ka hona chahiye.");
+        return;
+      }
       generatedOTP = Math.floor(100000 + Math.random()*900000);
 
       emailjs.send(
         "service_12k6w9q",
         "template_qvyodce",
         {
-          to_email:"ajaysingroha1@gmail.com",
-          otp:generatedOTP
+          to_email:ADMIN_PASSWORD_OTP_EMAIL,
+          email:ADMIN_PASSWORD_OTP_EMAIL,
+          user_email:ADMIN_PASSWORD_OTP_EMAIL,
+          reply_to:ADMIN_PASSWORD_OTP_EMAIL,
+          to_name:"Admin",
+          otp:generatedOTP,
+          otp_code:generatedOTP,
+          code:generatedOTP,
+          passcode:generatedOTP,
+          subject:"Swadra admin password change OTP",
+          message:"Your Swadra admin password change OTP is " + generatedOTP + "."
         }
-      );
-
-      alert("OTP sent to ajaysingroha1@gmail.com");
+      ).then(function(){
+        alert("OTP sent to registered admin email.");
+      }).catch(function(error){
+        console.error("admin password OTP failed", error);
+        alert("OTP send failed. EmailJS settings check karo.");
+      });
     }
 
     async function verifyOTP(){
       const els = getAdminElements();
+      if(!generatedOTP){
+        alert("Pehle OTP send karo.");
+        return;
+      }
       if(!els.otpInput || els.otpInput.value != generatedOTP){
         alert("Wrong OTP");
+        return;
+      }
+      const nextUsername = String(els.newUser && els.newUser.value || "").trim();
+      const nextPassword = String(els.newPass && els.newPass.value || "");
+      if(!nextUsername || nextPassword.length < 6){
+        alert("Username required hai aur password minimum 6 characters ka hona chahiye.");
         return;
       }
       try{
@@ -1252,8 +1314,8 @@ window.addEventListener("pageshow", restoreAdminSession);
           method:"POST",
           headers:{ "Content-Type":"application/json" },
           body:JSON.stringify({
-            username:String(els.newUser && els.newUser.value || "").trim(),
-            password:String(els.newPass && els.newPass.value || "")
+            username:nextUsername,
+            password:nextPassword
           })
         });
     const data = await response.json().catch(()=>({ ok:false }));
@@ -1444,6 +1506,9 @@ window.addEventListener("pageshow", restoreAdminSession);
     window.toggleAdminProfileMenu = toggleAdminProfileMenu;
     window.openAdminProfileMenu = openAdminProfileMenu;
     window.closeAdminProfileMenu = closeAdminProfileMenu;
+    window.showSettings = showSettings;
+    window.sendOTP = sendOTP;
+    window.verifyOTP = verifyOTP;
   </script>
 <script src="admin-nav-active.js"></script>
 </body>

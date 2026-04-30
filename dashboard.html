@@ -881,6 +881,49 @@ function saveUsers(users){
     : users;
 }
 
+async function refreshUsersSafe(){
+  if(authApi && typeof authApi.refreshUsers === "function"){
+    try{
+      await authApi.refreshUsers();
+    }catch(error){
+      console.error("dashboard users refresh failed", error);
+    }
+  }
+}
+
+function resolveUserKey(users, email){
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if(!normalizedEmail) return "";
+  if(users && users[normalizedEmail]) return normalizedEmail;
+  return Object.keys(users || {}).find(key => String(key || "").trim().toLowerCase() === normalizedEmail) || normalizedEmail;
+}
+
+function getOrCreateDashboardUser(users, email){
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const userKey = resolveUserKey(users, normalizedEmail);
+  users[userKey] = users[userKey] || {
+    id: normalizedEmail,
+    userId: normalizedEmail,
+    uid: normalizedEmail,
+    email: normalizedEmail,
+    phone: "",
+    profile: {
+      name: normalizedEmail ? normalizedEmail.split("@")[0] : "User",
+      email: normalizedEmail,
+      phone: ""
+    },
+    cart: [],
+    orders: [],
+    addresses: [],
+    address: {},
+    status: "active"
+  };
+  users[userKey].email = users[userKey].email || normalizedEmail;
+  users[userKey].profile = users[userKey].profile || {};
+  users[userKey].profile.email = users[userKey].profile.email || normalizedEmail;
+  return { userKey, user: users[userKey] };
+}
+
 async function persistCurrentUser(user, successMessage, errorMessage){
   if(!user || !user.email){
     if(errorMessage) alert(errorMessage);
@@ -1141,10 +1184,8 @@ window.onload = async function(){
 function loadProfile(){
   let currentUser = getCurrentUser();
   let users = getUsers();
-
-  if(!users[currentUser]) return;
-
-  let user = users[currentUser];
+  let resolved = getOrCreateDashboardUser(users, currentUser);
+  let user = resolved.user;
   let displayName = user.profile?.name || currentUser.split("@")[0];
 
   document.getElementById("welcomeText").innerText = `Welcome Back, ${displayName}`;
@@ -1157,10 +1198,17 @@ async function editProfileName(){
   let currentUser = getCurrentUser();
   let users = getUsers();
 
-  if(!users[currentUser]) return;
+  if(!currentUser){
+    alert("Please login again.");
+    window.location.href = "account.html";
+    return;
+  }
+
+  let resolved = getOrCreateDashboardUser(users, currentUser);
+  let user = resolved.user;
 
   let oldName =
-    users[currentUser].profile?.name ||
+    user.profile?.name ||
     currentUser.split("@")[0];
 
   let newName = prompt("Enter your full name", oldName);
@@ -1171,22 +1219,23 @@ async function editProfileName(){
 
   if(newName.length < 2) return;
 
-  if(!users[currentUser].profile){
-    users[currentUser].profile = {};
+  if(!user.profile){
+    user.profile = {};
   }
 
-  users[currentUser].profile.name = newName;
-  users[currentUser].updatedAt = new Date().toISOString();
-  const saved = await persistCurrentUser(users[currentUser], "Profile updated successfully.", "Profile update failed.");
+  user.profile.name = newName;
+  user.name = newName;
+  user.updatedAt = new Date().toISOString();
+  const saved = await persistCurrentUser(user, "Profile updated successfully.", "Profile update failed.");
   if(!saved) return;
+  await refreshUsersSafe();
   loadProfile();
 }
 
 function loadStats(){
   let currentUser = getCurrentUser();
   let users = getUsers();
-  let user = syncUserAddresses(users[currentUser] || {});
-  saveUsers(users);
+  let user = syncUserAddresses(getOrCreateDashboardUser(users, currentUser).user || {});
   const orders = Array.isArray(user.orders) ? user.orders : [];
   const totalSavings = orders.reduce((sum, order)=>sum + calculateOrderSavings(order), 0);
 
@@ -1199,10 +1248,9 @@ function loadAddress(){
   let currentUser = getCurrentUser();
   let users = getUsers();
 
-  if(!users[currentUser]) return;
+  if(!currentUser) return;
 
-  const user = syncUserAddresses(users[currentUser]);
-  saveUsers(users);
+  const user = syncUserAddresses(getOrCreateDashboardUser(users, currentUser).user);
   const addressBook = user.addresses || [];
   const defaultAddressId = user.defaultAddressId || "";
   const box = document.getElementById("addressDisplay");
@@ -1239,7 +1287,7 @@ function openModal(addressId){
 
   let currentUser = getCurrentUser();
   let users = getUsers();
-  let user = syncUserAddresses(users[currentUser] || {});
+  let user = syncUserAddresses(getOrCreateDashboardUser(users, currentUser).user || {});
   let data = {};
 
   if(addressId){
@@ -1347,11 +1395,15 @@ async function verifyPasswordOtpAndSave(){
   let currentUser = getCurrentUser();
   let users = getUsers();
 
-  if(!users[currentUser]) return;
+  if(!currentUser){
+    setPasswordMessage("Please login again.", true);
+    return;
+  }
 
-  users[currentUser].password = newPassword;
-  users[currentUser].updatedAt = new Date().toISOString();
-  const saved = await persistCurrentUser(users[currentUser], "", "Password update failed.");
+  const user = getOrCreateDashboardUser(users, currentUser).user;
+  user.password = newPassword;
+  user.updatedAt = new Date().toISOString();
+  const saved = await persistCurrentUser(user, "", "Password update failed.");
   if(!saved) return;
   dashboardPasswordOtp = "";
   setPasswordMessage("Password changed successfully.");
@@ -1365,9 +1417,16 @@ async function saveAddress(){
   let currentUser = getCurrentUser();
   let users = getUsers();
 
-  if(!users[currentUser]) return;
+  if(!currentUser){
+    alert("Please login again.");
+    window.location.href = "account.html";
+    return;
+  }
 
-  const user = syncUserAddresses(users[currentUser]);
+  const user = syncUserAddresses(getOrCreateDashboardUser(users, currentUser).user);
+  if(!postoffice.value.trim()){
+    postoffice.value = city.value.trim() || district.value.trim() || "Local Post Office";
+  }
   const nextAddress = normalizeAddressEntry({
     id: editingAddressId.value.trim() || ("addr_" + Date.now()),
     house: house.value.trim(),
@@ -1407,6 +1466,7 @@ async function saveAddress(){
   user.updatedAt = new Date().toISOString();
   const saved = await persistCurrentUser(user, "Address saved successfully.", "Address save failed.");
   if(!saved) return;
+  await refreshUsersSafe();
   closeModal();
   loadAddress();
   loadStats();
@@ -1415,8 +1475,8 @@ async function saveAddress(){
 async function setDefaultAddress(addressId){
   let currentUser = getCurrentUser();
   let users = getUsers();
-  if(!users[currentUser]) return;
-  const user = syncUserAddresses(users[currentUser]);
+  if(!currentUser) return;
+  const user = syncUserAddresses(getOrCreateDashboardUser(users, currentUser).user);
   user.defaultAddressId = addressId;
   syncUserAddresses(user);
   user.updatedAt = new Date().toISOString();
@@ -1429,8 +1489,8 @@ async function setDefaultAddress(addressId){
 async function deleteAddress(addressId){
   let currentUser = getCurrentUser();
   let users = getUsers();
-  if(!users[currentUser]) return;
-  const user = syncUserAddresses(users[currentUser]);
+  if(!currentUser) return;
+  const user = syncUserAddresses(getOrCreateDashboardUser(users, currentUser).user);
   user.addresses = (user.addresses || []).filter(address=>address.id !== addressId);
   if(user.defaultAddressId === addressId){
     user.defaultAddressId = user.addresses[0] ? user.addresses[0].id : "";
@@ -1502,6 +1562,17 @@ document.getElementById("passwordModal").addEventListener("click", function(e){
     closePasswordModal();
   }
 });
+
+window.editProfileName = editProfileName;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.saveAddress = saveAddress;
+window.setDefaultAddress = setDefaultAddress;
+window.deleteAddress = deleteAddress;
+window.openPasswordModal = openPasswordModal;
+window.closePasswordModal = closePasswordModal;
+window.sendPasswordOtp = sendPasswordOtp;
+window.verifyPasswordOtpAndSave = verifyPasswordOtpAndSave;
 </script>
 
 <script>

@@ -832,7 +832,7 @@
               <div id="step1">
                 <div class="section-head">
                   <h3>Enter account details</h3>
-                  <p>Existing users will go to password login. New users will receive an OTP.</p>
+                  <p>Existing users will go to password login. New users will receive an email OTP.</p>
                 </div>
 
                 <div class="input-group">
@@ -854,12 +854,7 @@
               <div id="step2" class="hidden">
                 <div class="section-head">
                   <h3>OTP verification</h3>
-                  <p id="otpHelpText">Please enter the OTP sent to your mobile number.</p>
-                </div>
-
-                <div class="input-group hidden" id="otpPhoneGroup">
-                  <label class="label">Mobile OTP</label>
-                  <input type="text" id="otpPhone" placeholder="Enter Mobile OTP" inputmode="numeric" maxlength="6">
+                  <p id="otpHelpText">Please enter the OTP sent to your email address.</p>
                 </div>
 
                 <div class="input-group" id="otpEmailGroup">
@@ -867,7 +862,7 @@
                   <input type="text" id="otp" placeholder="Enter Email OTP" inputmode="numeric" maxlength="6">
                 </div>
 
-                <div id="firebaseOtpMount" style="margin:12px auto;display:flex;justify-content:center;min-height:78px;width:100%;"></div>
+                <div id="firebaseOtpMount" class="hidden" style="margin:12px auto;display:flex;justify-content:center;min-height:78px;width:100%;"></div>
 
                 <button class="primary-btn" onclick="verifyOTP()">Verify OTP</button>
               </div>
@@ -964,7 +959,7 @@ let runtimeOtpRequiresPhone = false;
     function setOtpHelpText(message){
       const help = document.getElementById("otpHelpText");
       if(help){
-        help.innerText = message || "Please enter the OTP sent to your mobile number.";
+        help.innerText = message || "Please enter the OTP sent to your email address.";
       }
     }
 
@@ -1028,8 +1023,7 @@ let runtimeOtpRequiresPhone = false;
 
     async function sendVerificationOtp(email, phone, purpose, options){
       const normalizedPurpose = purpose === "reset" ? "reset" : "signup";
-      const config = options || {};
-      let requirePhoneOtp = !!config.requirePhoneOtp;
+      let requirePhoneOtp = false;
       runtimeOtpCode = "";
       runtimeEmailOtpCode = "";
       runtimeOtpMode = "";
@@ -1044,35 +1038,15 @@ let runtimeOtpRequiresPhone = false;
         authApi.resetPhoneOtp();
       }
 
-      if(requirePhoneOtp && authApi && typeof authApi.sendPhoneOtp === "function"){
-        try{
-          showStep("step2");
-          updateProgress(2);
-          setOtpHelpText("Complete reCAPTCHA, then mobile OTP and email OTP will be sent.");
-          showMsg("Complete reCAPTCHA to receive mobile OTP.", "info");
-          await authApi.sendPhoneOtp(phone, { containerId:"firebaseOtpMount" });
-        }catch(error){
-          console.error("firebase phone otp failed", error);
-          showMsg(getPhoneOtpErrorMessage(error), "error");
-          return false;
-        }
-      }
-
       const otp = String(Math.floor(100000 + Math.random()*900000));
       runtimeOtpCode = otp;
       runtimeEmailOtpCode = otp;
       runtimeOtpMode = requirePhoneOtp ? "dual" : "email";
       return sendEmailOtpViaEmailJs(email, otp, normalizedPurpose)
       .then(()=>{
-        setOtpHelpText(
-          requirePhoneOtp
-            ? "Enter mobile OTP and email OTP to verify account."
-            : "Please enter the OTP sent to your email address."
-        );
+        setOtpHelpText("Please enter the OTP sent to your email address.");
         showMsg(
-          requirePhoneOtp
-            ? "OTP sent to mobile and email."
-            : (normalizedPurpose === "reset" ? "Password reset OTP sent to your email." : "OTP sent successfully."),
+          normalizedPurpose === "reset" ? "Password reset OTP sent to your email." : "OTP sent successfully.",
           "success"
         );
         showStep("step2");
@@ -1228,50 +1202,19 @@ let runtimeOtpRequiresPhone = false;
         }
       }
 
-      const isLinkedUser = !!(existingAccount && existingAccount.phone && existingAccount.phone === phone);
-      await sendVerificationOtp(email, phone, "signup", { requirePhoneOtp: !isLinkedUser });
+      await sendVerificationOtp(email, phone, "signup", { requirePhoneOtp:false });
     }
 
     async function verifyOTP(){
       let verified = false;
 
-      if(runtimeOtpMode === "dual"){
-        if(!authApi || typeof authApi.verifyPhoneOtp !== "function"){
-          runtimeOtpMode = "email";
-          runtimeOtpRequiresPhone = false;
-          setOtpFieldsVisibility();
-          showMsg("Mobile OTP service unavailable. Please verify email OTP.", "info");
-        }
+      let entered = document.getElementById("otp").value.trim();
+      if(!entered){
+        showMsg("Please enter OTP.", "error");
+        return;
       }
-
-      if(runtimeOtpMode === "dual"){
-        const phoneOtp = (document.getElementById("otpPhone")?.value || "").trim();
-        const emailOtp = (document.getElementById("otp")?.value || "").trim();
-        if(!phoneOtp || !emailOtp){
-          showMsg("Please enter mobile OTP and email OTP.", "error");
-          return;
-        }
-        try{
-          await authApi.verifyPhoneOtp(phoneOtp);
-        }catch(error){
-          console.error("phone otp verify failed", error);
-          showMsg(error && error.message ? error.message : "Incorrect OTP.", "error");
-          return;
-        }
-        if(emailOtp !== runtimeEmailOtpCode){
-          showMsg("Incorrect email OTP.", "error");
-          return;
-        }
+      if(runtimeOtpMode === "email" && entered === runtimeOtpCode){
         verified = true;
-      }else{
-        let entered = document.getElementById("otp").value.trim();
-        if(!entered){
-          showMsg("Please enter OTP.", "error");
-          return;
-        }
-        if(runtimeOtpMode === "email" && entered === runtimeOtpCode){
-          verified = true;
-        }
       }
 
       if(verified){

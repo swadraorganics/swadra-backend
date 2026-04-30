@@ -19,6 +19,7 @@
 
     const authApi = window.SWADRA_AUTH || null;
     const dataApi = window.SWADRA_DATA || null;
+    let backendUsersCache = {};
     let backendOrdersCache = [];
 
     function safeJsonParse(value, fallback){
@@ -63,10 +64,33 @@
     }
 
     function readUsersObject(){
-      if(authApi && typeof authApi.getUsers === "function"){
-        return authApi.getUsers() || {};
+      const apiUsers = authApi && typeof authApi.getUsers === "function" ? (authApi.getUsers() || {}) : {};
+      if(backendUsersCache && typeof backendUsersCache === "object" && Object.keys(backendUsersCache).length){
+        return Object.assign({}, apiUsers, backendUsersCache);
       }
-      return {};
+      return apiUsers;
+    }
+
+    function getBackendBaseUrl(){
+      return String(window.SWADRA_API_BASE || "https://swadra-backend-production.up.railway.app").replace(/\/+$/, "");
+    }
+
+    async function fetchBackendUsersForAdmin(){
+      const base = getBackendBaseUrl();
+      if(!base) return;
+      try{
+        const response = await fetch(`${base}/api/admin/users`, {
+          method: "GET",
+          cache: "no-store",
+          headers: { "Accept": "application/json" }
+        });
+        const payload = await response.json().catch(()=>({}));
+        if(response.ok && payload && payload.ok && payload.users && typeof payload.users === "object"){
+          backendUsersCache = payload.users;
+        }
+      }catch(error){
+        console.error("admin users fetch failed", error);
+      }
     }
 
     function isDeletedCustomer(customer){
@@ -1023,6 +1047,7 @@
     }
 
     async function refreshCustomers(){
+      await fetchBackendUsersForAdmin();
       if(authApi && typeof authApi.refreshUsers === "function"){
         try{
           await authApi.refreshUsers();

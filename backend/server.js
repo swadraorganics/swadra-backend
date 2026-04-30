@@ -76,6 +76,7 @@ process.on("uncaughtException", (error) => {
 });
 
 app.use(cors({
+  allowedHeaders: ["Content-Type", "Authorization", "x-admin-session-token"],
   origin(origin, callback) {
     const normalized = normalizeOrigin(origin);
     if (!normalized) {
@@ -2668,6 +2669,31 @@ app.get("/api/coupons", async (req, res) => {
   }
 });
 
+app.get("/api/admin/users", requireAdminSession, async (req, res) => {
+  try {
+    const db = await readDB();
+    const topUsers = await readTopLevelFirestoreCollection("users");
+    const usersMap = { ...(db.appState?.users || {}) };
+    topUsers.forEach((user) => {
+      const email = String(user.email || user.id || user.docId || user.uid || "").trim().toLowerCase();
+      if (!email) return;
+      usersMap[email] = {
+        ...(usersMap[email] || {}),
+        ...user,
+        email: user.email || email
+      };
+    });
+    res.json({
+      ok: true,
+      count: Object.keys(usersMap).length,
+      users: usersMap
+    });
+  } catch (error) {
+    addLog("Admin users fetch failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to fetch admin users" });
+  }
+});
+
 app.get("/api/app-state", async (req, res) => {
   try {
     const db = await readDB();
@@ -4144,7 +4170,7 @@ function buildCorsHeaders(req, extraHeaders = {}) {
   return {
     ...(allowOrigin ? { "Access-Control-Allow-Origin": allowOrigin } : {}),
     "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, x-admin-session-token",
     Vary: "Origin",
     ...extraHeaders
   };

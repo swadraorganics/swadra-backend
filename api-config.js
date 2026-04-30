@@ -388,7 +388,7 @@
         if(token){
           init = init || {};
           var headers = new Headers(init.headers || (input && input.headers) || {});
-          headers.set("x-admin-session-token", token);
+          headers.set("Authorization", "Bearer " + token);
           init.headers = headers;
         }
       }

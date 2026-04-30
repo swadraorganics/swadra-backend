@@ -425,7 +425,7 @@
     const MAX_COUPONS = 50;
     const RUPEE = "\u20b9";
     const siteContentApi = window.SWADRA_SITE_CONTENT || null;
-    const couponsApiUrl = window.SWADRA_COUPONS_API_URL || ((window.SWADRA_API_BASE || "") + "/api/coupons");
+    const couponsApiUrl = window.SWADRA_COUPONS_API_URL || (((window.SWADRA_API_BASE || "https://swadra-backend-production.up.railway.app").replace(/\/+$/, "")) + "/api/coupons");
     let couponStore = [];
 
     async function fetchCouponsFromFirestore(forceRefresh){
@@ -648,9 +648,16 @@
               return coupon.id === existingCoupon.id ? nextCoupon : coupon;
             })
           : [nextCoupon].concat(coupons);
-        const backendCoupons = await saveCouponToBackend(nextCoupon).catch(function(){ return null; });
-        await saveCouponsToFirestore(backendCoupons || nextCoupons);
-        couponStore = backendCoupons || nextCoupons;
+        const backendCoupons = await saveCouponToBackend(nextCoupon).catch(function(error){
+          console.error("backend coupon save failed", error);
+          return null;
+        });
+        if(backendCoupons){
+          couponStore = backendCoupons;
+        }else{
+          await saveCouponsToFirestore(nextCoupons);
+          couponStore = nextCoupons;
+        }
         couponStore.sort(function(a, b){
           return Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0);
         });
@@ -658,7 +665,7 @@
         resetForm();
         alert(existingCoupon ? "Coupon updated successfully" : "Coupon saved successfully");
       }catch(error){
-        alert(error.message || "Failed to save coupon to Firestore");
+        alert(error.message || "Failed to save coupon");
       }
     }
 
@@ -694,16 +701,23 @@
         const nextCoupons = coupons.filter(function(item){
           return item.id !== couponId;
         });
-        const backendCoupons = await deleteCouponFromBackend(coupon.code).catch(function(){ return null; });
-        await saveCouponsToFirestore(backendCoupons || nextCoupons);
-        couponStore = backendCoupons || nextCoupons;
+        const backendCoupons = await deleteCouponFromBackend(coupon.code).catch(function(error){
+          console.error("backend coupon delete failed", error);
+          return null;
+        });
+        if(backendCoupons){
+          couponStore = backendCoupons;
+        }else{
+          await saveCouponsToFirestore(nextCoupons);
+          couponStore = nextCoupons;
+        }
         renderCoupons();
         if(String(document.getElementById("couponCode").value || "").trim().toUpperCase() === coupon.code){
           resetForm();
         }
         alert("Coupon deleted successfully");
       }catch(error){
-        alert(error.message || "Failed to delete coupon from Firestore");
+        alert(error.message || "Failed to delete coupon");
       }
     }
 
