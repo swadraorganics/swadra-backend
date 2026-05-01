@@ -328,6 +328,13 @@ async function writeTopLevelOrder(order = {}) {
   await getFirestore().collection("orders").doc(id).set(order, { merge: true });
 }
 
+async function writeTopLevelPaymentAttempt(attempt = {}) {
+  if (!USE_FIRESTORE || !attempt || typeof attempt !== "object") return;
+  const id = safeDocId(attempt.id || attempt.orderId || attempt.localOrderId || attempt.razorpayOrderId || "");
+  if (!id) return;
+  await getFirestore().collection("paymentAttempts").doc(id).set(attempt, { merge: true });
+}
+
 async function deleteTopLevelUserDocs(collectionName, ids = []) {
   if (!USE_FIRESTORE) return;
   const firestore = getFirestore();
@@ -1431,6 +1438,93 @@ function normalizeOrderForDb(input = {}) {
 
 function findOrderIndex(db, matcher) {
   return db.orders.findIndex((order) => matcher(order));
+}
+
+function getOrderCustomerKeys(order = {}) {
+  const shipping = order.shipping && typeof order.shipping === "object" ? order.shipping : {};
+  const email = normalizeAccountEmail(
+    order.customerEmail ||
+    order.email ||
+    order.userEmail ||
+    order.userId ||
+    shipping.email ||
+    ""
+  );
+  const phone = normalizeAccountPhone(
+    order.customerPhone ||
+    order.phone ||
+    order.mobile ||
+    shipping.phone ||
+    shipping.mobile ||
+    ""
+  );
+  return { email, phone };
+}
+
+async function mirrorOrderToCustomerProfile(db, order = {}) {
+  if (!db || !order || typeof order !== "object") return null;
+  const { email, phone } = getOrderCustomerKeys(order);
+  if (!email) return null;
+  db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+  const users = db.appState.users && typeof db.appState.users === "object" ? db.appState.users : {};
+  const existing = users[email] && typeof users[email] === "object" ? users[email] : {};
+  const shipping = order.shipping && typeof order.shipping === "object" ? order.shipping : {};
+  const orderId = String(order.id || order.orderId || "");
+  const nextOrders = Array.isArray(existing.orders) ? existing.orders.slice() : [];
+  const orderIndex = nextOrders.findIndex((item) => String(item?.id || item?.orderId || "") === orderId);
+  if (orderIndex > -1) nextOrders[orderIndex] = { ...nextOrders[orderIndex], ...order };
+  else nextOrders.unshift(order);
+
+  const nextPayments = Array.isArray(existing.payments) ? existing.payments.slice() : [];
+  const payment = {
+    id: String(order.payment_id || order.paymentId || order.razorpayPaymentId || orderId),
+    paymentId: String(order.payment_id || order.paymentId || order.razorpayPaymentId || ""),
+    orderId,
+    email,
+    phone,
+    amount: toNumber(order.total || order.finalAmount || order.amount || 0),
+    status: String(order.paymentStatus || order.payment || "Paid Successfully"),
+    method: String(order.paymentMethod || order.paymentInstrumentLabel || "online"),
+    razorpayOrderId: String(order.razorpay_order_id || order.razorpayOrderId || ""),
+    createdAt: order.paymentCompletedAt || order.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const paymentIndex = nextPayments.findIndex((item) => String(item?.id || item?.paymentId || item?.orderId || "") === String(payment.id || payment.orderId));
+  if (paymentIndex > -1) nextPayments[paymentIndex] = { ...nextPayments[paymentIndex], ...payment };
+  else nextPayments.unshift(payment);
+
+  const address = {
+    ...(existing.address || {}),
+    ...(shipping || {})
+  };
+  const nextUser = {
+    ...existing,
+    id: existing.id || existing.uid || existing.userId || email,
+    userId: existing.userId || existing.uid || existing.id || email,
+    uid: existing.uid || existing.userId || existing.id || email,
+    email,
+    emailNormalized: email,
+    phone: existing.phone || phone,
+    phoneNormalized: normalizeAccountPhone(existing.phone || phone),
+    profile: {
+      ...(existing.profile || {}),
+      email,
+      phone: existing.profile?.phone || existing.phone || phone,
+      name: existing.profile?.name || shipping.name || order.name || email.split("@")[0]
+    },
+    address,
+    addresses: Array.isArray(existing.addresses) && existing.addresses.length ? existing.addresses : (address && (address.house || address.address) ? [{ ...address, id: address.id || "addr_order_" + orderId }] : []),
+    defaultAddressId: existing.defaultAddressId || (address && (address.house || address.address) ? (address.id || "addr_order_" + orderId) : ""),
+    orders: nextOrders.slice(0, 300),
+    payments: nextPayments.slice(0, 300),
+    updatedAt: new Date().toISOString()
+  };
+  users[email] = nextUser;
+  db.appState.users = users;
+  await writeTopLevelUsers({ [email]: nextUser }).catch((error) => {
+    addLog("Order customer profile mirror skipped: " + error.message, "warn");
+  });
+  return nextUser;
 }
 
 async function updateOrderInDb(orderId, patch = {}) {
@@ -4085,11 +4179,25 @@ app.get("/api/orders/user/:userId", async (req, res) => {
   try {
     const db = await readDB();
     const userId = decodeURIComponent(req.params.userId || "");
+    const normalizedUserId = String(userId || "").trim().toLowerCase();
     const requester = getCustomerAccessFields(req);
-    if (!findValidAdminSession(db, req) && !requester.includes(String(userId || "").trim().toLowerCase())) {
+    if (!findValidAdminSession(db, req) && !requester.includes(normalizedUserId)) {
       return res.status(403).json({ ok: false, error: "Order access verification required" });
     }
-    const orders = db.orders.filter((order) => String(order.userId || order.user || "") === String(userId));
+    const topLevelOrders = await readTopLevelFirestoreCollection("orders");
+    const profileOrders = Array.isArray(db.appState?.users?.[normalizedUserId]?.orders) ? db.appState.users[normalizedUserId].orders : [];
+    const allOrders = mergeRecordsById(topLevelOrders, mergeRecordsById(db.orders || [], profileOrders));
+    const orders = allOrders.filter((order) => {
+      const keys = [
+        order.userId,
+        order.user,
+        order.email,
+        order.customerEmail,
+        order.userEmail,
+        order.shipping && order.shipping.email
+      ].map((value) => String(value || "").trim().toLowerCase());
+      return keys.includes(normalizedUserId);
+    });
     res.json({ ok: true, count: orders.length, orders });
   } catch (error) {
     addLog("User orders fetch failed: " + error.message, "error");
@@ -4236,8 +4344,11 @@ app.post("/api/payments/verify", paymentRateLimit, async (req, res) => {
         paymentInstrument: paymentDetails && paymentDetails.instrument ? paymentDetails.instrument : null,
         updatedAt: new Date().toISOString()
       };
+      await writeTopLevelPaymentAttempt(db.paymentAttempts[index]).catch((error) => {
+        addLog("Payment attempt Firestore mirror skipped: " + error.message, "warn");
+      });
     } else {
-      db.paymentAttempts.unshift({
+      const nextAttempt = {
         id: attemptId || makePaymentOrderId(),
         status: verification.verified ? "paid" : "verification_failed",
         razorpayPaymentId: payload.razorpay_payment_id || "",
@@ -4247,6 +4358,10 @@ app.post("/api/payments/verify", paymentRateLimit, async (req, res) => {
         paymentInstrument: paymentDetails && paymentDetails.instrument ? paymentDetails.instrument : null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
+      };
+      db.paymentAttempts.unshift(nextAttempt);
+      await writeTopLevelPaymentAttempt(nextAttempt).catch((error) => {
+        addLog("Payment attempt Firestore mirror skipped: " + error.message, "warn");
       });
     }
 
@@ -4321,6 +4436,12 @@ app.post("/api/payments/verify", paymentRateLimit, async (req, res) => {
           createdOrderId: order.id
         };
       }
+      const finalAttempt = index > -1 ? db.paymentAttempts[index] : db.paymentAttempts.find((attempt) => String(attempt.id || "") === String(attemptId || order.id));
+      if (finalAttempt) {
+        await writeTopLevelPaymentAttempt(finalAttempt).catch((error) => {
+          addLog("Payment attempt Firestore mirror skipped: " + error.message, "warn");
+        });
+      }
       const orderUserIds = [
         order.authUserId,
         order.firebaseUid,
@@ -4330,6 +4451,7 @@ app.post("/api/payments/verify", paymentRateLimit, async (req, res) => {
         order.email,
         order.customerEmail
       ];
+      await mirrorOrderToCustomerProfile(db, order);
       await writeTopLevelOrder(order);
       await deleteTopLevelUserDocs("carts", orderUserIds);
       await deleteTopLevelUserDocs("checkoutDrafts", orderUserIds);
@@ -4349,7 +4471,7 @@ app.post("/api/payments/verify", paymentRateLimit, async (req, res) => {
       paymentDetails: paymentDetails && paymentDetails.ok ? paymentDetails.payment : null,
       instrument: paymentDetails && paymentDetails.instrument ? paymentDetails.instrument : null,
       order,
-      paymentLookupConfigured: paymentDetails ? paymentDetails.configured : Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
+      paymentLookupConfigured: paymentDetails ? paymentDetails.configured : isRazorpayConfigured(),
       paymentLookupMessage: paymentDetails ? paymentDetails.message : ""
     });
   } catch (error) {
