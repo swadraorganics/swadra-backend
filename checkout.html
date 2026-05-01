@@ -397,7 +397,10 @@ return window.__swadraCheckoutSummary || user.checkoutSummary || {};
 }
 
 function getCheckoutCartItems(){
-return ((user.cart && user.cart.length ? user.cart : []) || []).map(item=>({
+const draftCart = checkoutDraftCache && Array.isArray(checkoutDraftCache.cartSnapshot) && checkoutDraftCache.cartSnapshot.length
+? checkoutDraftCache.cartSnapshot
+: null;
+return ((draftCart || (user.cart && user.cart.length ? user.cart : []) || []) || []).map(item=>({
 ...item,
 price:Number(item.price || 0),
 mrp:Number(item.mrp || item.price || 0),
@@ -549,6 +552,9 @@ await window.SWADRA_OFFERS.renderSaleBar("saleBarTrack", !!forceRefresh);
 function hydrateCheckoutView(){
 Promise.resolve(loadCheckoutDraft()).then(function(draft){
 renderOfferBar(true);
+if(draft && Array.isArray(draft.cartSnapshot) && draft.cartSnapshot.length){
+user.cart = draft.cartSnapshot.slice();
+}
 document.getElementById("name").value = userProfile.name || currentUser.split("@")[0];
 document.getElementById("phone").value = user.phone || "";
 const draftAddress = draft && draft.address ? draft.address : {};

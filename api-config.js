@@ -1027,6 +1027,7 @@
   }
 
   async function saveCartToBackend(userId, docId, items){
+    var safeItems = compactAuthCartItems(items);
     var response = await fetch(base + "/api/carts/" + encodeURIComponent(docId || userId), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1034,14 +1035,41 @@
         userId: docId || userId,
         uid: docId || "",
         email: normalizeEmailValue(userId),
-        items: compactAuthCartItems(items)
+        items: safeItems
       })
+    });
+    var data = await response.json().catch(function(){ return {}; });
+    if(!response.ok || data.ok === false){
+      return saveCartViaAccountProfile(userId, safeItems);
+    }
+    return compactAuthCartItems(data.cart || safeItems);
+  }
+
+  async function saveCartViaAccountProfile(userId, items){
+    var email = normalizeEmailValue(userId);
+    if(!email){
+      throw new Error("User email required for cart save");
+    }
+    var users = getAuthUsers();
+    var existing = users[email] || { email: email, profile: { email: email } };
+    var payload = Object.assign({}, existing, {
+      email: email,
+      cart: compactAuthCartItems(items),
+      profile: Object.assign({}, existing.profile || {}, { email: email }),
+      updatedAt: new Date().toISOString()
+    });
+    var response = await fetch(base + "/api/account/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
     });
     var data = await response.json().catch(function(){ return {}; });
     if(!response.ok || data.ok === false){
       throw new Error(data && data.error ? data.error : "Failed to save cart");
     }
-    return compactAuthCartItems(data.cart || items);
+    var record = sanitizeUserRecord(data.record || payload, email);
+    usersCache[email] = record;
+    return compactAuthCartItems(record.cart || items);
   }
 
   async function clearFirestoreCart(userId){
@@ -1052,21 +1080,65 @@
     var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) return null;
     var db = initFirestore();
-    if(!db) throw firebaseInitError || new Error("Firestore unavailable");
-    var snapshot = await db.collection(CHECKOUT_DRAFTS_COLLECTION).doc(normalizedUserId).get();
-    if(!snapshot.exists) return null;
-    return sanitizeCheckoutDraftRecord(snapshot.data() || {}, normalizedUserId);
+    if(!db) return fetchCheckoutDraftFromBackend(userId);
+    try{
+      var snapshot = await db.collection(CHECKOUT_DRAFTS_COLLECTION).doc(normalizedUserId).get();
+      if(!snapshot.exists) return null;
+      return sanitizeCheckoutDraftRecord(snapshot.data() || {}, normalizedUserId);
+    }catch(error){
+      var code = String(error && error.code || "").toLowerCase();
+      if(code === "permission-denied" || code === "unauthenticated"){
+        return fetchCheckoutDraftFromBackend(userId);
+      }
+      throw error;
+    }
   }
 
   async function saveCheckoutDraft(userId, draft){
     var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) throw new Error("User id required for checkout draft save");
     var db = initFirestore();
-    if(!db) throw firebaseInitError || new Error("Firestore unavailable");
     var payload = sanitizeCheckoutDraftRecord(draft, normalizedUserId);
     payload.updatedAt = new Date().toISOString();
-    await db.collection(CHECKOUT_DRAFTS_COLLECTION).doc(normalizedUserId).set(payload, { merge: true });
-    return payload;
+    if(!db) return saveCheckoutDraftToBackend(userId, normalizedUserId, payload);
+    try{
+      await db.collection(CHECKOUT_DRAFTS_COLLECTION).doc(normalizedUserId).set(payload, { merge: true });
+      return payload;
+    }catch(error){
+      var code = String(error && error.code || "").toLowerCase();
+      if(code === "permission-denied" || code === "unauthenticated"){
+        return saveCheckoutDraftToBackend(userId, normalizedUserId, payload);
+      }
+      throw error;
+    }
+  }
+
+  async function fetchCheckoutDraftFromBackend(userId){
+    var docId = resolveUserBusinessDocId(userId) || userId;
+    var response = await fetch(base + "/api/checkout-drafts/" + encodeURIComponent(docId), { cache:"no-store" });
+    var data = await response.json().catch(function(){ return {}; });
+    if(!response.ok || data.ok === false){
+      throw new Error(data && data.error ? data.error : "Failed to fetch checkout draft");
+    }
+    return data.draft ? sanitizeCheckoutDraftRecord(data.draft, docId) : null;
+  }
+
+  async function saveCheckoutDraftToBackend(userId, docId, payload){
+    var body = Object.assign({}, payload || {}, {
+      userId: docId || userId,
+      uid: docId || "",
+      email: normalizeEmailValue(userId)
+    });
+    var response = await fetch(base + "/api/checkout-drafts/" + encodeURIComponent(docId || userId), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    var data = await response.json().catch(function(){ return {}; });
+    if(!response.ok || data.ok === false){
+      throw new Error(data && data.error ? data.error : "Failed to save checkout draft");
+    }
+    return sanitizeCheckoutDraftRecord(data.draft || body, docId || userId);
   }
 
   async function clearCheckoutDraft(userId){

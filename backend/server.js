@@ -3126,6 +3126,45 @@ app.post("/api/carts/:userId", paymentRateLimit, async (req, res) => {
   }
 });
 
+app.get("/api/checkout-drafts/:userId", paymentRateLimit, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const userId = String(req.params.userId || "").trim();
+    if (!userId) return res.status(400).json({ ok: false, error: "User id required" });
+    let doc = await getFirestore().collection("checkoutDrafts").doc(safeDocId(userId)).get();
+    let data = doc.exists ? doc.data() || {} : null;
+    if (!data && userId.includes("@")) {
+      const snap = await getFirestore().collection("checkoutDrafts").where("email", "==", normalizeAccountEmail(userId)).limit(1).get();
+      if (!snap.empty) data = snap.docs[0].data() || {};
+    }
+    res.json({ ok: true, draft: data || null });
+  } catch (error) {
+    addLog("Checkout draft fetch failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to fetch checkout draft" });
+  }
+});
+
+app.post("/api/checkout-drafts/:userId", paymentRateLimit, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const userId = String(req.params.userId || "").trim();
+    if (!userId) return res.status(400).json({ ok: false, error: "User id required" });
+    const docId = safeDocId(req.body?.uid || req.body?.userId || userId);
+    const payload = {
+      ...(req.body && typeof req.body === "object" ? req.body : {}),
+      userId: docId,
+      email: normalizeAccountEmail(req.body?.email || (userId.includes("@") ? userId : "")),
+      cartSnapshot: normalizeCartItems(req.body?.cartSnapshot || req.body?.items || []),
+      updatedAt: new Date().toISOString()
+    };
+    await getFirestore().collection("checkoutDrafts").doc(docId).set(payload, { merge: true });
+    res.json({ ok: true, draft: payload });
+  } catch (error) {
+    addLog("Checkout draft save failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to save checkout draft" });
+  }
+});
+
 app.get("/api/app-state", async (req, res) => {
   try {
     const db = await readDB();
