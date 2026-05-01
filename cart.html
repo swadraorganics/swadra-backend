@@ -752,7 +752,8 @@ console.error("checkout draft save from cart failed", error);
 }
 if(window.SWADRA_RECOVERY && typeof window.SWADRA_RECOVERY.recordAbandonedCart === "function"){
 try{
-let users = getUsers();
+let safeSummary = summary && typeof summary === "object" ? summary : {};
+let users = authApi && typeof authApi.getUsers === "function" ? authApi.getUsers() : {};
 let user = currentUser && users[currentUser] ? users[currentUser] : {};
 let profile = user.profile && typeof user.profile === "object" ? user.profile : {};
 let address = getShippingInputForCart();
@@ -766,8 +767,8 @@ phone: recoveryPhone,
 name: profile.name || user.name || address.name || "",
 pincode: address.pincode || "",
 postoffice: address.postoffice || "",
-items: summary.discountedItems || summary.cartItems || [],
-summary: summary,
+items: safeSummary.discountedItems || safeSummary.cartItems || [],
+summary: safeSummary,
 checkoutUrl: "/cart.html",
 source: "cart"
 });
