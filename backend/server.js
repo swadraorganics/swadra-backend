@@ -2862,6 +2862,13 @@ app.get("/api/admin/users", requireAdminSession, async (req, res) => {
       if (!email || usersMap[email]) return;
       usersMap[email] = user;
     });
+    if (Object.keys(usersMap).length) {
+      db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+      db.appState.users = { ...(db.appState.users || {}), ...usersMap };
+      writeDB(db).catch((writeError) => {
+        addLog("Admin users app-state mirror skipped: " + writeError.message, "warn");
+      });
+    }
     res.json({
       ok: true,
       count: Object.keys(usersMap).length,

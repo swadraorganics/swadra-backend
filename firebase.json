@@ -27,7 +27,7 @@
         ]
       },
       {
-        "source": "admin-nav-active.js",
+        "source": "admin-*.js",
         "headers": [
           {
             "key": "Cache-Control",
