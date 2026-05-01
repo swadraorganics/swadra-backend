@@ -1162,7 +1162,11 @@ function getRazorpayKeyId() {
     process.env.RAZORPAY_KEY_ID ||
     process.env.RAZORPAY_KEY ||
     process.env.RAZORPAY_ID ||
+    process.env.RAZORPAY_KEYID ||
     process.env.RAZORPAY_API_KEY ||
+    process.env.RZP_KEY_ID ||
+    process.env.RZP_KEY ||
+    process.env.KEY_ID ||
     process.env.key_id ||
     ""
   ).trim();
@@ -1172,7 +1176,11 @@ function getRazorpaySecret() {
   return String(
     process.env.RAZORPAY_KEY_SECRET ||
     process.env.RAZORPAY_SECRET ||
+    process.env.RAZORPAY_KEYSECRET ||
     process.env.RAZORPAY_API_SECRET ||
+    process.env.RZP_KEY_SECRET ||
+    process.env.RZP_SECRET ||
+    process.env.KEY_SECRET ||
     process.env.key_secret ||
     ""
   ).trim();
