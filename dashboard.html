@@ -881,6 +881,23 @@ function saveUsers(users){
     : users;
 }
 
+function dashboardApiBase(){
+  return String(window.SWADRA_API_BASE || "https://swadra-backend-production.up.railway.app").replace(/\/+$/, "");
+}
+
+async function saveDashboardUserToBackend(user){
+  const response = await fetch(dashboardApiBase() + "/api/account/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(user && typeof user === "object" ? user : {})
+  });
+  const data = await response.json().catch(()=>({}));
+  if(!response.ok || data.ok === false){
+    throw new Error(data.error || "Profile save failed");
+  }
+  return data.record || user;
+}
+
 async function refreshUsersSafe(){
   if(authApi && typeof authApi.refreshUsers === "function"){
     try{
@@ -930,15 +947,26 @@ async function persistCurrentUser(user, successMessage, errorMessage){
     return false;
   }
   try{
+    let savedUser = null;
     if(authApi && typeof authApi.saveUserRecord === "function"){
-      await authApi.saveUserRecord(user);
+      try{
+        savedUser = await authApi.saveUserRecord(user);
+      }catch(primaryError){
+        console.warn("dashboard primary profile save failed, using backend fallback", primaryError);
+        savedUser = await saveDashboardUserToBackend(user);
+      }
       if(typeof authApi.refreshUsers === "function"){
         await authApi.refreshUsers();
       }
     }else{
+      savedUser = await saveDashboardUserToBackend(user);
       let users = getUsers();
-      users[user.email] = user;
-      await Promise.resolve(saveUsers(users));
+      users[user.email] = savedUser || user;
+      try{
+        await Promise.resolve(saveUsers(users));
+      }catch(saveError){
+        console.warn("dashboard local user cache save skipped", saveError);
+      }
     }
     if(successMessage){
       alert(successMessage);

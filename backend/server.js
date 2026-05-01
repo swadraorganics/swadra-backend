@@ -2808,8 +2808,8 @@ async function upsertAccountUser(input = {}) {
   const email = normalizeAccountEmail(input.email);
   const phone = normalizeAccountPhone(input.phone);
   const password = String(input.password || "").trim();
-  if (!email || !phone || password.length < 6) {
-    const error = new Error("Email, mobile number and valid password are required");
+  if (!email) {
+    const error = new Error("Email is required");
     error.statusCode = 400;
     throw error;
   }
@@ -2818,9 +2818,19 @@ async function upsertAccountUser(input = {}) {
   db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
   const users = db.appState.users && typeof db.appState.users === "object" ? db.appState.users : {};
   const existing = users[email] && typeof users[email] === "object" ? users[email] : {};
+  const existingPhone = normalizeAccountPhone(existing.phone || existing.phoneNormalized || existing.profile?.phone || "");
+  const finalPhone = phone || existingPhone;
+  const finalPassword = password || String(existing.password || "").trim();
+  const isNewUser = !existing.email && !users[email];
+
+  if (isNewUser && (!finalPhone || finalPassword.length < 6)) {
+    const error = new Error("Email, mobile number and valid password are required");
+    error.statusCode = 400;
+    throw error;
+  }
 
   for (const [userEmail, record] of Object.entries(users)) {
-    if (normalizeAccountEmail(userEmail) !== email && normalizeAccountPhone(record?.phone || record?.phoneNormalized || record?.profile?.phone || "") === phone) {
+    if (finalPhone && normalizeAccountEmail(userEmail) !== email && normalizeAccountPhone(record?.phone || record?.phoneNormalized || record?.profile?.phone || "") === finalPhone) {
       const error = new Error("This mobile number is already linked with another email account.");
       error.statusCode = 409;
       throw error;
@@ -2832,9 +2842,9 @@ async function upsertAccountUser(input = {}) {
     ...existing,
     email,
     emailNormalized: email,
-    phone: input.phone || existing.phone || phone,
-    phoneNormalized: phone,
-    password,
+    phone: input.phone || existing.phone || finalPhone,
+    phoneNormalized: finalPhone,
+    password: finalPassword,
     address: input.address && typeof input.address === "object" ? input.address : (existing.address || {}),
     addresses: Array.isArray(input.addresses) ? input.addresses : (Array.isArray(existing.addresses) ? existing.addresses : []),
     defaultAddressId: String(input.defaultAddressId || existing.defaultAddressId || ""),
@@ -2844,7 +2854,7 @@ async function upsertAccountUser(input = {}) {
       ...(existing.profile && typeof existing.profile === "object" ? existing.profile : {}),
       ...(input.profile && typeof input.profile === "object" ? input.profile : {}),
       email,
-      phone: input.phone || existing.phone || phone,
+      phone: input.phone || existing.phone || finalPhone,
       name: String(input.profile?.name || existing.profile?.name || email.split("@")[0]).trim()
     },
     status: String(input.status || existing.status || "active").trim().toLowerCase() || "active",
@@ -2864,10 +2874,14 @@ async function upsertAccountUser(input = {}) {
     if (auth) {
       try {
         authUser = await auth.getUserByEmail(email);
-        await auth.updateUser(authUser.uid, { password });
+        if (password.length >= 6) {
+          await auth.updateUser(authUser.uid, { password });
+        }
       } catch (authError) {
         if (String(authError && authError.code || "").includes("user-not-found")) {
-          authUser = await auth.createUser({ email, password, phoneNumber: "+91" + phone });
+          if (finalPassword.length >= 6) {
+            authUser = await auth.createUser({ email, password: finalPassword, ...(finalPhone ? { phoneNumber: "+91" + finalPhone } : {}) });
+          }
         } else {
           throw authError;
         }
