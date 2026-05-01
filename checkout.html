@@ -766,7 +766,7 @@ function swadraHeaderUpdateAccountNav(){
   if(!slot) return;
   let currentUser=getCurrentUser();
   let users=getUsers();
-  if(currentUser && users[currentUser]){
+  if(currentUser){
     slot.innerHTML='<a class="account-link" href="dashboard.html" aria-label="Account"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 19.5c1.6-3.3 4-5 7-5s5.4 1.7 7 5"></path></svg></a>';
   }else{
     slot.innerHTML='<a class="account-link" href="account.html" aria-label="Account"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 19.5c1.6-3.3 4-5 7-5s5.4 1.7 7 5"></path></svg></a>';

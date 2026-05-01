@@ -738,8 +738,19 @@
       throw new Error("Firestore unavailable");
     }
     var docId = resolveUserProfileDocId(record);
-    await db.collection(USERS_COLLECTION).doc(docId).set(record, { merge: true });
-    var savedSnapshot = await db.collection(USERS_COLLECTION).doc(docId).get();
+    var savedSnapshot = null;
+    try{
+      await db.collection(USERS_COLLECTION).doc(docId).set(record, { merge: true });
+      savedSnapshot = await db.collection(USERS_COLLECTION).doc(docId).get();
+    }catch(error){
+      var code = String(error && error.code || "").toLowerCase();
+      if(code !== "permission-denied" && code !== "unauthenticated"){
+        throw error;
+      }
+      var fallbackRecord = await saveUserRecordToBackend(record);
+      usersCache[fallbackRecord.email] = fallbackRecord;
+      return cloneValue(fallbackRecord);
+    }
     var savedRecord = sanitizeUserRecord(Object.assign({}, savedSnapshot.data() || record, { uid: record.uid || docId }), record.email);
     usersCache[savedRecord.email] = savedRecord;
     return cloneValue(savedRecord);
@@ -775,6 +786,19 @@
     if(!response.ok || data.ok === false){
       throw new Error(data && data.error ? data.error : "Failed to save users");
     }
+  }
+
+  async function saveUserRecordToBackend(record){
+    var response = await fetch(base + "/api/account/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(record || {})
+    });
+    var data = await response.json().catch(function(){ return {}; });
+    if(!response.ok || data.ok === false){
+      throw new Error(data && data.error ? data.error : "Failed to save user");
+    }
+    return sanitizeUserRecord(data.record || record, record && record.email);
   }
 
   function getCurrentUserRecord(){
@@ -933,11 +957,19 @@
     var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) return [];
     var db = initFirestore();
-    if(!db) throw firebaseInitError || new Error("Firestore unavailable");
-    var snapshot = await db.collection(CARTS_COLLECTION).doc(normalizedUserId).get();
-    if(!snapshot.exists) return [];
-    var data = snapshot.data() || {};
-    return compactAuthCartItems(data.items || []);
+    if(!db) return fetchCartFromBackend(userId);
+    try{
+      var snapshot = await db.collection(CARTS_COLLECTION).doc(normalizedUserId).get();
+      if(!snapshot.exists) return [];
+      var data = snapshot.data() || {};
+      return compactAuthCartItems(data.items || []);
+    }catch(error){
+      var code = String(error && error.code || "").toLowerCase();
+      if(code === "permission-denied" || code === "unauthenticated"){
+        return fetchCartFromBackend(userId);
+      }
+      throw error;
+    }
   }
 
   function watchFirestoreCart(userId, callback){
@@ -956,13 +988,22 @@
     var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) throw new Error("User id required for cart save");
     var db = initFirestore();
-    if(!db) throw firebaseInitError || new Error("Firestore unavailable");
     var compactItems = compactAuthCartItems(items);
-    await db.collection(CARTS_COLLECTION).doc(normalizedUserId).set({
-      userId: normalizedUserId,
-      items: compactItems,
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
+    if(!db) return saveCartToBackend(userId, normalizedUserId, compactItems);
+    try{
+      await db.collection(CARTS_COLLECTION).doc(normalizedUserId).set({
+        userId: normalizedUserId,
+        email: normalizeEmailValue(userId),
+        items: compactItems,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    }catch(error){
+      var code = String(error && error.code || "").toLowerCase();
+      if(code !== "permission-denied" && code !== "unauthenticated"){
+        throw error;
+      }
+      compactItems = await saveCartToBackend(userId, normalizedUserId, compactItems);
+    }
     var currentEmail = normalizeEmailValue(userId);
     var currentRecord = currentEmail ? (getAuthUsers()[currentEmail] || null) : getCurrentUserRecord();
     if(currentRecord){
@@ -973,6 +1014,34 @@
       });
     }
     return compactItems;
+  }
+
+  async function fetchCartFromBackend(userId){
+    var docId = resolveUserBusinessDocId(userId) || userId;
+    var response = await fetch(base + "/api/carts/" + encodeURIComponent(docId), { cache:"no-store" });
+    var data = await response.json().catch(function(){ return {}; });
+    if(!response.ok || data.ok === false){
+      throw new Error(data && data.error ? data.error : "Failed to fetch cart");
+    }
+    return compactAuthCartItems(data.cart || []);
+  }
+
+  async function saveCartToBackend(userId, docId, items){
+    var response = await fetch(base + "/api/carts/" + encodeURIComponent(docId || userId), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: docId || userId,
+        uid: docId || "",
+        email: normalizeEmailValue(userId),
+        items: compactAuthCartItems(items)
+      })
+    });
+    var data = await response.json().catch(function(){ return {}; });
+    if(!response.ok || data.ok === false){
+      throw new Error(data && data.error ? data.error : "Failed to save cart");
+    }
+    return compactAuthCartItems(data.cart || items);
   }
 
   async function clearFirestoreCart(userId){

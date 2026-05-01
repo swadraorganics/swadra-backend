@@ -297,7 +297,7 @@ async function writeTopLevelUsers(users = {}) {
   let batch = firestore.batch();
   let count = 0;
   for (const [email, record] of Object.entries(users || {})) {
-    const id = safeDocId(email);
+    const id = safeDocId(record.uid || record.userId || record.id || email);
     batch.set(firestore.collection("users").doc(id), { ...record, email: record.email || email }, { merge: true });
     count += 1;
     if (count >= 400) {
@@ -307,6 +307,19 @@ async function writeTopLevelUsers(users = {}) {
     }
   }
   if (count > 0) await batch.commit();
+}
+
+function normalizeCartItems(items = []) {
+  return (Array.isArray(items) ? items : []).map((item) => ({
+    id: String(item?.id ?? item?.name ?? Date.now()).trim(),
+    name: String(item?.name || "Swadra Product").trim(),
+    qty: Math.max(1, Math.round(toNumber(item?.qty || item?.quantity || 1)) || 1),
+    price: Math.max(0, toNumber(item?.price || 0)),
+    mrp: Math.max(0, toNumber(item?.mrp || item?.price || 0)),
+    size: String(item?.size || item?.productSize || item?.selectedSize || item?.variant || item?.weight || "").trim(),
+    image: String(item?.image || "").trim(),
+    images: Array.isArray(item?.images) ? item.images.map((entry) => String(entry || "").trim()).filter(Boolean).slice(0, 4) : []
+  })).filter((item) => item.id || item.name);
 }
 
 async function writeTopLevelOrder(order = {}) {
@@ -3062,6 +3075,54 @@ app.post("/api/account/reset-password", paymentRateLimit, async (req, res) => {
   } catch (error) {
     addLog("Account password reset failed: " + error.message, "error");
     res.status(500).json({ ok: false, error: "Password reset failed" });
+  }
+});
+
+app.get("/api/carts/:userId", paymentRateLimit, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const userId = String(req.params.userId || "").trim();
+    if (!userId) return res.status(400).json({ ok: false, error: "User id required" });
+    let doc = await getFirestore().collection("carts").doc(safeDocId(userId)).get();
+    let data = doc.exists ? doc.data() || {} : {};
+    if (!doc.exists && userId.includes("@")) {
+      const snap = await getFirestore().collection("carts").where("email", "==", normalizeAccountEmail(userId)).limit(1).get();
+      if (!snap.empty) data = snap.docs[0].data() || {};
+    }
+    res.json({ ok: true, cart: normalizeCartItems(data.items || []) });
+  } catch (error) {
+    addLog("Cart fetch failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to fetch cart" });
+  }
+});
+
+app.post("/api/carts/:userId", paymentRateLimit, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const userId = String(req.params.userId || "").trim();
+    if (!userId) return res.status(400).json({ ok: false, error: "User id required" });
+    const items = normalizeCartItems(req.body?.items || req.body?.cart || []);
+    const email = normalizeAccountEmail(req.body?.email || (userId.includes("@") ? userId : ""));
+    const docId = safeDocId(req.body?.uid || req.body?.userId || userId);
+    const payload = {
+      userId: docId,
+      uid: String(req.body?.uid || "").trim(),
+      email,
+      items,
+      updatedAt: new Date().toISOString()
+    };
+    await getFirestore().collection("carts").doc(docId).set(payload, { merge: true });
+    if (email) {
+      const db = await readDB();
+      db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+      db.appState.users = db.appState.users && typeof db.appState.users === "object" ? db.appState.users : {};
+      db.appState.users[email] = { ...(db.appState.users[email] || {}), email, cart: items, updatedAt: payload.updatedAt };
+      await writeDB(db).catch((writeError) => addLog("Cart user mirror save skipped: " + writeError.message, "warn"));
+    }
+    res.json({ ok: true, cart: items });
+  } catch (error) {
+    addLog("Cart save failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to save cart" });
   }
 });
 

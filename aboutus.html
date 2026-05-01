@@ -873,7 +873,7 @@
           mobileAuthLink.onclick=null;
         }
       }
-      if(currentUser && users[currentUser]){
+      if(currentUser){
         slot.innerHTML=swadraHeaderAccountMenu((((users[currentUser]||{}).profile||{}).name || currentUser.split("@")[0]), currentUser);
       }else{
         slot.innerHTML=swadraHeaderAccountMenu("Welcome", "");

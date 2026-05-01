@@ -1171,7 +1171,7 @@ let accountEntryStage = "email";
       if(hasHandledAuthenticatedEntry) return true;
       const currentUser = getCurrentUserEmail();
       const users = getUsers();
-      if(currentUser && users[currentUser]){
+      if(currentUser){
         hasHandledAuthenticatedEntry = true;
         showMsg("You are already signed in.", "success");
         setTimeout(function(){
