@@ -363,6 +363,11 @@
   if(!window.__swadraAdminFetchPatched && window.fetch){
     window.__swadraAdminFetchPatched = true;
     var nativeFetch = window.fetch.bind(window);
+    function isCurrentAdminArea(){
+      var path = String(window.location.pathname || "").replace(/^\/+/, "");
+      var file = path.split("/").pop() || "";
+      return /^admin-/i.test(file) || /^backend\//i.test(path);
+    }
     window.fetch = function(input, init){
       var url = typeof input === "string" ? input : (input && input.url ? input.url : "");
       var target = String(url || "");
@@ -383,7 +388,8 @@
         normalizedTarget.indexOf("/api/payments/attempts") === 0 ||
         normalizedTarget.indexOf("/api/shiprocket/config") === 0 ||
         normalizedTarget.indexOf("/api/shiprocket/auth-token") === 0;
-      if(isAdminApi){
+      var useAdminSession = isAdminApi && isCurrentAdminArea();
+      if(useAdminSession){
         init = init || {};
         init.credentials = "include";
         var token = readAdminToken();
@@ -394,7 +400,7 @@
         }
       }
       return nativeFetch(input, init).then(function(response){
-        if(isAdminApi && response && response.status === 401 && !/admin-index\.html$/i.test(window.location.pathname || "")){
+        if(useAdminSession && response && response.status === 401 && !/admin-index\.html$/i.test(window.location.pathname || "")){
           window.location.href = "admin-index.html";
         }
         return response;
