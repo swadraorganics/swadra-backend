@@ -67,6 +67,23 @@
       return backendUsersCache && typeof backendUsersCache === "object" ? backendUsersCache : {};
     }
 
+    async function mergeAuthUsersFallback(){
+      if(!authApi) return;
+      try{
+        if(typeof authApi.refreshUsers === "function"){
+          await authApi.refreshUsers();
+        }
+        if(typeof authApi.getUsers === "function"){
+          const authUsers = authApi.getUsers();
+          if(authUsers && typeof authUsers === "object" && Object.keys(authUsers).length){
+            backendUsersCache = { ...backendUsersCache, ...authUsers };
+          }
+        }
+      }catch(error){
+        console.error("admin auth users fallback failed", error);
+      }
+    }
+
     function getBackendBaseUrl(){
       return String(window.SWADRA_API_BASE || "https://swadra-backend-production.up.railway.app").replace(/\/+$/, "");
     }
@@ -105,6 +122,9 @@
         const payload = await response.json().catch(()=>({}));
         if(response.ok && payload && payload.ok && payload.users && typeof payload.users === "object"){
           backendUsersCache = payload.users;
+          if(!Object.keys(backendUsersCache).length){
+            await mergeAuthUsersFallback();
+          }
           return;
         }
         if(response.status === 401){
@@ -130,6 +150,9 @@
         }
       }catch(error){
         console.error("admin users fallback fetch failed", error);
+      }
+      if(!Object.keys(backendUsersCache).length){
+        await mergeAuthUsersFallback();
       }
     }
 

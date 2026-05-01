@@ -2856,6 +2856,12 @@ app.get("/api/admin/users", requireAdminSession, async (req, res) => {
         cart
       };
     });
+    const authUsers = await listFirebaseAuthAccountUsers();
+    authUsers.forEach((user) => {
+      const email = normalizeAccountEmail(user.email || "");
+      if (!email || usersMap[email]) return;
+      usersMap[email] = user;
+    });
     res.json({
       ok: true,
       count: Object.keys(usersMap).length,
@@ -2922,6 +2928,50 @@ async function findFirebaseAuthUserByEmail(email = "") {
     addLog("Account Firebase Auth lookup skipped: " + error.message, "warn");
     return null;
   }
+}
+
+async function listFirebaseAuthAccountUsers() {
+  const users = [];
+  try {
+    if (admin === undefined) {
+      admin = require("firebase-admin");
+    }
+    if (admin && !admin.apps.length) {
+      admin.initializeApp();
+    }
+    const auth = admin && typeof admin.auth === "function" ? admin.auth() : null;
+    if (!auth || typeof auth.listUsers !== "function") return users;
+    let pageToken = "";
+    do {
+      const page = await auth.listUsers(1000, pageToken || undefined);
+      (page.users || []).forEach((authUser) => {
+        const email = normalizeAccountEmail(authUser.email || "");
+        if (!email) return;
+        users.push({
+          uid: authUser.uid,
+          id: authUser.uid || email,
+          userId: authUser.uid || email,
+          email,
+          emailNormalized: email,
+          phone: normalizeAccountPhone(authUser.phoneNumber || ""),
+          phoneNormalized: normalizeAccountPhone(authUser.phoneNumber || ""),
+          profile: {
+            email,
+            phone: normalizeAccountPhone(authUser.phoneNumber || ""),
+            name: String(authUser.displayName || email.split("@")[0]).trim()
+          },
+          status: authUser.disabled ? "paused" : "active",
+          createdAt: authUser.metadata?.creationTime ? new Date(authUser.metadata.creationTime).toISOString() : "",
+          updatedAt: authUser.metadata?.lastRefreshTime ? new Date(authUser.metadata.lastRefreshTime).toISOString() : "",
+          lastLoginAt: authUser.metadata?.lastSignInTime ? new Date(authUser.metadata.lastSignInTime).toISOString() : ""
+        });
+      });
+      pageToken = page.pageToken || "";
+    } while (pageToken);
+  } catch (error) {
+    addLog("Admin Firebase Auth users merge skipped: " + error.message, "warn");
+  }
+  return users;
 }
 
 async function upsertAccountUser(input = {}) {
