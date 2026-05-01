@@ -14,7 +14,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="api-config.js?v=20260423-2"></script>
+<script src="api-config.js?v=20260501-cart"></script>
 <script src="seo-aeo.js"></script><link rel="manifest" href="manifest.json">`r`n</head>
 
 <body>
@@ -5074,7 +5074,7 @@ function renderOfferTicker(offers){
 
   const repeatedItems = [...items, ...items, ...items];
   const tickerMarkup = repeatedItems.map(item =>
-    `<span class="sale-bar-item">?? ${escapeOfferHtml(item)}</span>`
+    `<span class="sale-bar-item">&#128666; ${escapeOfferHtml(item)}</span>`
   ).join("");
 
   const nextOfferText = JSON.stringify(items);
@@ -5378,6 +5378,11 @@ function compactCartItems(cart){
   }));
 }
 
+function formatIndexRupee(amount){
+  const value = Number(amount || 0);
+  return String.fromCharCode(8377) + (Number.isFinite(value) ? value.toLocaleString("en-IN") : "0");
+}
+
 var authApi = window.SWADRA_AUTH || null;
 var dataApi = window.SWADRA_DATA || null;
 var runtimeIndexCartCache = [];
@@ -5484,7 +5489,7 @@ async function handleAddToCart(btn){
   const saved = await saveCart(cart);
   if(!saved) return;
   updateCartUI();
-  btn.innerText = "Added ?";
+  btn.innerHTML = "ADDED &#10003;";
 }
 
 
@@ -5538,7 +5543,7 @@ document.addEventListener("click", function(e){
     saveCart(cart).then(function(saved){
       if(!saved) return;
       updateCartUI();
-      btn.innerText = "Added ?";
+      btn.innerHTML = "ADDED &#10003;";
     });
   }
 
@@ -5754,7 +5759,7 @@ function updateCartUI(){
   if(totalItems > 0){
     bar.style.display = "flex"; // ðŸ‘ˆ IMPORTANT (class nahi lag raha tha)
     
-    info.innerText = totalItems + " item ?" + totalPrice;
+    info.innerText = totalItems + " item " + formatIndexRupee(totalPrice);
 
   } else {
     bar.style.display = "none"; // ðŸ‘ˆ hide when empty
@@ -5929,7 +5934,7 @@ async function addNamedHomeProductToCart(name, button){
   if(!saved) return;
   updateCartUI();
   if(button){
-    button.innerText = "ADDED ?";
+    button.innerHTML = "ADDED &#10003;";
     button.classList.add("added");
   }
 }
@@ -5987,9 +5992,9 @@ function repairMojibake(value){
     return decodeURIComponent(escape(text));
   }catch(e){
     return text
-      .replaceAll("â˜…", "?")
-      .replaceAll("âœ“", "?")
-      .replaceAll("â†’", "?");
+      .replaceAll("â˜…", "*")
+      .replaceAll("âœ“", "✓")
+      .replaceAll("â†’", "->");
   }
 }
 
@@ -6060,11 +6065,11 @@ function renderHeroTextBlock(){
     ["heroTitleLine1", cleanUiText(content.heroTitleLine1, "Crafted For Global")],
     ["heroTitleLine2", cleanUiText(content.heroTitleLine2, "Standards")],
     ["heroSubline", cleanUiText(content.heroSubline, "Pure Quality. Honest Food. Swadra Promise.")],
-    ["heroTrustLine", cleanUiText(content.heroTrust, "? Packed Fresh When You Order")],
-    ["heroBadge1", cleanUiText(content.heroBadge1, "? 100% Natural")],
-    ["heroBadge2", cleanUiText(content.heroBadge2, "? Expertly Selected")],
-    ["heroBadge3", cleanUiText(content.heroBadge3, "? Farm Direct")],
-    ["heroButtonText", cleanUiText(content.heroButton, "Explore Products ?")]
+    ["heroTrustLine", cleanUiText(content.heroTrust, "Packed Fresh When You Order")],
+    ["heroBadge1", cleanUiText(content.heroBadge1, "100% Natural")],
+    ["heroBadge2", cleanUiText(content.heroBadge2, "Expertly Selected")],
+    ["heroBadge3", cleanUiText(content.heroBadge3, "Farm Direct")],
+    ["heroButtonText", cleanUiText(content.heroButton, "Explore Products ->")]
   ];
   pairs.forEach(([id,value])=>{
     const el = document.getElementById(id);
@@ -6242,7 +6247,7 @@ ${buildHomeClonePriceMarkup(product)}
 class="cart ${existing ? 'added' : ''} ${isOut ? 'disabled' : ''}"
 data-admin-product="true"
 onclick="${isOut ? '' : (sectionKey === 'catalog' ? `toggleCatalogCart('${id}')` : `toggleSectionCart('${sectionKey}','${id}')`)}"
-${isOut ? 'disabled' : ''}>${existing ? 'ADDED ?' : 'ADD TO CART'}</button>
+${isOut ? 'disabled' : ''}>${existing ? 'ADDED &#10003;' : 'ADD TO CART'}</button>
 </div>
 </div>
 </div>`;
@@ -6275,19 +6280,19 @@ ${isOut
 ${pricing.offPercent > 0
 ? `<div class="price-stack">
 <div class="price-line">
-<span class="old">?${pricing.mrp.toLocaleString()}</span>
-<span class="price">?${pricing.sellingPrice.toLocaleString()}</span>
+<span class="old">&#8377;${pricing.mrp.toLocaleString()}</span>
+<span class="price">&#8377;${pricing.sellingPrice.toLocaleString()}</span>
 </div>
 <div class="off">${pricing.offPercent}% OFF${getPerHundredPriceMarkup(product, pricing.sellingPrice)}</div>
 </div>`
-: (getPerHundredPriceMarkup(product, pricing.sellingPrice) ? `<div class="price-stack"><div class="price">?${pricing.sellingPrice.toLocaleString()}</div><div class="off">${getPerHundredPriceMarkup(product, pricing.sellingPrice)}</div></div>` : `<div class="price">?${pricing.sellingPrice.toLocaleString()}</div>`)}
+: (getPerHundredPriceMarkup(product, pricing.sellingPrice) ? `<div class="price-stack"><div class="price">&#8377;${pricing.sellingPrice.toLocaleString()}</div><div class="off">${getPerHundredPriceMarkup(product, pricing.sellingPrice)}</div></div>` : `<div class="price">&#8377;${pricing.sellingPrice.toLocaleString()}</div>`)}
 `}
 </div>
 <button
 class="cart ${existing ? 'added' : ''} ${isOut ? 'disabled' : ''}"
 data-admin-product="true"
 onclick="${isOut ? '' : `toggleCatalogCart('${id}')`}"
-${isOut ? 'disabled' : ''}>${existing ? 'ADDED ?' : 'ADD TO CART'}</button>
+${isOut ? 'disabled' : ''}>${existing ? 'ADDED &#10003;' : 'ADD TO CART'}</button>
 </div>
 </div>
 </div>`;
@@ -6950,8 +6955,8 @@ function getPerHundredPriceMarkup(product, sellingPrice){
   const perHundred = (price / baseAmount) * 100;
   if(!(perHundred > 0)) return "";
   const rounded = Math.round(perHundred * 100) / 100;
-  const formatted = Number.isInteger(rounded) ? rounded.toLocaleString() : rounded.toFixed(2);
-  return `<span class="unit-price-note">?${formatted}/${label}</span>`;
+  const formatted = Number.isInteger(rounded) ? rounded.toLocaleString("en-IN") : rounded.toFixed(2);
+  return `<span class="unit-price-note">&#8377;${formatted}/${label}</span>`;
 }
 
 function buildPriceMarkup(product){
@@ -7698,7 +7703,7 @@ function swadraHeaderUpdateStickyCart(){
   cart.forEach(item=>{ totalItems+=Number(item.qty||0); totalPrice+=Number(item.qty||0)*Number(item.price||0); });
   if(totalItems>0){
     bar.style.display="flex";
-    count.innerText=totalItems+" item ?"+totalPrice;
+    count.innerText=totalItems+" item "+formatIndexRupee(totalPrice);
   }else{
     bar.style.display="none";
   }
@@ -7834,7 +7839,7 @@ window.addEventListener("focus", function(){
       <div class="left">
         ${isOut ? `<div class="out">Out Of Stock</div>` : `${priceBlock}`}
       </div>
-      <button class="cart ${existing ? "added" : ""} ${isOut ? "disabled" : ""}" ${isOut ? "disabled" : ""} onclick="${isOut ? "" : `toggleSectionCart('${sectionKey}','${id}')`}">${existing ? "ADDED ?" : "ADD TO CART"}</button>
+      <button class="cart ${existing ? "added" : ""} ${isOut ? "disabled" : ""}" ${isOut ? "disabled" : ""} onclick="${isOut ? "" : `toggleSectionCart('${sectionKey}','${id}')`}">${existing ? "ADDED &#10003;" : "ADD TO CART"}</button>
     </div>
   </div>
 </div>`;
@@ -8082,7 +8087,7 @@ window.addEventListener("focus", function(){
       <div class="left">
         ${isOut ? `<div class="out">Out Of Stock</div>` : `${finalPriceMarkup(product)}`}
       </div>
-      <button class="cart ${existing ? 'added' : ''} ${isOut ? 'disabled' : ''}" ${isOut ? 'disabled' : ''} onclick="${isOut ? '' : `toggleSectionCart('${sectionKey}','${id}')`}">${existing ? 'ADDED ?' : 'ADD TO CART'}</button>
+      <button class="cart ${existing ? 'added' : ''} ${isOut ? 'disabled' : ''}" ${isOut ? 'disabled' : ''} onclick="${isOut ? '' : `toggleSectionCart('${sectionKey}','${id}')`}">${existing ? 'ADDED &#10003;' : 'ADD TO CART'}</button>
     </div>
   </div>
 </div>`;

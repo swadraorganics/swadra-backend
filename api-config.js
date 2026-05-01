@@ -675,7 +675,7 @@
     if(usersCacheRequest){
       return usersCacheRequest;
     }
-    usersCacheRequest = db.collection(USERS_COLLECTION).get().then(function(snapshot){
+    usersCacheRequest = db.collection(USERS_COLLECTION).get().then(async function(snapshot){
       var next = {};
       snapshot.forEach(function(doc){
         var data = doc.data() || {};
@@ -685,6 +685,8 @@
           next[user.email] = user;
         }
       });
+      var backendUsers = await fetchUsersFromBackendFallback({ preserveCache: true }).catch(function(){ return {}; });
+      next = Object.assign({}, backendUsers, next);
       usersCache = next;
       usersCacheLoaded = true;
       return getAuthUsers();
@@ -706,11 +708,14 @@
     return usersCacheRequest;
   }
 
-  async function fetchUsersFromBackendFallback(){
-    var response = await fetch(base + "/api/app-state?keys=users", { cache:"no-store" });
+  async function fetchUsersFromBackendFallback(options){
+    var config = options && typeof options === "object" ? options : {};
+    var response = await fetch(base + "/api/account/users", { cache:"no-store" });
     var data = await response.json().catch(function(){ return {}; });
-    var state = data && data.state && typeof data.state === "object" ? data.state : {};
-    var next = sanitizeUsersMap(state.users || {});
+    var next = sanitizeUsersMap(data && data.users || {});
+    if(config.preserveCache){
+      return next;
+    }
     usersCache = next;
     usersCacheLoaded = true;
     return getAuthUsers();
@@ -1013,6 +1018,31 @@
     };
   }
 
+  function getCheckoutDraftLocalKey(userId){
+    var normalizedUserId = resolveUserBusinessDocId(userId) || getBusinessDocId(userId);
+    return normalizedUserId ? "swadraCheckoutDraft:" + normalizedUserId : "";
+  }
+
+  function saveCheckoutDraftLocal(userId, draft){
+    var key = getCheckoutDraftLocalKey(userId);
+    if(!key) return null;
+    var payload = sanitizeCheckoutDraftRecord(draft, userId);
+    try{
+      rawLocalSet(key, JSON.stringify(payload));
+      rawSessionSet(key, JSON.stringify(payload));
+    }catch(error){}
+    return payload;
+  }
+
+  function fetchCheckoutDraftLocal(userId){
+    var key = getCheckoutDraftLocalKey(userId);
+    if(!key) return null;
+    var raw = rawSessionGet(key) || rawLocalGet(key);
+    if(!raw) return null;
+    var parsed = tryParseJson(raw);
+    return parsed ? sanitizeCheckoutDraftRecord(parsed, userId) : null;
+  }
+
   async function fetchFirestoreCart(userId){
     var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) return [];
@@ -1169,18 +1199,21 @@
   async function fetchCheckoutDraft(userId){
     var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) return null;
+    var localDraft = fetchCheckoutDraftLocal(userId);
     var db = initFirestore();
-    if(!db) return fetchCheckoutDraftFromBackend(userId);
+    if(!db) return fetchCheckoutDraftFromBackend(userId).catch(function(){ return localDraft; });
     try{
       var snapshot = await db.collection(CHECKOUT_DRAFTS_COLLECTION).doc(normalizedUserId).get();
-      if(!snapshot.exists) return fetchCheckoutDraftFromBackend(userId).catch(function(){ return null; });
-      return sanitizeCheckoutDraftRecord(snapshot.data() || {}, normalizedUserId);
+      if(!snapshot.exists) return fetchCheckoutDraftFromBackend(userId).catch(function(){ return localDraft; });
+      var remoteDraft = sanitizeCheckoutDraftRecord(snapshot.data() || {}, normalizedUserId);
+      saveCheckoutDraftLocal(userId, remoteDraft);
+      return remoteDraft;
     }catch(error){
       var code = String(error && error.code || "").toLowerCase();
       if(code === "permission-denied" || code === "unauthenticated"){
-        return fetchCheckoutDraftFromBackend(userId);
+        return fetchCheckoutDraftFromBackend(userId).catch(function(){ return localDraft; });
       }
-      throw error;
+      return fetchCheckoutDraftFromBackend(userId).catch(function(){ return localDraft; });
     }
   }
 
@@ -1190,16 +1223,17 @@
     var db = initFirestore();
     var payload = sanitizeCheckoutDraftRecord(draft, normalizedUserId);
     payload.updatedAt = new Date().toISOString();
-    if(!db) return saveCheckoutDraftToBackend(userId, normalizedUserId, payload);
+    saveCheckoutDraftLocal(userId, payload);
+    if(!db) return saveCheckoutDraftToBackend(userId, normalizedUserId, payload).catch(function(){ return payload; });
     try{
       await db.collection(CHECKOUT_DRAFTS_COLLECTION).doc(normalizedUserId).set(payload, { merge: true });
       return payload;
     }catch(error){
       var code = String(error && error.code || "").toLowerCase();
       if(code === "permission-denied" || code === "unauthenticated"){
-        return saveCheckoutDraftToBackend(userId, normalizedUserId, payload);
+        return saveCheckoutDraftToBackend(userId, normalizedUserId, payload).catch(function(){ return payload; });
       }
-      throw error;
+      return saveCheckoutDraftToBackend(userId, normalizedUserId, payload).catch(function(){ return payload; });
     }
   }
 
@@ -1210,7 +1244,9 @@
     if(!response.ok || data.ok === false){
       throw new Error(data && data.error ? data.error : "Failed to fetch checkout draft");
     }
-    return data.draft ? sanitizeCheckoutDraftRecord(data.draft, docId) : null;
+    var draft = data.draft ? sanitizeCheckoutDraftRecord(data.draft, docId) : null;
+    if(draft) saveCheckoutDraftLocal(userId, draft);
+    return draft;
   }
 
   async function saveCheckoutDraftToBackend(userId, docId, payload){
@@ -1228,7 +1264,9 @@
     if(!response.ok || data.ok === false){
       throw new Error(data && data.error ? data.error : "Failed to save checkout draft");
     }
-    return sanitizeCheckoutDraftRecord(data.draft || body, docId || userId);
+    var draft = sanitizeCheckoutDraftRecord(data.draft || body, docId || userId);
+    saveCheckoutDraftLocal(userId, draft);
+    return draft;
   }
 
   async function clearCheckoutDraft(userId){

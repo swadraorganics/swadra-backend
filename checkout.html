@@ -302,6 +302,9 @@ postofficeField.value = nextAddress.postoffice;
 }else{
 postofficeField.innerHTML = "<option value=''>Select Post Office</option>";
 }
+if(nextAddress.pincode && !nextAddress.postoffice){
+fetchPincode(nextAddress.pincode);
+}
 }
 
 function renderAddressSelector(){
@@ -344,6 +347,7 @@ selectedCheckoutAddressId = addressId;
 isNewCheckoutAddress = false;
 fillCheckoutAddress(selectedAddress);
 renderAddressSelector();
+loadOrderSummary();
 const picker = document.getElementById("addressPicker");
 if(picker) picker.classList.remove("open");
 }
@@ -358,6 +362,7 @@ document.getElementById("pincode").value = "";
 document.getElementById("state").value = "";
 document.getElementById("postoffice").innerHTML = "<option value=''>Select Post Office</option>";
 renderAddressSelector();
+loadOrderSummary();
 const picker = document.getElementById("addressPicker");
 if(picker) picker.classList.remove("open");
 document.getElementById("house").focus();
@@ -410,6 +415,10 @@ qty:Number(item.qty || 1)
 
 function getDiscountedItemsTotal(items){
 return Math.round((Array.isArray(items) ? items : []).reduce((sum,item)=>sum + Math.round(Number(item && (item.discountedLineTotal || item.displayLineTotal || ((Number(item.price || 0) * Number(item.qty || 1))))) || 0),0));
+}
+
+function getCheckoutSellingTotal(items){
+return Math.round((Array.isArray(items) ? items : []).reduce((sum,item)=>sum + (Number(item && item.price || 0) * Number(item && item.qty || 1)),0));
 }
 
 async function loadCheckoutDraft(){
@@ -498,8 +507,12 @@ async function calculateCheckoutSummary(baseSummary, cartItems){
 let summary = baseSummary && typeof baseSummary === "object" ? { ...baseSummary } : {};
 let shippingApi = window.SWADRA_SHIPPING || null;
 let discountedItemsTotal = getDiscountedItemsTotal(cartItems);
+let gstInclusiveSellingTotal = Math.max(0, Math.round(Number(summary.sellingTotal || 0) || getCheckoutSellingTotal(cartItems)));
 if(!shippingApi || typeof shippingApi.estimateSurfaceDelivery !== "function"){
-summary.couponAdjustedSellingTotal = Math.max(0, Math.round(Number(summary.couponAdjustedSellingTotal || 0) || discountedItemsTotal || Number(summary.sellingTotal || 0)));
+let couponDiscount = Math.min(Number(summary.couponDiscount || 0), gstInclusiveSellingTotal);
+summary.sellingTotal = gstInclusiveSellingTotal;
+summary.couponDiscount = Math.round(couponDiscount);
+summary.couponAdjustedSellingTotal = Math.max(0, Math.round(gstInclusiveSellingTotal - couponDiscount)) || discountedItemsTotal;
 summary.finalTotal = Math.max(0, Math.round(Number(summary.couponAdjustedSellingTotal || summary.sellingTotal || 0) + Number(summary.delivery || 0)));
   return summary;
 }
@@ -516,10 +529,11 @@ let delivery = Math.round(Number(deliveryDetails && deliveryDetails.finalDeliver
 if(!(deliveryDetails && deliveryDetails.freeDeliveryApplied) && delivery <= 0 && Number(summary.sellingTotal || 0) > 0){
 delivery = Math.max(0, Math.round(Number(deliveryDetails && deliveryDetails.configuredDeliveryCharge || (shippingApi && typeof shippingApi.getDeliveryCharge === "function" ? shippingApi.getDeliveryCharge() : 0)) || 0));
 }
-let couponDiscount = Math.min(Number(summary.couponDiscount || 0), Number(summary.sellingTotal || 0));
-let couponAdjustedSellingTotal = Math.max(0, Math.round(Number(summary.sellingTotal || 0) - couponDiscount));
+let couponDiscount = Math.min(Number(summary.couponDiscount || 0), gstInclusiveSellingTotal);
+let couponAdjustedSellingTotal = Math.max(0, Math.round(gstInclusiveSellingTotal - couponDiscount));
 return {
 ...summary,
+sellingTotal: gstInclusiveSellingTotal,
 delivery: delivery,
 couponDiscount: Math.round(couponDiscount),
 couponAdjustedSellingTotal: couponAdjustedSellingTotal || discountedItemsTotal,
@@ -537,7 +551,10 @@ deliveryEstimateLabel: deliveryDetails && deliveryDetails.freeDeliveryApplied
 };
 }catch(error){
 console.error("checkout delivery estimate failed", error);
-summary.couponAdjustedSellingTotal = Math.max(0, Math.round(Number(summary.couponAdjustedSellingTotal || 0) || discountedItemsTotal || Number(summary.sellingTotal || 0)));
+let couponDiscount = Math.min(Number(summary.couponDiscount || 0), gstInclusiveSellingTotal);
+summary.sellingTotal = gstInclusiveSellingTotal;
+summary.couponDiscount = Math.round(couponDiscount);
+summary.couponAdjustedSellingTotal = Math.max(0, Math.round(gstInclusiveSellingTotal - couponDiscount)) || discountedItemsTotal;
 summary.finalTotal = Math.max(0, Math.round(Number(summary.couponAdjustedSellingTotal || summary.sellingTotal || 0) + Number(summary.delivery || 0)));
 return summary;
 }
@@ -559,15 +576,21 @@ document.getElementById("name").value = userProfile.name || currentUser.split("@
 document.getElementById("phone").value = user.phone || "";
 const draftAddress = draft && draft.address ? draft.address : {};
 const queryAddress = getCheckoutQueryAddress();
+syncUserAddresses(user);
+userAddress = user.address || {};
+selectedCheckoutAddressId = user.defaultAddressId || (user.addresses && user.addresses[0] ? user.addresses[0].id : "");
 const savedDefaultAddress = userAddress && userAddress.house ? userAddress : {};
 const activeAddress = {
 house: savedDefaultAddress.house || draftAddress.house || "",
 area: savedDefaultAddress.area || draftAddress.area || "",
 city: savedDefaultAddress.city || draftAddress.city || "",
-pincode: queryAddress.pincode || savedDefaultAddress.pincode || draftAddress.pincode || "",
+pincode: savedDefaultAddress.pincode || draftAddress.pincode || queryAddress.pincode || "",
 state: savedDefaultAddress.state || draftAddress.state || "",
-postoffice: queryAddress.postoffice || savedDefaultAddress.postoffice || draftAddress.postoffice || ""
+postoffice: savedDefaultAddress.postoffice || draftAddress.postoffice || queryAddress.postoffice || ""
 };
+if(savedDefaultAddress.house){
+fillCheckoutAddress(activeAddress);
+}else{
 document.getElementById("house").value = activeAddress.house;
 document.getElementById("area").value = activeAddress.area;
 document.getElementById("city").value = activeAddress.city;
@@ -575,10 +598,11 @@ document.getElementById("pincode").value = activeAddress.pincode;
 document.getElementById("state").value = activeAddress.state;
 const postofficeValue = activeAddress.postoffice || "";
 if(postofficeValue){
-document.getElementById("postoffice").innerHTML = `<option value="${postofficeValue}">${postofficeValue}</option>`;
+document.getElementById("postoffice").innerHTML = `<option value="${escapeHtml(postofficeValue)}">${escapeHtml(postofficeValue)}</option>`;
 }
 if(activeAddress.pincode && !postofficeValue){
 fetchPincode(activeAddress.pincode);
+}
 }
 renderAddressSelector();
 loadOrderSummary();
@@ -687,7 +711,22 @@ input.addEventListener("input", function(){ loadOrderSummary(); });
 input.addEventListener("change", function(){ loadOrderSummary(); });
 });
 
-function goPayment(){
+async function goPayment(){
+currentUser = currentUser || getCurrentUser();
+if(!currentUser){
+if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
+authApi.setRedirectAfterLogin("checkout.html");
+}
+location.href = "account.html";
+return;
+}
+users = getUsers();
+if(!users[currentUser]){
+users[currentUser] = user && typeof user === "object" ? user : {};
+}
+users[currentUser].email = users[currentUser].email || currentUser;
+users[currentUser].profile = Object.assign({}, users[currentUser].profile || {}, { email: currentUser });
+user = users[currentUser];
 const nameField = document.getElementById("name");
 const phoneField = document.getElementById("phone");
 const houseField = document.getElementById("house");
@@ -728,7 +767,7 @@ const checkoutAddress = {
 id: selectedCheckoutAddressId || ("addr_" + Date.now()),
 house: houseField.value,
 area: areaField.value,
-nearby: safeText((users[currentUser].address || {}).nearby),
+nearby: safeText((user.address || {}).nearby),
 city: cityField.value,
 pincode: pincodeField.value,
 postoffice: postofficeField.value,
@@ -736,26 +775,32 @@ district: cityField.value,
 state: stateField.value
 };
 
-users[currentUser].address = Object.assign({}, checkoutAddress);
+user.address = Object.assign({}, checkoutAddress);
 upsertCheckoutAddress(
-users[currentUser],
+user,
 checkoutAddress,
-!selectedCheckoutAddressId || selectedCheckoutAddressId === users[currentUser].defaultAddressId || isNewCheckoutAddress
+!selectedCheckoutAddressId || selectedCheckoutAddressId === user.defaultAddressId || isNewCheckoutAddress
 );
-selectedCheckoutAddressId = users[currentUser].defaultAddressId || checkoutAddress.id;
-user = users[currentUser];
+users[currentUser] = user;
+selectedCheckoutAddressId = user.defaultAddressId || checkoutAddress.id;
 window.__swadraCheckoutSummary = summary;
+await saveCheckoutDraftToFirestore({
+...summary,
+deliveryDetails: deliveryDetails,
+discountedItems: summary.discountedItems || getCheckoutCartItems()
+}).catch(function(error){
+console.error("checkout draft pre-payment save failed", error);
+});
 persistCheckoutUserRecord().then(async function(){
 await saveCheckoutDraftToFirestore({
 ...summary,
 deliveryDetails: deliveryDetails,
 discountedItems: summary.discountedItems || getCheckoutCartItems()
 });
-alert("Address Updated Successfully");
-location.href = "payment.html";
 }).catch(function(error){
 console.error("checkout address save failed", error);
-alert("Address save failed. Please try again.");
+}).finally(function(){
+location.href = "payment.html";
 });
 }
 
