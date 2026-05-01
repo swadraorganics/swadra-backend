@@ -1107,8 +1107,62 @@
       renderUsers();
     }
 
+    function getAdminCartLookupIds(emailKey, user){
+      return [
+        user?.uid,
+        user?.userId,
+        user?.id,
+        user?.docId,
+        user?.email,
+        user?.profile?.email,
+        emailKey
+      ].map(value=>String(value || "").trim()).filter(Boolean);
+    }
+
+    async function fetchAdminUserCartById(userId){
+      if(!userId) return [];
+      if(dataApi && typeof dataApi.fetchCart === "function"){
+        try{
+          const cart = await dataApi.fetchCart(userId);
+          if(Array.isArray(cart) && cart.length) return cart;
+        }catch(error){}
+      }
+      const base = getBackendBaseUrl();
+      if(base){
+        try{
+          const response = await fetch(`${base}/api/carts/${encodeURIComponent(userId)}`, {
+            cache: "no-store",
+            headers: getAdminFetchHeaders({ "Accept": "application/json" })
+          });
+          const payload = await response.json().catch(()=>({}));
+          if(response.ok && payload && payload.ok && Array.isArray(payload.cart) && payload.cart.length){
+            return payload.cart;
+          }
+        }catch(error){}
+      }
+      return [];
+    }
+
+    async function hydrateAdminUserCarts(){
+      const users = readUsersObject();
+      const entries = Object.entries(users);
+      await Promise.all(entries.map(async ([emailKey, user])=>{
+        if(!user || typeof user !== "object") return;
+        if(Array.isArray(user.cart) && user.cart.length) return;
+        const lookupIds = getAdminCartLookupIds(emailKey, user);
+        for(const lookupId of lookupIds){
+          const cart = await fetchAdminUserCartById(lookupId);
+          if(Array.isArray(cart) && cart.length){
+            user.cart = cart;
+            return;
+          }
+        }
+      }));
+    }
+
     async function refreshUsers(){
       await fetchBackendUsersForAdmin();
+      await hydrateAdminUserCarts();
       const orderSources = [];
       if(window.SWADRA_API_BASE){
         try{

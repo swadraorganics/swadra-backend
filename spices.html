@@ -70,11 +70,11 @@ body{margin:0;font-family:Arial;background:#f1e3e3;}
 .gallery-prev{left:12px}
 .gallery-next{right:12px}
 .gallery-dots{display:none}
-.product-info{margin-top:14px;padding-top:0;position:relative;z-index:3;background:#fff;}
+.product-info{margin-top:11px;padding-top:0;position:relative;z-index:3;background:#fff;display:flex;flex:1;flex-direction:column;gap:8px;}
 .product-title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:0 14px 0;min-height:28px;}
-.product-card h3{margin:0;font-size:17px;font-weight:700;line-height:1.2;flex:1 1 auto;min-width:0;padding-top:6px;}
+.product-card h3{margin:0;font-size:17px;font-weight:700;line-height:1.2;flex:1 1 auto;min-width:0;padding-top:0;}
 .size{font-size:15px;color:#7a3d3d;margin:0;line-height:1.2;white-space:nowrap;text-align:right;flex:0 0 auto;transform:translateY(-4px);}
-.product-bottom{display:flex;justify-content:space-between;align-items:center;margin:-4px 14px 0;}
+.product-bottom{display:flex;justify-content:space-between;align-items:center;margin:auto 14px 0;}
 .left{display:flex;align-items:center;gap:8px;}
 .price{font-size:20px;color:#7a3d3d;font-weight:900;}
 .price-stack{display:flex;flex-direction:column;gap:4px;}
@@ -91,8 +91,6 @@ body{margin:0;font-family:Arial;background:#f1e3e3;}
 .cart-btn:hover::before{left:100%;}
 .cart-btn.added{background:#0c831f;}
 .cart-btn.disabled{background:#c62828;cursor:not-allowed;}
-.detail-link{display:inline-flex;align-items:center;color:#7a3d3d;font-size:12px;font-weight:900;text-decoration:none;margin-top:8px}
-.detail-link:hover{text-decoration:underline}
 #stickyCart{position:fixed;bottom:20px;right:20px;display:none;align-items:center;gap:15px;padding:12px 18px;background:linear-gradient(135deg,#7a3d3d,#b76e79);color:white;border-radius:50px;z-index:9999;}
 #stickyCart a{background:white;color:#7a3d3d;padding:8px 16px;border-radius:30px;text-decoration:none;font-weight:600;}
 .swadra-category-footer{margin:40px 0 0;padding:34px 20px 38px;background:#7a3d3d;color:#fff;text-align:center;font-family:Arial,sans-serif;}
@@ -108,7 +106,7 @@ body{margin:0;font-family:Arial;background:#f1e3e3;}
 .product-summary-body{color:#382d2d;font-size:15px;line-height:1.7;white-space:pre-wrap}
 .product-summary-trigger{cursor:pointer}
 @media(max-width:1180px){.navbar{flex-wrap:wrap;gap:12px;}.nav-search{position:relative;left:auto;top:auto;transform:none;order:3;flex:1 1 100%;max-width:none;margin:4px 0 0;width:auto;}.account-hover-menu{right:0;width:230px;}}
-@media(min-width:901px){.product-img{height:330px !important;padding-top:20px !important;}.product-info{margin-top:4px !important;}.product-title-row{align-items:flex-start !important;min-height:unset !important;}.product-card h3{padding-top:0 !important;min-height:unset !important;}.size{transform:none !important;padding-top:1px !important;}.product-bottom{margin:-14px 14px 0 !important;}}
+@media(min-width:901px){.product-img{height:330px !important;padding-top:20px !important;}.product-info{margin-top:11px !important;}.product-title-row{align-items:flex-start !important;min-height:unset !important;}.product-card h3{padding-top:0 !important;min-height:unset !important;}.size{transform:none !important;padding-top:1px !important;}.product-bottom{margin:auto 14px 0 !important;}}
 @media(max-width:900px){.product-grid{grid-template-columns:repeat(2,1fr);}}
 </style>
 <link rel="stylesheet" href="swadra-responsive.css">
@@ -116,7 +114,7 @@ body{margin:0;font-family:Arial;background:#f1e3e3;}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="api-config.js?v=20260423-2"></script>
+<script src="api-config.js?v=20260501-cart"></script>
 <script src="seo-aeo.js"></script><link rel="manifest" href="manifest.json">`r`n</head>
 <body>
 
@@ -511,7 +509,6 @@ ${buildGalleryMarkup(p,id)}
 </div>
 <div class="product-info">
 <div class="product-title-row"><h3>${p.name}</h3><div class="size">${p.size || "100gm"}</div></div>
-<a class="detail-link" href="product-detail.html?id=${encodeURIComponent(id)}">View details, reviews & FAQ</a>
 <div class="product-bottom">
 <div class="left">
 ${isOut ? `<div class="out-stock-text">Out Of Stock</div>` : `
@@ -558,11 +555,20 @@ function changeQty(id,val){
 return;
 }
 
+function getCartUrl(){
+return authApi && typeof authApi.buildUrlWithAuth === "function" ? authApi.buildUrlWithAuth("cart.html") : "cart.html";
+}
+
+function updateCartLinks(){
+document.querySelectorAll('a[href^="cart.html"]').forEach(link=>{ link.href=getCartUrl(); });
+}
+
 async function updateCartUI(){
 let cart=await getCart();
 let totalItems=0,totalPrice=0;
 cart.forEach(i=>{ totalItems+=i.qty; totalPrice+=i.qty*i.price; });
 let bar=document.getElementById("stickyCart");
+updateCartLinks();
 if(totalItems>0){
 bar.style.display="flex";
 document.getElementById("cartCount").innerText=totalItems+" item "+formatRupee(totalPrice);

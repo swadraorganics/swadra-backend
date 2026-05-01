@@ -1521,13 +1521,11 @@
   }
 
   function getGuestCart(){
-    var localCart = compactAuthCartItems(tryParseJson(rawLocalGet("guestCart"), []));
-    return localCart.length ? localCart : compactAuthCartItems(tryParseJson(rawSessionGet("guestCart"), []));
+    return compactAuthCartItems(tryParseJson(rawSessionGet("guestCart"), []));
   }
 
   function saveGuestCart(items){
     var compactItems = compactAuthCartItems(items);
-    rawLocalSet("guestCart", JSON.stringify(compactItems));
     rawSessionSet("guestCart", JSON.stringify(compactItems));
     try{
       window.dispatchEvent(new CustomEvent("cartUpdated", { detail: { cart: compactItems.slice() } }));
