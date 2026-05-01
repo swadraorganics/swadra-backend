@@ -2952,10 +2952,18 @@ app.post("/api/admin/credentials", requireAdminSession, async (req, res) => {
     }
     db.admin = { ...db.admin, username, role: db.admin.role || "owner" };
     setAdminPasswordHash(db, password);
+    const state = ensureAdminSecurity(db);
+    const now = new Date().toISOString();
+    state.adminSessions = state.adminSessions.map((session) => {
+      return session && String(session.status || "active") === "active"
+        ? { ...session, status: "revoked", revokedAt: now, revokeReason: "credentials_updated" }
+        : session;
+    });
     auditAdminAction(db, req, "admin.credentials.update", "success", { username });
     await writeDB(db);
     addLog("Admin credentials updated", "success");
-    res.json({ ok: true, username });
+    clearAdminSessionCookie(res);
+    res.json({ ok: true, username, sessionsRevoked: true });
   } catch (error) {
     addLog("Admin credentials update failed: " + error.message, "error");
     res.status(500).json({ ok: false, error: "Failed to update credentials" });

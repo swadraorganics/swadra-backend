@@ -1340,7 +1340,12 @@ window.addEventListener("pageshow", restoreAdminSession);
     if(!response.ok || !data.ok){
       throw new Error(data.error || "Failed to update credentials");
     }
-    alert("Credentials updated successfully");
+    clearAdminSession();
+    generatedOTP = "";
+    if(els.newPass) els.newPass.value = "";
+    if(els.otpInput) els.otpInput.value = "";
+    alert("Credentials updated successfully. Please login again with the new password.");
+    showAdminLogin();
   }catch(error){
     alert(error.message || "Credentials update ke liye secure backend admin session required hai.");
   }
