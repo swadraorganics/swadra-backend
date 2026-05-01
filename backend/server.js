@@ -2887,8 +2887,16 @@ async function upsertAccountUser(input = {}) {
   const finalPhone = phone || existingPhone;
   const finalPassword = password || String(existing.password || "").trim();
   const isNewUser = !existing.email && !users[email];
+  const isProfileOnlyUpdate = Boolean(
+    input.profile ||
+    input.address ||
+    Array.isArray(input.addresses) ||
+    input.defaultAddressId ||
+    Array.isArray(input.cart) ||
+    Array.isArray(input.orders)
+  );
 
-  if (isNewUser && (!finalPhone || finalPassword.length < 6)) {
+  if (isNewUser && !isProfileOnlyUpdate && (!finalPhone || finalPassword.length < 6)) {
     const error = new Error("Email, mobile number and valid password are required");
     error.statusCode = 400;
     throw error;
