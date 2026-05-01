@@ -623,6 +623,23 @@
     });
   }
 
+  function installAuthLinkClickSync(){
+    if(!document || document.__swadraAuthLinkClickSyncInstalled) return;
+    document.__swadraAuthLinkClickSyncInstalled = true;
+    document.addEventListener("click", function(event){
+      var anchor = event.target && typeof event.target.closest === "function" ? event.target.closest("a[href]") : null;
+      if(!anchor) return;
+      var href = String(anchor.getAttribute("href") || "").trim();
+      if(!href || href.charAt(0) === "#" || /^mailto:|^tel:|^javascript:/i.test(href)) return;
+      var parsed = parseUrl(href);
+      if(!parsed || parsed.origin !== window.location.origin) return;
+      var authEmail = normalizeEmailValue(getSessionValue("currentUser") || getCurrentUserEmail());
+      if(!authEmail) return;
+      parsed.searchParams.set(AUTH_QUERY_KEY, authEmail);
+      anchor.setAttribute("href", parsed.pathname.replace(/^\//, "") + parsed.search + parsed.hash);
+    }, true);
+  }
+
   function getCurrentUserEmail(){
     var auth = initFirebaseAuthIfNeeded();
     var firebaseUser = auth && auth.currentUser ? normalizeEmailValue(auth.currentUser.email || "") : "";
@@ -1072,7 +1089,7 @@
   function getPendingUserCart(userId){
     var key = getPendingCartKey(userId);
     if(key === "pendingCart:") return [];
-    return compactAuthCartItems(pendingCartMemory[key] || []);
+    return compactAuthCartItems(pendingCartMemory[key] || tryParseJson(rawSessionGet(key), []));
   }
 
   function setPendingUserCart(userId, items){
@@ -1080,6 +1097,7 @@
     if(key === "pendingCart:") return [];
     var compactItems = compactAuthCartItems(items);
     pendingCartMemory[key] = compactItems;
+    rawSessionSet(key, JSON.stringify(compactItems));
     return compactItems;
   }
 
@@ -1503,17 +1521,23 @@
   }
 
   function getGuestCart(){
-    return compactAuthCartItems(tryParseJson(rawLocalGet("guestCart"), []));
+    var localCart = compactAuthCartItems(tryParseJson(rawLocalGet("guestCart"), []));
+    return localCart.length ? localCart : compactAuthCartItems(tryParseJson(rawSessionGet("guestCart"), []));
   }
 
   function saveGuestCart(items){
     var compactItems = compactAuthCartItems(items);
     rawLocalSet("guestCart", JSON.stringify(compactItems));
+    rawSessionSet("guestCart", JSON.stringify(compactItems));
+    try{
+      window.dispatchEvent(new CustomEvent("cartUpdated", { detail: { cart: compactItems.slice() } }));
+    }catch(error){}
     return compactItems.slice();
   }
 
   function clearGuestCart(){
     rawLocalRemove("guestCart");
+    rawSessionRemove("guestCart");
     return [];
   }
 
@@ -4174,6 +4198,7 @@
       }
       installUnifiedSaleBar();
       installGlobalHeaderSearchSubmit();
+      installAuthLinkClickSync();
       syncInternalLinksWithAuth(document);
     }, { once: true });
   }else{
@@ -4188,6 +4213,7 @@
     }
     installUnifiedSaleBar();
     installGlobalHeaderSearchSubmit();
+    installAuthLinkClickSync();
     syncInternalLinksWithAuth(document);
   }
 
