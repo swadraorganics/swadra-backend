@@ -2626,6 +2626,23 @@ app.post("/api/admin/login", authRateLimit, async (req, res) => {
   }
 });
 
+app.get("/api/admin/session", requireAdminSession, async (req, res) => {
+  try {
+    res.json({
+      ok: true,
+      session: {
+        ok: true,
+        username: req.adminSession?.username || "admin",
+        role: req.adminSession?.role || "owner",
+        expiresAt: req.adminSession?.expiresAt || ""
+      }
+    });
+  } catch (error) {
+    addLog("Admin session check failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to check admin session" });
+  }
+});
+
 app.get("/api/admin/audit", requireAdminSession, async (req, res) => {
   try {
     const db = await readDB();

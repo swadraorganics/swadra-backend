@@ -812,14 +812,17 @@ function getApiBase(){
     async function revokeBackendAdminSession(allSessions){
       const saved = adminRuntimeSession[ADMIN_SESSION_KEY] || null;
       const token = String(saved && saved.token || "").trim();
-      if(!token) return false;
       const endpoint = getBackendBase() + (allSessions ? "/api/admin/logout-all" : "/api/admin/logout");
+      const headers = {
+        "Content-Type": "application/json"
+      };
+      if(token){
+        headers.Authorization = "Bearer " + token;
+      }
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + token
-        },
+        credentials: "include",
+        headers: headers,
         body: JSON.stringify({})
       });
       const data = await response.json().catch(()=>({}));
@@ -854,23 +857,60 @@ function showAdminPanel(){
       if(els.mainPanel) els.mainPanel.style.display = "none";
 }
 
-function restoreAdminSession(){
-  if(!currentAdminSession){
-    const saved = adminRuntimeSession[ADMIN_SESSION_KEY] || getAdminSessionFromWindowName();
-    if(saved && !adminRuntimeSession[ADMIN_SESSION_KEY]){
-      adminRuntimeSession[ADMIN_SESSION_KEY] = saved;
-      if(window.SWADRA_SET_ADMIN_TOKEN){
-        window.SWADRA_SET_ADMIN_TOKEN(saved);
-      }
-    }
-    currentAdminSession = !!(saved && saved.ok);
+async function validateBackendAdminSession(saved){
+  const token = String(saved && saved.token || "").trim();
+  const headers = {};
+  if(token){
+    headers.Authorization = "Bearer " + token;
   }
+  try{
+    const response = await fetch(getBackendBase() + "/api/admin/session", {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+      headers: headers
+    });
+    const data = await response.json().catch(()=>({}));
+    if(!response.ok || !data.ok){
+      return null;
+    }
+    return data.session || { ok: true };
+  }catch(error){
+    console.warn("admin session validation failed", error);
+    return null;
+  }
+}
+
+async function restoreAdminSession(){
   if(currentAdminSession){
     showAdminPanel();
-  }else{
-      showAdminLogin();
+    return true;
+  }
+  showAdminLogin();
+  const saved = adminRuntimeSession[ADMIN_SESSION_KEY] || getAdminSessionFromWindowName();
+  if(saved && !adminRuntimeSession[ADMIN_SESSION_KEY]){
+    adminRuntimeSession[ADMIN_SESSION_KEY] = saved;
+    if(window.SWADRA_SET_ADMIN_TOKEN){
+      window.SWADRA_SET_ADMIN_TOKEN(saved);
+    }
+  }
+  const validSession = await validateBackendAdminSession(saved || null);
+  if(validSession){
+    currentAdminSession = true;
+    if(saved){
+      adminRuntimeSession[ADMIN_SESSION_KEY] = Object.assign({}, saved, validSession, { ok: true });
+      if(window.SWADRA_SET_ADMIN_TOKEN){
+        window.SWADRA_SET_ADMIN_TOKEN(adminRuntimeSession[ADMIN_SESSION_KEY]);
       }
     }
+    showAdminPanel();
+    loadAdminDashboardData();
+    return true;
+  }
+  clearAdminSession();
+  showAdminLogin();
+  return false;
+}
 
     function loadAdminDashboardData(){
       loadRecentActivity();
@@ -1199,7 +1239,7 @@ async function logout(){
     console.warn("backend admin logout failed", error);
   }
   clearAdminSession();
-  window.location.href = "index.html";
+  window.location.href = "admin-index.html";
 }
 
 function toggleAdminProfileMenu(){
