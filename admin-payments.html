@@ -118,7 +118,7 @@
 
     .grid{
       display:grid;
-      grid-template-columns:380px minmax(0,1fr);
+      grid-template-columns:1fr;
       gap:18px;
       align-items:start;
     }
@@ -134,6 +134,29 @@
     .panel h2{
       margin:0 0 14px;
       font-size:24px;
+    }
+
+    .filters-panel{
+      position:sticky;
+      top:118px;
+      z-index:20;
+      border-radius:0 0 18px 18px;
+    }
+
+    .filters-panel .product-form{
+      display:grid;
+      grid-template-columns:minmax(280px,1.4fr) minmax(360px,1.2fr) minmax(420px,1.6fr);
+      gap:12px 16px;
+      align-items:end;
+    }
+
+    .filters-panel .row{
+      margin:0;
+    }
+
+    .filters-panel .summary-box{
+      margin:0;
+      grid-template-columns:repeat(4,minmax(92px,1fr));
     }
 
     .product-form{
@@ -217,8 +240,6 @@
     .payments-list{
       display:grid;
       gap:14px;
-      max-height:calc(100vh - 250px);
-      overflow:auto;
       padding-right:4px;
     }
 
@@ -315,7 +336,13 @@
 
     @media (max-width:1200px){
       .stats-grid{ grid-template-columns:repeat(2,1fr); }
-      .grid{ grid-template-columns:1fr; }
+      .filters-panel{
+        position:static;
+        border-radius:22px;
+      }
+      .filters-panel .product-form{
+        grid-template-columns:1fr;
+      }
     }
 
     @media (max-width:900px){
@@ -348,7 +375,7 @@
     <div class="stats-grid" id="paymentStats"></div>
 
     <div class="grid">
-      <div class="panel">
+      <div class="panel filters-panel">
         <h2>Payment Filters</h2>
 
         <div class="product-form">
@@ -406,15 +433,6 @@
             </div>
           </div>
 
-          <div class="hint">
-            Page common payment and order storage keys read karta hai.<br>
-          Reviewed status alag admin review state me save hota hai, original payment data break nahi hota.<br>
-            Backend payment attempts aur saved orders se verified Razorpay method details bhi yahan show hongi.
-          </div>
-
-          <div class="small-note">
-            Keys checked: <b>backend payment attempts, backend orders, payments, adminPayments, swadraPayments, orders, adminOrders, swadraOrders, customerOrders, allOrders</b>
-          </div>
         </div>
       </div>
 
@@ -618,8 +636,8 @@
     function getPaymentMergeKey(payment){
       const payId = String(payment.paymentId || "").trim();
       const orderId = String(payment.orderId || "").trim();
-      if(payId && /^pay_/i.test(payId)) return "pay:" + payId;
       if(orderId) return "order:" + orderId;
+      if(payId && /^pay_/i.test(payId)) return "pay:" + payId;
       return "id:" + String(payment.id || "");
     }
 
