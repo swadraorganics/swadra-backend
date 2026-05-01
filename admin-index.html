@@ -1350,9 +1350,17 @@ window.addEventListener("pageshow", restoreAdminSession);
         return;
       }
       try{
+        const savedSession = adminRuntimeSession[ADMIN_SESSION_KEY] || getAdminSessionFromWindowName() || {};
+        const adminHeaders = {
+          "Content-Type": "application/json"
+        };
+        if(savedSession.token){
+          adminHeaders.Authorization = "Bearer " + String(savedSession.token).trim();
+        }
         const response = await fetch(getAdminCredentialsUrl(),{
           method:"POST",
-          headers:{ "Content-Type":"application/json" },
+          credentials:"include",
+          headers:adminHeaders,
           body:JSON.stringify({
             username:nextUsername,
             password:nextPassword

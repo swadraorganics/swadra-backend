@@ -2877,6 +2877,11 @@ async function upsertAccountUser(input = {}) {
   const db = await readDB();
   db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
   const users = db.appState.users && typeof db.appState.users === "object" ? db.appState.users : {};
+  const topUsers = await readTopLevelFirestoreCollection("users");
+  topUsers.forEach((user) => {
+    const userEmail = normalizeAccountEmail(user.email || user.id || user.docId || "");
+    if (userEmail) users[userEmail] = { ...(users[userEmail] || {}), ...user };
+  });
   const existing = users[email] && typeof users[email] === "object" ? users[email] : {};
   const existingPhone = normalizeAccountPhone(existing.phone || existing.phoneNormalized || existing.profile?.phone || "");
   const finalPhone = phone || existingPhone;
