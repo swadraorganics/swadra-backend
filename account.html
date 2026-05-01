@@ -1413,6 +1413,29 @@ let accountEntryStage = "email";
         const result = isPasswordResetFlow
           ? { record: { email: accountEmail, phone: temp.phone }, existed: true }
           : await accountApi("/api/account/create", accountPayload);
+        if(!isPasswordResetFlow && authApi && typeof authApi.registerUserWithPassword === "function"){
+          try{
+            await authApi.registerUserWithPassword({ email: accountEmail, password: pass });
+          }catch(registerError){
+            const code = String(registerError && registerError.code || registerError && registerError.message || "").toLowerCase();
+            if(code.includes("email-already-in-use") && authApi && typeof authApi.signInUserWithPassword === "function"){
+              try{
+                await authApi.signInUserWithPassword(accountEmail, pass);
+              }catch(signInError){
+                console.warn("existing Firebase auth sign-in skipped while backend profile was repaired", signInError);
+              }
+            }else{
+              console.warn("Firebase auth registration skipped while backend profile was saved", registerError);
+            }
+          }
+        }
+        if(!isPasswordResetFlow && authApi && typeof authApi.createOrUpdateUserAccount === "function"){
+          try{
+            await authApi.createOrUpdateUserAccount(accountPayload);
+          }catch(profileSyncError){
+            console.warn("Firestore profile sync skipped after backend account create", profileSyncError);
+          }
+        }
         if(result && result.existed && !isPasswordResetFlow && result.record && result.record.password && result.record.password !== pass){
           document.getElementById("loginPass").value = "";
           runtimeTempUser = null;

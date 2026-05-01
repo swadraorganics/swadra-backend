@@ -393,7 +393,12 @@
           init.headers = headers;
         }
       }
-      return nativeFetch(input, init);
+      return nativeFetch(input, init).then(function(response){
+        if(isAdminApi && response && response.status === 401 && !/admin-index\.html$/i.test(window.location.pathname || "")){
+          window.location.href = "admin-index.html";
+        }
+        return response;
+      });
     };
   }
 

@@ -106,6 +106,10 @@
           backendUsersCache = payload.users;
           return;
         }
+        if(response.status === 401){
+          window.location.href = "admin-index.html";
+          return;
+        }
         console.warn("admin users fetch returned no users", payload);
       }catch(error){
         console.error("admin users fetch failed", error);
