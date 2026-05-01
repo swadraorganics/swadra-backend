@@ -2804,6 +2804,89 @@ async function findAccountUser(email = "") {
   return { ...record, email: record.email || normalizedEmail };
 }
 
+async function upsertAccountUser(input = {}) {
+  const email = normalizeAccountEmail(input.email);
+  const phone = normalizeAccountPhone(input.phone);
+  const password = String(input.password || "").trim();
+  if (!email || !phone || password.length < 6) {
+    const error = new Error("Email, mobile number and valid password are required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const db = await readDB();
+  db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+  const users = db.appState.users && typeof db.appState.users === "object" ? db.appState.users : {};
+  const existing = users[email] && typeof users[email] === "object" ? users[email] : {};
+
+  for (const [userEmail, record] of Object.entries(users)) {
+    if (normalizeAccountEmail(userEmail) !== email && normalizeAccountPhone(record?.phone || record?.phoneNormalized || record?.profile?.phone || "") === phone) {
+      const error = new Error("This mobile number is already linked with another email account.");
+      error.statusCode = 409;
+      throw error;
+    }
+  }
+
+  const now = new Date().toISOString();
+  const nextRecord = {
+    ...existing,
+    email,
+    emailNormalized: email,
+    phone: input.phone || existing.phone || phone,
+    phoneNormalized: phone,
+    password,
+    address: input.address && typeof input.address === "object" ? input.address : (existing.address || {}),
+    addresses: Array.isArray(input.addresses) ? input.addresses : (Array.isArray(existing.addresses) ? existing.addresses : []),
+    defaultAddressId: String(input.defaultAddressId || existing.defaultAddressId || ""),
+    cart: Array.isArray(input.cart) ? input.cart : (Array.isArray(existing.cart) ? existing.cart : []),
+    orders: Array.isArray(input.orders) ? input.orders : (Array.isArray(existing.orders) ? existing.orders : []),
+    profile: {
+      ...(existing.profile && typeof existing.profile === "object" ? existing.profile : {}),
+      ...(input.profile && typeof input.profile === "object" ? input.profile : {}),
+      email,
+      phone: input.phone || existing.phone || phone,
+      name: String(input.profile?.name || existing.profile?.name || email.split("@")[0]).trim()
+    },
+    status: String(input.status || existing.status || "active").trim().toLowerCase() || "active",
+    createdAt: existing.createdAt || now,
+    updatedAt: now
+  };
+
+  let authUser = null;
+  try {
+    if (admin === undefined) {
+      admin = require("firebase-admin");
+    }
+    if (admin && !admin.apps.length) {
+      admin.initializeApp();
+    }
+    const auth = admin && typeof admin.auth === "function" ? admin.auth() : null;
+    if (auth) {
+      try {
+        authUser = await auth.getUserByEmail(email);
+        await auth.updateUser(authUser.uid, { password });
+      } catch (authError) {
+        if (String(authError && authError.code || "").includes("user-not-found")) {
+          authUser = await auth.createUser({ email, password, phoneNumber: "+91" + phone });
+        } else {
+          throw authError;
+        }
+      }
+      if (authUser && authUser.uid) nextRecord.uid = authUser.uid;
+    }
+  } catch (error) {
+    addLog("Account Firebase Auth sync skipped: " + error.message, "warn");
+  }
+
+  users[email] = nextRecord;
+  db.appState.users = users;
+  await writeDB(db);
+  await writeTopLevelUsers({ [email]: nextRecord }).catch((error) => {
+    addLog("Account Firestore user sync skipped: " + error.message, "warn");
+  });
+  return nextRecord;
+}
+
 app.post("/api/account/lookup", paymentRateLimit, async (req, res) => {
   try {
     const email = normalizeAccountEmail(req.body?.email);
@@ -2825,6 +2908,16 @@ app.post("/api/account/lookup", paymentRateLimit, async (req, res) => {
   } catch (error) {
     addLog("Account lookup failed: " + error.message, "error");
     res.status(500).json({ ok: false, error: "Account lookup failed" });
+  }
+});
+
+app.post("/api/account/create", paymentRateLimit, async (req, res) => {
+  try {
+    const record = await upsertAccountUser(req.body || {});
+    res.json({ ok: true, existed: false, record });
+  } catch (error) {
+    addLog("Account create failed: " + error.message, "error");
+    res.status(error.statusCode || 500).json({ ok: false, error: error.message || "Account create failed" });
   }
 });
 

@@ -1210,22 +1210,6 @@ let accountEntryStage = "email";
           updateProgress(4);
           return;
         }
-        if(authApi && typeof authApi.fetchSignInMethodsForEmail === "function"){
-          try{
-            const methods = await authApi.fetchSignInMethodsForEmail(email);
-            if(Array.isArray(methods) && methods.length){
-              currentPhone = "";
-              isPasswordResetFlow = false;
-              document.getElementById("loginPass").value = "";
-              showMsg("Account already exists. Please enter password.", "success");
-              showStep("step4");
-              updateProgress(4);
-              return;
-            }
-          }catch(error){
-            console.error("firebase email lookup failed", error);
-          }
-        }
         accountEntryStage = "phone";
         setStep1ResetMode(false);
         showMsg("New account. Please enter and confirm your mobile number.", "success");
@@ -1302,24 +1286,6 @@ let accountEntryStage = "email";
         showStep("step4");
         updateProgress(4);
         return;
-      }
-
-      if(authApi && typeof authApi.fetchSignInMethodsForEmail === "function"){
-        try{
-          const methods = await authApi.fetchSignInMethodsForEmail(email);
-          if(Array.isArray(methods) && methods.length){
-            currentEmail = email;
-            currentPhone = phone;
-            isPasswordResetFlow = false;
-            document.getElementById("loginPass").value = "";
-            showMsg("Account already exists. Please enter password.", "success");
-            showStep("step4");
-            updateProgress(4);
-            return;
-          }
-        }catch(error){
-          console.error("firebase account method lookup failed", error);
-        }
       }
 
       await sendVerificationOtp(email, phone, "signup", { requirePhoneOtp:false });
@@ -1420,32 +1386,6 @@ let accountEntryStage = "email";
       const accountEmail = (temp.email || currentEmail || "").toLowerCase();
 
       if(authApi && typeof authApi.createOrUpdateUserAccount === "function"){
-        if(!isPasswordResetFlow && authApi && typeof authApi.registerUserWithPassword === "function"){
-          try{
-            await authApi.registerUserWithPassword({ email: accountEmail, password: pass });
-          }catch(authError){
-            const code = String(authError && authError.code || authError && authError.message || "").toLowerCase();
-            if(code.includes("email-already-in-use")){
-              try{
-                if(authApi && typeof authApi.signInUserWithPassword === "function"){
-                  await authApi.signInUserWithPassword(accountEmail, pass);
-                }
-              }catch(signInError){
-                document.getElementById("loginPass").value = "";
-                runtimeTempUser = null;
-                currentEmail = accountEmail;
-                currentPhone = temp.phone;
-                showMsg("Account already exists. Please login with your password or use Forgot Password.", "error");
-                showStep("step4");
-                updateProgress(4);
-                return;
-              }
-            }
-            if(!code.includes("email-already-in-use")){
-              throw authError;
-            }
-          }
-        }
         if(isPasswordResetFlow){
           await accountApi("/api/account/reset-password", {
             email: accountEmail,
@@ -1456,7 +1396,7 @@ let accountEntryStage = "email";
             await authApi.signInUserWithPassword(accountEmail, pass);
           }
         }
-        const result = isPasswordResetFlow ? { record: { email: accountEmail, phone: temp.phone }, existed: true } : await authApi.createOrUpdateUserAccount({
+        const accountPayload = {
           email: accountEmail,
           phone: temp.phone,
           password: pass,
@@ -1469,7 +1409,10 @@ let accountEntryStage = "email";
             name: existingUser.profile?.name || temp.email.split("@")[0]
           },
           status: existingUser.status || "active"
-        });
+        };
+        const result = isPasswordResetFlow
+          ? { record: { email: accountEmail, phone: temp.phone }, existed: true }
+          : await accountApi("/api/account/create", accountPayload);
         if(result && result.existed && !isPasswordResetFlow && result.record && result.record.password && result.record.password !== pass){
           document.getElementById("loginPass").value = "";
           runtimeTempUser = null;
