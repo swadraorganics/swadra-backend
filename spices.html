@@ -215,8 +215,8 @@ images:getSafeCartImages(item.images)
 async function getCart(){
 let user=getCurrentUser();
 if(!user){
-runtimeSpicesCartCache = [];
-return [];
+runtimeSpicesCartCache = dataApi && typeof dataApi.getGuestCart === "function" ? compactCart(dataApi.getGuestCart()) : [];
+return runtimeSpicesCartCache;
 }
 if(dataApi && typeof dataApi.fetchCart === "function"){
 try{
@@ -235,12 +235,13 @@ async function saveCart(cart){
 let safeCart=compactCart(cart);
 let user=getCurrentUser();
 if(!user){
-if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
-authApi.setRedirectAfterLogin("cart.html");
+if(dataApi && typeof dataApi.saveGuestCart === "function"){
+runtimeSpicesCartCache = dataApi.saveGuestCart(safeCart);
+}else{
+runtimeSpicesCartCache = safeCart;
 }
-alert("Please login to add products to cart.");
-window.location.href = "account.html";
-return false;
+await updateCartUI();
+return true;
 }
 if(dataApi && typeof dataApi.saveCart === "function"){
 try{

@@ -5404,6 +5404,8 @@ async function refreshIndexCartState(){
     }catch(error){
       console.error("index firestore cart fetch failed", error);
     }
+  }else if(dataApi && typeof dataApi.getGuestCart === "function"){
+    nextCart = compactCartItems(dataApi.getGuestCart());
   }
   runtimeIndexCartCache = compactCartItems(nextCart);
   return runtimeIndexCartCache.slice();
@@ -5417,12 +5419,12 @@ async function saveCart(cart){
   let safeCart = compactCartItems(cart);
   let currentUser = getCurrentIndexUser();
   if(!currentUser){
-    if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
-      authApi.setRedirectAfterLogin("cart.html");
+    if(dataApi && typeof dataApi.saveGuestCart === "function"){
+      runtimeIndexCartCache = dataApi.saveGuestCart(safeCart);
+      return true;
     }
-    alert("Please login to add products to cart.");
-    window.location.href = "account.html";
-    return false;
+    runtimeIndexCartCache = safeCart.slice();
+    return true;
   }
   if(dataApi && typeof dataApi.saveCart === "function"){
     try{

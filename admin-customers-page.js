@@ -99,6 +99,7 @@
         const response = await fetch(`${base}/api/admin/users`, {
           method: "GET",
           cache: "no-store",
+          credentials: "include",
           headers: getAdminFetchHeaders({ "Accept": "application/json" })
         });
         const payload = await response.json().catch(()=>({}));
@@ -119,6 +120,7 @@
         const response = await fetch(`${base}/api/app-state/bootstrap`, {
           method: "GET",
           cache: "no-store",
+          credentials: "include",
           headers: getAdminFetchHeaders({ "Accept": "application/json" })
         });
         const payload = await response.json().catch(()=>({}));

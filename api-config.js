@@ -1335,23 +1335,41 @@
     var normalizedEmail = String(email || "").trim().toLowerCase();
     if(!normalizedEmail) return [];
     var users = getAuthUsers();
-    var user = users[normalizedEmail];
-    if(!user) return [];
+    var user = users[normalizedEmail] || sanitizeUserRecord({ email: normalizedEmail }, normalizedEmail);
+    users[normalizedEmail] = user;
     var userCart = compactAuthCartItems(user.cart || []);
+    var guestCart = getGuestCart();
+    guestCart.forEach(function(item){
+      var existing = userCart.find(function(userItem){ return String(userItem.id) === String(item.id); });
+      if(existing){
+        existing.qty = Math.max(1, Number(existing.qty || 1) + Number(item.qty || 1));
+      }else{
+        userCart.push(item);
+      }
+    });
     users[normalizedEmail].cart = compactAuthCartItems(userCart);
+    if(guestCart.length){
+      saveFirestoreCart(normalizedEmail, users[normalizedEmail].cart).catch(function(error){
+        console.error("guest cart merge save failed", error);
+      });
+      clearGuestCart();
+    }
     setCartMergeNotice(null);
     return users[normalizedEmail].cart.slice();
   }
 
   function getGuestCart(){
-    return [];
+    return compactAuthCartItems(tryParseJson(rawLocalGet("guestCart"), []));
   }
 
   function saveGuestCart(items){
-    return [];
+    var compactItems = compactAuthCartItems(items);
+    rawLocalSet("guestCart", JSON.stringify(compactItems));
+    return compactItems.slice();
   }
 
   function clearGuestCart(){
+    rawLocalRemove("guestCart");
     return [];
   }
 

@@ -464,7 +464,7 @@ return "";
 async function syncUserCart(){
 let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
 if(!currentUser){
-return [];
+return dataApi && typeof dataApi.getGuestCart === "function" ? compactCart(dataApi.getGuestCart()) : [];
 }
 let merged = [];
 if(dataApi && typeof dataApi.fetchCart === "function"){
@@ -481,11 +481,9 @@ async function saveUserCart(cart){
 let safeCart = compactCart(cart);
 let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
 if(!currentUser){
-if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
-authApi.setRedirectAfterLogin("cart.html");
+if(dataApi && typeof dataApi.saveGuestCart === "function"){
+dataApi.saveGuestCart(safeCart);
 }
-alert("Please login to update cart.");
-window.location.href = "account.html";
 return safeCart;
 }
 if(currentUser && dataApi && typeof dataApi.saveCart === "function"){
@@ -500,7 +498,9 @@ return safeCart;
 
 async function getCart(){
 let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
-if(!currentUser) return [];
+if(!currentUser){
+return dataApi && typeof dataApi.getGuestCart === "function" ? compactCart(dataApi.getGuestCart()) : [];
+}
 if(currentUser && dataApi && typeof dataApi.fetchCart === "function"){
 try{
 let firestoreCart = compactCart(await dataApi.fetchCart(currentUser));
@@ -509,7 +509,7 @@ return firestoreCart;
 console.error("cart firestore read failed", error);
 }
 }
-return [];
+return dataApi && typeof dataApi.getGuestCart === "function" ? compactCart(dataApi.getGuestCart()) : [];
 }
 
 function showCartNotice(message){

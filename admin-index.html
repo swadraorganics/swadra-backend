@@ -1159,24 +1159,6 @@ async function restoreAdminSession(){
       }
       setAdminLoginLoading(true);
       setAdminLoginStatus("Logging in...", "info");
-      async function tryFirestoreAdminFallback(){
-        const adminConfig = await fetchAdminConfigFromFirestore();
-        if(adminConfig.passwordHash || adminConfig.passwordAlgo){
-          return false;
-        }
-        if(
-          enteredUsername === String(adminConfig.username || "").trim() &&
-          enteredPassword === String(adminConfig.password || "") &&
-          String(adminConfig.password || "")
-        ){
-          persistAdminSession({ username: enteredUsername });
-          setAdminLoginStatus("Login successful. Opening admin panel...", "success");
-          showAdminPanel();
-          loadAdminDashboardData();
-          return true;
-        }
-        return false;
-      }
       try{
         const response = await fetch(adminLoginUrl,{
           method:"POST",
@@ -1203,21 +1185,9 @@ async function restoreAdminSession(){
       }
       return;
     }
-    try{
-      const matched = await tryFirestoreAdminFallback();
-      if(matched){
-        return;
-      }
-    }catch(fallbackError){}
     setAdminLoginStatus(data.message || data.error || "Wrong credentials", "error");
       }catch(error){
-        try{
-          const matched = await tryFirestoreAdminFallback();
-          if(matched) return;
-          setAdminLoginStatus("Wrong credentials", "error");
-        }catch(fallbackError){
-          setAdminLoginStatus("Admin login failed. Backend ya Firestore connection issue hai.", "error");
-        }
+        setAdminLoginStatus("Admin login failed. Backend connection issue hai.", "error");
       }finally{
         setAdminLoginLoading(false);
       }

@@ -273,11 +273,16 @@
       const dataApi = window.SWADRA_DATA || null;
       const currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
       if(!currentUser){
-        if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
-          authApi.setRedirectAfterLogin("cart.html");
+        const cart = dataApi && typeof dataApi.getGuestCart === "function" ? dataApi.getGuestCart() : [];
+        const id = String(currentProduct.id || currentProduct.docId);
+        const existing = cart.find(item=>String(item.id) === id);
+        if(existing) existing.qty = Number(existing.qty || 1) + 1;
+        else cart.push({ id, name: currentProduct.name, price: currentProduct.price || currentProduct.sellingPrice || 0, mrp: currentProduct.mrp || 0, qty:1, size: currentProduct.size || currentProduct.productSize || "", image: imagesOf(currentProduct)[0], stockQty: currentProduct.stockQty });
+        if(dataApi && typeof dataApi.saveGuestCart === "function"){
+          dataApi.saveGuestCart(cart);
         }
-        alert("Please login to add products to cart.");
-        location.href = "account.html";
+        trackProductEvent("add_to_cart");
+        location.href = "cart.html";
         return;
       }
       let cart = [];
