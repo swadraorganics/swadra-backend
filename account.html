@@ -836,6 +836,11 @@
                 </div>
 
                 <div class="input-group">
+                  <label class="label">Email Address</label>
+                  <input type="email" id="email" placeholder="Enter Email Address">
+                </div>
+
+                <div class="input-group hidden" id="phoneGroup">
                   <label class="label">Mobile Number</label>
                   <div class="phone-box">
                     <div class="country-code">+91</div>
@@ -843,9 +848,12 @@
                   </div>
                 </div>
 
-                <div class="input-group">
-                  <label class="label">Email Address</label>
-                  <input type="email" id="email" placeholder="Enter Email Address">
+                <div class="input-group hidden" id="confirmPhoneGroup">
+                  <label class="label">Confirm Mobile Number</label>
+                  <div class="phone-box">
+                    <div class="country-code">+91</div>
+                    <input type="tel" id="confirmPhone" placeholder="Confirm Mobile Number" maxlength="10" inputmode="numeric">
+                  </div>
                 </div>
 
                 <button class="primary-btn" onclick="startFlow()">Continue</button>
@@ -876,6 +884,11 @@
                 <div class="input-group">
                   <label class="label" id="passwordStepLabel">Create Password</label>
                   <input type="password" id="password" placeholder="Create Password">
+                </div>
+
+                <div class="input-group">
+                  <label class="label" id="confirmPasswordStepLabel">Confirm Password</label>
+                  <input type="password" id="confirmPassword" placeholder="Confirm Password">
                 </div>
 
                 <button class="primary-btn" id="createAccountBtn" onclick="createAccount()">Create Account</button>
@@ -924,6 +937,55 @@ let runtimeOtpCode = "";
 let runtimeOtpMode = "";
 let runtimeEmailOtpCode = "";
 let runtimeOtpRequiresPhone = false;
+let accountEntryStage = "email";
+
+    function apiBase(){
+      return String(window.SWADRA_API_BASE || "https://swadra-backend-production.up.railway.app").replace(/\/$/, "");
+    }
+
+    async function accountApi(path, payload){
+      const response = await fetch(apiBase() + path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload && typeof payload === "object" ? payload : {})
+      });
+      const data = await response.json().catch(()=>({}));
+      if(!response.ok || data.ok === false){
+        throw new Error(data.error || "Account request failed");
+      }
+      return data;
+    }
+
+    function setPhoneFieldsVisible(visible){
+      const phoneGroup = document.getElementById("phoneGroup");
+      const confirmPhoneGroup = document.getElementById("confirmPhoneGroup");
+      if(phoneGroup) phoneGroup.classList.toggle("hidden", !visible);
+      if(confirmPhoneGroup) confirmPhoneGroup.classList.toggle("hidden", !visible);
+    }
+
+    function maskEmail(email){
+      const value = String(email || "").trim().toLowerCase();
+      const parts = value.split("@");
+      if(parts.length !== 2) return value;
+      const name = parts[0];
+      const head = name.slice(0, 2);
+      const tail = name.slice(-2);
+      return head + "***" + tail + "@" + parts[1];
+    }
+
+    function setStep1ResetMode(active){
+      const title = document.querySelector("#step1 .section-head h3");
+      const copy = document.querySelector("#step1 .section-head p");
+      const button = document.querySelector("#step1 .primary-btn");
+      const phone = document.getElementById("phone");
+      const confirmPhone = document.getElementById("confirmPhone");
+      if(title) title.innerText = active ? "Reset password" : "Enter account details";
+      if(copy) copy.innerText = active ? "Enter your registered email and mobile number to receive a reset OTP." : "Enter email first. Existing users continue with password; new users verify mobile and email OTP.";
+      if(button) button.innerText = active ? "Send Reset OTP" : (accountEntryStage === "phone" ? "Send OTP" : "Continue");
+      setPhoneFieldsVisible(active || accountEntryStage === "phone");
+      if(phone) phone.value = currentPhone || phone.value || "";
+      if(confirmPhone) confirmPhone.value = currentPhone || confirmPhone.value || "";
+    }
 
     function updateProgress(stepNumber){
       const pills = document.querySelectorAll('.step-pill');
@@ -1124,13 +1186,62 @@ let runtimeOtpRequiresPhone = false;
       if(handleExistingAuthenticatedUser()) return;
       let email = document.getElementById("email").value.trim().toLowerCase();
       let phone = document.getElementById("phone").value.trim();
+      let confirmPhone = document.getElementById("confirmPhone").value.trim();
 
       if(!email || !email.includes("@")){
         return showMsg("Please enter a valid email address.", "error");
       }
 
+      if(accountEntryStage === "email" && !isPasswordResetFlow){
+        currentEmail = email;
+        runtimeTempUser = null;
+        let lookup = null;
+        try{
+          lookup = await accountApi("/api/account/lookup", { email: email, mode: "login" });
+        }catch(error){
+          lookup = null;
+        }
+        if(lookup && lookup.exists){
+          currentPhone = "";
+          isPasswordResetFlow = false;
+          document.getElementById("loginPass").value = "";
+          showMsg("Account already exists. Please enter password.", "success");
+          showStep("step4");
+          updateProgress(4);
+          return;
+        }
+        if(authApi && typeof authApi.fetchSignInMethodsForEmail === "function"){
+          try{
+            const methods = await authApi.fetchSignInMethodsForEmail(email);
+            if(Array.isArray(methods) && methods.length){
+              currentPhone = "";
+              isPasswordResetFlow = false;
+              document.getElementById("loginPass").value = "";
+              showMsg("Account already exists. Please enter password.", "success");
+              showStep("step4");
+              updateProgress(4);
+              return;
+            }
+          }catch(error){
+            console.error("firebase email lookup failed", error);
+          }
+        }
+        accountEntryStage = "phone";
+        setStep1ResetMode(false);
+        showMsg("New account. Please enter and confirm your mobile number.", "success");
+        return;
+      }
+
       if(!/^\d{10}$/.test(phone)){
         return showMsg("Please enter a valid 10-digit mobile number.", "error");
+      }
+
+      if(!/^\d{10}$/.test(confirmPhone)){
+        return showMsg("Please confirm your 10-digit mobile number.", "error");
+      }
+
+      if(phone !== confirmPhone){
+        return showMsg("Mobile number and confirm mobile number do not match.", "error");
       }
 
       currentEmail = email;
@@ -1141,21 +1252,30 @@ let runtimeOtpRequiresPhone = false;
         phone: phone
       };
 
-      if(authApi && typeof authApi.refreshUsers === "function"){
+      if(isPasswordResetFlow){
+        let lookup;
         try{
-          await authApi.refreshUsers();
+          lookup = await accountApi("/api/account/lookup", { email: email, phone: phone, mode: "reset" });
         }catch(error){
-          console.error("account refresh before start flow failed", error);
+          return showMsg(error.message || "Unable to verify account details.", "error");
         }
+        if(!lookup.exists){
+          return showMsg("No account found for this email. Please check " + maskEmail(email) + ".", "error");
+        }
+        if(!lookup.phoneMatches){
+          return showMsg("Mobile number does not match. Saved mobile ends with " + (lookup.maskedPhoneLast4 || "****") + ".", "error");
+        }
+        await sendVerificationOtp(email, phone, "reset", { requirePhoneOtp:false });
+        return;
       }
 
       let users = getUsers();
       let existingAccount = users[email] || null;
       if(authApi && typeof authApi.findUserByEmailOrPhone === "function"){
         try{
-          existingAccount = await authApi.findUserByEmailOrPhone(email, phone, { forceRefresh:true });
+          existingAccount = await authApi.findUserByEmailOrPhone(email, phone, { forceRefresh:false });
         }catch(error){
-          console.error("account lookup failed", error);
+          existingAccount = users[email] || null;
         }
       }
 
@@ -1242,7 +1362,10 @@ let runtimeOtpRequiresPhone = false;
       document.getElementById("createAccountBtn").innerText = isPasswordResetFlow ? "Reset Password" : "Create Account";
       document.getElementById("passwordStepLabel").innerText = isPasswordResetFlow ? "New Password" : "Create Password";
       document.getElementById("password").placeholder = isPasswordResetFlow ? "Enter New Password" : "Create Password";
+      document.getElementById("confirmPasswordStepLabel").innerText = isPasswordResetFlow ? "Confirm New Password" : "Confirm Password";
+      document.getElementById("confirmPassword").placeholder = isPasswordResetFlow ? "Confirm New Password" : "Confirm Password";
       document.getElementById("passwordHeading").innerText = isPasswordResetFlow ? "Reset password" : "Set password";
+      setStep1ResetMode(false);
 
       showStep("step3");
       updateProgress(3);
@@ -1257,6 +1380,7 @@ let runtimeOtpRequiresPhone = false;
       }
       try{
       let pass = document.getElementById("password").value;
+      let confirmPass = document.getElementById("confirmPassword").value;
 
       if(pass.length < 6){
         if(createButton){
@@ -1264,6 +1388,14 @@ let runtimeOtpRequiresPhone = false;
           createButton.innerText = isPasswordResetFlow ? "Reset Password" : "Create Account";
         }
         return showMsg("Password must be at least 6 characters.", "error");
+      }
+
+      if(pass !== confirmPass){
+        if(createButton){
+          createButton.disabled = false;
+          createButton.innerText = isPasswordResetFlow ? "Reset Password" : "Create Account";
+        }
+        return showMsg("Password and confirm password do not match.", "error");
       }
 
       let temp = runtimeTempUser;
@@ -1294,22 +1426,37 @@ let runtimeOtpRequiresPhone = false;
           }catch(authError){
             const code = String(authError && authError.code || authError && authError.message || "").toLowerCase();
             if(code.includes("email-already-in-use")){
-              document.getElementById("loginPass").value = "";
-              runtimeTempUser = null;
-              currentEmail = accountEmail;
-              currentPhone = temp.phone;
-              showMsg("Account already exists. Please login with password.", "error");
-              showStep("step4");
-              updateProgress(4);
-              return;
+              try{
+                if(authApi && typeof authApi.signInUserWithPassword === "function"){
+                  await authApi.signInUserWithPassword(accountEmail, pass);
+                }
+              }catch(signInError){
+                document.getElementById("loginPass").value = "";
+                runtimeTempUser = null;
+                currentEmail = accountEmail;
+                currentPhone = temp.phone;
+                showMsg("Account already exists. Please login with your password or use Forgot Password.", "error");
+                showStep("step4");
+                updateProgress(4);
+                return;
+              }
             }
-            throw authError;
+            if(!code.includes("email-already-in-use")){
+              throw authError;
+            }
           }
         }
-        if(isPasswordResetFlow && authApi && typeof authApi.updateUserPassword === "function"){
-          await authApi.updateUserPassword(accountEmail, String(existingUser.password || ""), pass);
+        if(isPasswordResetFlow){
+          await accountApi("/api/account/reset-password", {
+            email: accountEmail,
+            phone: temp.phone,
+            password: pass
+          });
+          if(authApi && typeof authApi.signInUserWithPassword === "function"){
+            await authApi.signInUserWithPassword(accountEmail, pass);
+          }
         }
-        const result = await authApi.createOrUpdateUserAccount({
+        const result = isPasswordResetFlow ? { record: { email: accountEmail, phone: temp.phone }, existed: true } : await authApi.createOrUpdateUserAccount({
           email: accountEmail,
           phone: temp.phone,
           password: pass,
@@ -1367,6 +1514,7 @@ let runtimeOtpRequiresPhone = false;
         mergeGuestCartIntoUser(accountEmail);
       }
       runtimeTempUser = null;
+      accountEntryStage = "email";
 
       showMsg(
         isPasswordResetFlow
@@ -1382,6 +1530,7 @@ let runtimeOtpRequiresPhone = false;
       document.getElementById("createAccountBtn").innerText = "Create Account";
       document.getElementById("passwordStepLabel").innerText = "Create Password";
       document.getElementById("password").placeholder = "Create Password";
+      document.getElementById("confirmPassword").placeholder = "Confirm Password";
       document.getElementById("passwordHeading").innerText = "Set password";
 
       setTimeout(()=>{
@@ -1483,29 +1632,19 @@ let runtimeOtpRequiresPhone = false;
     }
 
     async function forgotPassword(){
-      if(authApi && typeof authApi.refreshUsers === "function"){
-        try{
-          await authApi.refreshUsers();
-        }catch(error){
-          console.error("forgot password refresh failed", error);
-        }
-      }
-      let users = getUsers();
-
-      if(!currentEmail || !users[currentEmail]){
-        return showMsg("Enter your email and mobile number first, then continue.", "error");
-      }
-
-      runtimeTempUser = {
-        email: currentEmail,
-        phone: users[currentEmail].phone
-      };
       isPasswordResetFlow = true;
+      accountEntryStage = "phone";
+      runtimeTempUser = null;
       document.getElementById("password").value = "";
+      document.getElementById("confirmPassword").value = "";
       document.getElementById("otp").value = "";
+      document.getElementById("loginPass").value = "";
       const otpPhoneInput = document.getElementById("otpPhone");
       if(otpPhoneInput) otpPhoneInput.value = "";
-      await sendVerificationOtp(currentEmail, users[currentEmail].phone, "reset", { requirePhoneOtp:false });
+      setStep1ResetMode(true);
+      showMsg("Enter your registered email and mobile number to reset password.", "success");
+      showStep("step1");
+      updateProgress(1);
     }
 
     function showStep(step){
@@ -1513,6 +1652,12 @@ let runtimeOtpRequiresPhone = false;
         document.getElementById(s).classList.add("hidden");
       });
       document.getElementById(step).classList.remove("hidden");
+      if(step !== "step1" && !isPasswordResetFlow){
+        setStep1ResetMode(false);
+      }
+      if(step === "step1"){
+        setStep1ResetMode(isPasswordResetFlow);
+      }
     }
 
     function showMsg(msg, type){

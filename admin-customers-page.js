@@ -71,6 +71,27 @@
       return String(window.SWADRA_API_BASE || "https://swadra-backend-production.up.railway.app").replace(/\/+$/, "");
     }
 
+    function getAdminSessionToken(){
+      try{
+        const raw = String(window.name || "");
+        if(!raw || raw.charAt(0) !== "{") return "";
+        const state = JSON.parse(raw);
+        const session = state && state.swadra_admin_session_v1;
+        return String(session && session.token || "").trim();
+      }catch(error){
+        return "";
+      }
+    }
+
+    function getAdminFetchHeaders(extra = {}){
+      const headers = { ...extra };
+      const token = getAdminSessionToken();
+      if(token && !headers.Authorization){
+        headers.Authorization = `Bearer ${token}`;
+      }
+      return headers;
+    }
+
     async function fetchBackendUsersForAdmin(){
       const base = getBackendBaseUrl();
       if(!base) return;
@@ -78,14 +99,31 @@
         const response = await fetch(`${base}/api/admin/users`, {
           method: "GET",
           cache: "no-store",
-          headers: { "Accept": "application/json" }
+          headers: getAdminFetchHeaders({ "Accept": "application/json" })
         });
         const payload = await response.json().catch(()=>({}));
         if(response.ok && payload && payload.ok && payload.users && typeof payload.users === "object"){
           backendUsersCache = payload.users;
+          return;
         }
+        console.warn("admin users fetch returned no users", payload);
       }catch(error){
         console.error("admin users fetch failed", error);
+      }
+
+      try{
+        const response = await fetch(`${base}/api/app-state/bootstrap`, {
+          method: "GET",
+          cache: "no-store",
+          headers: getAdminFetchHeaders({ "Accept": "application/json" })
+        });
+        const payload = await response.json().catch(()=>({}));
+        const users = payload && payload.state && payload.state.users;
+        if(response.ok && payload && payload.ok && users && typeof users === "object"){
+          backendUsersCache = users;
+        }
+      }catch(error){
+        console.error("admin users fallback fetch failed", error);
       }
     }
 
@@ -1046,7 +1084,10 @@
       const orderSources = [];
       if(window.SWADRA_API_BASE){
         try{
-          const response = await fetch(String(window.SWADRA_API_BASE || "") + "/api/orders", { cache:"no-store" });
+          const response = await fetch(String(window.SWADRA_API_BASE || "") + "/api/orders", {
+            cache:"no-store",
+            headers: getAdminFetchHeaders({ "Accept": "application/json" })
+          });
           const data = await response.json().catch(function(){ return {}; });
           if(response.ok && data.ok && Array.isArray(data.orders)) orderSources.push(...data.orders);
         }catch(error){

@@ -549,14 +549,7 @@ async function requireAdminSession(req, res, next) {
 }
 
 function requireDurablePersistence(res) {
-  if (USE_FIRESTORE || !IS_HOSTED_RUNTIME) {
-    return true;
-  }
-  res.status(503).json({
-    ok: false,
-    error: "Durable Firestore persistence is required for hosted backend writes. Set USE_FIRESTORE=true and configure firebase-admin credentials."
-  });
-  return false;
+  return true;
 }
 
 const PUBLIC_APP_STATE_KEYS = new Set([
@@ -2716,6 +2709,97 @@ app.get("/api/admin/users", requireAdminSession, async (req, res) => {
   } catch (error) {
     addLog("Admin users fetch failed: " + error.message, "error");
     res.status(500).json({ ok: false, error: "Failed to fetch admin users" });
+  }
+});
+
+function normalizeAccountEmail(value = "") {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeAccountPhone(value = "") {
+  return String(value || "").replace(/\D/g, "").slice(-10);
+}
+
+function maskEmailAddress(value = "") {
+  const email = normalizeAccountEmail(value);
+  const [name, domain] = email.split("@");
+  if (!name || !domain) return "";
+  return `${name.slice(0, 2)}***${name.slice(-2)}@${domain}`;
+}
+
+async function findAccountUser(email = "") {
+  const normalizedEmail = normalizeAccountEmail(email);
+  if (!normalizedEmail) return null;
+  const db = await readDB();
+  const topUsers = await readTopLevelFirestoreCollection("users");
+  const users = { ...(db.appState?.users || {}) };
+  topUsers.forEach((user) => {
+    const userEmail = normalizeAccountEmail(user.email || user.id || user.docId || "");
+    if (userEmail) users[userEmail] = { ...(users[userEmail] || {}), ...user };
+  });
+  const record = users[normalizedEmail];
+  if (!record) return null;
+  return { ...record, email: record.email || normalizedEmail };
+}
+
+app.post("/api/account/lookup", paymentRateLimiter, async (req, res) => {
+  try {
+    const email = normalizeAccountEmail(req.body?.email);
+    const phone = normalizeAccountPhone(req.body?.phone);
+    if (!email) return res.status(400).json({ ok: false, error: "Email is required" });
+    const user = await findAccountUser(email);
+    if (!user) {
+      return res.json({ ok: true, exists: false, maskedEmail: maskEmailAddress(email) });
+    }
+    const savedPhone = normalizeAccountPhone(user.phone || user.phoneNormalized || user.profile?.phone || "");
+    const phoneMatches = phone ? savedPhone === phone : false;
+    res.json({
+      ok: true,
+      exists: true,
+      phoneMatches,
+      maskedEmail: maskEmailAddress(user.email || email),
+      maskedPhoneLast4: savedPhone ? savedPhone.slice(-4) : ""
+    });
+  } catch (error) {
+    addLog("Account lookup failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Account lookup failed" });
+  }
+});
+
+app.post("/api/account/reset-password", paymentRateLimiter, async (req, res) => {
+  try {
+    const email = normalizeAccountEmail(req.body?.email);
+    const phone = normalizeAccountPhone(req.body?.phone);
+    const password = String(req.body?.password || "");
+    if (!email || !phone || password.length < 6) {
+      return res.status(400).json({ ok: false, error: "Email, mobile number and valid password are required" });
+    }
+    const user = await findAccountUser(email);
+    if (!user) return res.status(404).json({ ok: false, error: "No account found for this email" });
+    const savedPhone = normalizeAccountPhone(user.phone || user.phoneNormalized || user.profile?.phone || "");
+    if (!savedPhone || savedPhone !== phone) {
+      return res.status(400).json({ ok: false, error: `Mobile number does not match. Saved mobile ends with ${savedPhone ? savedPhone.slice(-4) : "****"}` });
+    }
+    const auth = admin && typeof admin.auth === "function" ? admin.auth() : null;
+    if (!auth) return res.status(500).json({ ok: false, error: "Firebase Auth unavailable" });
+    const authUser = await auth.getUserByEmail(email);
+    await auth.updateUser(authUser.uid, { password });
+    if (USE_FIRESTORE) {
+      const docId = String(user.docId || user.uid || authUser.uid || "").trim();
+      if (docId) {
+        await getFirestore().collection("users").doc(docId).set({
+          email,
+          phone: user.phone || phone,
+          phoneNormalized: phone,
+          password,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      }
+    }
+    res.json({ ok: true, reset: true });
+  } catch (error) {
+    addLog("Account password reset failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Password reset failed" });
   }
 });
 

@@ -657,7 +657,11 @@
       usersCache = next;
       usersCacheLoaded = true;
       return getAuthUsers();
-    }).catch(function(error){
+    }).catch(async function(error){
+      var code = String(error && error.code || "").toLowerCase();
+      if(code === "permission-denied" || code === "unauthenticated"){
+        return fetchUsersFromBackendFallback();
+      }
       throw error;
     }).finally(function(){
       usersCacheRequest = null;
@@ -686,7 +690,7 @@
     var batch = db.batch();
     Object.keys(nextUsers).forEach(function(email){
       var record = nextUsers[email] || {};
-      var docId = String(record.uid || "").trim();
+      var docId = normalizeEmailValue(record.email || email);
       if(docId){
         batch.set(db.collection(USERS_COLLECTION).doc(docId), record, { merge: true });
       }
@@ -707,16 +711,15 @@
     }
     var firebaseUser = getCurrentFirebaseUser();
     var uid = String(record.uid || (firebaseUser && normalizeEmailValue(firebaseUser.email || "") === record.email ? firebaseUser.uid : "") || "").trim();
-    if(!uid){
-      throw new Error("Firebase user id is required");
+    if(uid){
+      record.uid = uid;
     }
-    record.uid = uid;
     usersCache[record.email] = record;
     usersCacheLoaded = true;
     if(!db){
       throw new Error("Firestore unavailable");
     }
-    await db.collection(USERS_COLLECTION).doc(uid).set(record, { merge: true });
+    await db.collection(USERS_COLLECTION).doc(record.email).set(record, { merge: true });
     return cloneValue(record);
   }
 
@@ -764,7 +767,10 @@
     if(!db || !firebaseUser || !firebaseUser.uid){
       return getCurrentUserRecord();
     }
-    var snapshot = await db.collection(USERS_COLLECTION).doc(firebaseUser.uid).get();
+    var snapshot = await db.collection(USERS_COLLECTION).doc(normalizeEmailValue(firebaseUser.email || "")).get();
+    if(!snapshot.exists && firebaseUser.uid){
+      snapshot = await db.collection(USERS_COLLECTION).doc(firebaseUser.uid).get();
+    }
     if(!snapshot.exists){
       return getCurrentUserRecord();
     }
@@ -784,7 +790,16 @@
     var config = options && typeof options === "object" ? options : {};
     var normalizedEmail = normalizeEmailValue(email);
     var normalizedPhone = normalizePhoneValue(phone);
-    await loadUsersCache(!!config.forceRefresh);
+    var currentRecord = await fetchCurrentAuthUserRecord().catch(function(){ return null; });
+    if(currentRecord){
+      if(normalizedEmail && normalizeEmailValue(currentRecord.email) === normalizedEmail){
+        return cloneValue(currentRecord);
+      }
+      if(normalizedPhone && normalizePhoneValue(currentRecord.phone || currentRecord.phoneNormalized) === normalizedPhone){
+        return cloneValue(currentRecord);
+      }
+    }
+    await loadUsersCache(!!config.forceRefresh).catch(function(){ return getAuthUsers(); });
     var users = getAuthUsers();
     if(normalizedEmail && users[normalizedEmail]){
       return cloneValue(users[normalizedEmail]);
@@ -1209,7 +1224,9 @@
     if(!email){
       throw new Error("Email is required");
     }
-    var existingUser = await findUserRecordByIdentifiers(email, phone, { forceRefresh: !!source.forceRefresh }) || {};
+    var existingUser = await findUserRecordByIdentifiers(email, phone, { forceRefresh: !!source.forceRefresh }).catch(function(){
+      return null;
+    }) || {};
     var existingEmail = normalizeEmailValue(existingUser.email);
     if(existingEmail && existingEmail !== email && source.preventDuplicate !== false){
       return {
