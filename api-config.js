@@ -809,18 +809,21 @@
     var normalizedEmail = normalizeEmailValue(email);
     if(!normalizedEmail) return;
     var config = options && typeof options === "object" ? options : {};
-    var stampKey = "mirrorUser:" + normalizedEmail;
+    var phone = normalizePhoneValue(config.phone || getSessionValue("userPhone") || "");
+    var existingUser = usersCache[normalizedEmail] || {};
+    var existingPhone = normalizePhoneValue(existingUser.phone || existingUser.phoneNormalized || existingUser.profile && existingUser.profile.phone || "");
+    var stampKey = "mirrorUser:" + normalizedEmail + ":" + (phone || existingPhone || "no-phone");
     var lastStamp = Number(rawSessionGet(stampKey) || 0);
     if(lastStamp && Date.now() - lastStamp < 5 * 60 * 1000) return;
     rawSessionSet(stampKey, String(Date.now()));
-    var phone = normalizePhoneValue(config.phone || getSessionValue("userPhone") || "");
     var profile = config.profile && typeof config.profile === "object" ? config.profile : {};
+    var finalPhone = phone || existingPhone;
     saveUserRecordToBackend({
       email: normalizedEmail,
-      phone: phone,
+      phone: finalPhone,
       profile: Object.assign({}, profile, {
         email: normalizedEmail,
-        phone: phone,
+        phone: finalPhone,
         name: String(profile.name || normalizedEmail.split("@")[0]).trim()
       }),
       status: "active",

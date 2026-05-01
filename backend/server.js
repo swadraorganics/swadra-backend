@@ -2997,6 +2997,14 @@ async function upsertAccountUser(input = {}) {
   const finalPhone = phone || existingPhone;
   const finalPassword = password || String(existing.password || "").trim();
   const isNewUser = !existing.email && !users[email];
+  const hasIdentityOnlyProfile = Boolean(input.profile) &&
+    !input.address &&
+    !Array.isArray(input.addresses) &&
+    !input.defaultAddressId &&
+    !Array.isArray(input.cart) &&
+    !Array.isArray(input.orders) &&
+    !phone &&
+    password.length < 6;
   const isProfileOnlyUpdate = Boolean(
     input.profile ||
     input.address ||
@@ -3005,6 +3013,15 @@ async function upsertAccountUser(input = {}) {
     Array.isArray(input.cart) ||
     Array.isArray(input.orders)
   );
+
+  if (isNewUser && hasIdentityOnlyProfile && !finalPhone) {
+    const authUser = await findFirebaseAuthUserByEmail(email);
+    if (!authUser) {
+      const error = new Error("Mobile number is required for new customer account");
+      error.statusCode = 400;
+      throw error;
+    }
+  }
 
   if (isNewUser && !isProfileOnlyUpdate && (!finalPhone || finalPassword.length < 6)) {
     const error = new Error("Email, mobile number and valid password are required");

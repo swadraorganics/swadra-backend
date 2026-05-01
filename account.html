@@ -1422,7 +1422,10 @@ let accountEntryStage = "email";
           addresses: existingUser.addresses || [],
           defaultAddressId: existingUser.defaultAddressId || "",
           profile: {
-            name: existingUser.profile?.name || temp.email.split("@")[0]
+            ...(existingUser.profile && typeof existingUser.profile === "object" ? existingUser.profile : {}),
+            name: existingUser.profile?.name || temp.email.split("@")[0],
+            email: accountEmail,
+            phone: temp.phone
           },
           status: existingUser.status || "active"
         };
