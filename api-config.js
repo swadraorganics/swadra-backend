@@ -1004,10 +1004,12 @@
     if(!db) return pendingCart.length ? pendingCart : fetchCartFromBackend(userId).catch(function(){ return pendingCart; });
     try{
       var snapshot = await db.collection(CARTS_COLLECTION).doc(normalizedUserId).get();
-      if(!snapshot.exists) return pendingCart.length ? pendingCart : [];
+      if(!snapshot.exists) return pendingCart.length ? pendingCart : fetchCartFromBackend(userId).catch(function(){ return pendingCart; });
       var data = snapshot.data() || {};
       var remoteCart = compactAuthCartItems(data.items || []);
-      return pendingCart.length ? pendingCart : remoteCart;
+      if(pendingCart.length) return pendingCart;
+      if(remoteCart.length) return remoteCart;
+      return fetchCartFromBackend(userId).catch(function(){ return remoteCart; });
     }catch(error){
       console.error("cart firestore fetch failed", error);
       return pendingCart.length ? pendingCart : fetchCartFromBackend(userId).catch(function(){ return pendingCart; });

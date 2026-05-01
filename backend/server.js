@@ -3215,11 +3215,27 @@ app.get("/api/carts/:userId", paymentRateLimit, async (req, res) => {
     if (!requireDurablePersistence(res)) return;
     const userId = String(req.params.userId || "").trim();
     if (!userId) return res.status(400).json({ ok: false, error: "User id required" });
+    const db = await readDB();
     let doc = await getFirestore().collection("carts").doc(safeDocId(userId)).get();
     let data = doc.exists ? doc.data() || {} : {};
     if (!doc.exists && userId.includes("@")) {
       const snap = await getFirestore().collection("carts").where("email", "==", normalizeAccountEmail(userId)).limit(1).get();
       if (!snap.empty) data = snap.docs[0].data() || {};
+    }
+    if ((!data || !Array.isArray(data.items) || !data.items.length)) {
+      const email = normalizeAccountEmail(data?.email || (userId.includes("@") ? userId : ""));
+      const users = db.appState?.users && typeof db.appState.users === "object" ? db.appState.users : {};
+      const userRecord = email ? users[email] : Object.values(users).find((user) => {
+        return user && typeof user === "object" && [
+          user.uid,
+          user.userId,
+          user.id,
+          user.docId
+        ].some((value) => String(value || "").trim() === userId);
+      });
+      if (userRecord && Array.isArray(userRecord.cart)) {
+        data = { ...(data || {}), items: userRecord.cart };
+      }
     }
     res.json({ ok: true, cart: normalizeCartItems(data.items || []) });
   } catch (error) {

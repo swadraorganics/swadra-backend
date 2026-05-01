@@ -466,6 +466,16 @@ let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ?
 if(!currentUser){
 return dataApi && typeof dataApi.getGuestCart === "function" ? compactCart(dataApi.getGuestCart()) : [];
 }
+if(authApi && typeof authApi.mergeGuestCartIntoUser === "function"){
+try{
+const mergedGuestCart = compactCart(authApi.mergeGuestCartIntoUser(currentUser) || []);
+if(mergedGuestCart.length && dataApi && typeof dataApi.saveCart === "function"){
+await dataApi.saveCart(currentUser, mergedGuestCart);
+}
+}catch(error){
+console.error("cart guest merge failed", error);
+}
+}
 let merged = [];
 if(dataApi && typeof dataApi.fetchCart === "function"){
 try{
@@ -500,6 +510,16 @@ async function getCart(){
 let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
 if(!currentUser){
 return dataApi && typeof dataApi.getGuestCart === "function" ? compactCart(dataApi.getGuestCart()) : [];
+}
+if(authApi && typeof authApi.mergeGuestCartIntoUser === "function"){
+try{
+const mergedGuestCart = compactCart(authApi.mergeGuestCartIntoUser(currentUser) || []);
+if(mergedGuestCart.length && dataApi && typeof dataApi.saveCart === "function"){
+await dataApi.saveCart(currentUser, mergedGuestCart);
+}
+}catch(error){
+console.error("cart guest merge failed", error);
+}
 }
 if(currentUser && dataApi && typeof dataApi.fetchCart === "function"){
 try{
