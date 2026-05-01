@@ -2822,53 +2822,58 @@ app.get("/api/coupons", async (req, res) => {
   }
 });
 
+async function buildAdminUsersMap() {
+  const db = await readDB();
+  const topUsers = await readTopLevelFirestoreCollection("users");
+  const topCarts = await readTopLevelFirestoreCollection("carts");
+  const cartsById = new Map();
+  topCarts.forEach((cart) => {
+    const ids = [
+      cart.docId,
+      cart.userId,
+      cart.uid,
+      cart.email
+    ].map((value) => String(value || "").trim()).filter(Boolean);
+    ids.forEach((id) => cartsById.set(id, Array.isArray(cart.items) ? cart.items : []));
+  });
+  const usersMap = { ...(db.appState?.users || {}) };
+  topUsers.forEach((user) => {
+    const email = String(user.email || user.id || user.docId || user.uid || "").trim().toLowerCase();
+    if (!email) return;
+    const cart =
+      cartsById.get(String(user.uid || "")) ||
+      cartsById.get(String(user.userId || "")) ||
+      cartsById.get(String(user.id || "")) ||
+      cartsById.get(String(user.docId || "")) ||
+      cartsById.get(email) ||
+      user.cart ||
+      [];
+    usersMap[email] = {
+      ...(usersMap[email] || {}),
+      ...user,
+      email: user.email || email,
+      cart
+    };
+  });
+  const authUsers = await listFirebaseAuthAccountUsers();
+  authUsers.forEach((user) => {
+    const email = normalizeAccountEmail(user.email || "");
+    if (!email || usersMap[email]) return;
+    usersMap[email] = user;
+  });
+  if (Object.keys(usersMap).length) {
+    db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+    db.appState.users = { ...(db.appState.users || {}), ...usersMap };
+    writeDB(db).catch((writeError) => {
+      addLog("Admin users app-state mirror skipped: " + writeError.message, "warn");
+    });
+  }
+  return usersMap;
+}
+
 app.get("/api/admin/users", requireAdminSession, async (req, res) => {
   try {
-    const db = await readDB();
-    const topUsers = await readTopLevelFirestoreCollection("users");
-    const topCarts = await readTopLevelFirestoreCollection("carts");
-    const cartsById = new Map();
-    topCarts.forEach((cart) => {
-      const ids = [
-        cart.docId,
-        cart.userId,
-        cart.uid,
-        cart.email
-      ].map((value) => String(value || "").trim()).filter(Boolean);
-      ids.forEach((id) => cartsById.set(id, Array.isArray(cart.items) ? cart.items : []));
-    });
-    const usersMap = { ...(db.appState?.users || {}) };
-    topUsers.forEach((user) => {
-      const email = String(user.email || user.id || user.docId || user.uid || "").trim().toLowerCase();
-      if (!email) return;
-      const cart =
-        cartsById.get(String(user.uid || "")) ||
-        cartsById.get(String(user.userId || "")) ||
-        cartsById.get(String(user.id || "")) ||
-        cartsById.get(String(user.docId || "")) ||
-        cartsById.get(email) ||
-        user.cart ||
-        [];
-      usersMap[email] = {
-        ...(usersMap[email] || {}),
-        ...user,
-        email: user.email || email,
-        cart
-      };
-    });
-    const authUsers = await listFirebaseAuthAccountUsers();
-    authUsers.forEach((user) => {
-      const email = normalizeAccountEmail(user.email || "");
-      if (!email || usersMap[email]) return;
-      usersMap[email] = user;
-    });
-    if (Object.keys(usersMap).length) {
-      db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
-      db.appState.users = { ...(db.appState.users || {}), ...usersMap };
-      writeDB(db).catch((writeError) => {
-        addLog("Admin users app-state mirror skipped: " + writeError.message, "warn");
-      });
-    }
+    const usersMap = await buildAdminUsersMap();
     res.json({
       ok: true,
       count: Object.keys(usersMap).length,
@@ -2877,6 +2882,20 @@ app.get("/api/admin/users", requireAdminSession, async (req, res) => {
   } catch (error) {
     addLog("Admin users fetch failed: " + error.message, "error");
     res.status(500).json({ ok: false, error: "Failed to fetch admin users" });
+  }
+});
+
+app.get("/api/account/users", async (req, res) => {
+  try {
+    const usersMap = await buildAdminUsersMap();
+    res.json({
+      ok: true,
+      count: Object.keys(usersMap).length,
+      users: usersMap
+    });
+  } catch (error) {
+    addLog("Account users mirror fetch failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to fetch users" });
   }
 });
 

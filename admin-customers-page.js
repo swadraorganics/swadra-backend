@@ -137,19 +137,18 @@
       }
 
       try{
-        const response = await fetch(`${base}/api/app-state/bootstrap`, {
+        const response = await fetch(`${base}/api/account/users`, {
           method: "GET",
           cache: "no-store",
           credentials: "include",
-          headers: getAdminFetchHeaders({ "Accept": "application/json" })
+          headers: { "Accept": "application/json" }
         });
         const payload = await response.json().catch(()=>({}));
-        const users = payload && payload.state && payload.state.users;
-        if(response.ok && payload && payload.ok && users && typeof users === "object"){
-          backendUsersCache = users;
+        if(response.ok && payload && payload.ok && payload.users && typeof payload.users === "object"){
+          backendUsersCache = payload.users;
         }
       }catch(error){
-        console.error("admin users fallback fetch failed", error);
+        console.error("account users fallback fetch failed", error);
       }
       if(!Object.keys(backendUsersCache).length){
         await mergeAuthUsersFallback();
