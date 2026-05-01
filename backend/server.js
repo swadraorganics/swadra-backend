@@ -2742,7 +2742,7 @@ async function findAccountUser(email = "") {
   return { ...record, email: record.email || normalizedEmail };
 }
 
-app.post("/api/account/lookup", paymentRateLimiter, async (req, res) => {
+app.post("/api/account/lookup", paymentRateLimit, async (req, res) => {
   try {
     const email = normalizeAccountEmail(req.body?.email);
     const phone = normalizeAccountPhone(req.body?.phone);
@@ -2766,7 +2766,7 @@ app.post("/api/account/lookup", paymentRateLimiter, async (req, res) => {
   }
 });
 
-app.post("/api/account/reset-password", paymentRateLimiter, async (req, res) => {
+app.post("/api/account/reset-password", paymentRateLimit, async (req, res) => {
   try {
     const email = normalizeAccountEmail(req.body?.email);
     const phone = normalizeAccountPhone(req.body?.phone);
