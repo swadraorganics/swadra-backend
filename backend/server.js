@@ -131,7 +131,7 @@ function createRateLimiter({ windowMs, max, keyPrefix }) {
 
 const authRateLimit = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 10, keyPrefix: "auth" });
 const couponRateLimit = createRateLimiter({ windowMs: 5 * 60 * 1000, max: 30, keyPrefix: "coupon" });
-const paymentRateLimit = createRateLimiter({ windowMs: 5 * 60 * 1000, max: 25, keyPrefix: "payment" });
+const paymentRateLimit = createRateLimiter({ windowMs: 5 * 60 * 1000, max: 120, keyPrefix: "payment" });
 const webhookRateLimit = createRateLimiter({ windowMs: 60 * 1000, max: 120, keyPrefix: "webhook" });
 
 function createSerialMiddleware() {

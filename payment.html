@@ -761,7 +761,6 @@ async function payOnline(){
   try{
     backendOrder = await createBackendPaymentOrder(session);
   }catch(error){
-    saveAttempt("backend_order_failed", { message:error.message });
     trackPaymentEvent("backend_order_failed", { message:error.message });
     setPaymentState("failed","Payment verification unavailable", error.message || "Secure backend payment verification is unavailable. Please try again later.");
     setPayButtonLoading(false, "Retry Payment");

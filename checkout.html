@@ -220,6 +220,40 @@ let selectedCheckoutAddressId = "";
 let isNewCheckoutAddress = false;
 let checkoutDraftCache = null;
 
+async function fetchCurrentCustomerRecord(email){
+const normalizedEmail = safeText(email).toLowerCase();
+if(!normalizedEmail) return null;
+let bestRecord = null;
+if(authApi && typeof authApi.ready === "function"){
+try{
+const readyRecord = await authApi.ready();
+if(readyRecord && safeText(readyRecord.email).toLowerCase() === normalizedEmail){
+bestRecord = readyRecord;
+}
+}catch(error){}
+}
+if((!bestRecord || !getAddressBook(bestRecord).addresses.length) && authApi && typeof authApi.findUserByEmailOrPhone === "function"){
+try{
+const foundRecord = await authApi.findUserByEmailOrPhone(normalizedEmail, "", { forceRefresh:true });
+if(foundRecord && safeText(foundRecord.email).toLowerCase() === normalizedEmail){
+bestRecord = foundRecord;
+}
+}catch(error){}
+}
+if((!bestRecord || !getAddressBook(bestRecord).addresses.length) && window.SWADRA_API_BASE){
+try{
+const response = await fetch(window.SWADRA_API_BASE + "/api/account/users", { cache:"no-store" });
+const data = await response.json().catch(()=>({}));
+const usersMap = data && data.users && typeof data.users === "object" ? data.users : {};
+const directRecord = usersMap[normalizedEmail] || Object.values(usersMap).find(item=>safeText(item && item.email).toLowerCase() === normalizedEmail);
+if(directRecord){
+bestRecord = directRecord;
+}
+}catch(error){}
+}
+return bestRecord;
+}
+
 function safeText(value){
 return String(value == null ? "" : value).trim();
 }
@@ -316,8 +350,11 @@ const text = document.getElementById("selectedAddressText");
 const addressBook = Array.isArray(user.addresses) ? user.addresses : [];
 if(!switcher || !picker || !pickerGrid || !title || !text) return;
 if(!addressBook.length){
-switcher.style.display = "none";
+switcher.style.display = "block";
 picker.classList.remove("open");
+title.textContent = "No saved address found";
+text.textContent = "Enter a shipping address below. It will be saved to your account after payment details are confirmed.";
+pickerGrid.innerHTML = "";
 return;
 }
 switcher.style.display = "block";
@@ -567,8 +604,18 @@ await window.SWADRA_OFFERS.renderSaleBar("saleBarTrack", !!forceRefresh);
 }
 
 function hydrateCheckoutView(){
-Promise.resolve(loadCheckoutDraft()).then(function(draft){
+Promise.resolve(loadCheckoutDraft()).then(async function(draft){
 renderOfferBar(true);
+const latestUser = await fetchCurrentCustomerRecord(currentUser);
+if(latestUser){
+const latestBook = getAddressBook(latestUser);
+const currentBook = getAddressBook(user);
+if(latestBook.addresses.length || !currentBook.addresses.length){
+user = Object.assign({}, user, latestUser);
+users[currentUser] = user;
+userProfile = user.profile || userProfile;
+}
+}
 if(draft && Array.isArray(draft.cartSnapshot) && draft.cartSnapshot.length){
 user.cart = draft.cartSnapshot.slice();
 }
@@ -784,7 +831,7 @@ checkoutAddress,
 users[currentUser] = user;
 selectedCheckoutAddressId = user.defaultAddressId || checkoutAddress.id;
 window.__swadraCheckoutSummary = summary;
-await saveCheckoutDraftToFirestore({
+saveCheckoutDraftToFirestore({
 ...summary,
 deliveryDetails: deliveryDetails,
 discountedItems: summary.discountedItems || getCheckoutCartItems()
@@ -799,9 +846,8 @@ discountedItems: summary.discountedItems || getCheckoutCartItems()
 });
 }).catch(function(error){
 console.error("checkout address save failed", error);
-}).finally(function(){
-location.href = "payment.html";
 });
+location.href = "payment.html";
 }
 
 window.toggleAddressPicker = toggleAddressPicker;

@@ -1028,7 +1028,6 @@
     if(!key) return null;
     var payload = sanitizeCheckoutDraftRecord(draft, userId);
     try{
-      rawLocalSet(key, JSON.stringify(payload));
       rawSessionSet(key, JSON.stringify(payload));
     }catch(error){}
     return payload;
@@ -1037,7 +1036,7 @@
   function fetchCheckoutDraftLocal(userId){
     var key = getCheckoutDraftLocalKey(userId);
     if(!key) return null;
-    var raw = rawSessionGet(key) || rawLocalGet(key);
+    var raw = rawSessionGet(key);
     if(!raw) return null;
     var parsed = tryParseJson(raw);
     return parsed ? sanitizeCheckoutDraftRecord(parsed, userId) : null;
