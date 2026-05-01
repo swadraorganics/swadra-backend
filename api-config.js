@@ -384,9 +384,10 @@
         normalizedTarget.indexOf("/api/shiprocket/config") === 0 ||
         normalizedTarget.indexOf("/api/shiprocket/auth-token") === 0;
       if(isAdminApi){
+        init = init || {};
+        init.credentials = "include";
         var token = readAdminToken();
         if(token){
-          init = init || {};
           var headers = new Headers(init.headers || (input && input.headers) || {});
           headers.set("Authorization", "Bearer " + token);
           init.headers = headers;

@@ -77,6 +77,7 @@ process.on("uncaughtException", (error) => {
 
 app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization", "x-admin-session-token"],
+  credentials: true,
   origin(origin, callback) {
     const normalized = normalizeOrigin(origin);
     if (!normalized) {
@@ -502,7 +503,27 @@ function ensureAdminSecurity(db = {}) {
 function getAdminTokenFromRequest(req) {
   const auth = String(req.get("authorization") || "").trim();
   if (/^Bearer\s+/i.test(auth)) return auth.replace(/^Bearer\s+/i, "").trim();
-  return String(req.get("x-admin-session-token") || req.body?.adminToken || req.query?.adminToken || "").trim();
+  const headerToken = String(req.get("x-admin-session-token") || req.body?.adminToken || req.query?.adminToken || "").trim();
+  if (headerToken) return headerToken;
+  const cookie = String(req.get("cookie") || "");
+  const match = cookie.match(/(?:^|;\s*)swadra_admin_token=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
+function setAdminSessionCookie(res, token = "", expiresAt = "") {
+  const maxAgeSeconds = Math.max(1, Math.floor((Date.parse(expiresAt || "") - Date.now()) / 1000)) || (12 * 60 * 60);
+  res.setHeader("Set-Cookie", [
+    "swadra_admin_token=" + encodeURIComponent(String(token || "")),
+    "Max-Age=" + maxAgeSeconds,
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=None"
+  ].join("; "));
+}
+
+function clearAdminSessionCookie(res) {
+  res.setHeader("Set-Cookie", "swadra_admin_token=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=None");
 }
 
 function findValidAdminSession(db = {}, req) {
@@ -2589,6 +2610,9 @@ app.post("/api/admin/login", authRateLimit, async (req, res) => {
     auditAdminAction(db, req, "admin.login", success ? "success" : "failed", { username });
     await writeDB(db);
     addLog(`Admin login ${success ? "success" : "failed"} for ${username || "unknown"}`, success ? "success" : "warn");
+    if (success && session && session.token) {
+      setAdminSessionCookie(res, session.token, session.expiresAt);
+    }
     res.status(success ? 200 : 401).json({
       ok: success,
       success,
@@ -2619,6 +2643,7 @@ app.post("/api/admin/logout", requireAdminSession, async (req, res) => {
     const revoked = revokeAdminSessionForRequest(db, req);
     auditAdminAction(db, req, "admin.logout", revoked ? "success" : "noop", { revoked });
     await writeDB(db);
+    clearAdminSessionCookie(res);
     res.json({ ok: true, revoked });
   } catch (error) {
     addLog("Admin logout failed: " + error.message, "error");
@@ -2641,6 +2666,7 @@ app.post("/api/admin/logout-all", requireAdminSession, async (req, res) => {
     });
     auditAdminAction(db, req, "admin.logout-all", "success", { count });
     await writeDB(db);
+    clearAdminSessionCookie(res);
     res.json({ ok: true, revoked: count });
   } catch (error) {
     addLog("Admin logout-all failed: " + error.message, "error");

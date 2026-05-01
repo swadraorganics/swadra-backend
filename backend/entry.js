@@ -83,6 +83,7 @@ function buildCorsHeaders(req, extraHeaders = {}) {
 
   return {
     "Access-Control-Allow-Origin": allowOrigin || "*",
+    "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
