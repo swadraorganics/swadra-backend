@@ -98,12 +98,13 @@
       const name = String(getValueByPossibleKeys(rawItem, ["name","productName","title"])).trim() || "Product";
       const size = String(getValueByPossibleKeys(rawItem, ["size","variant","productSize","selectedSize","weight","packSize","unit","weightLabel","quantityLabel"])).trim();
       const quantity = Number(getValueByPossibleKeys(rawItem, ["quantity","qty","count"])) || 1;
-      const price = Number(getValueByPossibleKeys(rawItem, ["price","sellingPrice","amount"])) || 0;
+      const price = Number(getValueByPossibleKeys(rawItem, ["price","sellingPrice","discountedUnitPrice","displayPrice","amount"])) || 0;
+      const mrp = Number(getValueByPossibleKeys(rawItem, ["mrp","originalPrice","mrpPrice"])) || price;
       const discountedLineTotal = Number(getValueByPossibleKeys(rawItem, ["discountedLineTotal","lineTotal","finalLineTotal","total"])) || (price * quantity);
-      const displayLineTotal = Number(getValueByPossibleKeys(rawItem, ["displayLineTotal","mrpLineTotal","originalLineTotal"])) || 0;
+      const displayLineTotal = Number(getValueByPossibleKeys(rawItem, ["displayLineTotal","mrpLineTotal","originalLineTotal"])) || (mrp * quantity);
       const couponLineDiscount = Number(getValueByPossibleKeys(rawItem, ["couponLineDiscount","couponDiscount","lineCouponDiscount"])) || 0;
 
-      return { name, size, quantity, price, discountedLineTotal, displayLineTotal, couponLineDiscount };
+      return { name, size, quantity, price, mrp, discountedLineTotal, displayLineTotal, couponLineDiscount };
     }
 
     function extractAmount(raw){

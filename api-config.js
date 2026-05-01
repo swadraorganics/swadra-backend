@@ -479,15 +479,51 @@
 
   function compactCartItem(item){
     var source = item && typeof item === "object" ? item : {};
+    var size = String(
+      source.size ||
+      source.productSize ||
+      source.selectedSize ||
+      source.variant ||
+      source.weight ||
+      source.packSize ||
+      source.unit ||
+      source.weightLabel ||
+      source.quantityLabel ||
+      ""
+    ).trim();
+    var image = String(source.image || source.productImage || source.thumbnail || "").trim();
+    var qty = Math.max(1, Number(source.qty || source.quantity || 1) || 1);
+    var price = Number(source.price || source.sellingPrice || source.discountedUnitPrice || source.displayPrice || 0) || 0;
+    var mrp = Number(source.mrp || source.originalPrice || source.mrpPrice || source.price || 0) || 0;
     return {
       id: source.id != null ? String(source.id) : String(source.name || Date.now()),
-      name: String(source.name || "").trim(),
-      qty: Math.max(1, Number(source.qty || source.quantity || 1) || 1),
-      price: Number(source.price || 0) || 0,
-      mrp: Number(source.mrp || source.price || 0) || 0,
-      size: String(source.size || "").trim(),
-      image: String(source.image || "").trim(),
-      images: Array.isArray(source.images) ? source.images.map(function(entry){ return String(entry || "").trim(); }).filter(Boolean).slice(0, 4) : []
+      productId: String(source.productId || source.id || "").trim(),
+      sku: String(source.sku || source.productSku || "").trim(),
+      name: String(source.name || source.productName || source.title || "").trim(),
+      productName: String(source.productName || source.name || source.title || "").trim(),
+      qty: qty,
+      quantity: qty,
+      price: price,
+      sellingPrice: Number(source.sellingPrice || price) || price,
+      discountedUnitPrice: Number(source.discountedUnitPrice || source.displayPrice || price) || price,
+      mrp: mrp,
+      originalPrice: Number(source.originalPrice || mrp || price) || mrp || price,
+      size: size,
+      productSize: size,
+      selectedSize: size,
+      variant: size,
+      weight: String(source.weight || size).trim(),
+      packSize: String(source.packSize || "").trim(),
+      unit: String(source.unit || "").trim(),
+      image: image,
+      productImage: image,
+      images: Array.isArray(source.images) ? source.images.map(function(entry){ return String(entry || "").trim(); }).filter(Boolean).slice(0, 4) : (image ? [image] : []),
+      displayLineTotal: Number(source.displayLineTotal || source.discountedLineTotal || (price * qty)) || 0,
+      discountedLineTotal: Number(source.discountedLineTotal || source.displayLineTotal || (price * qty)) || 0,
+      originalLineTotal: Number(source.originalLineTotal || source.mrpLineTotal || (mrp || price) * qty) || 0,
+      mrpLineTotal: Number(source.mrpLineTotal || source.originalLineTotal || (mrp || price) * qty) || 0,
+      couponLineDiscount: Number(source.couponLineDiscount || source.lineCouponDiscount || 0) || 0,
+      productDiscount: Number(source.productDiscount || Math.max(0, ((mrp || price) - price) * qty)) || 0
     };
   }
 

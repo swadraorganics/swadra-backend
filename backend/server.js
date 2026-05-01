@@ -310,16 +310,44 @@ async function writeTopLevelUsers(users = {}) {
 }
 
 function normalizeCartItems(items = []) {
-  return (Array.isArray(items) ? items : []).map((item) => ({
-    id: String(item?.id ?? item?.name ?? Date.now()).trim(),
-    name: String(item?.name || "Swadra Product").trim(),
-    qty: Math.max(1, Math.round(toNumber(item?.qty || item?.quantity || 1)) || 1),
-    price: Math.max(0, toNumber(item?.price || 0)),
-    mrp: Math.max(0, toNumber(item?.mrp || item?.price || 0)),
-    size: String(item?.size || item?.productSize || item?.selectedSize || item?.variant || item?.weight || "").trim(),
-    image: String(item?.image || "").trim(),
-    images: Array.isArray(item?.images) ? item.images.map((entry) => String(entry || "").trim()).filter(Boolean).slice(0, 4) : []
-  })).filter((item) => item.id || item.name);
+  return (Array.isArray(items) ? items : []).map((item) => {
+    const qty = Math.max(1, Math.round(toNumber(item?.qty || item?.quantity || 1)) || 1);
+    const price = Math.max(0, toNumber(item?.price || item?.sellingPrice || item?.discountedUnitPrice || item?.displayPrice || 0));
+    const mrp = Math.max(0, toNumber(item?.mrp || item?.originalPrice || item?.mrpPrice || item?.price || 0));
+    const size = String(item?.size || item?.productSize || item?.selectedSize || item?.variant || item?.weight || item?.packSize || item?.unit || item?.weightLabel || item?.quantityLabel || "").trim();
+    const image = String(item?.image || item?.productImage || item?.thumbnail || "").trim();
+    return {
+      ...item,
+      id: String(item?.id ?? item?.productId ?? item?.sku ?? item?.name ?? Date.now()).trim(),
+      productId: String(item?.productId || item?.id || item?.sku || "").trim(),
+      sku: String(item?.sku || item?.productSku || "").trim(),
+      name: String(item?.name || item?.productName || item?.title || "Swadra Product").trim(),
+      productName: String(item?.productName || item?.name || item?.title || "Swadra Product").trim(),
+      qty,
+      quantity: qty,
+      price,
+      sellingPrice: Math.max(0, toNumber(item?.sellingPrice || price)),
+      discountedUnitPrice: Math.max(0, toNumber(item?.discountedUnitPrice || item?.displayPrice || price)),
+      mrp,
+      originalPrice: Math.max(0, toNumber(item?.originalPrice || mrp || price)),
+      size,
+      productSize: size,
+      selectedSize: size,
+      variant: size,
+      weight: String(item?.weight || size).trim(),
+      packSize: String(item?.packSize || "").trim(),
+      unit: String(item?.unit || "").trim(),
+      image,
+      productImage: image,
+      images: Array.isArray(item?.images) ? item.images.map((entry) => String(entry || "").trim()).filter(Boolean).slice(0, 4) : (image ? [image] : []),
+      displayLineTotal: Math.round(toNumber(item?.displayLineTotal || item?.discountedLineTotal || price * qty)),
+      discountedLineTotal: Math.round(toNumber(item?.discountedLineTotal || item?.displayLineTotal || price * qty)),
+      originalLineTotal: Math.round(toNumber(item?.originalLineTotal || item?.mrpLineTotal || (mrp || price) * qty)),
+      mrpLineTotal: Math.round(toNumber(item?.mrpLineTotal || item?.originalLineTotal || (mrp || price) * qty)),
+      couponLineDiscount: Math.round(toNumber(item?.couponLineDiscount || item?.lineCouponDiscount || 0)),
+      productDiscount: Math.round(toNumber(item?.productDiscount || Math.max(0, ((mrp || price) - price) * qty)))
+    };
+  }).filter((item) => item.id || item.name);
 }
 
 async function writeTopLevelOrder(order = {}) {
@@ -1428,11 +1456,12 @@ function normalizeOrderForDb(input = {}) {
   const now = new Date().toISOString();
   const id = String(input.id || input.orderId || makePaymentOrderId());
   const existingHistory = Array.isArray(input.statusHistory) ? input.statusHistory : [];
+  const normalizedItems = normalizeCartItems(input.items || input.products || input.cartItems || []);
   return {
     ...input,
     id,
     userId: String(input.userId || input.user || input.email || ""),
-    items: Array.isArray(input.items) ? input.items : [],
+    items: normalizedItems,
     total: toNumber(input.finalAmount || input.payableAmount || input.total || input.amount || input.paidAmount),
     status: input.status || "Confirmed",
     payment: input.payment || "Paid Successfully",

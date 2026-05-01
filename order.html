@@ -468,6 +468,18 @@ function getOrderItemFinalLineTotal(item){
   return (Number(item?.price || 0) || 0) * qty;
 }
 
+const orderPlaceholderImage = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><rect width="120" height="120" rx="18" fill="#f5e8e8"/><text x="60" y="56" text-anchor="middle" font-family="Arial" font-size="13" font-weight="700" fill="#7a3d3d">Swadra</text><text x="60" y="74" text-anchor="middle" font-family="Arial" font-size="11" fill="#7a3d3d">Product</text></svg>`);
+
+function getOrderItemImage(item){
+  const images = Array.isArray(item?.images) ? item.images.filter(Boolean) : [];
+  return safe(item?.image || item?.productImage || images[0] || orderPlaceholderImage);
+}
+
+function orderImageError(img){
+  img.onerror = null;
+  img.src = orderPlaceholderImage;
+}
+
 function toggleOrderDetails(id){
   const panel = document.getElementById("details-" + id);
   if(panel) panel.classList.toggle("show");
@@ -661,7 +673,7 @@ async function loadOrders(){
       const couponLine = Number(item.couponLineDiscount || 0);
       return `
         <div class="item-row">
-          <img class="item-thumb" src="${safe(item.image) || "https://res.cloudinary.com/djimihrjf/image/upload/f_auto,q_auto,w_220,c_fill/v1777176206/q9q85rejnjtucc3e1nlr.png"}" alt="${safe(item.name)}">
+          <img class="item-thumb" src="${getOrderItemImage(item)}" alt="${safe(item.name)}" onerror="orderImageError(this)">
           <div>
             <div class="item-name">${safe(item.name)}${sizeLabel ? ` <span style="font-size:12px;color:#6b5c5c;font-weight:700;">(${safe(sizeLabel)})</span>` : ""}</div>
             <div class="item-qty">Qty ${qty}</div>

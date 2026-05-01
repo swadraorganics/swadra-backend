@@ -558,7 +558,9 @@
                   <div class="mini">
                     <div class="k">${escapeHtml(item.name || "Product")}</div>
                     <div class="v">
-                      ${item.size ? `(${escapeHtml(item.size)}) ` : ""}× ${Number(item.quantity || 1)} — ${rupee((Number(item.price || 0) * Number(item.quantity || 1)))}
+                      ${item.size || item.productSize || item.selectedSize || item.variant || item.weight || item.packSize ? `(${escapeHtml(item.size || item.productSize || item.selectedSize || item.variant || item.weight || item.packSize)}) ` : ""}× ${Number(item.quantity || item.qty || 1)} —
+                      ${Number(item.discountedLineTotal || item.displayLineTotal || 0) > 0 ? rupee(item.discountedLineTotal || item.displayLineTotal) : rupee((Number(item.price || 0) * Number(item.quantity || item.qty || 1)))}
+                      ${Number(item.couponLineDiscount || 0) > 0 ? `<span style="color:#0f8a47;font-weight:800;"> Coupon -${rupee(item.couponLineDiscount)}</span>` : ""}
                     </div>
                   </div>
                 `).join("") : `<div class="empty">No line items.</div>`}

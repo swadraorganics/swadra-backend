@@ -26,7 +26,7 @@ Swadra Organics
 </div>
 
 <div class="tagline">
-Choose Healthy â€¢ Be Swadra Family
+Choose Healthy &bull; Be Swadra Family
 </div>
 
 <div class="main" id="invoice">
@@ -85,7 +85,7 @@ Choose Healthy â€¢ Be Swadra Family
 <p>UPI Payment</p>
 
 <h4>Status</h4>
-<p class="paid">Paid âœ…</p>
+<p class="paid">Paid</p>
 </div>
 <div class="signature-box">
 <div><strong>For SWADRA ORGANICS</strong></div>
@@ -172,6 +172,15 @@ function getInvoiceItemSize(item){
   ).trim() || "-";
 }
 
+function getInvoiceUnitPrice(item){
+  const qty = Math.max(1, Number(item?.qty || item?.quantity || 1) || 1);
+  const discountedUnit = Number(item?.discountedUnitPrice || item?.displayPrice || item?.sellingPrice || 0);
+  if(discountedUnit > 0) return Math.round(discountedUnit);
+  const discountedLine = Number(item?.discountedLineTotal || item?.displayLineTotal || 0);
+  if(discountedLine > 0) return Math.round(discountedLine / qty);
+  return Math.round(Number(item?.price || 0));
+}
+
 function renderInvoice(order){
   const items = Array.isArray(order?.items) ? order.items : [];
   const discount = Math.round(Number(order?.couponDiscount || 0));
@@ -206,10 +215,10 @@ function renderInvoice(order){
 </thead>
 <tbody>
 ${items.map((item,index)=>{
-  const qty = Math.max(1, Number(item?.qty) || 1);
-  const unitPrice = Math.round(Number(item?.price) || 0);
+  const qty = Math.max(1, Number(item?.qty || item?.quantity || 1) || 1);
+  const unitPrice = getInvoiceUnitPrice(item);
   const size = getInvoiceItemSize(item);
-  const originalLineTotal = Math.round(unitPrice * qty);
+  const originalLineTotal = Math.round(Number(item?.originalLineTotal || item?.mrpLineTotal || (Number(item?.mrp || item?.originalPrice || unitPrice) * qty)) || 0);
   const discountedLineTotal = Math.round(getItemLineTotal(item));
   const couponLineDiscount = Math.round(Number(item?.couponLineDiscount || 0));
   return `<tr>
@@ -227,7 +236,7 @@ ${items.map((item,index)=>{
   document.getElementById("subtotal").innerText = formatMoney(subtotal);
   document.getElementById("cgst").innerText = formatMoney(cgst);
   document.getElementById("sgst").innerText = formatMoney(sgst);
-  document.getElementById("delivery").innerText = deliveryDetails && deliveryDetails.freeDeliveryApplied ? "₹0 Free Delivery Applied" : formatMoney(delivery);
+  document.getElementById("delivery").innerText = deliveryDetails && deliveryDetails.freeDeliveryApplied ? "0 Free Delivery Applied" : formatMoney(delivery);
   document.getElementById("discount").innerText = formatMoney(discount);
   document.getElementById("total").innerText = formatMoney(total);
 }
