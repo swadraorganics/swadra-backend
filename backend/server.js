@@ -1175,6 +1175,7 @@ function getRazorpayKeyId() {
 function getRazorpaySecret() {
   return String(
     process.env.RAZORPAY_KEY_SECRET ||
+    process.env.RAZOR_KEY_SECRET ||
     process.env.RAZORPAY_SECRET ||
     process.env.RAZORPAY_KEYSECRET ||
     process.env.RAZORPAY_API_SECRET ||
