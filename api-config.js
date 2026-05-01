@@ -588,6 +588,7 @@
     var email = getAuthEmailFromUrl(window.location.href);
     if(email){
       rawSessionSet("currentUser", email);
+      mirrorSessionUserToBackend(email, { reason: "url-auth" });
     }
     return email;
   }
@@ -736,7 +737,9 @@
     usersCache[record.email] = record;
     usersCacheLoaded = true;
     if(!db){
-      throw new Error("Firestore unavailable");
+      var backendRecord = await saveUserRecordToBackend(record);
+      usersCache[backendRecord.email] = backendRecord;
+      return cloneValue(backendRecord);
     }
     var docId = resolveUserProfileDocId(record);
     var savedSnapshot = null;
@@ -800,6 +803,37 @@
       throw new Error(data && data.error ? data.error : "Failed to save user");
     }
     return sanitizeUserRecord(data.record || record, record && record.email);
+  }
+
+  function mirrorSessionUserToBackend(email, options){
+    var normalizedEmail = normalizeEmailValue(email);
+    if(!normalizedEmail) return;
+    var config = options && typeof options === "object" ? options : {};
+    var stampKey = "mirrorUser:" + normalizedEmail;
+    var lastStamp = Number(rawSessionGet(stampKey) || 0);
+    if(lastStamp && Date.now() - lastStamp < 5 * 60 * 1000) return;
+    rawSessionSet(stampKey, String(Date.now()));
+    var phone = normalizePhoneValue(config.phone || getSessionValue("userPhone") || "");
+    var profile = config.profile && typeof config.profile === "object" ? config.profile : {};
+    saveUserRecordToBackend({
+      email: normalizedEmail,
+      phone: phone,
+      profile: Object.assign({}, profile, {
+        email: normalizedEmail,
+        phone: phone,
+        name: String(profile.name || normalizedEmail.split("@")[0]).trim()
+      }),
+      status: "active",
+      lastLoginAt: new Date().toISOString()
+    }).then(function(record){
+      if(record && record.email){
+        usersCache[record.email] = record;
+        usersCacheLoaded = true;
+      }
+    }).catch(function(error){
+      rawSessionRemove(stampKey);
+      console.error("session user backend mirror failed", error);
+    });
   }
 
   function getCurrentUserRecord(){
@@ -874,6 +908,11 @@
     setSessionValue("userPhone", user && user.phone ? user.phone : "");
     ensureAuthUserInUrl();
     syncInternalLinksWithAuth(document);
+    mirrorSessionUserToBackend(normalizedEmail, {
+      phone: user && user.phone ? user.phone : "",
+      profile: user && user.profile ? user.profile : null,
+      reason: "session"
+    });
     return normalizedEmail;
   }
 
