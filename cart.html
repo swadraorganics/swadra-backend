@@ -543,7 +543,7 @@ return numericAmount - (numericAmount / (1 + numericRate / 100));
 function getCouponEligibleTotal(cart){
 return Math.round((Array.isArray(cart) ? cart : []).reduce((sum,item)=>{
 let lineSelling = Number(item.price || 0) * Number(item.qty || 0);
-return sum + Math.max(0, lineSelling - getIncludedGstAmount(lineSelling, getItemGstRate(item)));
+return sum + Math.max(0, lineSelling);
 },0));
 }
 
@@ -554,7 +554,7 @@ let runningDiscount = 0;
 return cart.map((item,index)=>{
 let qty = Number(item.qty || 1);
 let lineSelling = Math.round(Number(item.price || 0) * qty);
-let lineEligible = Math.max(0, lineSelling - getIncludedGstAmount(lineSelling, getItemGstRate(item)));
+let lineEligible = Math.max(0, lineSelling);
 let lineDiscount = 0;
 if(productCouponDiscount > 0 && totalEligible > 0){
 lineDiscount = index === cart.length - 1
