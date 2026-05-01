@@ -501,13 +501,25 @@ function ensureAdminSecurity(db = {}) {
 }
 
 function getAdminTokenFromRequest(req) {
+  const tokens = getAdminTokensFromRequest(req);
+  return tokens[0] || "";
+}
+
+function getAdminTokensFromRequest(req) {
+  const tokens = [];
+  const addToken = (value) => {
+    const token = String(value || "").trim();
+    if (token && !tokens.includes(token)) tokens.push(token);
+  };
   const auth = String(req.get("authorization") || "").trim();
-  if (/^Bearer\s+/i.test(auth)) return auth.replace(/^Bearer\s+/i, "").trim();
-  const headerToken = String(req.get("x-admin-session-token") || req.body?.adminToken || req.query?.adminToken || "").trim();
-  if (headerToken) return headerToken;
+  if (/^Bearer\s+/i.test(auth)) addToken(auth.replace(/^Bearer\s+/i, "").trim());
+  addToken(req.get("x-admin-session-token"));
+  addToken(req.body?.adminToken);
+  addToken(req.query?.adminToken);
   const cookie = String(req.get("cookie") || "");
   const match = cookie.match(/(?:^|;\s*)swadra_admin_token=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : "";
+  if (match) addToken(decodeURIComponent(match[1]));
+  return tokens;
 }
 
 function setAdminSessionCookie(res, token = "", expiresAt = "") {
@@ -527,28 +539,33 @@ function clearAdminSessionCookie(res) {
 }
 
 function findValidAdminSession(db = {}, req) {
-  const token = getAdminTokenFromRequest(req);
-  if (!token) return null;
+  const tokens = getAdminTokensFromRequest(req);
+  if (!tokens.length) return null;
   const state = ensureAdminSecurity(db);
-  const tokenHash = hashAdminToken(token);
   const now = Date.now();
-  const storedSession = state.adminSessions.find((session) => {
-    return session &&
-      session.tokenHash === tokenHash &&
-      Date.parse(session.expiresAt || "") > now &&
-      String(session.status || "active") === "active";
-  }) || null;
-  return storedSession || verifySignedAdminToken(db, token);
+  for (const token of tokens) {
+    const tokenHash = hashAdminToken(token);
+    const storedSession = state.adminSessions.find((session) => {
+      return session &&
+        session.tokenHash === tokenHash &&
+        Date.parse(session.expiresAt || "") > now &&
+        String(session.status || "active") === "active";
+    }) || null;
+    if (storedSession) return storedSession;
+    const signedSession = verifySignedAdminToken(db, token);
+    if (signedSession) return signedSession;
+  }
+  return null;
 }
 
 function revokeAdminSessionForRequest(db = {}, req) {
-  const token = getAdminTokenFromRequest(req);
-  if (!token) return false;
+  const tokens = getAdminTokensFromRequest(req);
+  if (!tokens.length) return false;
   const state = ensureAdminSecurity(db);
-  const tokenHash = hashAdminToken(token);
+  const tokenHashes = tokens.map((token) => hashAdminToken(token));
   let revoked = false;
   state.adminSessions = state.adminSessions.map((session) => {
-    if (session && session.tokenHash === tokenHash && String(session.status || "active") === "active") {
+    if (session && tokenHashes.includes(session.tokenHash) && String(session.status || "active") === "active") {
       revoked = true;
       return {
         ...session,
