@@ -388,6 +388,67 @@ function hashAdminToken(token = "") {
   return crypto.createHash("sha256").update(String(token || "")).digest("hex");
 }
 
+function getAdminSessionSecret(db = {}) {
+  const admin = db.admin && typeof db.admin === "object" ? db.admin : {};
+  return String(
+    process.env.ADMIN_SESSION_SECRET ||
+    admin.passwordHash ||
+    admin.passwordSalt ||
+    admin.password ||
+    "swadra-admin-session"
+  );
+}
+
+function base64UrlEncode(value = "") {
+  return Buffer.from(String(value || ""), "utf8").toString("base64url");
+}
+
+function base64UrlDecode(value = "") {
+  return Buffer.from(String(value || ""), "base64url").toString("utf8");
+}
+
+function signAdminSessionPayload(db = {}, payload = "") {
+  return crypto.createHmac("sha256", getAdminSessionSecret(db)).update(String(payload || "")).digest("hex");
+}
+
+function createSignedAdminToken(db = {}, session = {}) {
+  const payload = base64UrlEncode(JSON.stringify({
+    username: String(session.username || "").trim(),
+    role: String(session.role || "owner").trim() || "owner",
+    expiresAt: String(session.expiresAt || ""),
+    nonce: crypto.randomBytes(8).toString("hex")
+  }));
+  return "sat_" + payload + "." + signAdminSessionPayload(db, payload);
+}
+
+function verifySignedAdminToken(db = {}, token = "") {
+  const raw = String(token || "").trim();
+  if (!raw.startsWith("sat_") || !raw.includes(".")) return null;
+  const body = raw.slice(4);
+  const [payload, signature] = body.split(".");
+  if (!payload || !signature) return null;
+  const expected = signAdminSessionPayload(db, payload);
+  if (!safeEqualHex(signature, expected)) return null;
+  let parsed = null;
+  try {
+    parsed = JSON.parse(base64UrlDecode(payload));
+  } catch (error) {
+    return null;
+  }
+  const username = String(parsed.username || "").trim();
+  const expiresAt = String(parsed.expiresAt || "");
+  if (!username || username !== String(db.admin?.username || "").trim()) return null;
+  if (Date.parse(expiresAt || "") <= Date.now()) return null;
+  return {
+    tokenHash: hashAdminToken(raw),
+    username,
+    role: String(parsed.role || db.admin?.role || "owner"),
+    status: "active",
+    expiresAt,
+    signed: true
+  };
+}
+
 function hashAdminPassword(password = "", salt = crypto.randomBytes(16).toString("hex")) {
   const cleanSalt = String(salt || "").trim() || crypto.randomBytes(16).toString("hex");
   const hash = crypto.scryptSync(String(password || ""), cleanSalt, 64).toString("hex");
@@ -450,12 +511,13 @@ function findValidAdminSession(db = {}, req) {
   const state = ensureAdminSecurity(db);
   const tokenHash = hashAdminToken(token);
   const now = Date.now();
-  return state.adminSessions.find((session) => {
+  const storedSession = state.adminSessions.find((session) => {
     return session &&
       session.tokenHash === tokenHash &&
       Date.parse(session.expiresAt || "") > now &&
       String(session.status || "active") === "active";
   }) || null;
+  return storedSession || verifySignedAdminToken(db, token);
 }
 
 function revokeAdminSessionForRequest(db = {}, req) {
@@ -2504,17 +2566,17 @@ app.post("/api/admin/login", authRateLimit, async (req, res) => {
       if (passwordCheck.legacy || !db.admin.passwordHash) {
         setAdminPasswordHash(db, password);
       }
-      const token = crypto.randomBytes(32).toString("hex");
       const now = new Date();
       session = {
-        token,
+        token: "",
         username,
         role: db.admin.role || "owner",
         expiresAt: new Date(now.getTime() + 12 * 60 * 60 * 1000).toISOString()
       };
+      session.token = createSignedAdminToken(db, session);
       state.adminSessions = state.adminSessions.filter((item) => Date.parse(item.expiresAt || "") > Date.now()).slice(0, 20);
       state.adminSessions.unshift({
-        tokenHash: hashAdminToken(token),
+        tokenHash: hashAdminToken(session.token),
         username,
         role: session.role,
         status: "active",
