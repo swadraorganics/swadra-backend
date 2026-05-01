@@ -919,6 +919,20 @@ async function refreshUsersSafe(){
   }
 }
 
+async function fetchLatestDashboardUser(email){
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if(!normalizedEmail || !authApi || typeof authApi.refreshUsers !== "function") return null;
+  try{
+    await authApi.refreshUsers();
+    const users = getUsers();
+    const key = resolveUserKey(users, normalizedEmail);
+    return users[key] || null;
+  }catch(error){
+    console.error("dashboard latest user fetch failed", error);
+    return null;
+  }
+}
+
 function resolveUserKey(users, email){
   const normalizedEmail = String(email || "").trim().toLowerCase();
   if(!normalizedEmail) return "";
@@ -952,25 +966,40 @@ function getOrCreateDashboardUser(users, email){
   return { userKey, user: users[userKey] };
 }
 
-async function persistCurrentUser(user, successMessage, errorMessage){
+async function persistCurrentUser(user, successMessage, errorMessage, options){
   if(!user || !user.email){
     if(errorMessage) alert(errorMessage);
     return false;
   }
   try{
-    const savedUser = await saveDashboardUserToBackend(user);
+    const config = options && typeof options === "object" ? options : {};
+    let userForSave = user;
+    if(config.preserveAddressBook){
+      const latestUser = await fetchLatestDashboardUser(user.email);
+      const latestBook = getAddressBook(latestUser || {});
+      const currentBook = getAddressBook(user || {});
+      if(!currentBook.addresses.length && latestBook.addresses.length){
+        userForSave = {
+          ...user,
+          address: latestUser.address || latestBook.addresses[0] || {},
+          addresses: latestBook.addresses,
+          defaultAddressId: latestBook.defaultAddressId || latestUser.defaultAddressId || ""
+        };
+      }
+    }
+    const savedUser = await saveDashboardUserToBackend(userForSave);
     if(savedUser && savedUser.email){
       const users = getUsers();
       users[savedUser.email] = savedUser;
     }
     if(authApi && typeof authApi.saveUserRecord === "function"){
-      await authApi.saveUserRecord(savedUser || user);
+      await authApi.saveUserRecord(savedUser || userForSave);
       if(typeof authApi.refreshUsers === "function"){
         await authApi.refreshUsers();
       }
     }else{
       let users = getUsers();
-      users[user.email] = savedUser || user;
+      users[user.email] = savedUser || userForSave;
       try{
         await Promise.resolve(saveUsers(users));
       }catch(saveError){
@@ -1289,7 +1318,7 @@ async function saveProfileName(){
   user.profile.name = newName;
   user.name = newName;
   user.updatedAt = new Date().toISOString();
-  const saved = await persistCurrentUser(user, "Profile updated successfully.", "Profile update failed.");
+  const saved = await persistCurrentUser(user, "Profile updated successfully.", "Profile update failed.", { preserveAddressBook: true });
   if(!saved) return;
   await refreshUsersSafe();
   closeNameModal();

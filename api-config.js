@@ -575,6 +575,23 @@
     return next;
   }
 
+  function mergeUserRecordsForCache(primary, fallback){
+    var next = Object.assign({}, fallback || {}, primary || {});
+    var primaryAddresses = Array.isArray(primary && primary.addresses) ? primary.addresses : [];
+    var fallbackAddresses = Array.isArray(fallback && fallback.addresses) ? fallback.addresses : [];
+    if(!primaryAddresses.length && fallbackAddresses.length){
+      next.addresses = cloneValue(fallbackAddresses);
+      next.defaultAddressId = next.defaultAddressId || fallback.defaultAddressId || "";
+      if((!next.address || !Object.keys(next.address || {}).length) && fallback.address){
+        next.address = cloneValue(fallback.address);
+      }
+    }
+    if((!next.address || !Object.keys(next.address || {}).length) && fallback && fallback.address && Object.keys(fallback.address || {}).length){
+      next.address = cloneValue(fallback.address);
+    }
+    return sanitizeUserRecord(next, next.email || (primary && primary.email) || (fallback && fallback.email) || "");
+  }
+
   ["users", "orders", "adminOrders", "swadraOrders", "customerOrders", "allOrders"].forEach(function(key){
     rawLocalRemove(key);
   });
@@ -722,7 +739,9 @@
         }
       });
       var backendUsers = await fetchUsersFromBackendFallback({ preserveCache: true }).catch(function(){ return {}; });
-      next = Object.assign({}, backendUsers, next);
+      Object.keys(backendUsers || {}).forEach(function(email){
+        next[email] = mergeUserRecordsForCache(next[email], backendUsers[email]);
+      });
       usersCache = next;
       usersCacheLoaded = true;
       return getAuthUsers();
