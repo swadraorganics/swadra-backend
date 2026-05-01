@@ -2897,6 +2897,33 @@ async function findAccountUser(email = "") {
   return { ...record, email: record.email || normalizedEmail };
 }
 
+async function findFirebaseAuthUserByEmail(email = "") {
+  const normalizedEmail = normalizeAccountEmail(email);
+  if (!normalizedEmail) return null;
+  try {
+    if (admin === undefined) {
+      admin = require("firebase-admin");
+    }
+    if (admin && !admin.apps.length) {
+      admin.initializeApp();
+    }
+    const auth = admin && typeof admin.auth === "function" ? admin.auth() : null;
+    if (!auth) return null;
+    const authUser = await auth.getUserByEmail(normalizedEmail);
+    return authUser ? {
+      uid: authUser.uid,
+      email: normalizeAccountEmail(authUser.email || normalizedEmail),
+      phone: normalizeAccountPhone(authUser.phoneNumber || ""),
+      emailVerified: Boolean(authUser.emailVerified)
+    } : null;
+  } catch (error) {
+    const code = String(error && error.code || "").toLowerCase();
+    if (code.includes("user-not-found")) return null;
+    addLog("Account Firebase Auth lookup skipped: " + error.message, "warn");
+    return null;
+  }
+}
+
 async function upsertAccountUser(input = {}) {
   const email = normalizeAccountEmail(input.email);
   const phone = normalizeAccountPhone(input.phone);
@@ -3014,7 +3041,19 @@ app.post("/api/account/lookup", paymentRateLimit, async (req, res) => {
     if (!email) return res.status(400).json({ ok: false, error: "Email is required" });
     const user = await findAccountUser(email);
     if (!user) {
-      return res.json({ ok: true, exists: false, maskedEmail: maskEmailAddress(email) });
+      const authUser = await findFirebaseAuthUserByEmail(email);
+      if (!authUser) {
+        return res.json({ ok: true, exists: false, maskedEmail: maskEmailAddress(email) });
+      }
+      const savedPhone = normalizeAccountPhone(authUser.phone || "");
+      return res.json({
+        ok: true,
+        exists: true,
+        profileMissing: true,
+        phoneMatches: phone && savedPhone ? savedPhone === phone : false,
+        maskedEmail: maskEmailAddress(authUser.email || email),
+        maskedPhoneLast4: savedPhone ? savedPhone.slice(-4) : ""
+      });
     }
     const savedPhone = normalizeAccountPhone(user.phone || user.phoneNormalized || user.profile?.phone || "");
     const phoneMatches = phone ? savedPhone === phone : false;

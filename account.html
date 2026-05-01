@@ -1210,6 +1210,22 @@ let accountEntryStage = "email";
           updateProgress(4);
           return;
         }
+        if(authApi && typeof authApi.fetchSignInMethodsForEmail === "function"){
+          try{
+            const methods = await authApi.fetchSignInMethodsForEmail(email);
+            if(Array.isArray(methods) && methods.length){
+              currentPhone = "";
+              isPasswordResetFlow = false;
+              document.getElementById("loginPass").value = "";
+              showMsg("Account already exists. Please enter password.", "success");
+              showStep("step4");
+              updateProgress(4);
+              return;
+            }
+          }catch(error){
+            console.warn("existing auth account check skipped", error);
+          }
+        }
         accountEntryStage = "phone";
         setStep1ResetMode(false);
         showMsg("New account. Please enter and confirm your mobile number.", "success");
@@ -1257,7 +1273,7 @@ let accountEntryStage = "email";
       let existingAccount = users[email] || null;
       if(authApi && typeof authApi.findUserByEmailOrPhone === "function"){
         try{
-          existingAccount = await authApi.findUserByEmailOrPhone(email, phone, { forceRefresh:false });
+          existingAccount = await authApi.findUserByEmailOrPhone(email, phone, { forceRefresh:true });
         }catch(error){
           existingAccount = users[email] || null;
         }
