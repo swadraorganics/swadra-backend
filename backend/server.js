@@ -1150,8 +1150,33 @@ function hashPayload(payload) {
     .digest("hex");
 }
 
+function getRazorpayKeyId() {
+  return String(
+    process.env.RAZORPAY_KEY_ID ||
+    process.env.RAZORPAY_KEY ||
+    process.env.RAZORPAY_ID ||
+    process.env.RAZORPAY_API_KEY ||
+    process.env.key_id ||
+    ""
+  ).trim();
+}
+
+function getRazorpaySecret() {
+  return String(
+    process.env.RAZORPAY_KEY_SECRET ||
+    process.env.RAZORPAY_SECRET ||
+    process.env.RAZORPAY_API_SECRET ||
+    process.env.key_secret ||
+    ""
+  ).trim();
+}
+
+function isRazorpayConfigured() {
+  return Boolean(getRazorpayKeyId() && getRazorpaySecret());
+}
+
 function verifyRazorpaySignature({ razorpay_order_id, razorpay_payment_id, razorpay_signature }) {
-  const secret = process.env.RAZORPAY_KEY_SECRET || "";
+  const secret = getRazorpaySecret();
   if (!secret) {
     return {
       verified: false,
@@ -1173,7 +1198,7 @@ function verifyRazorpaySignature({ razorpay_order_id, razorpay_payment_id, razor
 }
 
 function verifyRazorpayWebhookSignature(rawBody, signature) {
-  const secret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET || "";
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET || getRazorpaySecret();
   if (!secret) {
     return {
       verified: false,
@@ -1756,8 +1781,8 @@ function extractWebhookFields(payload = {}) {
 }
 
 function createRazorpayOrder({ amount, currency, receipt, notes }) {
-  const keyId = process.env.RAZORPAY_KEY_ID || "";
-  const secret = process.env.RAZORPAY_KEY_SECRET || "";
+  const keyId = getRazorpayKeyId();
+  const secret = getRazorpaySecret();
 
   if (!keyId || !secret) {
     return Promise.resolve({
@@ -1836,8 +1861,8 @@ function createRazorpayOrder({ amount, currency, receipt, notes }) {
 }
 
 function razorpayApiRequest({ method = "GET", path: requestPath, body = null }) {
-  const keyId = process.env.RAZORPAY_KEY_ID || "";
-  const secret = process.env.RAZORPAY_KEY_SECRET || "";
+  const keyId = getRazorpayKeyId();
+  const secret = getRazorpaySecret();
 
   if (!keyId || !secret) {
     return Promise.resolve({
@@ -1914,7 +1939,7 @@ async function fetchRazorpayPaymentDetails(paymentId) {
   if (!normalizedId) {
     return {
       ok: false,
-      configured: Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
+      configured: isRazorpayConfigured(),
       payment: null,
       instrument: null,
       message: "Razorpay payment ID is required"
@@ -2021,7 +2046,7 @@ async function createRazorpayRefundForOrder(order = {}) {
   if (!paymentId) {
     return {
       ok: false,
-      configured: Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
+      configured: isRazorpayConfigured(),
       status: "Refund Pending",
       refund: null,
       message: "Razorpay payment ID missing"
@@ -2031,7 +2056,7 @@ async function createRazorpayRefundForOrder(order = {}) {
   if (amountRupees <= 0) {
     return {
       ok: false,
-      configured: Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
+      configured: isRazorpayConfigured(),
       status: "Refund Pending",
       refund: null,
       message: "Refund amount missing"
@@ -4169,9 +4194,9 @@ app.post("/api/payments/create-order", paymentRateLimit, inventorySerial, async 
             receipt: order.receipt,
             localOnly: true
           },
-      verificationConfigured: Boolean(process.env.RAZORPAY_KEY_SECRET),
+      verificationConfigured: isRazorpayConfigured(),
       razorpayConfigured: razorpay.configured,
-      keyId: process.env.RAZORPAY_KEY_ID || "",
+      keyId: getRazorpayKeyId(),
       razorpayMessage: razorpay.message
     });
   } catch (error) {
