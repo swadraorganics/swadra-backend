@@ -1155,7 +1155,7 @@
     if(!db) return fetchCheckoutDraftFromBackend(userId);
     try{
       var snapshot = await db.collection(CHECKOUT_DRAFTS_COLLECTION).doc(normalizedUserId).get();
-      if(!snapshot.exists) return null;
+      if(!snapshot.exists) return fetchCheckoutDraftFromBackend(userId).catch(function(){ return null; });
       return sanitizeCheckoutDraftRecord(snapshot.data() || {}, normalizedUserId);
     }catch(error){
       var code = String(error && error.code || "").toLowerCase();

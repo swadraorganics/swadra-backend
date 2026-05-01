@@ -5790,7 +5790,8 @@ window.addEventListener("scroll", ()=>{
 // ORDER FUNCTION (IMPORTANT)
 function placeOrder(product, price){
   alert("Please add the product to cart and complete secure checkout.");
-  window.location.href = "cart.html";
+  const authApi = window.SWADRA_AUTH || null;
+  window.location.href = authApi && typeof authApi.buildUrlWithAuth === "function" ? authApi.buildUrlWithAuth("cart.html") : "cart.html";
 }
 
 

@@ -267,6 +267,10 @@
       ].filter(Boolean).join(" ");
       trackProductEvent("delivery_eta_check", { delivery_pincode: pin, delivery_eta: details.etaLabel || "" });
     }
+    function goToCart(){
+      const authApi = window.SWADRA_AUTH || null;
+      location.href = authApi && typeof authApi.buildUrlWithAuth === "function" ? authApi.buildUrlWithAuth("cart.html") : "cart.html";
+    }
     async function addToCart(){
       if(!currentProduct) return;
       const authApi = window.SWADRA_AUTH || null;
@@ -282,7 +286,7 @@
           dataApi.saveGuestCart(cart);
         }
         trackProductEvent("add_to_cart");
-        location.href = "cart.html";
+        goToCart();
         return;
       }
       let cart = [];
@@ -307,7 +311,7 @@
         }
       }
       trackProductEvent("add_to_cart");
-      location.href = "cart.html";
+      goToCart();
     }
     async function init(){
       const id = qs("id");
