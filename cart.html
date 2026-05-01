@@ -239,6 +239,7 @@ margin:0 !important;
 <script>
 let appliedCoupon = null;
 const dataApi = window.SWADRA_DATA || null;
+let cartRealtimeUnsubscribe = null;
 let latestCartSummary = {
 mrpTotal:0,
 sellingTotal:0,
@@ -473,13 +474,6 @@ merged = compactCart(await dataApi.fetchCart(currentUser));
 console.error("cart firestore fetch failed", error);
 }
 }
-if(dataApi && typeof dataApi.saveCart === "function"){
-try{
-await dataApi.saveCart(currentUser, merged);
-}catch(error){
-console.error("cart firestore sync failed", error);
-}
-}
 return merged;
 }
 
@@ -546,18 +540,26 @@ if(numericAmount <= 0 || numericRate <= 0) return 0;
 return numericAmount - (numericAmount / (1 + numericRate / 100));
 }
 
+function getCouponEligibleTotal(cart){
+return Math.round((Array.isArray(cart) ? cart : []).reduce((sum,item)=>{
+let lineSelling = Number(item.price || 0) * Number(item.qty || 0);
+return sum + Math.max(0, lineSelling - getIncludedGstAmount(lineSelling, getItemGstRate(item)));
+},0));
+}
+
 function distributeCouponAcrossItems(cart, couponDiscount){
-let totalSelling = cart.reduce((sum,item)=>sum + (Number(item.price || 0) * Number(item.qty || 0)),0);
-let productCouponDiscount = Math.min(Math.max(0, Number(couponDiscount || 0)), totalSelling);
+let totalEligible = getCouponEligibleTotal(cart);
+let productCouponDiscount = Math.min(Math.max(0, Number(couponDiscount || 0)), totalEligible);
 let runningDiscount = 0;
 return cart.map((item,index)=>{
 let qty = Number(item.qty || 1);
 let lineSelling = Math.round(Number(item.price || 0) * qty);
+let lineEligible = Math.max(0, lineSelling - getIncludedGstAmount(lineSelling, getItemGstRate(item)));
 let lineDiscount = 0;
-if(productCouponDiscount > 0 && totalSelling > 0){
+if(productCouponDiscount > 0 && totalEligible > 0){
 lineDiscount = index === cart.length - 1
 ? Math.round(productCouponDiscount - runningDiscount)
-: Math.round((lineSelling / totalSelling) * productCouponDiscount);
+: Math.round((lineEligible / totalEligible) * productCouponDiscount);
 runningDiscount += lineDiscount;
 }
 lineDiscount = Math.max(0, Math.min(lineDiscount, lineSelling));
@@ -624,7 +626,7 @@ let freeDeliveryMessage = sellingTotal >= freeDeliveryThreshold && sellingTotal 
 let productDiscount = Math.max(0, mrpTotal - sellingTotal);
 let couponDiscount = 0;
 if(appliedCoupon?.discount){
-couponDiscount = Math.min(Number(appliedCoupon.discount || 0), sellingTotal);
+couponDiscount = Math.min(Number(appliedCoupon.discount || 0), getCouponEligibleTotal(cart));
 }
 let finalTotal = Math.max(0, sellingTotal + delivery - couponDiscount);
 let discountedItems = distributeCouponAcrossItems(cart, couponDiscount);
@@ -950,7 +952,7 @@ return alert("Enter coupon code");
 if(!availableCoupons.length){
 await fetchAvailableCoupons();
 }
-let result = resolveCouponDiscount(code, summary.sellingTotal);
+let result = resolveCouponDiscount(code, getCouponEligibleTotal(cart));
 if(!result.valid){
 appliedCoupon = null;
 updateSummary(summary);
@@ -976,6 +978,9 @@ cartSnapshot: updatedSummary.discountedItems || cart
 });
 }catch(error){
 console.error("coupon checkout draft save failed", error);
+appliedCoupon = null;
+updateSummary(summary);
+return alert("Coupon save failed. Please try again.");
 }
 }
 alert("Coupon Applied Successfully");
@@ -1035,6 +1040,12 @@ loadCart();
 
 async function initializeCartPage(){
 await waitForCartUser();
+const realtimeUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
+if(realtimeUser && dataApi && typeof dataApi.watchCart === "function" && !cartRealtimeUnsubscribe){
+cartRealtimeUnsubscribe = dataApi.watchCart(realtimeUser, function(){
+loadCart();
+});
+}
 bindCartPincodeInput();
 const savedShipping = getShippingInputForCart();
 if(savedShipping.pincode){

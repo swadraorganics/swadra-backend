@@ -881,6 +881,7 @@ function buildOrderDraft(paymentResponse, verification){
     paymentCompletedAt: nowIso(),
     date: new Date().toLocaleString()
   };
+  return order;
 }
 
 async function saveOrder(paymentResponse, verification){

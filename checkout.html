@@ -193,6 +193,15 @@ return;
 
 let users = getUsers();
 let user = users[currentUser] || {};
+if(authApi && typeof authApi.refreshUsers === "function"){
+try{
+await authApi.refreshUsers();
+users = getUsers();
+user = users[currentUser] || user;
+}catch(error){
+console.error("checkout user refresh failed", error);
+}
+}
 user.email = user.email || currentUser;
 user.profile = Object.assign({}, user.profile || {}, { email: currentUser });
 if(!users[currentUser]){
@@ -452,6 +461,7 @@ throw new Error("Firestore user save unavailable");
 }
 }catch(error){
 console.error("checkout user save failed", error);
+throw error;
 }
 }
 

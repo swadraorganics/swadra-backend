@@ -2813,14 +2813,34 @@ app.get("/api/admin/users", requireAdminSession, async (req, res) => {
   try {
     const db = await readDB();
     const topUsers = await readTopLevelFirestoreCollection("users");
+    const topCarts = await readTopLevelFirestoreCollection("carts");
+    const cartsById = new Map();
+    topCarts.forEach((cart) => {
+      const ids = [
+        cart.docId,
+        cart.userId,
+        cart.uid,
+        cart.email
+      ].map((value) => String(value || "").trim()).filter(Boolean);
+      ids.forEach((id) => cartsById.set(id, Array.isArray(cart.items) ? cart.items : []));
+    });
     const usersMap = { ...(db.appState?.users || {}) };
     topUsers.forEach((user) => {
       const email = String(user.email || user.id || user.docId || user.uid || "").trim().toLowerCase();
       if (!email) return;
+      const cart =
+        cartsById.get(String(user.uid || "")) ||
+        cartsById.get(String(user.userId || "")) ||
+        cartsById.get(String(user.id || "")) ||
+        cartsById.get(String(user.docId || "")) ||
+        cartsById.get(email) ||
+        user.cart ||
+        [];
       usersMap[email] = {
         ...(usersMap[email] || {}),
         ...user,
-        email: user.email || email
+        email: user.email || email,
+        cart
       };
     });
     res.json({

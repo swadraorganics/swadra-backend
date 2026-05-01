@@ -964,15 +964,9 @@ async function persistCurrentUser(user, successMessage, errorMessage){
       users[savedUser.email] = savedUser;
     }
     if(authApi && typeof authApi.saveUserRecord === "function"){
-      try{
-        await authApi.saveUserRecord(savedUser || user);
-      }catch(syncError){
-        console.warn("dashboard Firestore profile sync skipped after backend save", syncError);
-      }
+      await authApi.saveUserRecord(savedUser || user);
       if(typeof authApi.refreshUsers === "function"){
-        await authApi.refreshUsers().catch(function(refreshError){
-          console.warn("dashboard user refresh skipped after backend save", refreshError);
-        });
+        await authApi.refreshUsers();
       }
     }else{
       let users = getUsers();

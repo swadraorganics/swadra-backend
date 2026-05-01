@@ -1,11 +1,11 @@
 ﻿
-    const ARRAY_CUSTOMER_KEYS = [
-      "customers",
+    const ARRAY_User_KEYS = [
+      "Users",
       "accounts",
       "registeredUsers",
       "userAccounts",
       "swadraUsers",
-      "swadraCustomers",
+      "swadraUsers",
       "allUsers"
     ];
 
@@ -13,7 +13,7 @@
       "adminOrders",
       "orders",
       "swadraOrders",
-      "customerOrders",
+      "UserOrders",
       "allOrders"
     ];
 
@@ -131,20 +131,20 @@
       }
     }
 
-    function isDeletedCustomer(customer){
-      return String(customer.rawStatus || "").trim().toLowerCase() === "deleted";
+    function isDeletedUser(User){
+      return String(User.rawStatus || "").trim().toLowerCase() === "deleted";
     }
 
-    function collectGlobalOrdersForCustomer(email, mobile){
+    function collectGlobalOrdersForUser(email, mobile){
       const allOrders = [];
       const normalizedEmail = String(email || "").trim().toLowerCase();
       const normalizedMobile = normalizeMobile(mobile);
 
       backendOrdersCache.forEach((order)=>{
         if(!order || typeof order !== "object") return;
-        const orderEmail = String(getValueByPossibleKeys(order, ["email","emailId","mail","customerEmail","userId","user"])).trim().toLowerCase();
+        const orderEmail = String(getValueByPossibleKeys(order, ["email","emailId","mail","UserEmail","userId","user"])).trim().toLowerCase();
         const orderMobile = normalizeMobile(
-          getValueByPossibleKeys(order, ["mobile","phone","phoneNumber","mobileNumber","contactNumber","customerPhone","shippingPhone"]) ||
+          getValueByPossibleKeys(order, ["mobile","phone","phoneNumber","mobileNumber","contactNumber","UserPhone","shippingPhone"]) ||
           order.shipping?.phone ||
           order.shipping?.mobile
         );
@@ -255,18 +255,18 @@
       };
     }
 
-    function buildCustomerDetails(userObj, email, mobile){
+    function buildUserDetails(userObj, email, mobile){
       const profile = userObj?.profile || {};
       const cart = Array.isArray(userObj?.cart) ? userObj.cart : [];
       const addressBook = getAddressBook(userObj);
       const userOrders = Array.isArray(userObj?.orders) ? userObj.orders : [];
-      const globalOrders = collectGlobalOrdersForCustomer(email, mobile);
+      const globalOrders = collectGlobalOrdersForUser(email, mobile);
 
       const mergedOrders = [];
       const seen = new Set();
 
       [...userOrders, ...globalOrders].forEach((order)=>{
-        const normalized = normalizeOrder(order, "CustomerOrder");
+        const normalized = normalizeOrder(order, "UserOrder");
         const dedupeKey = `${normalized.id}|${normalized.amount}|${normalized.date}`;
         if(seen.has(dedupeKey)) return;
         seen.add(dedupeKey);
@@ -293,7 +293,7 @@
       };
     }
 
-    function getCustomersFromUsersObject(){
+    function getUsersFromUsersObject(){
       const usersObject = readUsersObject();
       const entries = Object.entries(usersObject);
 
@@ -301,12 +301,12 @@
         const profile = user?.profile || {};
         const email = String(user?.email || profile?.email || emailKey || "").trim();
         const mobile = String(user?.phone || profile?.phone || "").trim();
-        const name = String(profile?.name || email.split("@")[0] || "Unnamed Customer").trim();
+        const name = String(profile?.name || email.split("@")[0] || "Unnamed User").trim();
         const createdAtRaw = user?.createdAt || user?.registeredAt || user?.signupAt || user?.date || user?.timestamp || "";
         const updatedAtRaw = user?.updatedAt || user?.modifiedAt || "";
         const lastLoginAtRaw = user?.lastLoginAt || "";
         const rawStatus = String(user?.status || user?.accountStatus || "").trim().toLowerCase();
-        const details = buildCustomerDetails(user, email, mobile);
+        const details = buildUserDetails(user, email, mobile);
 
         return {
           __sourceType: "users_object",
@@ -327,11 +327,11 @@
       });
     }
 
-    function getCustomersFromArrayKeys(){
+    function getUsersFromArrayKeys(){
       return [];
     }
 
-    function normalizeCustomer(base){
+    function normalizeUser(base){
       return {
         ...base,
         createdAt: formatDate(base.createdAtRaw),
@@ -342,14 +342,14 @@
       };
     }
 
-    function getCustomersFromStorage(){
+    function getUsersFromStorage(){
       const merged = [];
       const seen = new Set();
 
-      const sourceCustomers = getCustomersFromUsersObject();
+      const sourceUsers = getUsersFromUsersObject();
 
-      sourceCustomers.forEach((customer) => {
-        const normalized = normalizeCustomer(customer);
+      sourceUsers.forEach((User) => {
+        const normalized = normalizeUser(User);
         const dedupeKey = [
           normalized.email.toLowerCase(),
           normalizeMobile(normalized.mobile),
@@ -366,41 +366,41 @@
 
     function renderVerificationMetrics(){
       const usersObjectCount = Object.keys(readUsersObject()).length;
-      const arraySourceCustomers = [];
-      const mergedVisible = getCustomersFromStorage().filter(customer=>!isDeletedCustomer(customer));
-      const deletedCount = getCustomersFromStorage().filter(customer=>isDeletedCustomer(customer)).length;
-      const rawTotal = usersObjectCount + arraySourceCustomers.length;
+      const arraySourceUsers = [];
+      const mergedVisible = getUsersFromStorage().filter(User=>!isDeletedUser(User));
+      const deletedCount = getUsersFromStorage().filter(User=>isDeletedUser(User)).length;
+      const rawTotal = usersObjectCount + arraySourceUsers.length;
       const filteredOut = Math.max(0, rawTotal - mergedVisible.length);
 
       document.getElementById("usersObjectCount").textContent = usersObjectCount;
-      document.getElementById("arraySourceCount").textContent = arraySourceCustomers.length;
+      document.getElementById("arraySourceCount").textContent = arraySourceUsers.length;
       document.getElementById("mergedVisibleCount").textContent = mergedVisible.length;
       document.getElementById("filteredOutCount").textContent = Math.max(filteredOut, deletedCount);
     }
 
-    function getFilteredCustomers(){
-      const customers = getCustomersFromStorage();
+    function getFilteredUsers(){
+      const Users = getUsersFromStorage();
       const query = String(document.getElementById("searchInput").value || "").trim().toLowerCase();
 
-      if(!query) return customers;
+      if(!query) return Users;
 
       const normalizedQuery = query.replace(/\D/g, "");
-      return customers.filter((customer) => {
-        const textMatch = customer.searchText.includes(query);
-        const mobileMatch = normalizedQuery ? normalizeMobile(customer.mobile).includes(normalizedQuery) : false;
+      return Users.filter((User) => {
+        const textMatch = User.searchText.includes(query);
+        const mobileMatch = normalizedQuery ? normalizeMobile(User.mobile).includes(normalizedQuery) : false;
         return textMatch || mobileMatch;
       });
     }
 
-    function renderStats(allCustomers){
-      const pausedCount = allCustomers.filter(item => item.isPaused && !isDeletedCustomer(item)).length;
-      const deletedCount = allCustomers.filter(item => isDeletedCustomer(item)).length;
-      const visibleCount = allCustomers.filter(item => !isDeletedCustomer(item)).length;
+    function renderStats(allUsers){
+      const pausedCount = allUsers.filter(item => item.isPaused && !isDeletedUser(item)).length;
+      const deletedCount = allUsers.filter(item => isDeletedUser(item)).length;
+      const visibleCount = allUsers.filter(item => !isDeletedUser(item)).length;
       const activeCount = visibleCount - pausedCount;
 
-      document.getElementById("customerStats").innerHTML = `
+      document.getElementById("Userstats").innerHTML = `
         <div class="stat-card">
-          <div class="label">Total Customers</div>
+          <div class="label">Total Users</div>
           <div class="value">${visibleCount}</div>
         </div>
         <div class="stat-card">
@@ -417,10 +417,10 @@
         </div>
       `;
 
-      document.getElementById("totalCustomersView").textContent = visibleCount;
-      document.getElementById("activeCustomersView").textContent = activeCount;
-      document.getElementById("pausedCustomersView").textContent = pausedCount;
-      document.getElementById("deletedCustomersView").textContent = deletedCount;
+      document.getElementById("totalUsersView").textContent = visibleCount;
+      document.getElementById("activeUsersView").textContent = activeCount;
+      document.getElementById("pausedUsersView").textContent = pausedCount;
+      document.getElementById("deletedUsersView").textContent = deletedCount;
     }
 
     function buildSingleAddressCard(address, isDefault){
@@ -434,8 +434,8 @@
         `);
 
       return `
-        <div class="customer-card" style="padding:14px;">
-          <div class="customer-head">
+        <div class="User-card" style="padding:14px;">
+          <div class="User-head">
             <div>
               <h3 style="font-size:18px;">${escapeHtml(address.house || "Saved Address")}</h3>
               <div class="badge-wrap">
@@ -466,7 +466,7 @@
       return `
         <div style="display:grid;gap:10px;">
           ${cart.map(item => `
-            <div class="customer-card" style="padding:12px;">
+            <div class="User-card" style="padding:12px;">
               <div class="card-grid">
                 <div class="mini">
                   <div class="k">Product</div>
@@ -513,8 +513,8 @@
       return `
         <div style="display:grid;gap:12px;">
           ${orders.map(order => `
-            <div class="customer-card" style="padding:14px;">
-              <div class="customer-head">
+            <div class="User-card" style="padding:14px;">
+              <div class="User-head">
                 <div>
                   <h3 style="font-size:18px;">Order: ${escapeHtml(order.id || "-")}</h3>
                   <div class="badge-wrap">
@@ -555,8 +555,8 @@
       `;
     }
 
-    function buildHistoryPageHtml(customer){
-      const details = customer.details || {};
+    function buildHistoryPageHtml(User){
+      const details = User.details || {};
       const profile = details.profile || {};
       const lastOrder = details.lastOrder || {};
       const primaryAddress = details.address || {};
@@ -566,7 +566,7 @@
       const totalSavings = Number(details.totalSavings || 0);
       const addressCount = Number(details.addressCount || 0);
       const lastOrderDate = escapeHtml(lastOrder.date || "-");
-      const createdAtLabel = escapeHtml(customer.createdAt || "-");
+      const createdAtLabel = escapeHtml(User.createdAt || "-");
       const defaultAddressHouse = escapeHtml(primaryAddress.house || "-");
       const lastOrderStatus = escapeHtml(lastOrder.status || "-");
       const lastOrderAmount = rupee(lastOrder.amount || 0);
@@ -577,7 +577,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${escapeHtml(customer.name)} - Customer History</title>
+  <title>${escapeHtml(User.name)} - User History</title>
   <style>
     * { box-sizing:border-box; }
     :root{
@@ -753,8 +753,8 @@
 <body>
   <div class="wrap">
     <div class="topbar">
-      <h1>${escapeHtml(customer.name)} - Customer History</h1>
-                  <p>Complete customer profile, saved address, cart snapshot, and order timeline.</p>
+      <h1>${escapeHtml(User.name)} - User History</h1>
+                  <p>Complete User profile, saved address, cart snapshot, and order timeline.</p>
     </div>
 
     <div class="toolbar">
@@ -795,14 +795,14 @@
     <div class="panel">
       <h2>Profile Details</h2>
       <div class="card-grid">
-        <div class="mini"><div class="k">Name</div><div class="v">${escapeHtml(customer.name || "-")}</div></div>
-        <div class="mini"><div class="k">Email</div><div class="v">${escapeHtml(customer.email || "-")}</div></div>
-        <div class="mini"><div class="k">Mobile</div><div class="v">${escapeHtml(customer.mobile || "-")}</div></div>
-        <div class="mini"><div class="k">Source</div><div class="v">${escapeHtml(customer.sourceKey || "-")}</div></div>
-        <div class="mini"><div class="k">Created</div><div class="v">${escapeHtml(customer.createdAt || "-")}</div></div>
-        <div class="mini"><div class="k">Updated</div><div class="v">${escapeHtml(customer.updatedAt || "-")}</div></div>
-        <div class="mini"><div class="k">Account Status</div><div class="v">${escapeHtml(customer.rawStatus || (customer.isPaused ? "paused" : "active"))}</div></div>
-        <div class="mini"><div class="k">Last Login</div><div class="v">${escapeHtml(customer.lastLoginAt || "-")}</div></div>
+        <div class="mini"><div class="k">Name</div><div class="v">${escapeHtml(User.name || "-")}</div></div>
+        <div class="mini"><div class="k">Email</div><div class="v">${escapeHtml(User.email || "-")}</div></div>
+        <div class="mini"><div class="k">Mobile</div><div class="v">${escapeHtml(User.mobile || "-")}</div></div>
+        <div class="mini"><div class="k">Source</div><div class="v">${escapeHtml(User.sourceKey || "-")}</div></div>
+        <div class="mini"><div class="k">Created</div><div class="v">${escapeHtml(User.createdAt || "-")}</div></div>
+        <div class="mini"><div class="k">Updated</div><div class="v">${escapeHtml(User.updatedAt || "-")}</div></div>
+        <div class="mini"><div class="k">Account Status</div><div class="v">${escapeHtml(User.rawStatus || (User.isPaused ? "paused" : "active"))}</div></div>
+        <div class="mini"><div class="k">Last Login</div><div class="v">${escapeHtml(User.lastLoginAt || "-")}</div></div>
         <div class="mini"><div class="k">Profile Name</div><div class="v">${escapeHtml(profile.name || "-")}</div></div>
         <div class="mini"><div class="k">Profile Phone</div><div class="v">${escapeHtml(profile.phone || "-")}</div></div>
         <div class="mini"><div class="k">Default Address</div><div class="v">${defaultAddressHouse}</div></div>
@@ -832,70 +832,70 @@
       `;
     }
 
-    function openHistoryPage(customerId, deletedMode = false){
-      const customers = deletedMode
-        ? getCustomersFromStorage().filter(customer=>isDeletedCustomer(customer))
-        : getCustomersFromStorage().filter(customer=>!isDeletedCustomer(customer));
-      const customer = customers.find(item => String(item.id) === String(customerId));
-      if(!customer){
-        alert("Customer not found.");
+    function openHistoryPage(UserId, deletedMode = false){
+      const Users = deletedMode
+        ? getUsersFromStorage().filter(User=>isDeletedUser(User))
+        : getUsersFromStorage().filter(User=>!isDeletedUser(User));
+      const User = Users.find(item => String(item.id) === String(UserId));
+      if(!User){
+        alert("User not found.");
         return;
       }
 
       window.document.open();
-      window.document.write(buildHistoryPageHtml(customer));
+      window.document.write(buildHistoryPageHtml(User));
       window.document.close();
     }
 
-    function renderCustomers(){
-      const allCustomers = getCustomersFromStorage();
-      const customers = getFilteredCustomers().filter(customer=>!isDeletedCustomer(customer));
-      const customerList = document.getElementById("customerList");
+    function renderUsers(){
+      const allUsers = getUsersFromStorage();
+      const Users = getFilteredUsers().filter(User=>!isDeletedUser(User));
+      const UserList = document.getElementById("UserList");
 
-      renderStats(allCustomers);
+      renderStats(allUsers);
 
-      if(!customers.length){
-        customerList.innerHTML = `<div class="empty">No customer accounts found.</div>`;
+      if(!Users.length){
+        UserList.innerHTML = `<div class="empty">No User accounts found.</div>`;
         return;
       }
 
-      customerList.innerHTML = customers.map((customer) => {
-        const stateClass = customer.isPaused ? "red" : "green";
-        const stateLabel = customer.isPaused ? "Paused" : "Active";
-        const orderCount = customer.details && customer.details.orderCount ? Number(customer.details.orderCount) : 0;
-        const totalSpent = customer.details && customer.details.totalSpent ? Number(customer.details.totalSpent) : 0;
-        const cartItems = customer.details && customer.details.cartCount ? Number(customer.details.cartCount) : 0;
-        const cartHtml = buildCartPreviewHtml(customer.details && customer.details.cart ? customer.details.cart : []);
+      UserList.innerHTML = Users.map((User) => {
+        const stateClass = User.isPaused ? "red" : "green";
+        const stateLabel = User.isPaused ? "Paused" : "Active";
+        const orderCount = User.details && User.details.orderCount ? Number(User.details.orderCount) : 0;
+        const totalSpent = User.details && User.details.totalSpent ? Number(User.details.totalSpent) : 0;
+        const cartItems = User.details && User.details.cartCount ? Number(User.details.cartCount) : 0;
+        const cartHtml = buildCartPreviewHtml(User.details && User.details.cart ? User.details.cart : []);
 
         return `
-          <div class="customer-card">
-            <div class="customer-head">
+          <div class="User-card">
+            <div class="User-head">
               <div>
-                <h3>${escapeHtml(customer.name)}</h3>
+                <h3>${escapeHtml(User.name)}</h3>
                 <div class="badge-wrap">
                   <span class="badge ${stateClass}">${stateLabel}</span>
-                  <span class="badge gold">Source: ${escapeHtml(customer.sourceKey)}</span>
+                  <span class="badge gold">Source: ${escapeHtml(User.sourceKey)}</span>
                   <span class="badge">Orders: ${orderCount}</span>
                   <span class="badge green">Spent: ${rupee(totalSpent)}</span>
                 </div>
               </div>
               <div class="badge-wrap">
-                <span class="badge">${escapeHtml(customer.id)}</span>
+                <span class="badge">${escapeHtml(User.id)}</span>
               </div>
             </div>
 
             <div class="card-grid">
               <div class="mini">
                 <div class="k">Email</div>
-                <div class="v">${escapeHtml(customer.email || "-")}</div>
+                <div class="v">${escapeHtml(User.email || "-")}</div>
               </div>
               <div class="mini">
                 <div class="k">Mobile</div>
-                <div class="v">${escapeHtml(customer.mobile || "-")}</div>
+                <div class="v">${escapeHtml(User.mobile || "-")}</div>
               </div>
               <div class="mini">
                 <div class="k">Created</div>
-                <div class="v">${escapeHtml(customer.createdAt || "-")}</div>
+                <div class="v">${escapeHtml(User.createdAt || "-")}</div>
               </div>
               <div class="mini">
                 <div class="k">Cart Items</div>
@@ -910,22 +910,22 @@
 
             <div class="card-actions">
               <button
-                class="${customer.isPaused ? 'btn-secondary' : 'btn-danger'}"
-                onclick="togglePauseCustomer('${escapeHtml(customer.id)}')"
+                class="${User.isPaused ? 'btn-secondary' : 'btn-danger'}"
+                onclick="togglePauseUser('${escapeHtml(User.id)}')"
               >
-                ${customer.isPaused ? 'Unpause Account' : 'Pause Account'}
+                ${User.isPaused ? 'Unpause Account' : 'Pause Account'}
               </button>
 
               <button
                 class="btn-dark"
-                onclick="deleteCustomerAccount('${escapeHtml(customer.id)}')"
+                onclick="deleteUserAccount('${escapeHtml(User.id)}')"
               >
                 Delete Account
               </button>
 
               <button
                 class="btn-light"
-                onclick="openHistoryPage('${escapeHtml(customer.id)}', false)"
+                onclick="openHistoryPage('${escapeHtml(User.id)}', false)"
               >
                 View Full History
               </button>
@@ -935,50 +935,50 @@
       }).join("");
     }
 
-    function renderDeletedCustomers(){
-      const deleted = getCustomersFromStorage().filter(customer=>isDeletedCustomer(customer));
-      const deletedCustomerList = document.getElementById("deletedCustomerList");
+    function renderDeletedUsers(){
+      const deleted = getUsersFromStorage().filter(User=>isDeletedUser(User));
+      const deletedUserList = document.getElementById("deletedUserList");
 
       if(!deleted.length){
-        deletedCustomerList.innerHTML = `<div class="empty">No deleted accounts yet.</div>`;
+        deletedUserList.innerHTML = `<div class="empty">No deleted accounts yet.</div>`;
         return;
       }
 
-      deletedCustomerList.innerHTML = deleted.map((customer) => {
-        const customerDetails = customer.details || {};
-        const deletedOrderCount = Number(customerDetails.orderCount || 0);
-        const deletedTotalSpent = Number(customerDetails.totalSpent || 0);
-        const deletedCartCount = Number(customerDetails.cartCount || 0);
-        const deletedCartHtml = buildCartPreviewHtml(customerDetails.cart || []);
+      deletedUserList.innerHTML = deleted.map((User) => {
+        const UserDetails = User.details || {};
+        const deletedOrderCount = Number(UserDetails.orderCount || 0);
+        const deletedTotalSpent = Number(UserDetails.totalSpent || 0);
+        const deletedCartCount = Number(UserDetails.cartCount || 0);
+        const deletedCartHtml = buildCartPreviewHtml(UserDetails.cart || []);
         return `
-        <div class="customer-card">
-          <div class="customer-head">
+        <div class="User-card">
+          <div class="User-head">
             <div>
-              <h3>${escapeHtml(customer.name || "Deleted Customer")}</h3>
+              <h3>${escapeHtml(User.name || "Deleted User")}</h3>
               <div class="badge-wrap">
                 <span class="badge red">Deleted</span>
-                <span class="badge gold">Deleted At: ${escapeHtml(customer.updatedAt || "-")}</span>
+                <span class="badge gold">Deleted At: ${escapeHtml(User.updatedAt || "-")}</span>
                 <span class="badge">Orders: ${deletedOrderCount}</span>
                 <span class="badge green">Spent: ${rupee(deletedTotalSpent)}</span>
               </div>
             </div>
             <div class="badge-wrap">
-              <span class="badge">${escapeHtml(customer.id || "-")}</span>
+              <span class="badge">${escapeHtml(User.id || "-")}</span>
             </div>
           </div>
 
           <div class="card-grid">
             <div class="mini">
               <div class="k">Email</div>
-              <div class="v">${escapeHtml(customer.email || "-")}</div>
+              <div class="v">${escapeHtml(User.email || "-")}</div>
             </div>
             <div class="mini">
               <div class="k">Mobile</div>
-              <div class="v">${escapeHtml(customer.mobile || "-")}</div>
+              <div class="v">${escapeHtml(User.mobile || "-")}</div>
             </div>
             <div class="mini">
               <div class="k">Created</div>
-              <div class="v">${escapeHtml(customer.createdAt || "-")}</div>
+              <div class="v">${escapeHtml(User.createdAt || "-")}</div>
             </div>
             <div class="mini">
               <div class="k">Cart Items</div>
@@ -994,7 +994,7 @@
           <div class="card-actions">
             <button
               class="btn-light"
-              onclick="openHistoryPage('${escapeHtml(customer.id)}', true)"
+              onclick="openHistoryPage('${escapeHtml(User.id)}', true)"
             >
               View Full History
             </button>
@@ -1004,16 +1004,16 @@
       }).join("");
     }
 
-    async function updateCustomerStatus(customer, status){
-      if(!customer || !customer.email){
-        throw new Error("Customer email missing");
+    async function updateUserstatus(User, status){
+      if(!User || !User.email){
+        throw new Error("User email missing");
       }
       const users = readUsersObject();
-      const userKey = customer.__emailKey || customer.email;
-      const existing = users[userKey] || users[customer.email] || customer.raw || {};
+      const userKey = User.__emailKey || User.email;
+      const existing = users[userKey] || users[User.email] || User.raw || {};
       const nextRecord = Object.assign({}, existing, {
-        email: customer.email,
-        phone: customer.mobile || existing.phone || "",
+        email: User.email,
+        phone: User.mobile || existing.phone || "",
         status: status,
         updatedAt: new Date().toISOString()
       });
@@ -1027,51 +1027,51 @@
       throw new Error("Firestore user save unavailable");
     }
 
-    async function togglePauseCustomer(customerId){
-      const customers = getCustomersFromStorage();
-      const customer = customers.find(item => String(item.id) === String(customerId) && !isDeletedCustomer(item));
-      if(!customer){
-        alert("Customer not found.");
+    async function togglePauseUser(UserId){
+      const Users = getUsersFromStorage();
+      const User = Users.find(item => String(item.id) === String(UserId) && !isDeletedUser(item));
+      if(!User){
+        alert("User not found.");
         return;
       }
       try{
-        await updateCustomerStatus(customer, customer.isPaused ? "active" : "paused");
-        renderCustomers();
-        renderDeletedCustomers();
+        await updateUserstatus(User, User.isPaused ? "active" : "paused");
+        renderUsers();
+        renderDeletedUsers();
       }catch(error){
         console.error(error);
         alert("Account status update failed.");
       }
     }
 
-    function deleteRelatedCurrentSession(customer){
+    function deleteRelatedCurrentSession(User){
       const currentUser = authApi && typeof authApi.getCurrentUserEmail === "function"
         ? authApi.getCurrentUserEmail()
         : "";
-      if(currentUser && String(currentUser).trim().toLowerCase() === String(customer.email || "").trim().toLowerCase()){
+      if(currentUser && String(currentUser).trim().toLowerCase() === String(User.email || "").trim().toLowerCase()){
         if(authApi && typeof authApi.signOutUser === "function"){
           authApi.signOutUser({ keepCart:false });
         }
       }
     }
 
-    async function deleteCustomerAccount(customerId){
-      const customers = getCustomersFromStorage().filter(customer=>!isDeletedCustomer(customer));
-      const customer = customers.find(item => String(item.id) === String(customerId));
+    async function deleteUserAccount(UserId){
+      const Users = getUsersFromStorage().filter(User=>!isDeletedUser(User));
+      const User = Users.find(item => String(item.id) === String(UserId));
 
-      if(!customer){
-        alert("Customer not found.");
+      if(!User){
+        alert("User not found.");
         return;
       }
 
-      const confirmed = confirm(`Delete account for ${customer.name}?`);
+      const confirmed = confirm(`Delete account for ${User.name}?`);
       if(!confirmed) return;
 
       try{
-        await updateCustomerStatus(customer, "deleted");
-        deleteRelatedCurrentSession(customer);
-        await refreshCustomers();
-        alert("Customer account deleted successfully.");
+        await updateUserstatus(User, "deleted");
+        deleteRelatedCurrentSession(User);
+        await refreshUsers();
+        alert("User account deleted successfully.");
       }catch(error){
         console.error(error);
         alert("Delete failed.");
@@ -1080,10 +1080,10 @@
 
     function clearSearch(){
       document.getElementById("searchInput").value = "";
-      renderCustomers();
+      renderUsers();
     }
 
-    async function refreshCustomers(){
+    async function refreshUsers(){
       await fetchBackendUsersForAdmin();
       const orderSources = [];
       if(window.SWADRA_API_BASE){
@@ -1095,7 +1095,7 @@
           const data = await response.json().catch(function(){ return {}; });
           if(response.ok && data.ok && Array.isArray(data.orders)) orderSources.push(...data.orders);
         }catch(error){
-          console.error("customer backend order fetch failed", error);
+          console.error("User backend order fetch failed", error);
         }
       }
       const orderMap = new Map();
@@ -1106,11 +1106,12 @@
       });
       backendOrdersCache = Array.from(orderMap.values());
       renderVerificationMetrics();
-      renderCustomers();
-      renderDeletedCustomers();
+      renderUsers();
+      renderDeletedUsers();
     }
 
-    (async function initializeCustomersPage(){
-      await refreshCustomers();
+    (async function initializeUsersPage(){
+      await refreshUsers();
     })();
   
+

@@ -672,6 +672,12 @@
     }).catch(async function(error){
       var code = String(error && error.code || "").toLowerCase();
       if(code === "permission-denied" || code === "unauthenticated"){
+        var currentRecord = await fetchCurrentAuthUserRecord().catch(function(){ return null; });
+        if(currentRecord && currentRecord.email){
+          usersCache[currentRecord.email] = currentRecord;
+          usersCacheLoaded = true;
+          return getAuthUsers();
+        }
         return fetchUsersFromBackendFallback();
       }
       throw error;
@@ -702,7 +708,7 @@
     var batch = db.batch();
     Object.keys(nextUsers).forEach(function(email){
       var record = nextUsers[email] || {};
-      var docId = normalizeEmailValue(record.email || email);
+      var docId = resolveUserProfileDocId(record) || normalizeEmailValue(record.email || email);
       if(docId){
         batch.set(db.collection(USERS_COLLECTION).doc(docId), record, { merge: true });
       }
@@ -731,8 +737,12 @@
     if(!db){
       throw new Error("Firestore unavailable");
     }
-    await db.collection(USERS_COLLECTION).doc(record.email).set(record, { merge: true });
-    return cloneValue(record);
+    var docId = resolveUserProfileDocId(record);
+    await db.collection(USERS_COLLECTION).doc(docId).set(record, { merge: true });
+    var savedSnapshot = await db.collection(USERS_COLLECTION).doc(docId).get();
+    var savedRecord = sanitizeUserRecord(Object.assign({}, savedSnapshot.data() || record, { uid: record.uid || docId }), record.email);
+    usersCache[savedRecord.email] = savedRecord;
+    return cloneValue(savedRecord);
   }
 
   async function deleteAuthUserRecord(email){
@@ -779,9 +789,9 @@
     if(!db || !firebaseUser || !firebaseUser.uid){
       return getCurrentUserRecord();
     }
-    var snapshot = await db.collection(USERS_COLLECTION).doc(normalizeEmailValue(firebaseUser.email || "")).get();
-    if(!snapshot.exists && firebaseUser.uid){
-      snapshot = await db.collection(USERS_COLLECTION).doc(firebaseUser.uid).get();
+    var snapshot = firebaseUser.uid ? await db.collection(USERS_COLLECTION).doc(firebaseUser.uid).get() : null;
+    if((!snapshot || !snapshot.exists) && firebaseUser.email){
+      snapshot = await db.collection(USERS_COLLECTION).doc(normalizeEmailValue(firebaseUser.email || "")).get();
     }
     if(!snapshot.exists){
       return getCurrentUserRecord();
@@ -881,6 +891,11 @@
     return String(value || "").trim().toLowerCase();
   }
 
+  function resolveUserProfileDocId(record){
+    var source = record && typeof record === "object" ? record : {};
+    return String(source.uid || source.userId || source.id || source.email || "").trim();
+  }
+
   function resolveUserBusinessDocId(userId){
     var source = String(userId || "").trim();
     if(!source) return "";
@@ -923,6 +938,18 @@
     if(!snapshot.exists) return [];
     var data = snapshot.data() || {};
     return compactAuthCartItems(data.items || []);
+  }
+
+  function watchFirestoreCart(userId, callback){
+    var normalizedUserId = resolveUserBusinessDocId(userId);
+    var db = initFirestore();
+    if(!normalizedUserId || !db || typeof callback !== "function") return function(){};
+    return db.collection(CARTS_COLLECTION).doc(normalizedUserId).onSnapshot(function(snapshot){
+      var data = snapshot.exists ? (snapshot.data() || {}) : {};
+      callback(compactAuthCartItems(data.items || []));
+    }, function(error){
+      console.error("cart realtime sync failed", error);
+    });
   }
 
   async function saveFirestoreCart(userId, items){
@@ -1169,10 +1196,41 @@
     }catch(error){
       var code = String(error && error.code || "").toLowerCase();
       if(code === "permission-denied" || code === "unauthenticated"){
+        var userOrders = await fetchCurrentUserFirestoreOrders().catch(function(userOrderError){
+          console.error("user firestore orders fetch failed", userOrderError);
+          return [];
+        });
+        if(userOrders.length){
+          return userOrders;
+        }
         return fetchOrdersFromBackendFallback();
       }
       throw error;
     }
+  }
+
+  async function fetchCurrentUserFirestoreOrders(){
+    var db = initFirestore();
+    var email = getCurrentUserEmail();
+    if(!db || !email) return [];
+    var ordersById = {};
+    var fields = ["userId", "email", "customerEmail", "userEmail"];
+    for(var i = 0; i < fields.length; i += 1){
+      try{
+        var snapshot = await db.collection(ORDERS_COLLECTION).where(fields[i], "==", email).get();
+        snapshot.forEach(function(doc){
+          var data = doc.data() || {};
+          var id = String(data.id || data.orderId || doc.id);
+          ordersById[id] = cloneValue(Object.assign({}, data, { id: data.id || doc.id }));
+        });
+      }catch(error){
+        var code = String(error && error.code || "").toLowerCase();
+        if(code !== "permission-denied" && code !== "unauthenticated"){
+          console.error("orders query failed for " + fields[i], error);
+        }
+      }
+    }
+    return Object.keys(ordersById).map(function(id){ return ordersById[id]; });
   }
 
   async function fetchOrdersFromBackendFallback(){
@@ -3437,6 +3495,7 @@
     fetchUsers: loadUsersCache,
     fetchCart: fetchFirestoreCart,
     saveCart: saveFirestoreCart,
+    watchCart: watchFirestoreCart,
     clearCart: clearFirestoreCart,
     getGuestCart: getGuestCart,
     saveGuestCart: saveGuestCart,

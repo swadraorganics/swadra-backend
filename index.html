@@ -5413,9 +5413,8 @@ function getCart(){
   return compactCartItems(runtimeIndexCartCache);
 }
 
-function saveCart(cart){
+async function saveCart(cart){
   let safeCart = compactCartItems(cart);
-  runtimeIndexCartCache = safeCart.slice();
   let currentUser = getCurrentIndexUser();
   if(!currentUser){
     if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
@@ -5423,20 +5422,24 @@ function saveCart(cart){
     }
     alert("Please login to add products to cart.");
     window.location.href = "account.html";
-    return;
+    return false;
   }
-  if(currentUser){
-    if(dataApi && typeof dataApi.saveCart === "function"){
-      dataApi.saveCart(currentUser, safeCart).catch(function(error){
-        console.error("index firestore cart save failed", error);
-      });
+  if(dataApi && typeof dataApi.saveCart === "function"){
+    try{
+      await dataApi.saveCart(currentUser, safeCart);
+    }catch(error){
+      console.error("index firestore cart save failed", error);
+      alert("Cart save failed. Please try again.");
+      return false;
     }
   }
+  runtimeIndexCartCache = safeCart.slice();
+  return true;
 }
 
 /* ===== ADD TO CART ===== */
 
-function handleAddToCart(btn){
+async function handleAddToCart(btn){
 
   let card = btn.closest(".product-card, .special-card, .combo-card");
   if(!card) return;
@@ -5476,9 +5479,9 @@ function handleAddToCart(btn){
     cart.push({name, price, mrp: mrp || price, image, qty:1});
   }
 
-  saveCart(cart);
-updateCartUI();
-
+  const saved = await saveCart(cart);
+  if(!saved) return;
+  updateCartUI();
   btn.innerText = "Added ?";
 }
 
@@ -5530,10 +5533,11 @@ document.addEventListener("click", function(e){
       cart.push({name, price, mrp: mrp || price, image, qty:1});
     }
 
-    saveCart(cart);
-    updateCartUI();
-
-    btn.innerText = "Added ?";
+    saveCart(cart).then(function(saved){
+      if(!saved) return;
+      updateCartUI();
+      btn.innerText = "Added ?";
+    });
   }
 
 });
@@ -5783,46 +5787,8 @@ window.addEventListener("scroll", ()=>{
 
 // ORDER FUNCTION (IMPORTANT)
 function placeOrder(product, price){
-  let currentUser = getCurrentIndexUser();
-
-  if(!currentUser){
-    alert("Please log in first.");
-    window.location.href="account.html";
-    return;
-  }
-
-  let users = getIndexUsers();
-  users[currentUser] = users[currentUser] || {};
-  users[currentUser].orders = users[currentUser].orders || [];
-
-  let order = {
-    id: "SWO" + Date.now(),
-    product: product,
-    price: price,
-    status: "Placed"
-  };
-
-  users[currentUser].orders.push(order);
-
-  if(authApi && typeof authApi.saveUsers === "function"){
-    authApi.saveUsers(users);
-  }
-  if(dataApi && typeof dataApi.saveOrder === "function"){
-    dataApi.saveOrder({
-      id: order.id,
-      userId: currentUser,
-      items: [{ name: product, price: price, qty: 1 }],
-      subtotal: Number(price) || 0,
-      finalAmount: Number(price) || 0,
-      paymentStatus: "Pending",
-      status: "Placed",
-      createdAt: new Date().toISOString()
-    }).catch(function(error){
-      console.error("legacy placeOrder firestore save failed", error);
-    });
-  }
-
-  alert("Order Placed âœ…");
+  alert("Please add the product to cart and complete secure checkout.");
+  window.location.href = "cart.html";
 }
 
 
@@ -5914,7 +5880,8 @@ async function toggleBestsellerCart(id){
     });
   }
 
-  saveCart(cart);
+  const saved = await saveCart(cart);
+  if(!saved) return;
   updateCartUI();
   renderBestsellerProducts();
 }
@@ -5955,7 +5922,8 @@ async function addNamedHomeProductToCart(name, button){
     });
   }
 
-  saveCart(cart);
+  const saved = await saveCart(cart);
+  if(!saved) return;
   updateCartUI();
   if(button){
     button.innerText = "ADDED ?";
@@ -6659,7 +6627,7 @@ async function renderAcharProducts(){
   await renderSectionProducts("pickleGrid", "Achar / Pickle", "achar");
 }
 
-function toggleCatalogCart(id){
+async function toggleCatalogCart(id){
   let cart = getCart();
   let index = cart.findIndex(item => String(item.id) === String(id));
 
@@ -6680,7 +6648,8 @@ function toggleCatalogCart(id){
     });
   }
 
-  saveCart(cart);
+  const saved = await saveCart(cart);
+  if(!saved) return;
   updateCartUI();
   renderAllProductsCatalog();
   renderBestsellerProducts();
@@ -6689,7 +6658,7 @@ function toggleCatalogCart(id){
   renderSpecialProducts();
 }
 
-function changeCatalogQty(id, delta){
+async function changeCatalogQty(id, delta){
   const homeQtyEl = document.getElementById(`home-qty-catalog-${id}`);
   if(homeQtyEl){
     let qty = Math.max(1, Number(homeQtyEl.innerText || 1) + Number(delta || 0));
@@ -6703,7 +6672,8 @@ function changeCatalogQty(id, delta){
     let item = cart.find(product => String(product.id) === String(id));
     if(item){
       item.qty = qty;
-      saveCart(cart);
+      const saved = await saveCart(cart);
+      if(!saved) return;
       updateCartUI();
     }
     return;
@@ -7382,11 +7352,11 @@ async function getAllProductsSafe(){
 
   window.getAllProductsSafe = getAllProductsSafe;
 
-  function saveSafeCartState(cart){
+  async function saveSafeCartState(cart){
     if(typeof saveCart === "function"){
-      saveCart(cart);
-      return;
+      return await saveCart(cart);
     }
+    return false;
   }
 
   function filterProductsBySection(products, sectionKey){
@@ -7508,7 +7478,8 @@ window.changeHomeQty = function(sectionKey, id, delta){
       });
     }
 
-    saveSafeCartState(cart);
+    const saved = await saveSafeCartState(cart);
+    if(saved === false) return;
     if(typeof updateCartUI === "function"){
       updateCartUI();
     }

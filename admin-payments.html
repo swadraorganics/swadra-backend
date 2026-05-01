@@ -659,7 +659,20 @@
     }
 
     async function getFirestorePayments(){
-      return [];
+      if(!firestoreFactory) return [];
+      try{
+        const db = firestoreFactory();
+        const snapshot = await db.collection("orders").get();
+        const payments = [];
+        snapshot.forEach(function(doc){
+          const order = doc.data() || {};
+          payments.push(normalizePayment({ ...order, id: order.id || doc.id }, "firestoreOrders", payments.length));
+        });
+        return payments;
+      }catch(error){
+        console.error("firestore payments fetch failed", error);
+        return [];
+      }
     }
 
     async function getBackendPayments(){

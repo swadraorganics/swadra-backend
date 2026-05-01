@@ -20,7 +20,7 @@ service cloud.firestore {
     }
 
     function ownsDoc(docId) {
-      return signedIn() && docId == userEmail();
+      return signedIn() && (docId == request.auth.uid || docId == userEmail());
     }
 
     function ownsUserPayload() {

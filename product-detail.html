@@ -280,13 +280,26 @@
         location.href = "account.html";
         return;
       }
-      const cart = dataApi && typeof dataApi.fetchCart === "function" ? await dataApi.fetchCart(currentUser) : [];
+      let cart = [];
+      try{
+        cart = dataApi && typeof dataApi.fetchCart === "function" ? await dataApi.fetchCart(currentUser) : [];
+      }catch(error){
+        console.error("product cart fetch failed", error);
+        alert("Cart load failed. Please try again.");
+        return;
+      }
       const id = String(currentProduct.id || currentProduct.docId);
       const existing = cart.find(item=>String(item.id) === id);
       if(existing) existing.qty = Number(existing.qty || 1) + 1;
       else cart.push({ id, name: currentProduct.name, price: currentProduct.price || currentProduct.sellingPrice || 0, mrp: currentProduct.mrp || 0, qty:1, size: currentProduct.size || currentProduct.productSize || "", image: imagesOf(currentProduct)[0], stockQty: currentProduct.stockQty });
       if(dataApi && typeof dataApi.saveCart === "function"){
-        await dataApi.saveCart(currentUser, cart);
+        try{
+          await dataApi.saveCart(currentUser, cart);
+        }catch(error){
+          console.error("product cart save failed", error);
+          alert("Cart save failed. Please try again.");
+          return;
+        }
       }
       trackProductEvent("add_to_cart");
       location.href = "cart.html";
