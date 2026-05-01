@@ -27,6 +27,7 @@
   var runtimeLocalStore = window.__swadraRuntimeLocalStore = window.__swadraRuntimeLocalStore || {};
   var runtimeReviewStore = window.__swadraRuntimeReviewStore = window.__swadraRuntimeReviewStore || {};
   var runtimeBackendPanelSettings = window.__swadraBackendPanelSettings = window.__swadraBackendPanelSettings || {};
+  var pendingCartMemory = {};
   var WINDOW_NAME_STATE_KEY = "__swadraRuntimeState__";
 
   function readWindowNameState(){
@@ -956,19 +957,18 @@
   async function fetchFirestoreCart(userId){
     var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) return [];
+    var pendingCart = getPendingUserCart(userId);
     var db = initFirestore();
-    if(!db) return fetchCartFromBackend(userId);
+    if(!db) return pendingCart.length ? pendingCart : fetchCartFromBackend(userId).catch(function(){ return pendingCart; });
     try{
       var snapshot = await db.collection(CARTS_COLLECTION).doc(normalizedUserId).get();
-      if(!snapshot.exists) return [];
+      if(!snapshot.exists) return pendingCart.length ? pendingCart : [];
       var data = snapshot.data() || {};
-      return compactAuthCartItems(data.items || []);
+      var remoteCart = compactAuthCartItems(data.items || []);
+      return pendingCart.length ? pendingCart : remoteCart;
     }catch(error){
-      var code = String(error && error.code || "").toLowerCase();
-      if(code === "permission-denied" || code === "unauthenticated"){
-        return fetchCartFromBackend(userId);
-      }
-      throw error;
+      console.error("cart firestore fetch failed", error);
+      return pendingCart.length ? pendingCart : fetchCartFromBackend(userId).catch(function(){ return pendingCart; });
     }
   }
 
@@ -989,7 +989,11 @@
     if(!normalizedUserId) throw new Error("User id required for cart save");
     var db = initFirestore();
     var compactItems = compactAuthCartItems(items);
-    if(!db) return saveCartToBackend(userId, normalizedUserId, compactItems);
+    setPendingUserCart(userId, compactItems);
+    if(!db) return saveCartToBackend(userId, normalizedUserId, compactItems).catch(function(error){
+      console.error("cart backend save failed", error);
+      return compactItems;
+    });
     try{
       await db.collection(CARTS_COLLECTION).doc(normalizedUserId).set({
         userId: normalizedUserId,
@@ -998,12 +1002,13 @@
         updatedAt: new Date().toISOString()
       }, { merge: true });
     }catch(error){
-      var code = String(error && error.code || "").toLowerCase();
-      if(code !== "permission-denied" && code !== "unauthenticated"){
-        throw error;
-      }
-      compactItems = await saveCartToBackend(userId, normalizedUserId, compactItems);
+      console.error("cart firestore save failed", error);
+      compactItems = await saveCartToBackend(userId, normalizedUserId, compactItems).catch(function(backendError){
+        console.error("cart backend fallback save failed", backendError);
+        return compactItems;
+      });
     }
+    setPendingUserCart(userId, compactItems);
     var currentEmail = normalizeEmailValue(userId);
     var currentRecord = currentEmail ? (getAuthUsers()[currentEmail] || null) : getCurrentUserRecord();
     if(currentRecord){
@@ -1013,6 +1018,24 @@
         console.error("cart mirror save failed", error);
       });
     }
+    return compactItems;
+  }
+
+  function getPendingCartKey(userId){
+    return "pendingCart:" + normalizeEmailValue(userId || getCurrentUserEmail() || "");
+  }
+
+  function getPendingUserCart(userId){
+    var key = getPendingCartKey(userId);
+    if(key === "pendingCart:") return [];
+    return compactAuthCartItems(pendingCartMemory[key] || []);
+  }
+
+  function setPendingUserCart(userId, items){
+    var key = getPendingCartKey(userId);
+    if(key === "pendingCart:") return [];
+    var compactItems = compactAuthCartItems(items);
+    pendingCartMemory[key] = compactItems;
     return compactItems;
   }
 
@@ -1028,16 +1051,21 @@
 
   async function saveCartToBackend(userId, docId, items){
     var safeItems = compactAuthCartItems(items);
-    var response = await fetch(base + "/api/carts/" + encodeURIComponent(docId || userId), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: docId || userId,
-        uid: docId || "",
-        email: normalizeEmailValue(userId),
-        items: safeItems
-      })
-    });
+    var response = null;
+    try{
+      response = await fetch(base + "/api/carts/" + encodeURIComponent(docId || userId), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: docId || userId,
+          uid: docId || "",
+          email: normalizeEmailValue(userId),
+          items: safeItems
+        })
+      });
+    }catch(error){
+      return saveCartViaAccountProfile(userId, safeItems).catch(function(){ return safeItems; });
+    }
     var data = await response.json().catch(function(){ return {}; });
     if(!response.ok || data.ok === false){
       return saveCartViaAccountProfile(userId, safeItems);
