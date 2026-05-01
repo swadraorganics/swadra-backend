@@ -839,6 +839,17 @@ margin:4px 0 0 !important;
   </div>
 </div>
 
+<div class="modal" id="nameModal">
+  <div class="modal-box">
+    <button type="button" class="modal-close-btn" aria-label="Close popup" onclick="closeNameModal()">&times;</button>
+    <h3>Edit Name</h3>
+    <p class="modal-note">Enter your full name for your Swadra account.</p>
+    <input id="profileNameInput" class="field-full" placeholder="Full Name" autocomplete="name">
+    <button class="save-btn" onclick="saveProfileName()">Save Name</button>
+    <button class="cancel-btn" onclick="closeNameModal()">Cancel</button>
+  </div>
+</div>
+
 <div class="modal" id="passwordModal">
   <div class="modal-box">
     <button type="button" class="modal-close-btn" aria-label="Close popup" onclick="closePasswordModal()">&times;</button>
@@ -947,19 +958,23 @@ async function persistCurrentUser(user, successMessage, errorMessage){
     return false;
   }
   try{
-    let savedUser = null;
+    const savedUser = await saveDashboardUserToBackend(user);
+    if(savedUser && savedUser.email){
+      const users = getUsers();
+      users[savedUser.email] = savedUser;
+    }
     if(authApi && typeof authApi.saveUserRecord === "function"){
       try{
-        savedUser = await authApi.saveUserRecord(user);
-      }catch(primaryError){
-        console.warn("dashboard primary profile save failed, using backend fallback", primaryError);
-        savedUser = await saveDashboardUserToBackend(user);
+        await authApi.saveUserRecord(savedUser || user);
+      }catch(syncError){
+        console.warn("dashboard Firestore profile sync skipped after backend save", syncError);
       }
       if(typeof authApi.refreshUsers === "function"){
-        await authApi.refreshUsers();
+        await authApi.refreshUsers().catch(function(refreshError){
+          console.warn("dashboard user refresh skipped after backend save", refreshError);
+        });
       }
     }else{
-      savedUser = await saveDashboardUserToBackend(user);
       let users = getUsers();
       users[user.email] = savedUser || user;
       try{
@@ -1222,7 +1237,38 @@ function loadProfile(){
   document.getElementById("avatarText").innerText = displayName.charAt(0).toUpperCase();
 }
 
+function openNameModal(){
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+  if(!currentUser){
+    alert("Please login again.");
+    window.location.href = "account.html";
+    return;
+  }
+  let resolved = getOrCreateDashboardUser(users, currentUser);
+  let user = resolved.user;
+  let oldName =
+    user.profile?.name ||
+    currentUser.split("@")[0];
+  const nameModal = document.getElementById("nameModal");
+  const nameInput = document.getElementById("profileNameInput");
+  if(nameInput) nameInput.value = oldName;
+  if(nameModal) nameModal.style.display = "flex";
+  setTimeout(function(){
+    if(nameInput) nameInput.focus();
+  }, 30);
+}
+
+function closeNameModal(){
+  const nameModal = document.getElementById("nameModal");
+  if(nameModal) nameModal.style.display = "none";
+}
+
 async function editProfileName(){
+  openNameModal();
+}
+
+async function saveProfileName(){
   let currentUser = getCurrentUser();
   let users = getUsers();
 
@@ -1234,12 +1280,7 @@ async function editProfileName(){
 
   let resolved = getOrCreateDashboardUser(users, currentUser);
   let user = resolved.user;
-
-  let oldName =
-    user.profile?.name ||
-    currentUser.split("@")[0];
-
-  let newName = prompt("Enter your full name", oldName);
+  let newName = document.getElementById("profileNameInput").value;
 
   if(!newName) return;
 
@@ -1257,6 +1298,7 @@ async function editProfileName(){
   const saved = await persistCurrentUser(user, "Profile updated successfully.", "Profile update failed.");
   if(!saved) return;
   await refreshUsersSafe();
+  closeNameModal();
   loadProfile();
 }
 
@@ -1591,7 +1633,16 @@ document.getElementById("passwordModal").addEventListener("click", function(e){
   }
 });
 
+document.getElementById("nameModal").addEventListener("click", function(e){
+  if(e.target.id === "nameModal"){
+    closeNameModal();
+  }
+});
+
 window.editProfileName = editProfileName;
+window.openNameModal = openNameModal;
+window.closeNameModal = closeNameModal;
+window.saveProfileName = saveProfileName;
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.saveAddress = saveAddress;
