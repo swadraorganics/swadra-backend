@@ -37,6 +37,7 @@
       }
     ],
     "redirects": [
+      { "source": "/admin-Users.html", "destination": "/admin-customers.html", "type": 301 },
       { "source": "/backend/admin-customers.html", "destination": "/admin-customers.html", "type": 301 },
       { "source": "/backend/admin-orders.html", "destination": "/admin-orders.html", "type": 301 },
       { "source": "/backend/admin-payments.html", "destination": "/admin-payments.html", "type": 301 },
