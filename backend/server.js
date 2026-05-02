@@ -365,6 +365,12 @@ async function writeTopLevelPaymentAttempt(attempt = {}) {
   await getFirestore().collection("paymentAttempts").doc(id).set(attempt, { merge: true });
 }
 
+async function writeTopLevelUserActivity(activity = {}) {
+  if (!USE_FIRESTORE || !activity || typeof activity !== "object") return;
+  const id = safeDocId(activity.id || ("activity_" + Date.now() + "_" + Math.floor(Math.random() * 1000)));
+  await getFirestore().collection("userActivities").doc(id).set({ ...activity, id: activity.id || id }, { merge: true });
+}
+
 async function deleteTopLevelUserDocs(collectionName, ids = []) {
   if (!USE_FIRESTORE) return;
   const firestore = getFirestore();
@@ -739,6 +745,9 @@ function recordUserActivity(db = {}, input = {}) {
   db.userActivities = db.userActivities.slice(0, 2000);
   db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
   db.appState.userActivities = db.userActivities;
+  writeTopLevelUserActivity(activity).catch((error) => {
+    addLog("User activity Firestore mirror skipped: " + error.message, "warn");
+  });
   return activity;
 }
 
@@ -3157,8 +3166,13 @@ app.get("/api/admin/user-activities", requireAdminSession, async (req, res) => {
   try {
     const db = await readDB();
     const email = normalizeAccountEmail(req.query?.email || "");
-    const activities = (Array.isArray(db.userActivities) ? db.userActivities : (Array.isArray(db.appState?.userActivities) ? db.appState.userActivities : []))
+    const topActivities = await readTopLevelFirestoreCollection("userActivities");
+    const activities = mergeRecordsById(
+      topActivities,
+      (Array.isArray(db.userActivities) ? db.userActivities : (Array.isArray(db.appState?.userActivities) ? db.appState.userActivities : []))
+    )
       .filter((activity) => !email || normalizeAccountEmail(activity.email || activity.userId || "") === email)
+      .sort((a, b) => Date.parse(b.createdAt || b.time || 0) - Date.parse(a.createdAt || a.time || 0))
       .slice(0, 500);
     res.json({ ok: true, count: activities.length, activities });
   } catch (error) {
@@ -4183,6 +4197,21 @@ app.post("/api/orders", async (req, res) => {
     if (existingIndex > -1) db.orders[existingIndex] = order;
     else db.orders.unshift(order);
     db.orders = db.orders.slice(0, 5000);
+    await mirrorOrderToCustomerProfile(db, order);
+    recordUserActivity(db, {
+      type: "order_created",
+      email: order.email || order.customerEmail,
+      phone: order.phone || order.customerPhone,
+      orderId: order.id,
+      paymentId: order.payment_id || order.paymentId || order.razorpayPaymentId || "",
+      status: "saved",
+      details: {
+        source: isAdmin ? "admin" : "verified-payment",
+        total: order.total || order.finalAmount || 0,
+        itemCount: Array.isArray(order.items) ? order.items.length : 0
+      },
+      req
+    });
     await writeDB(db);
     await writeTopLevelOrder(order);
     if (existingIndex < 0) {
@@ -4273,6 +4302,16 @@ app.post("/api/orders/:id/cancel", paymentRateLimit, async (req, res) => {
       nextOrder.razorpayRefundId = refundResult.refund.id;
     }
     db.orders[index] = nextOrder;
+    await mirrorOrderToCustomerProfile(db, nextOrder);
+    recordUserActivity(db, {
+      type: "order_cancelled",
+      email: nextOrder.email || nextOrder.customerEmail,
+      phone: nextOrder.phone || nextOrder.customerPhone,
+      orderId: nextOrder.id,
+      status: "cancelled",
+      details: { cancelledBy: "user", refundStatus: nextOrder.refundStatus || "" },
+      req
+    });
     await writeDB(db);
     await writeTopLevelOrder(nextOrder);
     await sendOrderEmail(db, nextOrder, "Cancelled", "customer-cancel").catch((emailError) => {
@@ -4892,6 +4931,9 @@ app.post("/api/payments/create-order", paymentRateLimit, inventorySerial, async 
     db.appState.inventoryLocks = [...existingLocks, ...newLocks].slice(-10000);
     db.paymentAttempts = db.paymentAttempts.slice(0, 1000);
     await writeDB(db);
+    await writeTopLevelPaymentAttempt(order).catch((error) => {
+      addLog("Payment create attempt Firestore mirror skipped: " + error.message, "warn");
+    });
     addLog(`Payment order created: ${order.id} amount ${amount}`, "info");
 
     res.json({
