@@ -566,15 +566,36 @@ let delivery = Math.round(Number(deliveryDetails && deliveryDetails.finalDeliver
 if(!(deliveryDetails && deliveryDetails.freeDeliveryApplied) && delivery <= 0 && Number(summary.sellingTotal || 0) > 0){
 delivery = Math.max(0, Math.round(Number(deliveryDetails && deliveryDetails.configuredDeliveryCharge || (shippingApi && typeof shippingApi.getDeliveryCharge === "function" ? shippingApi.getDeliveryCharge() : 0)) || 0));
 }
-let couponDiscount = Math.min(Number(summary.couponDiscount || 0), gstInclusiveSellingTotal);
-let couponAdjustedSellingTotal = Math.max(0, Math.round(gstInclusiveSellingTotal - couponDiscount));
+let backendSummary = null;
+try{
+let response = await fetch(String(window.SWADRA_API_BASE || "").replace(/\/+$/,"") + "/api/checkout/calculate", {
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body: JSON.stringify({
+userId: currentUser,
+email: currentUser,
+items: cartItems,
+couponCode: summary.appliedCoupon && summary.appliedCoupon.code || summary.coupon && summary.coupon.code || "",
+delivery: delivery
+})
+});
+let data = await response.json().catch(()=>({}));
+if(response.ok && data && data.ok){
+backendSummary = data;
+}
+}catch(calcError){
+console.error("checkout backend calculation failed", calcError);
+}
+let couponDiscount = backendSummary ? Number(backendSummary.couponDiscount || 0) : Math.min(Number(summary.couponDiscount || 0), gstInclusiveSellingTotal);
+let couponAdjustedSellingTotal = backendSummary ? Math.max(0, Math.round(Number(backendSummary.sellingTotal || gstInclusiveSellingTotal) - couponDiscount)) : Math.max(0, Math.round(gstInclusiveSellingTotal - couponDiscount));
 return {
 ...summary,
+...(backendSummary || {}),
 sellingTotal: gstInclusiveSellingTotal,
 delivery: delivery,
 couponDiscount: Math.round(couponDiscount),
 couponAdjustedSellingTotal: couponAdjustedSellingTotal || discountedItemsTotal,
-finalTotal: Math.max(0, Math.round(couponAdjustedSellingTotal + delivery)),
+finalTotal: backendSummary ? Math.round(Number(backendSummary.finalTotal || 0)) : Math.max(0, Math.round(couponAdjustedSellingTotal + delivery)),
 deliveryDetails: deliveryDetails,
 freeDeliveryApplied: !!(deliveryDetails && deliveryDetails.freeDeliveryApplied),
 freeDeliveryThreshold: deliveryDetails && deliveryDetails.freeDeliveryThreshold,

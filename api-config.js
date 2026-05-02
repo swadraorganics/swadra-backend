@@ -50,32 +50,11 @@
   }
 
   function syncRuntimeStoresFromWindowName(){
-    var payload = readWindowNameState();
-    var persistedState = payload && typeof payload === "object" ? payload[WINDOW_NAME_STATE_KEY] : null;
-    if(!persistedState || typeof persistedState !== "object"){
-      return;
-    }
-    var persistedSession = persistedState.session && typeof persistedState.session === "object" ? persistedState.session : {};
-    var persistedLocal = persistedState.local && typeof persistedState.local === "object" ? persistedState.local : {};
-    Object.keys(persistedSession).forEach(function(key){
-      if(!Object.prototype.hasOwnProperty.call(runtimeSessionStore, key)){
-        runtimeSessionStore[key] = String(persistedSession[key]);
-      }
-    });
-    Object.keys(persistedLocal).forEach(function(key){
-      if(!Object.prototype.hasOwnProperty.call(runtimeLocalStore, key)){
-        runtimeLocalStore[key] = String(persistedLocal[key]);
-      }
-    });
+    return;
   }
 
   function persistRuntimeStoresToWindowName(){
-    var payload = readWindowNameState();
-    payload[WINDOW_NAME_STATE_KEY] = {
-      session: Object.assign({}, runtimeSessionStore),
-      local: Object.assign({}, runtimeLocalStore)
-    };
-    writeWindowNameState(payload);
+    return;
   }
 
   syncRuntimeStoresFromWindowName();
@@ -322,43 +301,14 @@
     return session && typeof session === "object" ? session : null;
   }
   function readAdminToken(){
-    try{
-      var raw = runtimeSessionStore[ADMIN_SESSION_KEY] || "";
-      var parsed = raw ? JSON.parse(raw) : null;
-      var token = String(parsed && parsed.token || "").trim();
-      if(token) return token;
-      var windowSession = getWindowNameAdminSession();
-      return String(windowSession && windowSession.token || "").trim();
-    }catch(error){
-      var fallbackSession = getWindowNameAdminSession();
-      return String(fallbackSession && fallbackSession.token || "").trim();
-    }
+    return "";
   }
   window.SWADRA_SET_ADMIN_TOKEN = function(session){
-    try{
-      var payload = session && typeof session === "object" ? session : {};
-      var token = String(payload.token || "").trim();
-      if(!token) return;
-      var saved = {
-        ok: true,
-        username: String(payload.username || "admin"),
-        role: String(payload.role || "owner"),
-        token: token,
-        expiresAt: String(payload.expiresAt || ""),
-        loginAt: Date.now()
-      };
-      runtimeSessionStore[ADMIN_SESSION_KEY] = JSON.stringify(saved);
-      var state = readWindowNameState();
-      state[ADMIN_SESSION_KEY] = saved;
-      writeWindowNameState(state);
-    }catch(error){}
+    return;
   };
   window.SWADRA_CLEAR_ADMIN_TOKEN = function(){
     try{
       delete runtimeSessionStore[ADMIN_SESSION_KEY];
-      var state = readWindowNameState();
-      delete state[ADMIN_SESSION_KEY];
-      writeWindowNameState(state);
     }catch(error){}
   };
   if(!window.__swadraAdminFetchPatched && window.fetch){
@@ -718,45 +668,27 @@
   }
 
   async function loadUsersCache(forceRefresh){
-    var db = initFirestore();
-    if(!db){
-      throw new Error("Firestore unavailable");
-    }
     if(usersCacheLoaded && !forceRefresh){
       return getAuthUsers();
     }
     if(usersCacheRequest){
       return usersCacheRequest;
     }
-    usersCacheRequest = db.collection(USERS_COLLECTION).get().then(async function(snapshot){
+    usersCacheRequest = fetchUsersFromBackendFallback().catch(async function(error){
+      var db = initFirestore();
+      if(!db){
+        throw error;
+      }
+      var snapshot = await db.collection(USERS_COLLECTION).get();
       var next = {};
       snapshot.forEach(function(doc){
         var data = doc.data() || {};
         var user = sanitizeUserRecord(Object.assign({}, data, { uid: data.uid || doc.id }), data.email || "");
-        if(user.email){
-          user.uid = String(data.uid || doc.id || "");
-          next[user.email] = user;
-        }
-      });
-      var backendUsers = await fetchUsersFromBackendFallback({ preserveCache: true }).catch(function(){ return {}; });
-      Object.keys(backendUsers || {}).forEach(function(email){
-        next[email] = mergeUserRecordsForCache(next[email], backendUsers[email]);
+        if(user.email) next[user.email] = user;
       });
       usersCache = next;
       usersCacheLoaded = true;
       return getAuthUsers();
-    }).catch(async function(error){
-      var code = String(error && error.code || "").toLowerCase();
-      if(code === "permission-denied" || code === "unauthenticated"){
-        var currentRecord = await fetchCurrentAuthUserRecord().catch(function(){ return null; });
-        if(currentRecord && currentRecord.email){
-          usersCache[currentRecord.email] = currentRecord;
-          usersCacheLoaded = true;
-          return getAuthUsers();
-        }
-        return fetchUsersFromBackendFallback();
-      }
-      throw error;
     }).finally(function(){
       usersCacheRequest = null;
     });
@@ -777,22 +709,13 @@
   }
 
   async function saveAuthUsers(users){
-    var db = initFirestore();
     var nextUsers = sanitizeUsersMap(users);
     usersCache = nextUsers;
     usersCacheLoaded = true;
-    if(!db){
-      throw new Error("Firestore unavailable");
+    var entries = Object.keys(nextUsers);
+    for(var i = 0; i < entries.length; i += 1){
+      await saveUserRecordToBackend(nextUsers[entries[i]]);
     }
-    var batch = db.batch();
-    Object.keys(nextUsers).forEach(function(email){
-      var record = nextUsers[email] || {};
-      var docId = resolveUserProfileDocId(record) || normalizeEmailValue(record.email || email);
-      if(docId){
-        batch.set(db.collection(USERS_COLLECTION).doc(docId), record, { merge: true });
-      }
-    });
-    await batch.commit();
     return getAuthUsers();
   }
 
@@ -813,28 +736,21 @@
     }
     usersCache[record.email] = record;
     usersCacheLoaded = true;
-    if(!db){
+    try{
       var backendRecord = await saveUserRecordToBackend(record);
       usersCache[backendRecord.email] = backendRecord;
       return cloneValue(backendRecord);
-    }
-    var docId = resolveUserProfileDocId(record);
-    var savedSnapshot = null;
-    try{
-      await db.collection(USERS_COLLECTION).doc(docId).set(record, { merge: true });
-      savedSnapshot = await db.collection(USERS_COLLECTION).doc(docId).get();
     }catch(error){
-      var code = String(error && error.code || "").toLowerCase();
-      if(code !== "permission-denied" && code !== "unauthenticated"){
+      if(!db){
         throw error;
       }
-      var fallbackRecord = await saveUserRecordToBackend(record);
-      usersCache[fallbackRecord.email] = fallbackRecord;
-      return cloneValue(fallbackRecord);
+      var docId = resolveUserProfileDocId(record);
+      await db.collection(USERS_COLLECTION).doc(docId).set(record, { merge: true });
+      var savedSnapshot = await db.collection(USERS_COLLECTION).doc(docId).get();
+      var savedRecord = sanitizeUserRecord(Object.assign({}, savedSnapshot.data() || record, { uid: record.uid || docId }), record.email);
+      usersCache[savedRecord.email] = savedRecord;
+      return cloneValue(savedRecord);
     }
-    var savedRecord = sanitizeUserRecord(Object.assign({}, savedSnapshot.data() || record, { uid: record.uid || docId }), record.email);
-    usersCache[savedRecord.email] = savedRecord;
-    return cloneValue(savedRecord);
   }
 
   async function deleteAuthUserRecord(email){
@@ -1101,6 +1017,13 @@
     var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) return [];
     var pendingCart = getPendingUserCart(userId);
+    var backendCart = await fetchCartFromBackend(userId).catch(function(error){
+      console.error("cart backend fetch failed", error);
+      return null;
+    });
+    if(Array.isArray(backendCart)){
+      return backendCart;
+    }
     var db = initFirestore();
     if(!db) return pendingCart.length ? pendingCart : fetchCartFromBackend(userId).catch(function(){ return pendingCart; });
     try{
@@ -1132,27 +1055,19 @@
   async function saveFirestoreCart(userId, items){
     var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) throw new Error("User id required for cart save");
-    var db = initFirestore();
     var compactItems = compactAuthCartItems(items);
     setPendingUserCart(userId, compactItems);
-    if(!db) return saveCartToBackend(userId, normalizedUserId, compactItems).catch(function(error){
+    compactItems = await saveCartToBackend(userId, normalizedUserId, compactItems).catch(function(error){
       console.error("cart backend save failed", error);
-      return compactItems;
-    });
-    try{
-      await db.collection(CARTS_COLLECTION).doc(normalizedUserId).set({
+      var db = initFirestore();
+      if(!db) return compactItems;
+      return db.collection(CARTS_COLLECTION).doc(normalizedUserId).set({
         userId: normalizedUserId,
         email: normalizeEmailValue(userId),
         items: compactItems,
         updatedAt: new Date().toISOString()
-      }, { merge: true });
-    }catch(error){
-      console.error("cart firestore save failed", error);
-      compactItems = await saveCartToBackend(userId, normalizedUserId, compactItems).catch(function(backendError){
-        console.error("cart backend fallback save failed", backendError);
-        return compactItems;
-      });
-    }
+      }, { merge: true }).then(function(){ return compactItems; });
+    });
     setPendingUserCart(userId, compactItems);
     var currentEmail = normalizeEmailValue(userId);
     var currentRecord = currentEmail ? (getAuthUsers()[currentEmail] || null) : getCurrentUserRecord();
@@ -1253,7 +1168,12 @@
   async function fetchCheckoutDraft(userId){
     var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) return null;
-    var localDraft = fetchCheckoutDraftLocal(userId);
+    var localDraft = null;
+    var backendDraft = await fetchCheckoutDraftFromBackend(userId).catch(function(error){
+      console.error("checkout draft backend fetch failed", error);
+      return null;
+    });
+    if(backendDraft) return backendDraft;
     var db = initFirestore();
     if(!db) return fetchCheckoutDraftFromBackend(userId).catch(function(){ return localDraft; });
     try{
@@ -1274,21 +1194,16 @@
   async function saveCheckoutDraft(userId, draft){
     var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) throw new Error("User id required for checkout draft save");
-    var db = initFirestore();
     var payload = sanitizeCheckoutDraftRecord(draft, normalizedUserId);
     payload.updatedAt = new Date().toISOString();
-    saveCheckoutDraftLocal(userId, payload);
-    if(!db) return saveCheckoutDraftToBackend(userId, normalizedUserId, payload).catch(function(){ return payload; });
-    try{
-      await db.collection(CHECKOUT_DRAFTS_COLLECTION).doc(normalizedUserId).set(payload, { merge: true });
-      return payload;
-    }catch(error){
-      var code = String(error && error.code || "").toLowerCase();
-      if(code === "permission-denied" || code === "unauthenticated"){
-        return saveCheckoutDraftToBackend(userId, normalizedUserId, payload).catch(function(){ return payload; });
+    return saveCheckoutDraftToBackend(userId, normalizedUserId, payload).catch(async function(error){
+      console.error("checkout draft backend save failed", error);
+      var db = initFirestore();
+      if(db){
+        await db.collection(CHECKOUT_DRAFTS_COLLECTION).doc(normalizedUserId).set(payload, { merge: true });
       }
-      return saveCheckoutDraftToBackend(userId, normalizedUserId, payload).catch(function(){ return payload; });
-    }
+      return payload;
+    });
   }
 
   async function fetchCheckoutDraftFromBackend(userId){
@@ -1299,7 +1214,6 @@
       throw new Error(data && data.error ? data.error : "Failed to fetch checkout draft");
     }
     var draft = data.draft ? sanitizeCheckoutDraftRecord(data.draft, docId) : null;
-    if(draft) saveCheckoutDraftLocal(userId, draft);
     return draft;
   }
 
@@ -1318,14 +1232,13 @@
     if(!response.ok || data.ok === false){
       throw new Error(data && data.error ? data.error : "Failed to save checkout draft");
     }
-    var draft = sanitizeCheckoutDraftRecord(data.draft || body, docId || userId);
-    saveCheckoutDraftLocal(userId, draft);
-    return draft;
+    return sanitizeCheckoutDraftRecord(data.draft || body, docId || userId);
   }
 
   async function clearCheckoutDraft(userId){
     var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) return;
+    await saveCheckoutDraftToBackend(userId, normalizedUserId, { cartSnapshot: [], summary: {}, address: {}, clearedAt: new Date().toISOString() }).catch(function(){});
     var db = initFirestore();
     if(!db) throw firebaseInitError || new Error("Firestore unavailable");
     await db.collection(CHECKOUT_DRAFTS_COLLECTION).doc(normalizedUserId).delete().catch(function(){});
@@ -1480,80 +1393,48 @@
   async function saveFirestoreOrder(orderId, payload){
     var normalizedOrderId = sanitizeText(orderId || payload && payload.id || "");
     if(!normalizedOrderId) throw new Error("Order id required");
-    var db = initFirestore();
-    if(!db) throw firebaseInitError || new Error("Firestore unavailable");
     var orderPayload = payload && typeof payload === "object" ? cloneValue(payload) : {};
     orderPayload.id = normalizedOrderId;
     orderPayload.updatedAt = new Date().toISOString();
     if(!orderPayload.createdAt){
       orderPayload.createdAt = orderPayload.updatedAt;
     }
-    await db.collection(ORDERS_COLLECTION).doc(normalizedOrderId).set(orderPayload, { merge: true });
-    await syncOrderIntoUserProfile(orderPayload).catch(function(error){
-      console.error("user ecommerce profile sync failed", error);
+    var response = await fetch(base + "/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(orderPayload)
     });
-    return orderPayload;
+    var data = await response.json().catch(function(){ return {}; });
+    if(!response.ok || data.ok === false){
+      throw new Error(data && data.error ? data.error : "Failed to save order");
+    }
+    return cloneValue(data.order || orderPayload);
   }
 
   async function fetchFirestoreOrder(orderId){
     var normalizedOrderId = sanitizeText(orderId || "");
     if(!normalizedOrderId) return null;
-    var db = initFirestore();
-    if(!db) throw firebaseInitError || new Error("Firestore unavailable");
-    var snapshot = await db.collection(ORDERS_COLLECTION).doc(normalizedOrderId).get();
-    if(!snapshot.exists) return null;
-    return cloneValue(snapshot.data() || null);
+    var query = getCurrentUserEmail() ? "?userId=" + encodeURIComponent(getCurrentUserEmail()) + "&email=" + encodeURIComponent(getCurrentUserEmail()) : "";
+    var response = await fetch(base + "/api/orders/" + encodeURIComponent(normalizedOrderId) + query, { cache:"no-store" });
+    var data = await response.json().catch(function(){ return {}; });
+    if(!response.ok || data.ok === false) return null;
+    return cloneValue(data.order || null);
   }
 
   async function fetchAllFirestoreOrders(){
-    var db = initFirestore();
-    if(!db) return fetchOrdersFromBackendFallback();
-    try{
-      var snapshot = await db.collection(ORDERS_COLLECTION).get();
-      var orders = [];
-      snapshot.forEach(function(doc){
-        var data = doc.data() || {};
-        orders.push(cloneValue(Object.assign({}, data, { id: data.id || doc.id })));
-      });
-      return orders;
-    }catch(error){
-      var code = String(error && error.code || "").toLowerCase();
-      if(code === "permission-denied" || code === "unauthenticated"){
-        var userOrders = await fetchCurrentUserFirestoreOrders().catch(function(userOrderError){
-          console.error("user firestore orders fetch failed", userOrderError);
-          return [];
-        });
-        if(userOrders.length){
-          return userOrders;
-        }
-        return fetchOrdersFromBackendFallback();
-      }
-      throw error;
+    var userOrders = await fetchCurrentUserFirestoreOrders().catch(function(){ return []; });
+    if(userOrders.length){
+      return userOrders;
     }
+    return fetchOrdersFromBackendFallback();
   }
 
   async function fetchCurrentUserFirestoreOrders(){
-    var db = initFirestore();
     var email = getCurrentUserEmail();
-    if(!db || !email) return [];
-    var ordersById = {};
-    var fields = ["userId", "email", "customerEmail", "userEmail"];
-    for(var i = 0; i < fields.length; i += 1){
-      try{
-        var snapshot = await db.collection(ORDERS_COLLECTION).where(fields[i], "==", email).get();
-        snapshot.forEach(function(doc){
-          var data = doc.data() || {};
-          var id = String(data.id || data.orderId || doc.id);
-          ordersById[id] = cloneValue(Object.assign({}, data, { id: data.id || doc.id }));
-        });
-      }catch(error){
-        var code = String(error && error.code || "").toLowerCase();
-        if(code !== "permission-denied" && code !== "unauthenticated"){
-          console.error("orders query failed for " + fields[i], error);
-        }
-      }
-    }
-    return Object.keys(ordersById).map(function(id){ return ordersById[id]; });
+    if(!email) return [];
+    var response = await fetch(base + "/api/orders/user/" + encodeURIComponent(email) + "?userId=" + encodeURIComponent(email) + "&email=" + encodeURIComponent(email), { cache:"no-store" });
+    var data = await response.json().catch(function(){ return {}; });
+    return response.ok && Array.isArray(data.orders) ? cloneValue(data.orders) : [];
   }
 
   async function fetchOrdersFromBackendFallback(){

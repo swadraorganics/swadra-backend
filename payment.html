@@ -701,6 +701,10 @@ async function createBackendPaymentOrder(session){
       snapshot: session.snapshot
     });
     if(data.keyId) paymentGatewayKey = data.keyId;
+    if(data.order && data.order.id && paymentSession && data.order.id !== paymentSession.orderId){
+      updatePaymentSession({ orderId: data.order.id });
+      session.orderId = data.order.id;
+    }
     const razorpayOrder = data.razorpayOrder || null;
     if(!data.ok || !data.verificationConfigured || !data.razorpayConfigured || !razorpayOrder || !String(razorpayOrder.id || "").startsWith("order_") || razorpayOrder.localOnly){
       throw new Error(data.razorpayMessage || data.error || "Backend payment verification is unavailable");

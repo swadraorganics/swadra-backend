@@ -157,6 +157,7 @@ function getDefaultDB() {
     orders: [],
     paymentAttempts: [],
     logs: [],
+    userActivities: [],
     appState: {},
     admin: {
       username: "admin",
@@ -179,6 +180,7 @@ function normalizeDB(data) {
   db.orders = Array.isArray(db.orders) ? db.orders : [];
   db.paymentAttempts = Array.isArray(db.paymentAttempts) ? db.paymentAttempts : [];
   db.logs = Array.isArray(db.logs) ? db.logs : [];
+  db.userActivities = Array.isArray(db.userActivities) ? db.userActivities : [];
   db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
   db.admin = db.admin && typeof db.admin === "object" ? db.admin : {};
   db.admin.username = String(db.admin.username || "admin").trim() || "admin";
@@ -716,6 +718,30 @@ function auditAdminAction(db = {}, req, action, status = "success", details = {}
   state.adminAudit = state.adminAudit.slice(0, 1000);
 }
 
+function recordUserActivity(db = {}, input = {}) {
+  if (!db || typeof db !== "object") return null;
+  const activity = {
+    id: "act_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+    type: String(input.type || input.action || "activity").trim(),
+    userId: String(input.userId || input.email || input.uid || "").trim().toLowerCase(),
+    email: normalizeAccountEmail(input.email || input.userId || ""),
+    phone: normalizeAccountPhone(input.phone || input.mobile || ""),
+    orderId: String(input.orderId || "").trim(),
+    paymentId: String(input.paymentId || input.razorpayPaymentId || "").trim(),
+    status: String(input.status || "").trim(),
+    details: input.details && typeof input.details === "object" ? input.details : {},
+    ip: input.req ? clientIp(input.req) : "",
+    userAgent: input.req ? String(input.req.get("user-agent") || "").slice(0, 180) : "",
+    createdAt: new Date().toISOString()
+  };
+  db.userActivities = Array.isArray(db.userActivities) ? db.userActivities : [];
+  db.userActivities.unshift(activity);
+  db.userActivities = db.userActivities.slice(0, 2000);
+  db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+  db.appState.userActivities = db.userActivities;
+  return activity;
+}
+
 async function requireAdminSession(req, res, next) {
   try {
     const db = await readDB();
@@ -919,6 +945,7 @@ async function writeDB(data) {
       meta: normalized.meta,
       admin: normalized.admin,
       coupons: normalized.coupons,
+      userActivities: normalized.userActivities.slice(0, 2000),
       appState: normalized.appState
     }, { merge: true });
     for (const name of FIRESTORE_LISTS) {
@@ -1213,6 +1240,27 @@ function pickAppState(db, keys = []) {
 
 function makePaymentOrderId() {
   return "pay_" + Date.now() + "_" + crypto.randomBytes(4).toString("hex");
+}
+
+function makeWebsiteOrderIdForDate(date = new Date(), sequence = 1) {
+  const safeDate = date instanceof Date && !Number.isNaN(date.getTime()) ? date : new Date();
+  const key = safeDate.toISOString().slice(2, 10).replace(/-/g, "");
+  return "SWO" + key + String(Math.max(1, sequence)).padStart(3, "0");
+}
+
+function getNextWebsiteOrderId(db = {}, date = new Date()) {
+  const key = (date instanceof Date && !Number.isNaN(date.getTime()) ? date : new Date()).toISOString().slice(2, 10).replace(/-/g, "");
+  const prefix = "SWO" + key;
+  const ids = []
+    .concat(Array.isArray(db.orders) ? db.orders : [])
+    .concat(Array.isArray(db.paymentAttempts) ? db.paymentAttempts : [])
+    .map((item) => String(item?.id || item?.orderId || item?.localOrderId || item?.createdOrderId || ""))
+    .filter((id) => id.startsWith(prefix));
+  const max = ids.reduce((highest, id) => {
+    const numeric = Number(id.slice(prefix.length));
+    return Number.isFinite(numeric) ? Math.max(highest, numeric) : highest;
+  }, 0);
+  return makeWebsiteOrderIdForDate(date, max + 1);
 }
 
 function hashPayload(payload) {
@@ -3105,6 +3153,20 @@ app.get("/api/admin/audit", requireAdminSession, async (req, res) => {
   }
 });
 
+app.get("/api/admin/user-activities", requireAdminSession, async (req, res) => {
+  try {
+    const db = await readDB();
+    const email = normalizeAccountEmail(req.query?.email || "");
+    const activities = (Array.isArray(db.userActivities) ? db.userActivities : (Array.isArray(db.appState?.userActivities) ? db.appState.userActivities : []))
+      .filter((activity) => !email || normalizeAccountEmail(activity.email || activity.userId || "") === email)
+      .slice(0, 500);
+    res.json({ ok: true, count: activities.length, activities });
+  } catch (error) {
+    addLog("User activity fetch failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to load user activity" });
+  }
+});
+
 app.post("/api/admin/logout", requireAdminSession, async (req, res) => {
   try {
     const db = await readDB();
@@ -3248,6 +3310,90 @@ app.get("/api/coupons", async (req, res) => {
   } catch (error) {
     addLog("Failed to load coupons: " + error.message, "error");
     res.status(500).json({ ok: false, error: "Failed to load coupons" });
+  }
+});
+
+function getItemGstRate(item = {}) {
+  const rate = toNumber(item.gstRate || item.gst || item.taxRate || 5);
+  return rate > 0 ? rate : 5;
+}
+
+function calculateCartPricing({ items = [], couponCode = "", delivery = 0 } = {}, coupons = []) {
+  const cart = normalizeCartItems(items);
+  const rows = cart.map((item) => {
+    const qty = getItemQty(item);
+    const lineTotal = Math.round(toNumber(item.displayLineTotal || item.discountedLineTotal || item.price * qty));
+    const mrpLineTotal = Math.round(toNumber(item.mrpLineTotal || item.originalLineTotal || (item.mrp || item.price) * qty));
+    const gstRate = getItemGstRate(item);
+    const baseAmount = Math.round(lineTotal / (1 + gstRate / 100));
+    const gstAmount = Math.max(0, lineTotal - baseAmount);
+    return { item, qty, lineTotal, mrpLineTotal, gstRate, baseAmount, gstAmount };
+  });
+  const productTotal = rows.reduce((sum, row) => sum + row.lineTotal, 0);
+  const mrpTotal = rows.reduce((sum, row) => sum + row.mrpLineTotal, 0);
+  const baseAmount = rows.reduce((sum, row) => sum + row.baseAmount, 0);
+  const gst = rows.reduce((sum, row) => sum + row.gstAmount, 0);
+  const code = String(couponCode || "").trim().toUpperCase();
+  const coupon = code
+    ? (Array.isArray(coupons) ? coupons : []).find((item) => item && item.status !== "inactive" && String(item.code || "").trim().toUpperCase() === code)
+    : null;
+  const minimum = Math.max(0, Math.round(toNumber(coupon?.minimumAmount || coupon?.minAmount || 0)));
+  const couponValid = Boolean(coupon && (!minimum || productTotal >= minimum));
+  const couponPercent = couponValid ? Math.max(0, toNumber(coupon.discount || 0)) : 0;
+  const couponDiscount = Math.min(baseAmount, Math.round(baseAmount * (couponPercent / 100)));
+  let remainingDiscount = couponDiscount;
+  const discountedItems = rows.map((row, index) => {
+    const isLast = index === rows.length - 1;
+    const lineDiscount = isLast ? remainingDiscount : Math.min(remainingDiscount, Math.round(couponDiscount * (row.baseAmount / Math.max(1, baseAmount))));
+    remainingDiscount -= lineDiscount;
+    const discountedLineTotal = Math.max(0, row.lineTotal - lineDiscount);
+    return {
+      ...row.item,
+      couponLineDiscount: lineDiscount,
+      discountedLineTotal,
+      displayLineTotal: discountedLineTotal,
+      discountedUnitPrice: Math.round(discountedLineTotal / Math.max(1, row.qty))
+    };
+  });
+  const deliveryCharge = Math.max(0, Math.round(toNumber(delivery || 0)));
+  const finalTotal = Math.max(0, productTotal - couponDiscount + deliveryCharge);
+  return {
+    ok: true,
+    mrpTotal,
+    productTotal,
+    sellingTotal: productTotal,
+    baseAmount,
+    gst,
+    gstTotal: gst,
+    couponCode: couponValid ? code : "",
+    couponDiscount,
+    couponValid,
+    couponMessage: code && !couponValid ? (coupon ? "Minimum amount not met" : "Invalid coupon") : "",
+    delivery: deliveryCharge,
+    finalTotal,
+    discountedItems
+  };
+}
+
+app.post("/api/checkout/calculate", paymentRateLimit, async (req, res) => {
+  try {
+    const db = await readDB();
+    const siteContent = await readTopLevelSiteContent();
+    const coupons = mergeRecordsById(siteContent.coupons || [], db.coupons || []).map((coupon) => normalizeCoupon(coupon)).slice(0, 50);
+    const result = calculateCartPricing({
+      items: req.body?.items || req.body?.cart || [],
+      couponCode: req.body?.couponCode || req.body?.coupon?.code || "",
+      delivery: req.body?.delivery || req.body?.deliveryCharge || 0
+    }, coupons);
+    const email = normalizeAccountEmail(req.body?.email || req.body?.userId || "");
+    if (email && result.couponCode) {
+      recordUserActivity(db, { type: "coupon_applied", email, status: "success", details: { code: result.couponCode, discount: result.couponDiscount }, req });
+      await writeDB(db).catch((error) => addLog("Coupon activity save skipped: " + error.message, "warn"));
+    }
+    res.json(result);
+  } catch (error) {
+    addLog("Checkout calculation failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to calculate checkout total" });
   }
 });
 
@@ -3586,6 +3732,13 @@ async function upsertAccountUser(input = {}) {
 
   users[email] = nextRecord;
   db.appState.users = users;
+  recordUserActivity(db, {
+    type: existing && existing.email ? "profile_updated" : "account_created",
+    email,
+    phone: finalPhone,
+    status: "saved",
+    details: { hasAddress: Boolean(nextRecord.address && Object.keys(nextRecord.address).length), addressCount: Array.isArray(nextRecord.addresses) ? nextRecord.addresses.length : 0 }
+  });
   await writeDB(db);
   await writeTopLevelUsers({ [email]: nextRecord }).catch((error) => {
     addLog("Account Firestore user sync skipped: " + error.message, "warn");
@@ -3632,6 +3785,9 @@ app.post("/api/account/lookup", paymentRateLimit, async (req, res) => {
 app.post("/api/account/create", paymentRateLimit, async (req, res) => {
   try {
     const record = await upsertAccountUser(req.body || {});
+    const db = await readDB();
+    recordUserActivity(db, { type: "account_saved", email: record.email, phone: record.phone, status: "success", req });
+    await writeDB(db);
     res.json({ ok: true, existed: false, record });
   } catch (error) {
     addLog("Account create failed: " + error.message, "error");
@@ -3731,6 +3887,7 @@ app.post("/api/carts/:userId", paymentRateLimit, async (req, res) => {
       db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
       db.appState.users = db.appState.users && typeof db.appState.users === "object" ? db.appState.users : {};
       db.appState.users[email] = { ...(db.appState.users[email] || {}), email, cart: items, updatedAt: payload.updatedAt };
+      recordUserActivity(db, { type: "cart_updated", email, status: "saved", details: { itemCount: items.length }, req });
       await writeDB(db).catch((writeError) => addLog("Cart user mirror save skipped: " + writeError.message, "warn"));
     }
     res.json({ ok: true, cart: items });
@@ -3772,6 +3929,12 @@ app.post("/api/checkout-drafts/:userId", paymentRateLimit, async (req, res) => {
       updatedAt: new Date().toISOString()
     };
     await getFirestore().collection("checkoutDrafts").doc(docId).set(payload, { merge: true });
+    const email = payload.email;
+    if (email) {
+      const db = await readDB();
+      recordUserActivity(db, { type: "checkout_started", email, status: "saved", details: { itemCount: payload.cartSnapshot.length, coupon: payload.coupon?.code || payload.appliedCoupon?.code || "" }, req });
+      await writeDB(db).catch((writeError) => addLog("Checkout activity save skipped: " + writeError.message, "warn"));
+    }
     res.json({ ok: true, draft: payload });
   } catch (error) {
     addLog("Checkout draft save failed: " + error.message, "error");
@@ -3978,6 +4141,12 @@ app.post("/api/orders", async (req, res) => {
     if (!requireDurablePersistence(res)) return;
     const incoming = normalizeOrderForDb(req.body || {});
     const db = await readDB();
+    const isAdmin = Boolean(findValidAdminSession(db, req));
+    const isVerifiedPaidOrder = String(incoming.paymentStatus || incoming.payment || "").toLowerCase().includes("paid")
+      && Boolean(incoming.razorpayPaymentId || incoming.paymentId || incoming.payment_id || incoming.razorpay_order_id || incoming.razorpayOrderId);
+    if (!isAdmin && !isVerifiedPaidOrder) {
+      return res.status(403).json({ ok: false, error: "Verified payment is required before order creation" });
+    }
     const existingIndex = findOrderIndex(db, (order) => String(order.id) === String(incoming.id));
     const existing = existingIndex > -1 ? db.orders[existingIndex] : {};
     let order = normalizeOrderForDb({
@@ -4588,7 +4757,12 @@ app.post("/api/payments/create-order", paymentRateLimit, inventorySerial, async 
 
     const db = await readDB();
     cleanupInventoryLocks(db);
-    const orderId = payload.orderId || makePaymentOrderId();
+    const requestedOrderId = String(payload.orderId || "").trim();
+    const orderIdTaken = requestedOrderId && []
+      .concat(Array.isArray(db.orders) ? db.orders : [])
+      .concat(Array.isArray(db.paymentAttempts) ? db.paymentAttempts : [])
+      .some((item) => String(item?.id || item?.orderId || item?.localOrderId || "") === requestedOrderId);
+    const orderId = requestedOrderId && !orderIdTaken ? requestedOrderId : getNextWebsiteOrderId(db);
     const snapshotItems = Array.isArray(payload.snapshot?.items)
       ? payload.snapshot.items
       : Array.isArray(payload.snapshot?.cart)
@@ -4619,7 +4793,7 @@ app.post("/api/payments/create-order", paymentRateLimit, inventorySerial, async 
       currency: payload.currency || "INR",
       receipt: payload.receipt || "swadra_" + Date.now(),
       notes: {
-        local_order_id: payload.orderId || "",
+        local_order_id: orderId,
         snapshot_hash: hashPayload(payload.snapshot || {}),
         source: "Swadra Website"
       }
@@ -4641,6 +4815,15 @@ app.post("/api/payments/create-order", paymentRateLimit, inventorySerial, async 
     };
 
     db.paymentAttempts.unshift(order);
+    const snapshotUser = payload.snapshot && typeof payload.snapshot === "object" ? payload.snapshot.user || payload.snapshot.email : "";
+    recordUserActivity(db, {
+      type: "payment_started",
+      email: snapshotUser,
+      orderId,
+      status: order.status,
+      details: { amountPaise: amount, itemCount: items.length },
+      req
+    });
     db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
     const existingLocks = Array.isArray(db.appState.inventoryLocks) ? db.appState.inventoryLocks : [];
     const nowIso = new Date().toISOString();
@@ -4820,9 +5003,39 @@ app.post("/api/payments/verify", paymentRateLimit, async (req, res) => {
         order.customerEmail
       ];
       await mirrorOrderToCustomerProfile(db, order);
+      recordUserActivity(db, {
+        type: "order_created",
+        email: order.email || order.customerEmail,
+        phone: order.phone || order.customerPhone,
+        orderId: order.id,
+        paymentId: payload.razorpay_payment_id || "",
+        status: "success",
+        details: { total: order.total, itemCount: Array.isArray(order.items) ? order.items.length : 0 },
+        req
+      });
+      recordUserActivity(db, {
+        type: "payment_success",
+        email: order.email || order.customerEmail,
+        phone: order.phone || order.customerPhone,
+        orderId: order.id,
+        paymentId: payload.razorpay_payment_id || "",
+        status: "paid",
+        details: { razorpayOrderId: payload.razorpay_order_id || "" },
+        req
+      });
       await writeTopLevelOrder(order);
       await deleteTopLevelUserDocs("carts", orderUserIds);
       await deleteTopLevelUserDocs("checkoutDrafts", orderUserIds);
+    }
+    if (!verification.verified) {
+      recordUserActivity(db, {
+        type: "payment_failed",
+        orderId: attemptId,
+        paymentId: payload.razorpay_payment_id || "",
+        status: "verification_failed",
+        details: { message: verification.message },
+        req
+      });
     }
     await writeDB(db);
     if (order) {
@@ -4985,6 +5198,16 @@ app.post("/api/payments/attempts", paymentRateLimit, async (req, res) => {
     if (existingIndex > -1) db.paymentAttempts[existingIndex] = attempt;
     else db.paymentAttempts.unshift(attempt);
 
+    recordUserActivity(db, {
+      type: String(payload.status || "").toLowerCase() === "cancelled" ? "payment_cancelled" : "payment_attempt",
+      email: normalizeAccountEmail(payload.email || payload.customerEmail || payload.user || payload.checkoutData?.email || ""),
+      phone: normalizeAccountPhone(payload.phone || payload.customerPhone || payload.checkoutData?.phone || ""),
+      orderId: id,
+      paymentId: payload.paymentId || payload.razorpayPaymentId || payload.detail?.paymentId || payload.detail?.razorpay_payment_id || "",
+      status: payload.status || "",
+      details: { amount: payload.amount || 0 },
+      req
+    });
     db.paymentAttempts = db.paymentAttempts.slice(0, 1000);
     await writeDB(db);
     await writeTopLevelPaymentAttempt(attempt).catch((error) => {

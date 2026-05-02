@@ -729,10 +729,32 @@ let shippingCharge = Math.round(Number(deliveryDetails && deliveryDetails.finalD
 if(!(deliveryDetails && deliveryDetails.freeDeliveryApplied) && shippingCharge <= 0 && summary.sellingTotal > 0){
 shippingCharge = getDeliveryCharge();
 }
-let couponDiscount = Math.min(Number(summary.couponDiscount || 0), summary.sellingTotal);
-let finalTotal = Math.max(0, summary.sellingTotal + shippingCharge - couponDiscount);
+let backendSummary = null;
+try{
+let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
+let response = await fetch(String(window.SWADRA_API_BASE || "").replace(/\/+$/,"") + "/api/checkout/calculate", {
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body: JSON.stringify({
+userId: currentUser,
+email: currentUser,
+items: cart,
+couponCode: appliedCoupon && appliedCoupon.code || "",
+delivery: shippingCharge
+})
+});
+let data = await response.json().catch(()=>({}));
+if(response.ok && data && data.ok){
+backendSummary = data;
+}
+}catch(calcError){
+console.error("backend checkout calculation failed", calcError);
+}
+let couponDiscount = backendSummary ? Number(backendSummary.couponDiscount || 0) : Math.min(Number(summary.couponDiscount || 0), summary.sellingTotal);
+let finalTotal = backendSummary ? Number(backendSummary.finalTotal || 0) : Math.max(0, summary.sellingTotal + shippingCharge - couponDiscount);
 return {
 ...summary,
+...(backendSummary || {}),
 delivery: shippingCharge,
 couponDiscount: Math.round(couponDiscount),
 finalTotal: Math.round(finalTotal),
