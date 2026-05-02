@@ -4119,7 +4119,6 @@ app.post("/api/coupons", couponRateLimit, requireAdminSession, async (req, res) 
     }
     db.coupons = db.coupons.slice(0, 50);
     auditAdminAction(db, req, "coupon.save", "success", { code: coupon.code });
-    await mirrorOrderToCustomerProfile(db, nextOrder);
     await writeDB(db);
     await writeTopLevelSiteContentPatch({ coupons: db.coupons, homeContent: { coupons: db.coupons } });
     addLog(`Coupon saved: ${coupon.code}`, "success");

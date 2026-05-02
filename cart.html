@@ -1020,9 +1020,6 @@ cartSnapshot: updatedSummary.discountedItems || cart
 });
 }catch(error){
 console.error("coupon checkout draft save failed", error);
-appliedCoupon = null;
-updateSummary(summary);
-return alert("Coupon save failed. Please try again.");
 }
 }
 alert("Coupon Applied Successfully");

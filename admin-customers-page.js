@@ -84,6 +84,30 @@
       }
     }
 
+    async function mergeDirectFirestoreUsersFallback(){
+      try{
+        if(!window.firebase || typeof window.firebase.firestore !== "function") return;
+        const db = window.firebase.firestore();
+        const snapshot = await db.collection("users").get();
+        const nextUsers = {};
+        snapshot.forEach((doc)=>{
+          const data = doc.data() || {};
+          const email = String(data.email || data.emailNormalized || doc.id || "").trim().toLowerCase();
+          if(!email) return;
+          nextUsers[email] = {
+            ...(backendUsersCache[email] || {}),
+            ...data,
+            id: data.id || data.uid || data.userId || doc.id,
+            uid: data.uid || data.userId || data.id || doc.id,
+            email
+          };
+        });
+        backendUsersCache = { ...backendUsersCache, ...nextUsers };
+      }catch(error){
+        console.error("admin direct Firestore users fallback failed", error);
+      }
+    }
+
     function getBackendBaseUrl(){
       return String(window.SWADRA_API_BASE || "https://swadra-backend-production.up.railway.app").replace(/\/+$/, "");
     }
@@ -123,6 +147,7 @@
         if(response.ok && payload && payload.ok && payload.users && typeof payload.users === "object"){
           backendUsersCache = payload.users;
           await mergeAuthUsersFallback();
+          await mergeDirectFirestoreUsersFallback();
           if(Object.keys(backendUsersCache).length) return;
         }
         if(response.status === 401){
@@ -150,12 +175,14 @@
         if(response.ok && payload && payload.ok && payload.users && typeof payload.users === "object"){
           backendUsersCache = { ...backendUsersCache, ...payload.users };
           await mergeAuthUsersFallback();
+          await mergeDirectFirestoreUsersFallback();
         }
       }catch(error){
         console.error("account users fallback fetch failed", error);
       }
       if(!Object.keys(backendUsersCache).length){
         await mergeAuthUsersFallback();
+        await mergeDirectFirestoreUsersFallback();
       }
     }
 
@@ -527,7 +554,7 @@
                 </div>
                 <div class="mini">
                   <div class="k">Size</div>
-                  <div class="v">${escapeHtml(getValueByPossibleKeys(item, ["size","variant","productSize"]) || "-")}</div>
+                  <div class="v">${escapeHtml(getValueByPossibleKeys(item, ["size","variant","productSize","selectedSize","weight","packSize","unit","quantityLabel","weightLabel"]) || "-")}</div>
                 </div>
                 <div class="mini">
                   <div class="k">Qty × Price</div>
@@ -550,7 +577,7 @@
           ${cart.slice(0,3).map(item => `
             <div class="mini">
               <div class="k">${escapeHtml(getValueByPossibleKeys(item, ["name","productName","title"]) || "Product")}</div>
-              <div class="v">${Number(getValueByPossibleKeys(item, ["quantity","qty","count"]) || 1)} × ${rupee(getValueByPossibleKeys(item, ["price","sellingPrice","amount"]) || 0)}</div>
+              <div class="v">${escapeHtml(getValueByPossibleKeys(item, ["size","variant","productSize","selectedSize","weight","packSize","unit","quantityLabel","weightLabel"]) || "-")} • ${Number(getValueByPossibleKeys(item, ["quantity","qty","count"]) || 1)} × ${rupee(getValueByPossibleKeys(item, ["price","sellingPrice","amount"]) || 0)}</div>
             </div>
           `).join("")}
           ${cart.length > 3 ? `<div class="mini"><div class="k">More Items</div><div class="v">${cart.length - 3} more in cart</div></div>` : ``}

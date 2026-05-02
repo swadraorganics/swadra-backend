@@ -67,6 +67,28 @@
       margin-bottom:18px;
     }
 
+    .admin-payment-filter-bar{
+      background:var(--card);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:18px 20px;
+      margin-bottom:18px;
+      display:grid;
+      gap:14px;
+    }
+
+    .admin-payment-filter-row{
+      display:grid;
+      grid-template-columns:minmax(260px,1fr) 220px 220px auto;
+      gap:14px;
+      align-items:end;
+    }
+
+    .admin-payment-filter-row .toolbar{
+      margin-bottom:0;
+      justify-content:flex-end;
+    }
+
     button, .toolbar a{
       border:none;
       outline:none;
@@ -243,6 +265,91 @@
       padding-right:4px;
     }
 
+    .payments-sheet-list{
+      display:block;
+      padding-right:0;
+    }
+
+    .payments-sheet-wrap{
+      width:100%;
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fff;
+    }
+
+    .payments-sheet{
+      width:100%;
+      min-width:1100px;
+      border-collapse:collapse;
+      font-size:14px;
+    }
+
+    .payments-sheet th{
+      background:#f4ebe7;
+      color:var(--primary-dark);
+      text-align:left;
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:0.04em;
+      white-space:nowrap;
+    }
+
+    .payments-sheet td{
+      padding:15px 16px;
+      border-bottom:1px solid var(--line);
+      vertical-align:middle;
+    }
+
+    .payments-sheet tbody tr.payment-main-row:nth-child(4n+3){
+      background:#fffaf7;
+    }
+
+    .payment-sheet-id,
+    .payment-sheet-customer{
+      display:grid;
+      gap:5px;
+      min-width:160px;
+    }
+
+    .payment-sheet-id strong,
+    .payment-sheet-customer strong{
+      color:#1f1f1f;
+      font-size:15px;
+      line-height:1.25;
+    }
+
+    .payment-sheet-id span,
+    .payment-sheet-customer span{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+      word-break:break-word;
+    }
+
+    .payment-sheet-amount{
+      color:var(--success);
+      font-size:16px;
+      font-weight:900;
+      white-space:nowrap;
+    }
+
+    .payment-detail-row{
+      display:none;
+      background:#fff;
+    }
+
+    .payment-detail-row.open{
+      display:table-row;
+    }
+
+    .payment-detail-row td{
+      padding:16px;
+      background:#fff;
+    }
+
     .payment-card{
       border:1px solid var(--line);
       border-radius:18px;
@@ -336,6 +443,7 @@
 
     @media (max-width:1200px){
       .stats-grid{ grid-template-columns:repeat(2,1fr); }
+      .admin-payment-filter-row{ grid-template-columns:1fr 1fr; }
       .filters-panel{
         position:static;
         border-radius:22px;
@@ -349,6 +457,8 @@
       .row, .summary-box, .card-grid{
         grid-template-columns:repeat(2,1fr);
       }
+      .admin-payment-filter-row{ grid-template-columns:1fr; }
+      .admin-payment-filter-row .toolbar{ justify-content:flex-start; }
     }
 
     @media (max-width:600px){
@@ -367,79 +477,58 @@
 <div id="adminTopBar" style="position:fixed;top:0;left:0;right:0;z-index:100000;height:44px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;font-weight:700;font-size:22px;line-height:44px;text-align:center;border-bottom:1px solid rgba(122,61,61,.18);">Swadra Organics Admin Pannel</div>
 <div class="admin-global-nav" id="adminGlobalNav" style="position:fixed;top:44px;left:0;right:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Home</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Main</a><a href="backend/ai.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Add Product</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="backend/saved-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Edit Products</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payment</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupan</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Call Back</a><a href="backend/backend.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Backend</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Courier</a><span id="backendLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Backend</span><span id="firestoreLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Firestore</span><details style="margin-left:auto;position:relative;"><summary style="list-style:none;cursor:pointer;color:#fff;font-size:18px;line-height:1;padding:4px 6px;">👤</summary><div style="position:absolute;right:0;top:30px;min-width:210px;background:#fff;border:1px solid #ece1de;border-radius:14px;box-shadow:0 16px 35px rgba(0,0,0,.18);padding:8px;"><a href="admin-index.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Admin Home</a><a href="admin-profit.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Shiprocket</a><a href="index.html" style="display:block;padding:10px 12px;color:#991b1b;text-decoration:none;font-weight:800;border-radius:10px;background:#fff7f7;">Logout</a></div></details></div>
   <div class="wrap">
-    <div class="toolbar">
-      <button class="btn-primary" onclick="refreshPayments()">Refresh Payments</button>
-      <button class="btn-secondary" onclick="clearFilters()">Clear Filters</button>
+    <div class="admin-payment-filter-bar">
+      <div class="admin-payment-filter-row">
+        <div class="field">
+          <label>Search Payment</label>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search by order id, payment id, name, email or mobile"
+            oninput="renderPayments()"
+          >
+        </div>
+
+        <div class="field">
+          <label>Payment Status</label>
+          <select id="statusFilter" onchange="renderPayments()">
+            <option value="all">All</option>
+            <option value="paid">Paid</option>
+            <option value="pending">Pending</option>
+            <option value="failed">Failed</option>
+            <option value="cod">COD</option>
+            <option value="unknown">Unknown</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Review Status</label>
+          <select id="reviewFilter" onchange="renderPayments()">
+            <option value="all">All</option>
+            <option value="reviewed">Reviewed</option>
+            <option value="unreviewed">Unreviewed</option>
+          </select>
+        </div>
+
+        <div class="toolbar">
+          <button class="btn-primary" onclick="refreshPayments()">Refresh Payments</button>
+          <button class="btn-secondary" onclick="clearFilters()">Clear Filters</button>
+        </div>
+      </div>
     </div>
 
     <div class="stats-grid" id="paymentStats"></div>
 
-    <div class="grid">
-      <div class="panel filters-panel">
-        <h2>Payment Filters</h2>
+    <div class="summary-box" style="display:none;">
+      <div class="value" id="visiblePaymentsView">0</div>
+      <div class="value" id="paidAmountView">₹0</div>
+      <div class="value" id="pendingAmountView">₹0</div>
+      <div class="value" id="reviewedPaymentsView">0</div>
+    </div>
 
-        <div class="product-form">
-          <div class="row one">
-            <div class="field">
-              <label>Search Payment</label>
-              <input
-                type="text"
-                id="searchInput"
-                placeholder="Search by order id, payment id, name, email or mobile"
-                oninput="renderPayments()"
-              >
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label>Payment Status</label>
-              <select id="statusFilter" onchange="renderPayments()">
-                <option value="all">All</option>
-                <option value="paid">Paid</option>
-                <option value="pending">Pending</option>
-                <option value="failed">Failed</option>
-                <option value="cod">COD</option>
-                <option value="unknown">Unknown</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label>Review Status</label>
-              <select id="reviewFilter" onchange="renderPayments()">
-                <option value="all">All</option>
-                <option value="reviewed">Reviewed</option>
-                <option value="unreviewed">Unreviewed</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="summary-box">
-            <div class="summary-card">
-              <div class="label">Visible Records</div>
-              <div class="value" id="visiblePaymentsView">0</div>
-            </div>
-            <div class="summary-card green">
-              <div class="label">Paid Amount</div>
-              <div class="value" id="paidAmountView">₹0</div>
-            </div>
-            <div class="summary-card gold">
-              <div class="label">Pending Amount</div>
-              <div class="value" id="pendingAmountView">₹0</div>
-            </div>
-            <div class="summary-card red">
-              <div class="label">Reviewed</div>
-              <div class="value" id="reviewedPaymentsView">0</div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <div class="panel">
-        <h2>Saved Payments</h2>
-        <div class="payments-list" id="paymentsList"></div>
-      </div>
+    <div class="panel">
+      <h2>Saved Payments</h2>
+      <div class="payments-list payments-sheet-list" id="paymentsList"></div>
     </div>
   </div>
 
@@ -782,6 +871,58 @@
       document.getElementById("reviewedPaymentsView").textContent = reviewedCount;
     }
 
+    function buildPaymentCardHtml(payment){
+      const statusClass =
+        payment.status === "paid" ? "green" :
+        payment.status === "pending" ? "gold" :
+        payment.status === "failed" ? "red" : "";
+
+      return `
+        <div class="payment-card">
+          <div class="payment-head">
+            <div>
+              <h3>${escapeHtml(payment.customerName)}</h3>
+              <div class="badge-wrap">
+                <span class="badge ${statusClass}">${escapeHtml(payment.status)}</span>
+                <span class="badge">${payment.reviewed ? "Reviewed" : "Unreviewed"}</span>
+                <span class="badge gold">Method: ${escapeHtml(payment.method)}</span>
+                ${payment.instrumentLabel ? `<span class="badge green">${escapeHtml(payment.instrumentLabel)}</span>` : ""}
+              </div>
+            </div>
+            <div class="badge-wrap">
+              <span class="badge green">Amount: ${rupee(payment.amount)}</span>
+            </div>
+          </div>
+
+          <div class="card-grid">
+            <div class="mini"><div class="k">Order ID</div><div class="v">${escapeHtml(payment.orderId || "-")}</div></div>
+            <div class="mini"><div class="k">Payment ID</div><div class="v">${escapeHtml(payment.paymentId || "-")}</div></div>
+            <div class="mini"><div class="k">Email</div><div class="v">${escapeHtml(payment.email || "-")}</div></div>
+            <div class="mini"><div class="k">Mobile</div><div class="v">${escapeHtml(payment.mobile || "-")}</div></div>
+            <div class="mini"><div class="k">Date</div><div class="v">${escapeHtml(payment.dateLabel || "-")}</div></div>
+            <div class="mini"><div class="k">Source</div><div class="v">${escapeHtml(payment.sourceKey || "-")}</div></div>
+            <div class="mini"><div class="k">Refund Status</div><div class="v">${escapeHtml(payment.refundStatus || "-")}</div></div>
+            <div class="mini"><div class="k">Razorpay Refund ID</div><div class="v">${escapeHtml(payment.refundId || "-")}</div></div>
+            <div class="mini"><div class="k">Refund Amount</div><div class="v">${payment.refundAmount ? rupee(payment.refundAmount) : "-"}</div></div>
+          </div>
+
+          <div class="card-actions">
+            <button
+              class="${payment.reviewed ? 'btn-dark' : 'btn-secondary'}"
+              onclick="toggleReviewed('${escapeHtml(payment.id)}','${escapeHtml(payment.orderId || "")}')"
+            >
+              ${payment.reviewed ? "Mark Unreviewed" : "Mark Reviewed"}
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function togglePaymentDetails(paymentId){
+      const row = document.getElementById("paymentDetail_" + String(paymentId).replace(/[^a-zA-Z0-9_-]/g, "_"));
+      if(row) row.classList.toggle("open");
+    }
+
     async function renderPayments(){
       const firestorePayments = await getFirestorePayments();
       const backendPayments = await getBackendPayments();
@@ -801,79 +942,47 @@
         return;
       }
 
-      paymentsList.innerHTML = payments.map((payment) => {
+      const rowsHtml = payments.map((payment) => {
+        const rowId = String(payment.id || payment.paymentId || payment.orderId || "").replace(/[^a-zA-Z0-9_-]/g, "_");
         const statusClass =
           payment.status === "paid" ? "green" :
           payment.status === "pending" ? "gold" :
           payment.status === "failed" ? "red" : "";
 
         return `
-          <div class="payment-card">
-            <div class="payment-head">
-              <div>
-                <h3>${escapeHtml(payment.customerName)}</h3>
-                <div class="badge-wrap">
-                  <span class="badge ${statusClass}">${escapeHtml(payment.status)}</span>
-                  <span class="badge">${payment.reviewed ? "Reviewed" : "Unreviewed"}</span>
-                  <span class="badge gold">Method: ${escapeHtml(payment.method)}</span>
-                  ${payment.instrumentLabel ? `<span class="badge green">${escapeHtml(payment.instrumentLabel)}</span>` : ""}
-                </div>
-              </div>
-              <div class="badge-wrap">
-                <span class="badge green">Amount: ${rupee(payment.amount)}</span>
-              </div>
-            </div>
-
-            <div class="card-grid">
-              <div class="mini">
-                <div class="k">Order ID</div>
-                <div class="v">${escapeHtml(payment.orderId || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Payment ID</div>
-                <div class="v">${escapeHtml(payment.paymentId || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Email</div>
-                <div class="v">${escapeHtml(payment.email || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Mobile</div>
-                <div class="v">${escapeHtml(payment.mobile || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Date</div>
-                <div class="v">${escapeHtml(payment.dateLabel || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Source</div>
-                <div class="v">${escapeHtml(payment.sourceKey || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Refund Status</div>
-                <div class="v">${escapeHtml(payment.refundStatus || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Razorpay Refund ID</div>
-                <div class="v">${escapeHtml(payment.refundId || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Refund Amount</div>
-                <div class="v">${payment.refundAmount ? rupee(payment.refundAmount) : "-"}</div>
-              </div>
-            </div>
-
-            <div class="card-actions">
-              <button
-                class="${payment.reviewed ? 'btn-dark' : 'btn-secondary'}"
-                onclick="toggleReviewed('${escapeHtml(payment.id)}','${escapeHtml(payment.orderId || "")}')"
-              >
-                ${payment.reviewed ? "Mark Unreviewed" : "Mark Reviewed"}
-              </button>
-            </div>
-          </div>
+          <tr class="payment-main-row">
+            <td><div class="payment-sheet-id"><strong>${escapeHtml(payment.orderId || "-")}</strong><span>${escapeHtml(payment.dateLabel || "-")}</span></div></td>
+            <td><div class="payment-sheet-id"><strong>${escapeHtml(payment.paymentId || "-")}</strong><span>${escapeHtml(payment.sourceKey || "-")}</span></div></td>
+            <td><div class="payment-sheet-customer"><strong>${escapeHtml(payment.customerName || "Unknown Customer")}</strong><span>${escapeHtml(payment.email || "-")}</span></div></td>
+            <td>${escapeHtml(payment.mobile || "-")}</td>
+            <td><span class="badge ${statusClass}">${escapeHtml(payment.status)}</span></td>
+            <td class="payment-sheet-amount">${rupee(payment.amount)}</td>
+            <td><button class="btn-light" onclick="togglePaymentDetails('${escapeHtml(payment.id)}')">View More</button></td>
+          </tr>
+          <tr class="payment-detail-row" id="paymentDetail_${escapeHtml(rowId)}">
+            <td colspan="7">${buildPaymentCardHtml(payment)}</td>
+          </tr>
         `;
       }).join("");
+
+      paymentsList.innerHTML = `
+        <div class="payments-sheet-wrap">
+          <table class="payments-sheet">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Payment ID</th>
+                <th>User</th>
+                <th>Mobile</th>
+                <th>Status</th>
+                <th>Amount</th>
+                <th>View More</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+      `;
     }
 
     async function toggleReviewed(paymentId, orderId){
