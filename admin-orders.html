@@ -32,7 +32,7 @@
     .wrap{
       width:min(100%, 1880px);
       margin:0 auto;
-      padding:20px 24px 28px;
+      padding:18px 24px 34px;
     }
 
     .topbar{
@@ -62,6 +62,7 @@
       gap:12px;
       flex-wrap:wrap;
       margin-bottom:18px;
+      align-items:center;
     }
 
     button, .toolbar a{
@@ -95,9 +96,10 @@
 
     .stat-card{
       background:var(--card);
-      border-radius:18px;
-      box-shadow:var(--shadow);
-      padding:16px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.05);
+      padding:15px 16px;
     }
 
     .stat-card .label{
@@ -115,16 +117,17 @@
 
     .grid{
       display:grid;
-      grid-template-columns:380px minmax(0,1fr);
-      gap:18px;
+      grid-template-columns:320px minmax(0,1fr);
+      gap:16px;
       align-items:start;
     }
 
     .panel{
       background:var(--card);
-      border-radius:22px;
-      box-shadow:var(--shadow);
-      padding:22px 24px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      box-shadow:0 8px 24px rgba(0,0,0,0.05);
+      padding:18px;
       width:100%;
     }
 
@@ -184,7 +187,7 @@
     .summary-card{
       background:#fbf8f5;
       border:1px solid var(--line);
-      border-radius:16px;
+      border-radius:8px;
       padding:14px;
     }
 
@@ -214,18 +217,17 @@
     .orders-list{
       display:grid;
       gap:14px;
-      max-height:calc(100vh - 250px);
-      overflow:auto;
-      padding-right:4px;
     }
 
     .order-card{
-      border:1px solid var(--line);
-      border-radius:18px;
-      background:#fffdfa;
-      padding:16px;
+      border:1px solid #d8d0c7;
+      border-radius:10px;
+      background:#fff;
+      padding:0;
       display:grid;
-      gap:12px;
+      gap:0;
+      overflow:hidden;
+      box-shadow:0 8px 22px rgba(0,0,0,0.05);
     }
 
     .order-head{
@@ -234,11 +236,14 @@
       align-items:flex-start;
       gap:12px;
       flex-wrap:wrap;
+      background:#f7f8f8;
+      border-bottom:1px solid var(--line);
+      padding:14px 16px;
     }
 
     .order-head h3{
       margin:0;
-      font-size:20px;
+      font-size:18px;
       line-height:1.3;
     }
 
@@ -262,17 +267,46 @@
     .badge.red{ background:#fdeceb; color:var(--danger); }
     .badge.gold{ background:#fff3dc; color:var(--warn); }
 
+    .order-content{
+      display:grid;
+      grid-template-columns:minmax(0,1.4fr) minmax(300px,.8fr);
+      gap:0;
+    }
+
+    .order-main{
+      padding:16px;
+      border-right:1px solid var(--line);
+      display:grid;
+      gap:14px;
+    }
+
+    .order-side{
+      padding:16px;
+      background:#fffdfa;
+      display:grid;
+      gap:12px;
+      align-content:start;
+    }
+
+    .section-title{
+      font-size:13px;
+      font-weight:800;
+      color:#4b3b3b;
+      text-transform:uppercase;
+      margin-bottom:8px;
+    }
+
     .card-grid{
       display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:12px;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
     }
 
     .mini{
-      background:#faf6f2;
+      background:#fff;
       border:1px solid var(--line);
-      border-radius:14px;
-      padding:12px;
+      border-radius:8px;
+      padding:11px;
     }
 
     .mini .k{
@@ -283,32 +317,98 @@
     }
 
     .mini .v{
-      font-size:16px;
+      font-size:14px;
       font-weight:800;
       word-break:break-word;
     }
 
     .line-items{
       display:grid;
-      gap:8px;
+      gap:0;
+      border:1px solid var(--line);
+      border-radius:8px;
+      overflow:hidden;
     }
 
     .line-item{
-      display:flex;
-      justify-content:space-between;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 90px 130px;
       gap:12px;
-      padding:10px 12px;
-      border:1px solid var(--line);
-      border-radius:12px;
+      padding:12px 14px;
+      border:0;
+      border-bottom:1px solid var(--line);
+      border-radius:0;
       background:#fff;
       font-size:13px;
       line-height:1.5;
+      align-items:center;
+    }
+
+    .line-item:last-child{ border-bottom:0; }
+
+    .line-item .item-meta{
+      color:#655;
+      font-size:12px;
+      margin-top:3px;
+      font-weight:700;
+    }
+
+    .line-item .qty-cell{
+      color:#4b5563;
+      font-weight:800;
+      text-align:center;
+    }
+
+    .line-item .price-cell{
+      text-align:right;
     }
 
     .card-actions{
       display:flex;
       gap:10px;
       flex-wrap:wrap;
+      padding:14px 16px;
+      border-top:1px solid var(--line);
+      background:#fbfbfb;
+    }
+
+    .status-flow{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      align-items:center;
+    }
+
+    .status-step{
+      padding:7px 9px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:#716262;
+      font-size:12px;
+      font-weight:800;
+    }
+
+    .status-step.active{
+      background:#e7f5ec;
+      color:var(--success);
+      border-color:#cde9d6;
+    }
+
+    .status-step.danger{
+      background:#fdeceb;
+      color:var(--danger);
+      border-color:#f2c8c5;
+    }
+
+    .ship-block{
+      border:1px solid var(--line);
+      border-radius:8px;
+      padding:12px;
+      background:#fff;
+      line-height:1.55;
+      font-size:13px;
+      color:#3f3a37;
     }
 
     .empty{
@@ -330,6 +430,8 @@
     @media (max-width:1200px){
       .stats-grid{ grid-template-columns:repeat(2,1fr); }
       .grid{ grid-template-columns:1fr; }
+      .order-content{ grid-template-columns:1fr; }
+      .order-main{ border-right:0;border-bottom:1px solid var(--line); }
     }
 
     @media (max-width:900px){
@@ -342,6 +444,8 @@
       .row, .summary-box, .card-grid, .stats-grid{
         grid-template-columns:1fr;
       }
+      .line-item{ grid-template-columns:1fr; }
+      .line-item .qty-cell,.line-item .price-cell{ text-align:left; }
       .topbar h1{ font-size:24px; }
       .wrap{ padding:16px; }
     }
@@ -389,8 +493,11 @@
                 <option value="all">All</option>
                 <option value="pending">Pending</option>
                 <option value="confirmed">Confirmed</option>
+                <option value="packed">Packed</option>
                 <option value="shipped">Shipped</option>
+                <option value="out-for-delivery">Out for Delivery</option>
                 <option value="delivered">Delivered</option>
+                <option value="non-delivered">Non Delivered</option>
                 <option value="cancelled">Cancelled</option>
                 <option value="unknown">Unknown</option>
               </select>

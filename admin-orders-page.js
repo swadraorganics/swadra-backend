@@ -104,6 +104,24 @@
       return value || "Unknown";
     }
 
+    function buildStatusFlow(status){
+      const value = normalizeOrderStatus(status);
+      if(value === "cancelled" || value === "non-delivered"){
+        return `<div class="status-step danger">${escapeHtml(orderStatusLabel(value))}</div>`;
+      }
+      const steps = [
+        ["confirmed", "Order Confirmed"],
+        ["packed", "Packed"],
+        ["shipped", "Shipped"],
+        ["out-for-delivery", "Out for Delivery"],
+        ["delivered", "Delivered"]
+      ];
+      const activeIndex = Math.max(0, steps.findIndex(function(step){ return step[0] === value; }));
+      return steps.map(function(step, index){
+        return `<div class="status-step ${index <= activeIndex ? "active" : ""}">${escapeHtml(step[1])}</div>`;
+      }).join("");
+    }
+
     function getUsersMap(){
       return {};
     }
@@ -499,7 +517,7 @@ ${escapeHtml(senderAddress)}</div>
         const lineItemsHtml = order.items.length
           ? order.items.map(function(item){
               const safeName = escapeHtml(item.name || "Product");
-              const safeSize = item.size ? "(" + escapeHtml(item.size) + ")" : "";
+              const safeSize = item.size ? escapeHtml(item.size) : "";
               const safeQty = Number(item.quantity || 1);
               const discountedTotal = Number(item.discountedLineTotal || (Number(item.price || 0) * safeQty) || 0);
               const originalTotal = Number(item.displayLineTotal || 0);
@@ -512,11 +530,11 @@ ${escapeHtml(senderAddress)}</div>
               ].join("");
               return [
                 '<div class="line-item">',
-                  '<div><b>', safeName, '</b> ',
-                  safeSize,
-                  ' × ', safeQty,
+                  '<div><b>', safeName, '</b>',
+                  safeSize ? '<div class="item-meta">Pack size: ' + safeSize + '</div>' : '<div class="item-meta">Pack size: -</div>',
                   '</div>',
-                  '<div>', rightHtml, '</div>',
+                  '<div class="qty-cell">Qty ', safeQty, '</div>',
+                  '<div class="price-cell">', rightHtml, '</div>',
                 '</div>'
               ].join("");
             }).join("")
@@ -531,6 +549,7 @@ ${escapeHtml(senderAddress)}</div>
                   <span class="badge ${statusClass}">${escapeHtml(orderStatusLabel(order.status))}</span>
                   <span class="badge">Order ID: ${escapeHtml(order.id)}</span>
                   <span class="badge gold">Items: ${order.items.length}</span>
+                  <span class="badge">Placed: ${escapeHtml(order.dateLabel || "-")}</span>
                 </div>
               </div>
               <div class="badge-wrap">
@@ -538,63 +557,68 @@ ${escapeHtml(senderAddress)}</div>
               </div>
             </div>
 
-            <div class="card-grid">
-              <div class="mini">
-                <div class="k">Email</div>
-                <div class="v">${escapeHtml(order.email || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Mobile</div>
-                <div class="v">${escapeHtml(order.mobile || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Date</div>
-                <div class="v">${escapeHtml(order.dateLabel || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Delivery Zone</div>
-                <div class="v">${escapeHtml(order.deliveryZone || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Chargeable Weight</div>
-                <div class="v">${order.chargeableWeight ? escapeHtml(order.chargeableWeight + " kg") : "-"}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Lowest Courier Charge</div>
-                <div class="v">${order.lowestCourierCharge ? rupee(order.lowestCourierCharge) : "-"}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Customer Charged</div>
-                <div class="v">${rupee(order.customerChargedAmount || 0)}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Free Delivery</div>
-                <div class="v">${order.freeDeliveryApplied ? "Yes" : "No"}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Refund Status</div>
-                <div class="v">${escapeHtml(order.refundStatus || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Razorpay Refund ID</div>
-                <div class="v">${escapeHtml(order.refundId || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Refund Amount</div>
-                <div class="v">${order.refundAmount ? rupee(order.refundAmount) : "-"}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Pickup Pincode</div>
-                <div class="v">${escapeHtml(order.pickupPincode || "126102")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Delivery Pincode</div>
-                <div class="v">${escapeHtml(order.deliveryPincode || "-")}</div>
-              </div>
-            </div>
+            <div class="order-content">
+              <div class="order-main">
+                <div>
+                  <div class="section-title">Items purchased</div>
+                  <div class="line-items">
+                    ${lineItemsHtml}
+                  </div>
+                </div>
 
-            <div class="line-items">
-              ${lineItemsHtml}
+                <div>
+                  <div class="section-title">Fulfillment status</div>
+                  <div class="status-flow">${buildStatusFlow(order.status)}</div>
+                </div>
+
+                <div class="card-grid">
+                  <div class="mini">
+                    <div class="k">Delivery Zone</div>
+                    <div class="v">${escapeHtml(order.deliveryZone || "-")}</div>
+                  </div>
+                  <div class="mini">
+                    <div class="k">Chargeable Weight</div>
+                    <div class="v">${order.chargeableWeight ? escapeHtml(order.chargeableWeight + " kg") : "-"}</div>
+                  </div>
+                  <div class="mini">
+                    <div class="k">Lowest Courier Charge</div>
+                    <div class="v">${order.lowestCourierCharge ? rupee(order.lowestCourierCharge) : "-"}</div>
+                  </div>
+                  <div class="mini">
+                    <div class="k">Customer Charged</div>
+                    <div class="v">${rupee(order.customerChargedAmount || 0)}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="order-side">
+                <div class="ship-block">
+                  <div class="section-title">Customer</div>
+                  <b>${escapeHtml(order.customerName || "Customer")}</b><br>
+                  ${escapeHtml(order.email || "-")}<br>
+                  ${escapeHtml(order.mobile || "-")}
+                </div>
+                <div class="ship-block">
+                  <div class="section-title">Shipping</div>
+                  ${escapeHtml(order.shippingName || order.customerName || "Customer")}<br>
+                  ${escapeHtml(order.shippingPhone || order.mobile || "-")}<br>
+                  ${escapeHtml(order.shippingAddress || "Address not available")}<br>
+                  <b>Pincode:</b> ${escapeHtml(order.deliveryPincode || "-")}
+                </div>
+                <div class="ship-block">
+                  <div class="section-title">Payment & refund</div>
+                  <b>Total:</b> ${rupee(order.amount)}<br>
+                  <b>Free Delivery:</b> ${order.freeDeliveryApplied ? "Yes" : "No"}<br>
+                  <b>Refund:</b> ${escapeHtml(order.refundStatus || "-")}<br>
+                  <b>Refund ID:</b> ${escapeHtml(order.refundId || "-")}<br>
+                  <b>Refund Amount:</b> ${order.refundAmount ? rupee(order.refundAmount) : "-"}
+                </div>
+                <div class="ship-block">
+                  <div class="section-title">Dispatch</div>
+                  <b>Pickup:</b> ${escapeHtml(order.pickupPincode || "126102")}<br>
+                  <b>AWB:</b> ${escapeHtml(order.awb || "-")}<br>
+                  <b>Courier:</b> ${escapeHtml(order.courierName || "-")}
+                </div>
+              </div>
             </div>
 
             <div class="card-actions">
