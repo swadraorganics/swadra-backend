@@ -1602,6 +1602,72 @@ async function mirrorOrderToCustomerProfile(db, order = {}) {
   return nextUser;
 }
 
+function getPaymentAttemptAmountRupees(attempt = {}) {
+  if (attempt.amountPaise !== undefined && attempt.amountPaise !== null) {
+    return Math.round(toNumber(attempt.amountPaise) / 100);
+  }
+  return Math.round(toNumber(attempt.amount || attempt.snapshot?.amount || attempt.snapshot?.totals?.finalTotal || 0));
+}
+
+function paymentAttemptLooksPaid(attempt = {}) {
+  const status = String(attempt.status || attempt.paymentStatus || attempt.detail?.status || "").toLowerCase();
+  return status.includes("paid") || status.includes("captured") || status.includes("success");
+}
+
+function orderFromPaidPaymentAttempt(attempt = {}) {
+  if (!paymentAttemptLooksPaid(attempt)) return null;
+  const id = String(attempt.createdOrderId || attempt.orderId || attempt.localOrderId || attempt.id || "").trim();
+  if (!id) return null;
+  const snapshot = attempt.snapshot && typeof attempt.snapshot === "object" ? attempt.snapshot : {};
+  const checkoutData = attempt.checkoutData && typeof attempt.checkoutData === "object"
+    ? attempt.checkoutData
+    : (snapshot.checkoutData && typeof snapshot.checkoutData === "object" ? snapshot.checkoutData : {});
+  const email = normalizeAccountEmail(attempt.email || attempt.customerEmail || attempt.user || snapshot.user || checkoutData.email || "");
+  const phone = normalizeAccountPhone(attempt.phone || attempt.customerPhone || checkoutData.phone || snapshot.phone || "");
+  const paymentId = String(attempt.payment_id || attempt.paymentId || attempt.razorpayPaymentId || attempt.detail?.paymentId || attempt.detail?.razorpay_payment_id || "").trim();
+  const total = getPaymentAttemptAmountRupees(attempt);
+  return normalizeOrderForDb({
+    id,
+    userId: email || String(attempt.user || ""),
+    email,
+    customerEmail: email,
+    phone,
+    customerPhone: phone,
+    items: normalizeCartItems(attempt.items || snapshot.cart || snapshot.items || attempt.cart || []),
+    total,
+    amount: total,
+    finalAmount: total,
+    shipping: checkoutData,
+    payment: "Paid Successfully",
+    paymentStatus: "Paid Successfully",
+    payment_id: paymentId,
+    razorpayPaymentId: paymentId,
+    razorpay_order_id: attempt.razorpayOrderId || attempt.razorpay_order_id || "",
+    paymentMethod: attempt.paymentInstrument?.method || attempt.method || "online",
+    paymentInstrument: attempt.paymentInstrument || null,
+    status: "Confirmed",
+    statusHistory: [{ status: "Confirmed", time: attempt.updatedAt || attempt.createdAt || new Date().toISOString(), note: "Recovered from paid payment record." }],
+    recoveredFromPaymentAttempt: true,
+    source: "paymentAttempts",
+    date: attempt.updatedAt || attempt.createdAt || new Date().toISOString(),
+    createdAt: attempt.updatedAt || attempt.createdAt || new Date().toISOString()
+  });
+}
+
+function mergeRecoveredPaidAttemptOrders(orders = [], attempts = []) {
+  const merged = Array.isArray(orders) ? orders.slice() : [];
+  const ids = new Set(merged.map((order) => String(order?.id || order?.orderId || "").trim()).filter(Boolean));
+  (Array.isArray(attempts) ? attempts : []).forEach((attempt) => {
+    const order = orderFromPaidPaymentAttempt(attempt);
+    if (!order) return;
+    const id = String(order.id || "").trim();
+    if (!id || ids.has(id)) return;
+    ids.add(id);
+    merged.unshift(order);
+  });
+  return merged;
+}
+
 async function updateOrderInDb(orderId, patch = {}) {
   const db = await readDB();
   const index = findOrderIndex(db, (order) => String(order.id) === String(orderId));
@@ -4246,7 +4312,12 @@ app.get("/api/orders", requireAdminSession, async (req, res) => {
   try {
     const db = await readDB();
     const topLevelOrders = await readTopLevelFirestoreCollection("orders");
-    const orders = mergeRecordsById(topLevelOrders, Array.isArray(db.orders) ? db.orders : []);
+    const topLevelAttempts = await readTopLevelFirestoreCollection("paymentAttempts");
+    const attempts = mergeRecordsById(topLevelAttempts, Array.isArray(db.paymentAttempts) ? db.paymentAttempts : []);
+    const orders = mergeRecoveredPaidAttemptOrders(
+      mergeRecordsById(topLevelOrders, Array.isArray(db.orders) ? db.orders : []),
+      attempts
+    );
     res.json({
       ok: true,
       count: orders.length,
@@ -4287,7 +4358,12 @@ app.get("/api/orders/user/:userId", async (req, res) => {
         profileOrders.push(...profile.orders);
       }
     });
-    const allOrders = mergeRecordsById(topLevelOrders, mergeRecordsById(db.orders || [], profileOrders));
+    const topLevelAttempts = await readTopLevelFirestoreCollection("paymentAttempts");
+    const attempts = mergeRecordsById(topLevelAttempts, Array.isArray(db.paymentAttempts) ? db.paymentAttempts : []);
+    const allOrders = mergeRecoveredPaidAttemptOrders(
+      mergeRecordsById(topLevelOrders, mergeRecordsById(db.orders || [], profileOrders)),
+      attempts
+    );
     const orders = allOrders.filter((order) => {
       const keys = getOrderCustomerIdentities(order);
       return keys.some((value) => lookupIdentities.includes(value));

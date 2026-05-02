@@ -79,7 +79,7 @@
       setLiveBadgeState(backendBadge, "B", false, true);
       try{
         var base = String(window.SWADRA_API_BASE || "https://swadra-backend-production.up.railway.app").replace(/\/+$/, "");
-        var response = await fetch(base + "/health?ts=" + Date.now(), { cache: "no-store" });
+        var response = await fetch(base + "/health", { cache: "no-store" });
         var data = await response.json().catch(function(){ return {}; });
         setLiveBadgeState(backendBadge, "B", response.ok && data && data.ok !== false, false);
       }catch(error){
