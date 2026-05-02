@@ -66,6 +66,7 @@ body{background:#f1e3e3;color:#1d1d1f}
 .timeline.cancelled .timeline-step.active{color:#b42318}
 .timeline.cancelled .timeline-step.active .timeline-dot{background:#b42318}
 .timeline-line{width:36px;height:2px;background:#d8ded6}
+.order-status-note{margin-top:12px;padding:12px 14px;border-radius:14px;background:#f7fbf4;color:#2f5132;font-weight:800;font-size:14px;line-height:1.5}
 .empty{background:#fff;padding:42px;border-radius:28px;text-align:center;box-shadow:0 14px 30px rgba(0,0,0,.05);border:1px solid #eef0ea}
 .empty h3{font-size:26px;margin-bottom:10px}
 .empty p{color:#5f6368;margin-bottom:18px}
@@ -199,9 +200,56 @@ function normalizeIdentity(value){
   try{ text = decodeURIComponent(text); }catch(error){}
   return text.replace(/\s+/g, "");
 }
+function normalizePhoneIdentity(value){
+  const digits = String(value || "").replace(/\D/g, "");
+  return digits.length >= 10 ? digits.slice(-10) : digits;
+}
+function uniqueIdentities(values){
+  const set = new Set();
+  (values || []).forEach(function(value){
+    const identity = normalizeIdentity(value);
+    if(identity) set.add(identity);
+    const phone = normalizePhoneIdentity(value);
+    if(phone) set.add(phone);
+  });
+  return Array.from(set);
+}
+function getUserProfileForIdentity(userId){
+  const users = getUsers();
+  const key = resolveUserKey(users, userId || getCurrentUser());
+  return users[key] || {};
+}
+function getCurrentOrderIdentities(userId){
+  const profile = getUserProfileForIdentity(userId);
+  return uniqueIdentities([
+    userId,
+    getCurrentUser(),
+    profile.email,
+    profile.userId,
+    profile.uid,
+    profile.authUserId,
+    profile.firebaseUid,
+    profile.phone,
+    profile.mobile,
+    profile.mobileNumber,
+    profile.shipping && profile.shipping.phone,
+    profile.defaultAddress && profile.defaultAddress.phone
+  ]);
+}
 function buildOrderAccessQuery(userId){
-  const currentUser = normalizeIdentity(userId || getCurrentUser());
-  return currentUser ? "?userId=" + encodeURIComponent(currentUser) + "&email=" + encodeURIComponent(currentUser) : "";
+  const profile = getUserProfileForIdentity(userId);
+  const identities = getCurrentOrderIdentities(userId);
+  const primary = identities[0] || normalizeIdentity(userId || getCurrentUser());
+  if(!primary) return "";
+  const params = new URLSearchParams();
+  params.set("userId", primary);
+  const email = normalizeIdentity(profile.email || getCurrentUser() || userId);
+  const uid = normalizeIdentity(profile.uid || profile.authUserId || profile.firebaseUid || profile.userId);
+  const phone = normalizePhoneIdentity(profile.phone || profile.mobile || profile.mobileNumber || profile.defaultAddress?.phone);
+  if(email) params.set("email", email);
+  if(uid) params.set("uid", uid);
+  if(phone) params.set("phone", phone);
+  return "?" + params.toString();
 }
 function resolveUserKey(users, currentUser){
   const directKey = String(currentUser || "");
@@ -216,12 +264,15 @@ function normalizeStatus(status){ return String(status || "Confirmed").trim().to
 function statusLabel(status){
   const value = normalizeStatus(status);
   if(value.includes("cancel")) return "Cancelled";
+  if(value.includes("non") && value.includes("deliver")) return "Non Delivered";
+  if(value.includes("failed") && value.includes("deliver")) return "Non Delivered";
+  if(value.includes("rto")) return "Non Delivered";
   if(value.includes("out")) return "Out for Delivery";
-  if(value.includes("dispatch") || value.includes("ship")) return "Dispatched";
+  if(value.includes("dispatch") || value.includes("ship")) return "Shipped";
   if(value.includes("deliver")) return "Delivered";
   if(value.includes("pack")) return "Packed";
   if(value.includes("process")) return "Packed";
-  return "Confirmed";
+  return "Order Confirmed";
 }
 
 function migrateLegacyOrders(){
@@ -266,6 +317,7 @@ function migrateLegacyOrders(){
 function getStatusClass(status){
   let value = normalizeStatus(status);
   if(value.includes("cancel")) return "status-cancelled";
+  if((value.includes("non") && value.includes("deliver")) || (value.includes("failed") && value.includes("deliver")) || value.includes("rto")) return "status-cancelled";
   if(value.includes("out")) return "status-out";
   if(value.includes("dispatch") || value.includes("ship")) return "status-dispatched";
   if(value.includes("delivered")) return "status-delivered";
@@ -278,10 +330,10 @@ function buildTimeline(status){
   if(value.includes("cancel")){
     return `<div class="timeline cancelled"><div class="timeline-step active"><div class="timeline-dot"></div><span>Order Cancelled</span></div></div>`;
   }
-  let labels = ["Confirmed","Packed","Dispatched","Out for Delivery","Delivered"];
+  let labels = ["Order Confirmed","Packed","Shipped","Out for Delivery", statusLabel(status) === "Non Delivered" ? "Non Delivered" : "Delivered"];
   let current = statusLabel(status);
   let activeIndex = Math.max(0, labels.indexOf(current));
-  if(current === "Confirmed") activeIndex = 0;
+  if(current === "Order Confirmed") activeIndex = 0;
 
   return labels.map((label,index)=>{
     let active = index <= activeIndex ? "active" : "";
@@ -339,7 +391,8 @@ function isDispatchedStatus(status){
 }
 
 function isDeliveredStatus(status){
-  return normalizeStatus(status).includes("delivered") || statusLabel(status) === "Delivered";
+  const label = statusLabel(status);
+  return label === "Delivered";
 }
 
 function isCancelledStatus(status){
@@ -365,7 +418,8 @@ function getCancelState(order){
 async function cancelOrder(id){
   let currentUser = getCurrentUser();
   let users = getUsers();
-  let orders = (users[currentUser] && users[currentUser].orders) || [];
+  const userKey = resolveUserKey(users, currentUser);
+  let orders = (users[userKey] && users[userKey].orders) || [];
   let selected = orders.find(order => order.id === id);
 
   if(!selected){ return; }
@@ -402,7 +456,7 @@ async function cancelOrder(id){
       const response = await fetch(String(window.SWADRA_API_BASE || "") + "/api/orders/" + encodeURIComponent(String(id)) + "/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: currentUser, email: currentUser, status: "Cancelled", note: "Cancelled by customer." })
+        body: JSON.stringify({ userId: currentUser, email: currentUser, phone: selected.shipping && selected.shipping.phone, status: "Cancelled", note: "Cancelled by customer." })
       });
       const data = await response.json().catch(function(){ return {}; });
       if(response.ok && data.ok && data.order){
@@ -428,7 +482,7 @@ function orderMatchesFilter(order, filter){
   const value = normalizeStatus(order.status);
   if(filter === "delivered") return isDeliveredStatus(order.status) && !value.includes("cancel");
   if(filter === "cancelled") return value.includes("cancel");
-  if(filter === "active") return !value.includes("deliver") && !value.includes("cancel");
+  if(filter === "active") return !isDeliveredStatus(order.status) && !value.includes("cancel") && statusLabel(order.status) !== "Non Delivered";
   return true;
 }
 
@@ -519,20 +573,36 @@ async function requestReturn(id){
 }
 
 async function fetchBackendOrdersForUser(userId){
-  const normalizedUserId = normalizeIdentity(userId);
+  const userIdentities = getCurrentOrderIdentities(userId);
   function orderBelongsToUser(order){
     if(!order || typeof order !== "object") return false;
+    const shipping = order.shipping && typeof order.shipping === "object" ? order.shipping : {};
+    const billing = order.billing && typeof order.billing === "object" ? order.billing : {};
     const candidates = [
       order.userId,
+      order.user,
+      order.uid,
+      order.authUserId,
+      order.firebaseUid,
+      order.customerId,
       order.email,
       order.customerEmail,
       order.userEmail,
-      order.shipping && order.shipping.email,
-      order.shippingEmail
+      order.shippingEmail,
+      order.phone,
+      order.mobile,
+      order.customerPhone,
+      order.shippingPhone,
+      shipping.userId,
+      shipping.uid,
+      shipping.email,
+      shipping.phone,
+      shipping.mobile,
+      billing.email,
+      billing.phone,
+      billing.mobile
     ];
-    return candidates.some(function(value){
-      return normalizeIdentity(value) === normalizedUserId;
-    });
+    return uniqueIdentities(candidates).some(function(value){ return userIdentities.includes(value); });
   }
   let firestoreOrders = [];
   if(dataApi && typeof dataApi.fetchOrders === "function"){
@@ -715,6 +785,7 @@ async function loadOrders(){
           <div class="panel-title">Items in this order</div>
           <div class="item-list">${itemsHtml}</div>
           <div class="timeline">${buildTimeline(order.status)}</div>
+          <div class="order-status-note">Current status: ${statusText}. Flow: Order Confirmed - Packed - Shipped - Out for Delivery - Delivered / Non Delivered.</div>
         </div>
 
         <div class="summary-panel">

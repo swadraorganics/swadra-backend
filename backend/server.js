@@ -626,39 +626,76 @@ function revokeAdminSessionForRequest(db = {}, req) {
   return revoked;
 }
 
+function normalizeCustomerIdentity(value) {
+  const text = String(value || "").trim().toLowerCase();
+  if (!text) return [];
+  const values = [text];
+  const digits = text.replace(/\D/g, "");
+  if (digits.length >= 10) values.push(digits.slice(-10));
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
+function getUniqueCustomerIdentities(values = []) {
+  return Array.from(new Set(values.flatMap((value) => normalizeCustomerIdentity(value))));
+}
+
 function getCustomerAccessFields(req) {
-  return [
+  return getUniqueCustomerIdentities([
     req.query?.userId,
+    req.query?.uid,
+    req.query?.authUserId,
+    req.query?.firebaseUid,
     req.query?.email,
     req.query?.customerEmail,
     req.query?.phone,
     req.body?.userId,
+    req.body?.uid,
+    req.body?.authUserId,
+    req.body?.firebaseUid,
     req.body?.email,
     req.body?.customerEmail,
     req.body?.phone,
+    req.body?.mobile,
     req.get("x-customer-user"),
+    req.get("x-customer-uid"),
     req.get("x-customer-email"),
     req.get("x-customer-phone")
-  ].map((value) => String(value || "").trim().toLowerCase()).filter(Boolean);
+  ]);
+}
+
+function getOrderCustomerIdentities(order = {}) {
+  const shipping = order.shipping && typeof order.shipping === "object" ? order.shipping : {};
+  const billing = order.billing && typeof order.billing === "object" ? order.billing : {};
+  return getUniqueCustomerIdentities([
+    order.userId,
+    order.user,
+    order.uid,
+    order.authUserId,
+    order.firebaseUid,
+    order.customerId,
+    order.email,
+    order.customerEmail,
+    order.userEmail,
+    order.shippingEmail,
+    order.phone,
+    order.mobile,
+    order.customerPhone,
+    order.shippingPhone,
+    shipping.userId,
+    shipping.uid,
+    shipping.email,
+    shipping.phone,
+    shipping.mobile,
+    billing.email,
+    billing.phone,
+    billing.mobile
+  ]);
 }
 
 function orderMatchesCustomerAccess(order = {}, req) {
   const values = getCustomerAccessFields(req);
   if (!values.length) return false;
-  const shipping = order.shipping && typeof order.shipping === "object" ? order.shipping : {};
-  const candidates = [
-    order.userId,
-    order.user,
-    order.email,
-    order.customerEmail,
-    order.userEmail,
-    order.phone,
-    order.mobile,
-    order.customerPhone,
-    shipping.email,
-    shipping.phone,
-    shipping.mobile
-  ].map((value) => String(value || "").trim().toLowerCase()).filter(Boolean);
+  const candidates = getOrderCustomerIdentities(order);
   return candidates.some((value) => values.includes(value));
 }
 
@@ -4227,22 +4264,33 @@ app.get("/api/orders/user/:userId", async (req, res) => {
     const userId = decodeURIComponent(req.params.userId || "");
     const normalizedUserId = String(userId || "").trim().toLowerCase();
     const requester = getCustomerAccessFields(req);
-    if (!findValidAdminSession(db, req) && !requester.includes(normalizedUserId)) {
+    const lookupIdentities = getUniqueCustomerIdentities([userId, normalizedUserId, ...requester]);
+    if (!findValidAdminSession(db, req) && !lookupIdentities.some((value) => requester.includes(value))) {
       return res.status(403).json({ ok: false, error: "Order access verification required" });
     }
     const topLevelOrders = await readTopLevelFirestoreCollection("orders");
-    const profileOrders = Array.isArray(db.appState?.users?.[normalizedUserId]?.orders) ? db.appState.users[normalizedUserId].orders : [];
+    const users = db.appState?.users && typeof db.appState.users === "object" ? db.appState.users : {};
+    const profileOrders = [];
+    Object.entries(users).forEach(([key, profile]) => {
+      const profileIdentities = getUniqueCustomerIdentities([
+        key,
+        profile?.email,
+        profile?.userId,
+        profile?.uid,
+        profile?.authUserId,
+        profile?.firebaseUid,
+        profile?.phone,
+        profile?.mobile
+      ]);
+      const matchesProfile = profileIdentities.some((value) => lookupIdentities.includes(value));
+      if (matchesProfile && Array.isArray(profile?.orders)) {
+        profileOrders.push(...profile.orders);
+      }
+    });
     const allOrders = mergeRecordsById(topLevelOrders, mergeRecordsById(db.orders || [], profileOrders));
     const orders = allOrders.filter((order) => {
-      const keys = [
-        order.userId,
-        order.user,
-        order.email,
-        order.customerEmail,
-        order.userEmail,
-        order.shipping && order.shipping.email
-      ].map((value) => String(value || "").trim().toLowerCase());
-      return keys.includes(normalizedUserId);
+      const keys = getOrderCustomerIdentities(order);
+      return keys.some((value) => lookupIdentities.includes(value));
     });
     res.json({ ok: true, count: orders.length, orders });
   } catch (error) {
