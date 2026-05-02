@@ -40,6 +40,27 @@
       return String(value || "").trim().toLowerCase();
     }
 
+    function getAdminSessionToken(){
+      try{
+        const raw = String(window.name || "");
+        if(!raw || raw.charAt(0) !== "{") return "";
+        const state = JSON.parse(raw);
+        const session = state && state.swadra_admin_session_v1;
+        return String(session && session.token || "").trim();
+      }catch(error){
+        return "";
+      }
+    }
+
+    function getAdminFetchHeaders(extra = {}){
+      const headers = { ...extra };
+      const token = getAdminSessionToken();
+      if(token && !headers.Authorization){
+        headers.Authorization = `Bearer ${token}`;
+      }
+      return headers;
+    }
+
     function getValueByPossibleKeys(obj, keys){
       for(const key of keys){
         if(obj && obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== ""){
@@ -93,6 +114,7 @@
 
     function orderStatusLabel(status){
       const value = normalizeOrderStatus(status);
+      if(value === "user-cancelled") return "User Cancelled";
       if(value === "confirmed") return "Order Confirmed";
       if(value === "packed") return "Packed";
       if(value === "shipped") return "Shipped";
@@ -492,6 +514,7 @@ ${escapeHtml(senderAddress)}</div>
     }
 
     function buildOrderCardHtml(order){
+        const statusText = order.cancelledBy === "user" ? "User Cancelled" : orderStatusLabel(order.status);
         const statusClass =
           order.status === "delivered" ? "green" :
           order.status === "cancelled" ? "red" :
@@ -534,7 +557,7 @@ ${escapeHtml(senderAddress)}</div>
               <div>
                 <h3>${escapeHtml(order.customerName)}</h3>
                 <div class="badge-wrap">
-                  <span class="badge ${statusClass}">${escapeHtml(orderStatusLabel(order.status))}</span>
+                  <span class="badge ${statusClass}">${escapeHtml(statusText)}</span>
                   <span class="badge">Order ID: ${escapeHtml(order.id)}</span>
                   <span class="badge gold">Items: ${order.items.length}</span>
                   <span class="badge">Placed: ${escapeHtml(order.dateLabel || "-")}</span>
@@ -642,7 +665,7 @@ ${escapeHtml(senderAddress)}</div>
         return;
       }
 
-      const rowsHtml = orders.map((order) => {
+        const rowsHtml = orders.map((order) => {
         const rowId = String(order.id || "").replace(/[^a-zA-Z0-9_-]/g, "_");
         const statusClass =
           order.status === "delivered" ? "green" :
@@ -653,6 +676,7 @@ ${escapeHtml(senderAddress)}</div>
           order.status === "shipped" ? "gold" :
           order.status === "out-for-delivery" ? "gold" :
           order.status === "confirmed" ? "green" : "";
+        const statusText = order.cancelledBy === "user" ? "User Cancelled" : orderStatusLabel(order.status);
         return `
           <tr class="order-main-row">
             <td>
@@ -673,7 +697,7 @@ ${escapeHtml(senderAddress)}</div>
                 <span>${escapeHtml(order.email || "-")}</span>
               </div>
             </td>
-            <td><span class="badge ${statusClass}">${escapeHtml(orderStatusLabel(order.status))}</span></td>
+            <td><span class="badge ${statusClass}">${escapeHtml(statusText)}</span></td>
             <td class="order-sheet-amount">${rupee(order.amount)}</td>
             <td>
               <button class="btn-light" onclick="toggleOrderDetails('${escapeHtml(order.id)}')">View More</button>
@@ -746,7 +770,7 @@ ${escapeHtml(senderAddress)}</div>
         try{
           const response = await fetch(String(window.SWADRA_API_BASE || "") + "/api/orders/" + encodeURIComponent(String(orderId)) + "/packed", {
             method: "POST",
-            headers: { "Content-Type": "application/json" }
+            headers: getAdminFetchHeaders({ "Content-Type": "application/json" })
           });
           const data = await response.json().catch(function(){ return {}; });
           if(!response.ok || !data.ok){
@@ -766,7 +790,7 @@ ${escapeHtml(senderAddress)}</div>
         try{
           const response = await fetch(String(window.SWADRA_API_BASE || "") + "/api/orders/" + encodeURIComponent(String(orderId)) + "/status", {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            headers: getAdminFetchHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({ status: nextStatus, note: "Updated by admin." })
           });
           const data = await response.json().catch(function(){ return {}; });
@@ -798,7 +822,12 @@ ${escapeHtml(senderAddress)}</div>
 
       if(window.SWADRA_API_BASE){
         try{
-          const response = await fetch(String(window.SWADRA_API_BASE || "") + "/api/orders");
+          const response = await fetch(String(window.SWADRA_API_BASE || "") + "/api/orders", {
+            method: "GET",
+            cache: "no-store",
+            credentials: "include",
+            headers: getAdminFetchHeaders({ "Accept": "application/json" })
+          });
           const data = await response.json().catch(function(){ return {}; });
           const backendOrders = Array.isArray(data) ? data : (Array.isArray(data.orders) ? data.orders : []);
           orderLists.push(backendOrders.map(function(item, index){

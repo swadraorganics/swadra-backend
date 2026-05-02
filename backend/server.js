@@ -3887,6 +3887,14 @@ app.post("/api/carts/:userId", paymentRateLimit, async (req, res) => {
       updatedAt: new Date().toISOString()
     };
     await getFirestore().collection("carts").doc(docId).set(payload, { merge: true });
+    if (email && safeDocId(email) !== docId) {
+      await getFirestore().collection("carts").doc(safeDocId(email)).set({
+        ...payload,
+        userId: email,
+        email,
+        linkedUserId: docId
+      }, { merge: true });
+    }
     if (email) {
       const db = await readDB();
       db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
@@ -4111,6 +4119,7 @@ app.post("/api/coupons", couponRateLimit, requireAdminSession, async (req, res) 
     }
     db.coupons = db.coupons.slice(0, 50);
     auditAdminAction(db, req, "coupon.save", "success", { code: coupon.code });
+    await mirrorOrderToCustomerProfile(db, nextOrder);
     await writeDB(db);
     await writeTopLevelSiteContentPatch({ coupons: db.coupons, homeContent: { coupons: db.coupons } });
     addLog(`Coupon saved: ${coupon.code}`, "success");
@@ -4239,6 +4248,8 @@ app.post("/api/orders/:id/cancel", paymentRateLimit, async (req, res) => {
       ...current,
       status: "Cancelled",
       orderStatus: "Cancelled",
+      cancelledBy: "user",
+      cancelledByLabel: "User Cancelled",
       cancelledAt: now,
       paymentStatus: current.paymentStatus || current.payment || "Refund Initiated",
       payment: "Refund Initiated",
@@ -4506,6 +4517,7 @@ app.post("/api/orders/:id/packed", requireAdminSession, async (req, res) => {
 
     db.orders[index] = { ...order, updatedAt: new Date().toISOString() };
     auditAdminAction(db, req, "order.packed", "success", { orderId });
+    await mirrorOrderToCustomerProfile(db, db.orders[index]);
     await writeDB(db);
     await writeTopLevelOrder(db.orders[index]);
     await sendOrderEmail(db, db.orders[index], "Packed", "packed-status").catch((emailError) => {
@@ -4596,8 +4608,19 @@ app.patch("/api/orders/:id/status", requireAdminSession, async (req, res) => {
       nextOrder.refundDate = now;
     }
 
+    if (String(req.body?.source || "").toLowerCase() === "user") {
+      nextOrder.cancelledBy = "user";
+      nextOrder.cancelledByLabel = "User Cancelled";
+      const lastHistory = nextOrder.statusHistory[nextOrder.statusHistory.length - 1];
+      if (lastHistory) lastHistory.note = String(req.body?.note || "User cancelled this order.").trim();
+    } else if (nextStatus === "Cancelled") {
+      nextOrder.cancelledBy = "admin";
+      nextOrder.cancelledByLabel = "Admin Cancelled";
+    }
+
     db.orders[index] = nextOrder;
     auditAdminAction(db, req, "order.status.update", "success", { orderId, status: nextStatus });
+    await mirrorOrderToCustomerProfile(db, nextOrder);
     await writeDB(db);
     await writeTopLevelOrder(db.orders[index]);
     await sendOrderEmail(db, db.orders[index], nextStatus, "status-update").catch((emailError) => {

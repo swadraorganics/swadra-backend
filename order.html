@@ -266,6 +266,7 @@ function resolveUserKey(users, currentUser){
 function normalizeStatus(status){ return String(status || "Confirmed").trim().toLowerCase(); }
 function statusLabel(status){
   const value = normalizeStatus(status);
+  if(value.includes("user") && value.includes("cancel")) return "User Cancelled";
   if(value.includes("cancel")) return "Cancelled";
   if(value.includes("non") && value.includes("deliver")) return "Non Delivered";
   if(value.includes("failed") && value.includes("deliver")) return "Non Delivered";
@@ -331,7 +332,8 @@ function getStatusClass(status){
 function buildTimeline(status){
   let value = normalizeStatus(status);
   if(value.includes("cancel")){
-    return `<div class="timeline cancelled"><div class="timeline-step active"><div class="timeline-dot"></div><span>Order Cancelled</span></div></div>`;
+    const cancelledLabel = value.includes("user") ? "User Cancelled" : "Order Cancelled";
+    return `<div class="timeline cancelled"><div class="timeline-step active"><div class="timeline-dot"></div><span>${cancelledLabel}</span></div></div>`;
   }
   let labels = ["Order Confirmed","Packed","Shipped","Out for Delivery", statusLabel(status) === "Non Delivered" ? "Non Delivered" : "Delivered"];
   let current = statusLabel(status);
@@ -442,7 +444,9 @@ async function cancelOrder(id){
     return;
   }
 
-  selected.status = "Cancelled";
+  selected.status = "User Cancelled";
+  selected.cancelledBy = "user";
+  selected.cancelledByLabel = "User Cancelled";
   selected.payment = "Refund Initiated";
   selected.refundStatus = "Refund Initiated";
   selected.refundAmount = Math.round(Number(selected.total) || 0);
@@ -452,14 +456,14 @@ async function cancelOrder(id){
   selected.refundMode = selected.refundMode || "Original payment method";
   selected.refundMessage = "Refund has been initiated. It will be processed to your original payment method after payment gateway confirmation.";
   selected.statusHistory = Array.isArray(selected.statusHistory) ? selected.statusHistory : [];
-  selected.statusHistory.push({ status:"Cancelled", time:nowText(), note:"Cancellation accepted and refund initiated." });
+  selected.statusHistory.push({ status:"User Cancelled", time:nowText(), note:"User cancelled this order. Refund initiated." });
   selected.updatedAt = new Date().toISOString();
   if(window.SWADRA_API_BASE){
     try{
       const response = await fetch(String(window.SWADRA_API_BASE || "") + "/api/orders/" + encodeURIComponent(String(id)) + "/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: currentUser, email: currentUser, phone: selected.shipping && selected.shipping.phone, status: "Cancelled", note: "Cancelled by customer." })
+        body: JSON.stringify({ userId: currentUser, email: currentUser, phone: selected.shipping && selected.shipping.phone, status: "Cancelled", source: "user", note: "User cancelled this order." })
       });
       const data = await response.json().catch(function(){ return {}; });
       if(response.ok && data.ok && data.order){
@@ -742,7 +746,7 @@ async function loadOrders(){
   visibleOrders.forEach(order=>{
     let cancelState = getCancelState(order);
     let itemCount = (order.items || []).reduce((sum,item)=>sum + Number(item.qty || 1), 0);
-    let statusText = statusLabel(order.status);
+    let statusText = order.cancelledBy === "user" ? "User Cancelled" : statusLabel(order.status);
     let itemsHtml = (order.items || []).map(item=>{
       const qty = Number(item.qty || item.quantity || 1) || 1;
       const sizeLabel = getOrderItemSizeLabel(item);

@@ -1022,6 +1022,7 @@
       return null;
     });
     if(Array.isArray(backendCart)){
+      if(!backendCart.length && pendingCart.length) return pendingCart;
       return backendCart;
     }
     var db = initFirestore();
@@ -1107,7 +1108,16 @@
     if(!response.ok || data.ok === false){
       throw new Error(data && data.error ? data.error : "Failed to fetch cart");
     }
-    return compactAuthCartItems(data.cart || []);
+    var cart = compactAuthCartItems(data.cart || []);
+    var email = normalizeEmailValue(userId);
+    if(!cart.length && email && String(docId) !== email){
+      var emailResponse = await fetch(base + "/api/carts/" + encodeURIComponent(email), { cache:"no-store" });
+      var emailData = await emailResponse.json().catch(function(){ return {}; });
+      if(emailResponse.ok && emailData.ok !== false){
+        cart = compactAuthCartItems(emailData.cart || []);
+      }
+    }
+    return cart;
   }
 
   async function saveCartToBackend(userId, docId, items){
