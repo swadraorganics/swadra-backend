@@ -506,6 +506,55 @@ function verifySignedAdminToken(db = {}, token = "") {
   };
 }
 
+function getCustomerSessionSecret(db = {}) {
+  return String(
+    process.env.CUSTOMER_SESSION_SECRET ||
+    process.env.ADMIN_SESSION_SECRET ||
+    db.admin?.passwordHash ||
+    db.admin?.passwordSalt ||
+    "swadra-customer-session"
+  );
+}
+
+function signCustomerSessionPayload(db = {}, payload = "") {
+  return crypto.createHmac("sha256", getCustomerSessionSecret(db)).update(String(payload || "")).digest("hex");
+}
+
+function createSignedCustomerToken(db = {}, session = {}) {
+  const email = normalizeAccountEmail(session.email || session.userId || "");
+  const phone = normalizeAccountPhone(session.phone || session.mobile || "");
+  if (!email && !phone) return "";
+  const payload = base64UrlEncode(JSON.stringify({
+    email,
+    phone,
+    uid: String(session.uid || session.userId || "").trim(),
+    expiresAt: String(session.expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()),
+    nonce: crypto.randomBytes(8).toString("hex")
+  }));
+  return "sct_" + payload + "." + signCustomerSessionPayload(db, payload);
+}
+
+function verifySignedCustomerToken(db = {}, token = "") {
+  const raw = String(token || "").trim();
+  if (!raw.startsWith("sct_") || !raw.includes(".")) return null;
+  const body = raw.slice(4);
+  const [payload, signature] = body.split(".");
+  if (!payload || !signature) return null;
+  const expected = signCustomerSessionPayload(db, payload);
+  if (!safeEqualText(signature, expected)) return null;
+  let parsed = null;
+  try {
+    parsed = JSON.parse(base64UrlDecode(payload));
+  } catch (error) {
+    return null;
+  }
+  if (Date.parse(parsed.expiresAt || "") <= Date.now()) return null;
+  const email = normalizeAccountEmail(parsed.email || "");
+  const phone = normalizeAccountPhone(parsed.phone || "");
+  if (!email && !phone) return null;
+  return { email, phone, uid: String(parsed.uid || "").trim(), expiresAt: parsed.expiresAt };
+}
+
 function hashAdminPassword(password = "", salt = crypto.randomBytes(16).toString("hex")) {
   const cleanSalt = String(salt || "").trim() || crypto.randomBytes(16).toString("hex");
   const hash = crypto.scryptSync(String(password || ""), cleanSalt, 64).toString("hex");
@@ -519,6 +568,12 @@ function hashAdminPassword(password = "", salt = crypto.randomBytes(16).toString
 function safeEqualHex(left = "", right = "") {
   const a = Buffer.from(String(left || ""), "hex");
   const b = Buffer.from(String(right || ""), "hex");
+  return a.length > 0 && a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+function safeEqualText(left = "", right = "") {
+  const a = Buffer.from(String(left || ""));
+  const b = Buffer.from(String(right || ""));
   return a.length > 0 && a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
@@ -594,6 +649,33 @@ function clearAdminSessionCookie(res) {
   res.setHeader("Set-Cookie", "swadra_admin_token=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=None");
 }
 
+function setCustomerSessionCookie(res, token = "", expiresAt = "") {
+  if (!token) return;
+  const maxAgeSeconds = Math.max(1, Math.floor((Date.parse(expiresAt || "") - Date.now()) / 1000)) || (30 * 24 * 60 * 60);
+  res.append("Set-Cookie", [
+    "swadra_customer_token=" + encodeURIComponent(String(token || "")),
+    "Max-Age=" + maxAgeSeconds,
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=None"
+  ].join("; "));
+}
+
+function getCustomerSessionFromRequest(db = {}, req) {
+  const auth = String(req.get("authorization") || "").trim();
+  const bearer = /^Bearer\s+/i.test(auth) ? auth.replace(/^Bearer\s+/i, "").trim() : "";
+  const explicit = String(req.get("x-customer-session-token") || req.query?.customerToken || req.body?.customerToken || "").trim();
+  const cookie = String(req.get("cookie") || "");
+  const match = cookie.match(/(?:^|;\s*)swadra_customer_token=([^;]+)/);
+  const tokens = [bearer, explicit, match ? decodeURIComponent(match[1]) : ""].filter(Boolean);
+  for (const token of tokens) {
+    const session = verifySignedCustomerToken(db, token);
+    if (session) return session;
+  }
+  return null;
+}
+
 function findValidAdminSession(db = {}, req) {
   const tokens = getAdminTokensFromRequest(req);
   if (!tokens.length) return null;
@@ -648,7 +730,11 @@ function getUniqueCustomerIdentities(values = []) {
 }
 
 function getCustomerAccessFields(req) {
+  const cookieSession = req.__customerSession || null;
   return getUniqueCustomerIdentities([
+    cookieSession?.email,
+    cookieSession?.phone,
+    cookieSession?.uid,
     req.query?.userId,
     req.query?.uid,
     req.query?.authUserId,
@@ -3802,7 +3888,10 @@ app.post("/api/account/create", paymentRateLimit, async (req, res) => {
     const db = await readDB();
     recordUserActivity(db, { type: "account_saved", email: record.email, phone: record.phone, status: "success", req });
     await writeDB(db);
-    res.json({ ok: true, existed: false, record });
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const customerToken = createSignedCustomerToken(db, { email: record.email, phone: record.phone, uid: record.uid || record.userId, expiresAt });
+    setCustomerSessionCookie(res, customerToken, expiresAt);
+    res.json({ ok: true, existed: false, record, session: { token: customerToken, expiresAt, email: record.email } });
   } catch (error) {
     addLog("Account create failed: " + error.message, "error");
     res.status(error.statusCode || 500).json({ ok: false, error: error.message || "Account create failed" });
@@ -3857,7 +3946,14 @@ app.post("/api/account/activity", paymentRateLimit, async (req, res) => {
       };
     }
     await writeDB(db);
-    res.json({ ok: true, activity });
+    let session = null;
+    if (email && type === "login") {
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const token = createSignedCustomerToken(db, { email, phone, expiresAt });
+      setCustomerSessionCookie(res, token, expiresAt);
+      session = { token, expiresAt, email };
+    }
+    res.json({ ok: true, activity, session });
   } catch (error) {
     addLog("Account activity save failed: " + error.message, "error");
     res.status(500).json({ ok: false, error: "Failed to save account activity" });
@@ -4292,6 +4388,7 @@ app.post("/api/orders", async (req, res) => {
 app.get("/api/orders/:id", async (req, res) => {
   try {
     const db = await readDB();
+    req.__customerSession = getCustomerSessionFromRequest(db, req);
     const orderId = String(req.params.id);
     const nestedOrder = db.orders.find((item) => String(item.id) === orderId);
     const topLevelOrders = await readTopLevelFirestoreCollection("orders");
@@ -4314,6 +4411,7 @@ app.post("/api/orders/:id/cancel", paymentRateLimit, async (req, res) => {
   try {
     if (!requireDurablePersistence(res)) return;
     const db = await readDB();
+    req.__customerSession = getCustomerSessionFromRequest(db, req);
     const orderId = String(req.params.id || "");
     const index = findOrderIndex(db, (order) => String(order.id) === orderId);
     if (index < 0) return res.status(404).json({ ok: false, error: "Order not found" });
@@ -4383,6 +4481,7 @@ app.post("/api/orders/:id/return-request", paymentRateLimit, async (req, res) =>
   try {
     if (!requireDurablePersistence(res)) return;
     const db = await readDB();
+    req.__customerSession = getCustomerSessionFromRequest(db, req);
     const orderId = String(req.params.id || "");
     const index = findOrderIndex(db, (order) => String(order.id) === orderId);
     if (index < 0) return res.status(404).json({ ok: false, error: "Order not found" });
@@ -4825,6 +4924,7 @@ app.get("/api/orders", requireAdminSession, async (req, res) => {
 app.get("/api/orders/user/:userId", async (req, res) => {
   try {
     const db = await readDB();
+    req.__customerSession = getCustomerSessionFromRequest(db, req);
     const userId = decodeURIComponent(req.params.userId || "");
     const normalizedUserId = String(userId || "").trim().toLowerCase();
     const requester = getCustomerAccessFields(req);

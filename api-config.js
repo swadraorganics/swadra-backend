@@ -788,6 +788,7 @@
   async function saveUserRecordToBackend(record){
     var response = await fetch(base + "/api/account/create", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(record || {})
     });
@@ -804,6 +805,7 @@
     if(!email && !source.phone && !source.mobile) return;
     fetch(base + "/api/account/activity", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(Object.assign({}, source, {
         type: String(type || source.type || "activity").trim().toLowerCase(),
