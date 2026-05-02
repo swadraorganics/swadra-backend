@@ -166,11 +166,15 @@
 
       backendOrdersCache.forEach((order)=>{
         if(!order || typeof order !== "object") return;
-        const orderEmail = String(getValueByPossibleKeys(order, ["email","emailId","mail","UserEmail","userId","user"])).trim().toLowerCase();
+        const shipping = order.shipping && typeof order.shipping === "object" ? order.shipping : {};
+        const orderEmail = String(
+          getValueByPossibleKeys(order, ["email","emailId","mail","UserEmail","customerEmail","userEmail","userId","user"]) ||
+          getValueByPossibleKeys(shipping, ["email","emailId","mail"])
+        ).trim().toLowerCase();
         const orderMobile = normalizeMobile(
-          getValueByPossibleKeys(order, ["mobile","phone","phoneNumber","mobileNumber","contactNumber","UserPhone","shippingPhone"]) ||
-          order.shipping?.phone ||
-          order.shipping?.mobile
+          getValueByPossibleKeys(order, ["mobile","phone","phoneNumber","mobileNumber","contactNumber","UserPhone","customerPhone","shippingPhone"]) ||
+          shipping.phone ||
+          shipping.mobile
         );
         const orderUserId = String(getValueByPossibleKeys(order, ["userId","user"])).trim().toLowerCase();
         const sameEmail = normalizedEmail && (orderEmail === normalizedEmail || orderUserId === normalizedEmail);
@@ -185,11 +189,28 @@
 
     function normalizeOrderItem(rawItem){
       const name = String(getValueByPossibleKeys(rawItem, ["name","productName","title"])).trim() || "Product";
-      const size = String(getValueByPossibleKeys(rawItem, ["size","variant","productSize"])).trim();
+      const size = String(getValueByPossibleKeys(rawItem, ["size","variant","productSize","selectedSize","weight","packSize","unit","weightLabel","quantityLabel"])).trim();
       const quantity = Number(getValueByPossibleKeys(rawItem, ["quantity","qty","count"])) || 1;
-      const price = Number(getValueByPossibleKeys(rawItem, ["price","sellingPrice","amount"])) || 0;
+      const price = Number(getValueByPossibleKeys(rawItem, ["price","sellingPrice","discountedUnitPrice","amount"])) || 0;
+      const mrp = Number(getValueByPossibleKeys(rawItem, ["mrp","originalPrice","mrpPrice"])) || price;
+      const discountedLineTotal = Number(getValueByPossibleKeys(rawItem, ["discountedLineTotal","lineTotal","finalLineTotal","total"])) || (price * quantity);
+      const displayLineTotal = Number(getValueByPossibleKeys(rawItem, ["displayLineTotal","mrpLineTotal","originalLineTotal"])) || (mrp * quantity);
+      const couponLineDiscount = Number(getValueByPossibleKeys(rawItem, ["couponLineDiscount","couponDiscount","lineCouponDiscount"])) || 0;
 
-      return { name, size, quantity, price };
+      return { name, size, quantity, price, mrp, discountedLineTotal, displayLineTotal, couponLineDiscount };
+    }
+
+    function normalizeCustomerOrderStatus(raw){
+      const value = String(raw || "").trim().toLowerCase();
+      if(!value) return "Unknown";
+      if(value.includes("cancel")) return "Cancelled";
+      if((value.includes("non") && value.includes("deliver")) || (value.includes("failed") && value.includes("deliver")) || value.includes("rto")) return "Non Delivered";
+      if(value.includes("out")) return "Out for Delivery";
+      if(value.includes("dispatch") || value.includes("ship")) return "Shipped";
+      if(value.includes("deliver")) return "Delivered";
+      if(value.includes("pack") || value.includes("process")) return "Packed";
+      if(value.includes("confirm")) return "Order Confirmed";
+      return raw || "Unknown";
     }
 
     function normalizeAddressEntry(rawAddress, fallbackId){
@@ -266,7 +287,7 @@
 
       return {
         id: String(getValueByPossibleKeys(raw, ["id","orderId","orderID","invoiceId","order_id"])) || `${fallbackLabel}_${Math.random().toString(16).slice(2)}`,
-        status: String(getValueByPossibleKeys(raw, ["orderStatus","status","deliveryStatus"])).trim() || "Unknown",
+        status: normalizeCustomerOrderStatus(getValueByPossibleKeys(raw, ["orderStatus","status","deliveryStatus"])),
         paymentStatus: String(getValueByPossibleKeys(raw, ["paymentStatus","payment","payment_state","payment_state_text"])).trim() || "Unknown",
         refundStatus: String(getValueByPossibleKeys(raw, ["refundStatus","razorpayRefundStatus","razorpayRefundGatewayStatus"])).trim(),
         refundId: String(getValueByPossibleKeys(raw, ["refundId","razorpayRefundId"])).trim(),

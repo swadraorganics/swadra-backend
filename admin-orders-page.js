@@ -79,15 +79,29 @@
     function normalizeOrderStatus(raw){
       const value = normalizeText(raw);
       if(!value) return "unknown";
+      if(value.includes("cancel")) return "cancelled";
+      if((value.includes("non") && value.includes("deliver")) || (value.includes("failed") && value.includes("deliver")) || value.includes("rto")) return "non-delivered";
       if(value.includes("pending")) return "pending";
       if(value.includes("confirm")) return "confirmed";
       if(value.includes("pack")) return "packed";
       if(value.includes("dispatch")) return "shipped";
-      if(value.includes("out for delivery") || value.includes("out_for_delivery")) return "shipped";
+      if(value.includes("out for delivery") || value.includes("out_for_delivery")) return "out-for-delivery";
       if(value.includes("ship")) return "shipped";
       if(value.includes("deliver")) return "delivered";
-      if(value.includes("cancel")) return "cancelled";
       return value;
+    }
+
+    function orderStatusLabel(status){
+      const value = normalizeOrderStatus(status);
+      if(value === "confirmed") return "Order Confirmed";
+      if(value === "packed") return "Packed";
+      if(value === "shipped") return "Shipped";
+      if(value === "out-for-delivery") return "Out for Delivery";
+      if(value === "delivered") return "Delivered";
+      if(value === "non-delivered") return "Non Delivered";
+      if(value === "cancelled") return "Cancelled";
+      if(value === "pending") return "Pending";
+      return value || "Unknown";
     }
 
     function getUsersMap(){
@@ -426,7 +440,7 @@ ${escapeHtml(senderAddress)}</div>
       const deliveredCount = allOrders.filter(item => item.status === "delivered").length;
       const cancelledCount = allOrders.filter(item => item.status === "cancelled").length;
       const pendingAmount = allOrders
-        .filter(item => ["pending","confirmed","packed","shipped"].includes(item.status))
+        .filter(item => ["pending","confirmed","packed","shipped","out-for-delivery"].includes(item.status))
         .reduce((sum, item) => sum + Number(item.amount || 0), 0);
       const totalAmount = allOrders.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
@@ -453,7 +467,7 @@ ${escapeHtml(senderAddress)}</div>
       document.getElementById("deliveredOrdersView").textContent = visibleOrders.filter(item => item.status === "delivered").length;
       document.getElementById("pendingAmountView").textContent = rupee(
         visibleOrders
-          .filter(item => ["pending","confirmed","packed","shipped"].includes(item.status))
+          .filter(item => ["pending","confirmed","packed","shipped","out-for-delivery"].includes(item.status))
           .reduce((sum, item) => sum + Number(item.amount || 0), 0)
       );
       document.getElementById("cancelledOrdersView").textContent = visibleOrders.filter(item => item.status === "cancelled").length;
@@ -475,9 +489,11 @@ ${escapeHtml(senderAddress)}</div>
         const statusClass =
           order.status === "delivered" ? "green" :
           order.status === "cancelled" ? "red" :
+          order.status === "non-delivered" ? "red" :
           order.status === "pending" ? "gold" :
           order.status === "packed" ? "gold" :
           order.status === "shipped" ? "gold" :
+          order.status === "out-for-delivery" ? "gold" :
           order.status === "confirmed" ? "green" : "";
 
         const lineItemsHtml = order.items.length
@@ -512,7 +528,7 @@ ${escapeHtml(senderAddress)}</div>
               <div>
                 <h3>${escapeHtml(order.customerName)}</h3>
                 <div class="badge-wrap">
-                  <span class="badge ${statusClass}">${escapeHtml(order.status)}</span>
+                  <span class="badge ${statusClass}">${escapeHtml(orderStatusLabel(order.status))}</span>
                   <span class="badge">Order ID: ${escapeHtml(order.id)}</span>
                   <span class="badge gold">Items: ${order.items.length}</span>
                 </div>
@@ -584,7 +600,10 @@ ${escapeHtml(senderAddress)}</div>
             <div class="card-actions">
               <button class="btn-secondary" onclick="updateOrderStatus('${escapeHtml(order.id)}','confirmed')">Confirm</button>
               <button class="btn-primary" onclick="updateOrderStatus('${escapeHtml(order.id)}','packed')">Packed</button>
+              <button class="btn-primary" onclick="updateOrderStatus('${escapeHtml(order.id)}','shipped')">Shipped</button>
+              <button class="btn-secondary" onclick="updateOrderStatus('${escapeHtml(order.id)}','out-for-delivery')">Out for Delivery</button>
               <button class="btn-dark" onclick="updateOrderStatus('${escapeHtml(order.id)}','delivered')">Deliver</button>
+              <button class="btn-danger" onclick="updateOrderStatus('${escapeHtml(order.id)}','non-delivered')">Non Delivered</button>
               <button class="btn-danger" onclick="updateOrderStatus('${escapeHtml(order.id)}','cancelled')">Cancel</button>
               <button class="btn-light" onclick="openInvoiceById('${escapeHtml(order.id)}')">View Invoice</button>
               <button class="btn-light" onclick="openPrintLabelById('${escapeHtml(order.id)}')">Print Label</button>
