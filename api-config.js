@@ -798,6 +798,22 @@
     return sanitizeUserRecord(data.record || record, record && record.email);
   }
 
+  function postAccountActivity(type, payload){
+    var source = payload && typeof payload === "object" ? payload : {};
+    var email = normalizeEmailValue(source.email || getCurrentUserEmail() || "");
+    if(!email && !source.phone && !source.mobile) return;
+    fetch(base + "/api/account/activity", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(Object.assign({}, source, {
+        type: String(type || source.type || "activity").trim().toLowerCase(),
+        email: email || source.email || ""
+      }))
+    }).catch(function(error){
+      console.error("account activity sync failed", error);
+    });
+  }
+
   function mirrorSessionUserToBackend(email, options){
     var normalizedEmail = normalizeEmailValue(email);
     if(!normalizedEmail) return;
@@ -1586,6 +1602,11 @@
         console.error("last login save failed", error);
       });
     }
+    postAccountActivity("login", {
+      email: normalizedEmail,
+      phone: getSessionValue("userPhone") || currentRecord && currentRecord.phone || "",
+      status: "success"
+    });
     return getCurrentUserRecord();
   }
 
@@ -1603,6 +1624,11 @@
       currentRecord.updatedAt = currentRecord.lastLoginAt;
       await saveAuthUserRecord(currentRecord);
     }
+    postAccountActivity("login", {
+      email: normalizedEmail,
+      phone: getSessionValue("userPhone") || currentRecord && currentRecord.phone || "",
+      status: "success"
+    });
     return normalizedEmail;
   }
 

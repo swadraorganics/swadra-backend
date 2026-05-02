@@ -3809,6 +3809,61 @@ app.post("/api/account/create", paymentRateLimit, async (req, res) => {
   }
 });
 
+app.post("/api/account/activity", paymentRateLimit, async (req, res) => {
+  try {
+    const email = normalizeAccountEmail(req.body?.email || req.body?.userId || "");
+    const phone = normalizeAccountPhone(req.body?.phone || req.body?.mobile || "");
+    const allowedTypes = new Set([
+      "login",
+      "logout",
+      "account_created",
+      "profile_updated",
+      "address_updated",
+      "product_added_to_cart",
+      "cart_updated",
+      "checkout_started",
+      "coupon_applied",
+      "payment_started",
+      "payment_success",
+      "payment_failed",
+      "payment_cancelled",
+      "order_created",
+      "order_cancelled"
+    ]);
+    const type = String(req.body?.type || req.body?.action || "activity").trim().toLowerCase();
+    if (!email && !phone) return res.status(400).json({ ok: false, error: "User identity is required" });
+    if (!allowedTypes.has(type)) return res.status(400).json({ ok: false, error: "Unsupported activity type" });
+    const db = await readDB();
+    const activity = recordUserActivity(db, {
+      type,
+      email,
+      phone,
+      orderId: req.body?.orderId,
+      paymentId: req.body?.paymentId || req.body?.razorpayPaymentId,
+      status: req.body?.status || "saved",
+      details: req.body?.details && typeof req.body.details === "object" ? req.body.details : {},
+      req
+    });
+    if (email && type === "login") {
+      db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+      db.appState.users = db.appState.users && typeof db.appState.users === "object" ? db.appState.users : {};
+      db.appState.users[email] = {
+        ...(db.appState.users[email] || {}),
+        email,
+        phone: db.appState.users[email]?.phone || phone,
+        phoneNormalized: normalizeAccountPhone(db.appState.users[email]?.phone || phone),
+        lastLoginAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+    await writeDB(db);
+    res.json({ ok: true, activity });
+  } catch (error) {
+    addLog("Account activity save failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to save account activity" });
+  }
+});
+
 app.post("/api/account/reset-password", paymentRateLimit, async (req, res) => {
   try {
     const email = normalizeAccountEmail(req.body?.email);
