@@ -256,7 +256,7 @@
 
     .orders-sheet{
       width:100%;
-      min-width:1080px;
+      min-width:1220px;
       border-collapse:collapse;
       font-size:14px;
     }
@@ -289,7 +289,8 @@
 
     .order-sheet-id,
     .order-sheet-customer,
-    .order-sheet-contact{
+    .order-sheet-contact,
+    .order-sheet-shiprocket{
       display:grid;
       gap:5px;
       min-width:160px;
@@ -304,10 +305,18 @@
 
     .order-sheet-id span,
     .order-sheet-customer span,
-    .order-sheet-contact span{
+    .order-sheet-contact span,
+    .order-sheet-shiprocket span{
       color:var(--muted);
       font-size:12px;
       font-weight:700;
+      word-break:break-word;
+    }
+
+    .order-sheet-shiprocket strong{
+      color:#1f1f1f;
+      font-size:14px;
+      line-height:1.25;
       word-break:break-word;
     }
 

@@ -234,8 +234,8 @@
         getValueByPossibleKeys(shiprocketObj, ["trackingUrl","tracking_url"])
       ).trim();
       const trackingStatus = String(
-        getValueByPossibleKeys(raw, ["trackingStatus","shipmentStatus","shiprocketStatus"]) ||
-        getValueByPossibleKeys(shiprocketObj, ["trackingStatus","shipmentStatus","shiprocketStatus"])
+        getValueByPossibleKeys(raw, ["trackingStatus","shipmentStatus","shiprocketStatus","currentStatus","deliveryStatus","status","tracking_status","shipment_status"]) ||
+        getValueByPossibleKeys(shiprocketObj, ["trackingStatus","shipmentStatus","shiprocketStatus","currentStatus","deliveryStatus","status","tracking_status","shipment_status"])
       ).trim();
       const refundStatus = String(getValueByPossibleKeys(raw, ["refundStatus","razorpayRefundStatus","razorpayRefundGatewayStatus"])).trim();
       const refundId = String(getValueByPossibleKeys(raw, ["refundId","razorpayRefundId"])).trim();
@@ -626,6 +626,7 @@ ${escapeHtml(senderAddress)}</div>
                 <div class="ship-block">
                   <div class="section-title">Dispatch</div>
                   <b>Pickup:</b> ${escapeHtml(order.pickupPincode || "126102")}<br>
+                  <b>Status:</b> ${escapeHtml(getShiprocketStatusText(order))}<br>
                   <b>AWB:</b> ${escapeHtml(order.awb || "-")}<br>
                   <b>Courier:</b> ${escapeHtml(order.courierName || "-")}
                 </div>
@@ -653,6 +654,36 @@ ${escapeHtml(senderAddress)}</div>
       row.classList.toggle("open");
     }
 
+    function getShiprocketStatusText(order){
+      const status = String(
+        order.trackingStatus ||
+        order.shiprocket?.trackingStatus ||
+        order.shiprocket?.shipmentStatus ||
+        order.shiprocket?.shiprocketStatus ||
+        order.shiprocket?.currentStatus ||
+        order.shiprocket?.deliveryStatus ||
+        order.shiprocket?.status ||
+        order.shiprocket?.tracking_status ||
+        order.shiprocket?.shipment_status ||
+        ""
+      ).trim();
+      if(status) return status;
+      if(order.awb) return "Tracking Created";
+      if(order.shipmentId) return "Shipment Created";
+      return "-";
+    }
+
+    function getShiprocketTrackingText(order){
+      return String(
+        order.awb ||
+        order.shiprocket?.awb ||
+        order.shiprocket?.trackingId ||
+        order.shiprocket?.awbCode ||
+        order.shiprocket?.awb_code ||
+        ""
+      ).trim() || "-";
+    }
+
     function renderOrders(){
       const allOrders = getOrdersFromStorage();
       const orders = getFilteredOrders();
@@ -677,6 +708,8 @@ ${escapeHtml(senderAddress)}</div>
           order.status === "out-for-delivery" ? "gold" :
           order.status === "confirmed" ? "green" : "";
         const statusText = order.cancelledBy === "user" ? "User Cancelled" : orderStatusLabel(order.status);
+        const shiprocketStatus = getShiprocketStatusText(order);
+        const shiprocketTracking = getShiprocketTrackingText(order);
         return `
           <tr class="order-main-row">
             <td>
@@ -697,6 +730,13 @@ ${escapeHtml(senderAddress)}</div>
                 <span>${escapeHtml(order.email || "-")}</span>
               </div>
             </td>
+            <td>
+              <div class="order-sheet-shiprocket">
+                <strong>${escapeHtml(shiprocketStatus)}</strong>
+                <span>Tracking: ${escapeHtml(shiprocketTracking)}</span>
+                ${order.courierName ? `<span>${escapeHtml(order.courierName)}</span>` : ""}
+              </div>
+            </td>
             <td><span class="badge ${statusClass}">${escapeHtml(statusText)}</span></td>
             <td class="order-sheet-amount">${rupee(order.amount)}</td>
             <td>
@@ -704,7 +744,7 @@ ${escapeHtml(senderAddress)}</div>
             </td>
           </tr>
           <tr class="order-detail-row" id="orderDetail_${escapeHtml(rowId)}">
-            <td colspan="6">${buildOrderCardHtml(order)}</td>
+            <td colspan="7">${buildOrderCardHtml(order)}</td>
           </tr>
         `;
       }).join("");
@@ -717,6 +757,7 @@ ${escapeHtml(senderAddress)}</div>
                 <th>Order ID</th>
                 <th>Customer</th>
                 <th>Mobile / Email</th>
+                <th>Shiprocket</th>
                 <th>Status</th>
                 <th>Paid Amount</th>
                 <th>View More</th>
