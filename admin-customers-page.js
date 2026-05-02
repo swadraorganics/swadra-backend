@@ -125,7 +125,7 @@
           if(!Object.keys(backendUsersCache).length){
             await mergeAuthUsersFallback();
           }
-          return;
+          if(Object.keys(backendUsersCache).length) return;
         }
         if(response.status === 401){
           console.warn("admin users session unavailable, trying account users fallback");
@@ -137,7 +137,12 @@
       }
 
       try{
-        const response = await fetch(`${base}/api/account/users`, {
+        const recoveryParams = new URLSearchParams({
+          recoverRazorpay: "recent",
+          days: "7",
+          email: "swadraorganics@gmail.com"
+        });
+        const response = await fetch(`${base}/api/account/users?${recoveryParams.toString()}`, {
           method: "GET",
           cache: "no-store",
           credentials: "include",

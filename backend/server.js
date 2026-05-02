@@ -2213,6 +2213,167 @@ async function fetchRazorpayPaymentDetails(paymentId) {
   };
 }
 
+async function fetchRazorpayPayments({ from, to, count = 100, skip = 0 } = {}) {
+  const query = new URLSearchParams();
+  if (from) query.set("from", String(from));
+  if (to) query.set("to", String(to));
+  query.set("count", String(Math.max(1, Math.min(100, Math.round(toNumber(count) || 100)))));
+  query.set("skip", String(Math.max(0, Math.round(toNumber(skip) || 0))));
+  const response = await razorpayApiRequest({
+    method: "GET",
+    path: "/v1/payments?" + query.toString()
+  });
+  const items = Array.isArray(response.data?.items) ? response.data.items : [];
+  return {
+    ok: response.ok,
+    configured: response.configured,
+    payments: items,
+    count: items.length,
+    message: response.message
+  };
+}
+
+function getDateKeyFromUnixSeconds(value) {
+  const date = value ? new Date(Number(value) * 1000) : new Date();
+  if (Number.isNaN(date.getTime())) return new Date().toISOString().slice(2, 10).replace(/-/g, "");
+  return date.toISOString().slice(2, 10).replace(/-/g, "");
+}
+
+function getNextRecoveredOrderId(existingOrders = [], dateKey = "") {
+  const key = String(dateKey || new Date().toISOString().slice(2, 10).replace(/-/g, "")).replace(/\D/g, "").slice(0, 6);
+  const prefix = "SWO" + key;
+  const max = (Array.isArray(existingOrders) ? existingOrders : []).reduce((highest, order) => {
+    const id = String(order?.id || order?.orderId || "");
+    if (!id.startsWith(prefix)) return highest;
+    const number = Number(id.slice(prefix.length));
+    return Number.isFinite(number) ? Math.max(highest, number) : highest;
+  }, 0);
+  return prefix + String(max + 1).padStart(3, "0");
+}
+
+function razorpayPaymentLooksPaid(payment = {}) {
+  const status = String(payment.status || "").toLowerCase();
+  return status === "captured" || status === "paid" || payment.captured === true;
+}
+
+function buildRecoveredOrderFromRazorpayPayment(payment = {}, existingOrders = [], fallbackEmail = "") {
+  if (!razorpayPaymentLooksPaid(payment)) return null;
+  const notes = payment.notes && typeof payment.notes === "object" ? payment.notes : {};
+  const email = normalizeAccountEmail(payment.email || notes.email || notes.customer_email || fallbackEmail || "");
+  if (!email) return null;
+  const phone = normalizeAccountPhone(payment.contact || notes.phone || notes.mobile || notes.delivery_phone || "");
+  const dateKey = getDateKeyFromUnixSeconds(payment.created_at);
+  const orderId = String(
+    notes.local_order_id ||
+    notes.localOrderId ||
+    notes.order_id ||
+    notes.orderId ||
+    payment.notes?.createdOrderId ||
+    ""
+  ).trim() || getNextRecoveredOrderId(existingOrders, dateKey);
+  const amount = Math.round(toNumber(payment.amount) / 100);
+  const createdAt = payment.created_at ? new Date(Number(payment.created_at) * 1000).toISOString() : new Date().toISOString();
+  const name = String(notes.delivery_name || notes.name || email.split("@")[0] || "Customer").trim();
+  const shipping = {
+    name,
+    email,
+    phone,
+    address: String(notes.delivery_address || notes.address || "").trim(),
+    pincode: String(notes.pincode || notes.delivery_pincode || "").trim()
+  };
+  return normalizeOrderForDb({
+    id: orderId,
+    orderId,
+    userId: email,
+    email,
+    customerEmail: email,
+    phone,
+    customerPhone: phone,
+    items: [],
+    total: amount,
+    amount,
+    finalAmount: amount,
+    shipping,
+    payment: "Paid Successfully",
+    paymentStatus: "Paid Successfully",
+    payment_id: payment.id || "",
+    paymentId: payment.id || "",
+    razorpayPaymentId: payment.id || "",
+    razorpay_order_id: payment.order_id || "",
+    razorpayOrderId: payment.order_id || "",
+    paymentMethod: payment.method || "online",
+    paymentInstrument: {
+      method: payment.method || "",
+      vpa: payment.vpa || payment.acquirer_data?.vpa || "",
+      bank: payment.bank || payment.acquirer_data?.bank || "",
+      status: payment.status || ""
+    },
+    status: "Confirmed",
+    statusHistory: [{ status: "Confirmed", time: createdAt, note: "Recovered from captured Razorpay payment." }],
+    recoveredFromRazorpay: true,
+    source: "razorpayPayments",
+    date: createdAt,
+    createdAt,
+    updatedAt: new Date().toISOString()
+  });
+}
+
+async function recoverRecentRazorpayOrders(db, { days = 3, fallbackEmail = "" } = {}) {
+  if (!isRazorpayConfigured()) return { ok: false, recovered: [], message: "Razorpay not configured" };
+  const now = Math.floor(Date.now() / 1000);
+  const from = now - Math.max(1, Math.min(30, Math.round(toNumber(days) || 3))) * 24 * 60 * 60;
+  const response = await fetchRazorpayPayments({ from, to: now, count: 100 });
+  if (!response.ok) return { ok: false, recovered: [], message: response.message };
+  const existingOrders = mergeRecordsById(await readTopLevelFirestoreCollection("orders"), Array.isArray(db.orders) ? db.orders : []);
+  const existingPaymentIds = new Set(existingOrders.map((order) => String(order?.razorpayPaymentId || order?.paymentId || order?.payment_id || "").trim()).filter(Boolean));
+  const existingOrderIds = new Set(existingOrders.map((order) => String(order?.id || order?.orderId || "").trim()).filter(Boolean));
+  const recovered = [];
+  response.payments
+    .filter(razorpayPaymentLooksPaid)
+    .sort((a, b) => Number(a.created_at || 0) - Number(b.created_at || 0))
+    .forEach((payment) => {
+      const paymentId = String(payment.id || "").trim();
+      if (paymentId && existingPaymentIds.has(paymentId)) return;
+      const order = buildRecoveredOrderFromRazorpayPayment(payment, [...existingOrders, ...recovered], fallbackEmail);
+      if (!order) return;
+      const orderId = String(order.id || order.orderId || "").trim();
+      if (!orderId || existingOrderIds.has(orderId)) return;
+      existingOrderIds.add(orderId);
+      if (paymentId) existingPaymentIds.add(paymentId);
+      recovered.push(order);
+    });
+  for (const order of recovered) {
+    db.orders.unshift(order);
+    db.paymentAttempts.unshift({
+      id: order.id,
+      orderId: order.id,
+      createdOrderId: order.id,
+      status: "paid",
+      amount: order.total,
+      email: order.email,
+      customerEmail: order.customerEmail,
+      phone: order.phone,
+      customerPhone: order.customerPhone,
+      items: order.items,
+      checkoutData: order.shipping,
+      razorpayPaymentId: order.razorpayPaymentId,
+      razorpayOrderId: order.razorpayOrderId,
+      paymentMethod: order.paymentMethod,
+      paymentInstrument: order.paymentInstrument,
+      source: "razorpayRecovery",
+      createdAt: order.createdAt,
+      updatedAt: new Date().toISOString()
+    });
+    await mirrorOrderToCustomerProfile(db, order);
+    await writeTopLevelOrder(order).catch((error) => addLog("Recovered order mirror skipped: " + error.message, "warn"));
+    await writeTopLevelPaymentAttempt(db.paymentAttempts[0]).catch((error) => addLog("Recovered payment mirror skipped: " + error.message, "warn"));
+  }
+  db.orders = db.orders.slice(0, 5000);
+  db.paymentAttempts = db.paymentAttempts.slice(0, 1000);
+  if (recovered.length) await writeDB(db);
+  return { ok: true, recovered, scanned: response.count };
+}
+
 function pickRazorpayPaymentId(order = {}) {
   return String(
     order.razorpayPaymentId ||
@@ -3185,6 +3346,13 @@ app.get("/api/admin/users", requireAdminSession, async (req, res) => {
 
 app.get("/api/account/users", async (req, res) => {
   try {
+    if (String(req.query?.recoverRazorpay || "").toLowerCase() === "recent") {
+      const db = await readDB();
+      await recoverRecentRazorpayOrders(db, {
+        days: Math.max(1, Math.min(30, Math.round(toNumber(req.query?.days || 7) || 7))),
+        fallbackEmail: normalizeAccountEmail(req.query?.email || "")
+      });
+    }
     const usersMap = await buildAdminUsersMap();
     res.json({
       ok: true,
@@ -4819,6 +4987,9 @@ app.post("/api/payments/attempts", paymentRateLimit, async (req, res) => {
 
     db.paymentAttempts = db.paymentAttempts.slice(0, 1000);
     await writeDB(db);
+    await writeTopLevelPaymentAttempt(attempt).catch((error) => {
+      addLog("Payment attempt Firestore mirror skipped: " + error.message, "warn");
+    });
     res.json({ ok: true, attempt });
   } catch (error) {
     addLog("Payment attempt save failed: " + error.message, "error");
