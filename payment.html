@@ -883,6 +883,44 @@ function buildOrderDraft(paymentResponse, verification){
   return order;
 }
 
+async function mirrorPaidOrderToUser(order, normalizedCurrentUser){
+  if(!order || !order.id) return;
+  const email = String(order.email || order.customerEmail || user.email || normalizedCurrentUser || "").trim().toLowerCase();
+  const phone = order.phone || order.customerPhone || checkoutData.phone || user.phone || "";
+  const profileOrder = {
+    ...order,
+    userId: order.userId || email || normalizedCurrentUser,
+    email: email || order.email || "",
+    customerEmail: order.customerEmail || email || "",
+    phone: order.phone || phone,
+    customerPhone: order.customerPhone || phone
+  };
+  if(dataApi && typeof dataApi.saveOrder === "function"){
+    await dataApi.saveOrder(profileOrder.id, profileOrder).catch(function(error){
+      console.error("paid order firestore save failed", error);
+    });
+  }
+  if(dataApi && typeof dataApi.syncOrderIntoUserProfile === "function"){
+    await dataApi.syncOrderIntoUserProfile(profileOrder).catch(function(error){
+      console.error("paid order user profile sync failed", error);
+    });
+  }
+  if(email){
+    users = getUsers();
+    const existing = users[email] || { email: email, cart: [], orders: [] };
+    const orders = Array.isArray(existing.orders) ? existing.orders.slice() : [];
+    const index = orders.findIndex(function(item){ return String(item && item.id) === String(profileOrder.id); });
+    if(index > -1) orders[index] = { ...orders[index], ...profileOrder };
+    else orders.unshift(profileOrder);
+    users[email] = { ...existing, email: email, phone: existing.phone || phone, orders: orders };
+    if(authApi && typeof authApi.saveUsers === "function"){
+      await Promise.resolve(authApi.saveUsers(users)).catch(function(error){
+        console.error("paid order local user cache sync failed", error);
+      });
+    }
+  }
+}
+
 async function saveOrder(paymentResponse, verification){
   if(!verification || !verification.verified || !verification.order){
     throw new Error("Verified backend order is required");
@@ -910,6 +948,7 @@ async function saveOrder(paymentResponse, verification){
       orderId: order.id
     }).catch(function(error){ console.error("abandoned cart recovered sync failed", error); });
   }
+  await mirrorPaidOrderToUser(order, normalizedCurrentUser);
   lastSuccessOrder = order;
   trackPaymentEvent("backend_order_created", { orderId: order.id, userId: normalizedCurrentUser });
   alert("Order Placed Successfully");
