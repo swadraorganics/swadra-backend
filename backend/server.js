@@ -3838,11 +3838,16 @@ app.get("/api/carts/:userId", paymentRateLimit, async (req, res) => {
     const userId = String(req.params.userId || "").trim();
     if (!userId) return res.status(400).json({ ok: false, error: "User id required" });
     const db = await readDB();
-    let doc = await getFirestore().collection("carts").doc(safeDocId(userId)).get();
-    let data = doc.exists ? doc.data() || {} : {};
-    if (!doc.exists && userId.includes("@")) {
-      const snap = await getFirestore().collection("carts").where("email", "==", normalizeAccountEmail(userId)).limit(1).get();
-      if (!snap.empty) data = snap.docs[0].data() || {};
+    let data = {};
+    try {
+      let doc = USE_FIRESTORE ? await getFirestore().collection("carts").doc(safeDocId(userId)).get() : null;
+      data = doc && doc.exists ? doc.data() || {} : {};
+      if ((!doc || !doc.exists) && userId.includes("@") && USE_FIRESTORE) {
+        const snap = await getFirestore().collection("carts").where("email", "==", normalizeAccountEmail(userId)).limit(1).get();
+        if (!snap.empty) data = snap.docs[0].data() || {};
+      }
+    } catch (readError) {
+      addLog("Cart Firestore read skipped: " + readError.message, "warn");
     }
     if ((!data || !Array.isArray(data.items) || !data.items.length)) {
       const email = normalizeAccountEmail(data?.email || (userId.includes("@") ? userId : ""));
@@ -3902,11 +3907,16 @@ app.get("/api/checkout-drafts/:userId", paymentRateLimit, async (req, res) => {
     if (!requireDurablePersistence(res)) return;
     const userId = String(req.params.userId || "").trim();
     if (!userId) return res.status(400).json({ ok: false, error: "User id required" });
-    let doc = await getFirestore().collection("checkoutDrafts").doc(safeDocId(userId)).get();
-    let data = doc.exists ? doc.data() || {} : null;
-    if (!data && userId.includes("@")) {
-      const snap = await getFirestore().collection("checkoutDrafts").where("email", "==", normalizeAccountEmail(userId)).limit(1).get();
-      if (!snap.empty) data = snap.docs[0].data() || {};
+    let data = null;
+    try {
+      let doc = USE_FIRESTORE ? await getFirestore().collection("checkoutDrafts").doc(safeDocId(userId)).get() : null;
+      data = doc && doc.exists ? doc.data() || {} : null;
+      if (!data && userId.includes("@") && USE_FIRESTORE) {
+        const snap = await getFirestore().collection("checkoutDrafts").where("email", "==", normalizeAccountEmail(userId)).limit(1).get();
+        if (!snap.empty) data = snap.docs[0].data() || {};
+      }
+    } catch (readError) {
+      addLog("Checkout draft Firestore read skipped: " + readError.message, "warn");
     }
     res.json({ ok: true, draft: data || null });
   } catch (error) {
@@ -4707,7 +4717,12 @@ app.get("/api/orders/user/:userId", async (req, res) => {
       return res.status(403).json({ ok: false, error: "Order access verification required" });
     }
     const topLevelOrders = await readTopLevelFirestoreCollection("orders");
-    const users = db.appState?.users && typeof db.appState.users === "object" ? db.appState.users : {};
+    const users = { ...(db.appState?.users && typeof db.appState.users === "object" ? db.appState.users : {}) };
+    const topUsers = await readTopLevelFirestoreCollection("users");
+    topUsers.forEach((profile) => {
+      const email = normalizeAccountEmail(profile.email || profile.id || profile.docId || "");
+      if (email) users[email] = { ...(users[email] || {}), ...profile };
+    });
     const profileOrders = [];
     Object.entries(users).forEach(([key, profile]) => {
       const profileIdentities = getUniqueCustomerIdentities([
