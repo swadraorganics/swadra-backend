@@ -4750,6 +4750,22 @@ app.get("/api/orders/user/:userId", async (req, res) => {
       const keys = getOrderCustomerIdentities(order);
       return keys.some((value) => lookupIdentities.includes(value));
     });
+    if (!orders.length) {
+      Object.values(await buildAdminUsersMap()).forEach((profile) => {
+        const profileIdentities = getUniqueCustomerIdentities([
+          profile?.email,
+          profile?.userId,
+          profile?.uid,
+          profile?.id,
+          profile?.phone,
+          profile?.mobile
+        ]);
+        if (!profileIdentities.some((value) => lookupIdentities.includes(value))) return;
+        if (Array.isArray(profile?.orders)) {
+          profile.orders.forEach((order) => orders.push(order));
+        }
+      });
+    }
     res.json({ ok: true, count: orders.length, orders });
   } catch (error) {
     addLog("User orders fetch failed: " + error.message, "error");
