@@ -35,6 +35,97 @@
       return normalize(item.getAttribute("href")) === file;
     });
   }
+  function setLiveBadgeState(badge, label, online, checking){
+    if(!badge) return;
+    var isOnline = !!online && !checking;
+    badge.textContent = label;
+    badge.title = (label === "B" ? "Backend" : "Firestore") + (checking ? " checking..." : (isOnline ? " live. Click to refresh status." : " offline. Click to retry."));
+    badge.setAttribute("aria-label", badge.title);
+    badge.style.display = "inline-flex";
+    badge.style.alignItems = "center";
+    badge.style.justifyContent = "center";
+    badge.style.width = "28px";
+    badge.style.height = "28px";
+    badge.style.padding = "0";
+    badge.style.borderRadius = "999px";
+    badge.style.border = "1px solid rgba(255,255,255,.28)";
+    badge.style.color = "#fff";
+    badge.style.background = checking ? "#9a6700" : (isOnline ? "#15803d" : "#b42318");
+    badge.style.fontSize = "13px";
+    badge.style.fontWeight = "900";
+    badge.style.lineHeight = "1";
+    badge.style.cursor = "pointer";
+    badge.style.userSelect = "none";
+    badge.style.boxShadow = "inset 0 0 0 1px rgba(255,255,255,.08)";
+  }
+  function setupLiveBadges(){
+    var backendBadge = document.getElementById("backendLiveBadge");
+    var firestoreBadge = document.getElementById("firestoreLiveBadge");
+    if(!backendBadge && !firestoreBadge) return;
+
+    if(backendBadge){
+      backendBadge.setAttribute("role", "button");
+      backendBadge.setAttribute("tabindex", "0");
+      setLiveBadgeState(backendBadge, "B", false, true);
+    }
+    if(firestoreBadge){
+      firestoreBadge.setAttribute("role", "button");
+      firestoreBadge.setAttribute("tabindex", "0");
+      setLiveBadgeState(firestoreBadge, "F", false, true);
+    }
+
+    async function checkBackend(){
+      if(!backendBadge) return;
+      setLiveBadgeState(backendBadge, "B", false, true);
+      try{
+        var base = String(window.SWADRA_API_BASE || "https://swadra-backend-production.up.railway.app").replace(/\/+$/, "");
+        var response = await fetch(base + "/health?ts=" + Date.now(), { cache: "no-store" });
+        var data = await response.json().catch(function(){ return {}; });
+        setLiveBadgeState(backendBadge, "B", response.ok && data && data.ok !== false, false);
+      }catch(error){
+        setLiveBadgeState(backendBadge, "B", false, false);
+      }
+    }
+
+    async function checkFirestore(){
+      if(!firestoreBadge) return;
+      setLiveBadgeState(firestoreBadge, "F", false, true);
+      try{
+        if(window.SWADRA_PRODUCT_DATA && typeof window.SWADRA_PRODUCT_DATA.fetchProducts === "function"){
+          await window.SWADRA_PRODUCT_DATA.fetchProducts();
+          setLiveBadgeState(firestoreBadge, "F", true, false);
+          return;
+        }
+        if(!window.firebase || typeof window.firebase.firestore !== "function"){
+          throw new Error("Firestore SDK unavailable");
+        }
+        if(!window.firebase.apps || !window.firebase.apps.length){
+          throw new Error("Firebase app unavailable");
+        }
+        await window.firebase.firestore().collection("products").limit(1).get();
+        setLiveBadgeState(firestoreBadge, "F", true, false);
+      }catch(error){
+        setLiveBadgeState(firestoreBadge, "F", false, false);
+      }
+    }
+
+    function refreshAll(){
+      checkBackend();
+      checkFirestore();
+    }
+
+    [backendBadge, firestoreBadge].forEach(function(badge){
+      if(!badge) return;
+      badge.addEventListener("click", refreshAll);
+      badge.addEventListener("keydown", function(event){
+        if(event.key === "Enter" || event.key === " "){
+          event.preventDefault();
+          refreshAll();
+        }
+      });
+    });
+    refreshAll();
+  }
   var current = normalize(window.location.pathname);
   var nav = document.getElementById("adminGlobalNav");
   if(!nav) return;
@@ -82,4 +173,5 @@
       profileMenu.appendChild(link);
     }
   }
+  setupLiveBadges();
 })();
