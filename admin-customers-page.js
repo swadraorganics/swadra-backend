@@ -911,80 +911,49 @@
         return;
       }
 
-      UserList.innerHTML = Users.map((User) => {
-        const stateClass = User.isPaused ? "red" : "green";
-        const stateLabel = User.isPaused ? "Paused" : "Active";
-        const orderCount = User.details && User.details.orderCount ? Number(User.details.orderCount) : 0;
+      const rowsHtml = Users.map((User) => {
         const totalSpent = User.details && User.details.totalSpent ? Number(User.details.totalSpent) : 0;
-        const cartItems = User.details && User.details.cartCount ? Number(User.details.cartCount) : 0;
-        const cartHtml = buildCartPreviewHtml(User.details && User.details.cart ? User.details.cart : []);
-
         return `
-          <div class="User-card">
-            <div class="User-head">
-              <div>
-                <h3>${escapeHtml(User.name)}</h3>
-                <div class="badge-wrap">
-                  <span class="badge ${stateClass}">${stateLabel}</span>
-                  <span class="badge gold">Source: ${escapeHtml(User.sourceKey)}</span>
-                  <span class="badge">Orders: ${orderCount}</span>
-                  <span class="badge green">Spent: ${rupee(totalSpent)}</span>
-                </div>
+          <tr>
+            <td>
+              <div class="user-sheet-name">
+                <strong>${escapeHtml(User.name || "-")}</strong>
+                <span>${escapeHtml(User.isPaused ? "Paused" : "Active")}</span>
               </div>
-              <div class="badge-wrap">
-                <span class="badge">${escapeHtml(User.id)}</span>
-              </div>
-            </div>
-
-            <div class="card-grid">
-              <div class="mini">
-                <div class="k">Email</div>
-                <div class="v">${escapeHtml(User.email || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Mobile</div>
-                <div class="v">${escapeHtml(User.mobile || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Created</div>
-                <div class="v">${escapeHtml(User.createdAt || "-")}</div>
-              </div>
-              <div class="mini">
-                <div class="k">Cart Items</div>
-                <div class="v">${cartItems}</div>
-              </div>
-            </div>
-
-            <div style="margin-top:12px;">
-              <div style="font-size:13px;font-weight:800;color:#7a3d3d;margin-bottom:8px;">Current Cart</div>
-              ${cartHtml}
-            </div>
-
-            <div class="card-actions">
+            </td>
+            <td class="user-sheet-mobile">${escapeHtml(User.mobile || "-")}</td>
+            <td class="user-sheet-email">${escapeHtml(User.email || "-")}</td>
+            <td class="user-sheet-spent">${rupee(totalSpent)}</td>
+            <td>
               <button
-                class="${User.isPaused ? 'btn-secondary' : 'btn-danger'}"
-                onclick="togglePauseUser('${escapeHtml(User.id)}')"
-              >
-                ${User.isPaused ? 'Unpause Account' : 'Pause Account'}
-              </button>
-
-              <button
-                class="btn-dark"
-                onclick="deleteUserAccount('${escapeHtml(User.id)}')"
-              >
-                Delete Account
-              </button>
-
-              <button
-                class="btn-light"
+                class="btn-light sheet-view-btn"
                 onclick="openHistoryPage('${escapeHtml(User.id)}', false)"
               >
-                View Full History
+                View More
               </button>
-            </div>
-          </div>
+            </td>
+          </tr>
         `;
       }).join("");
+
+      UserList.innerHTML = `
+        <div class="user-sheet-wrap">
+          <table class="user-sheet">
+            <thead>
+              <tr>
+                <th>User Name</th>
+                <th>Mobile No</th>
+                <th>Email ID</th>
+                <th>Total Spent Till Date</th>
+                <th>View More</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      `;
     }
 
     function renderDeletedUsers(){
