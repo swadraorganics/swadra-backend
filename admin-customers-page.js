@@ -128,10 +128,10 @@
           return;
         }
         if(response.status === 401){
-          window.location.href = "admin-index.html";
-          return;
+          console.warn("admin users session unavailable, trying account users fallback");
+        }else{
+          console.warn("admin users fetch returned no users", payload);
         }
-        console.warn("admin users fetch returned no users", payload);
       }catch(error){
         console.error("admin users fetch failed", error);
       }

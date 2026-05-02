@@ -3129,6 +3129,36 @@ async function buildAdminUsersMap() {
     if (!email || usersMap[email]) return;
     usersMap[email] = user;
   });
+  const topAttempts = await readTopLevelFirestoreCollection("paymentAttempts");
+  const attempts = mergeRecordsById(topAttempts, Array.isArray(db.paymentAttempts) ? db.paymentAttempts : []);
+  mergeRecoveredPaidAttemptOrders([], attempts).forEach((order) => {
+    const { email, phone } = getOrderCustomerKeys(order);
+    if (!email) return;
+    const existing = usersMap[email] && typeof usersMap[email] === "object" ? usersMap[email] : {};
+    const existingOrders = Array.isArray(existing.orders) ? existing.orders.slice() : [];
+    const orderId = String(order.id || order.orderId || "");
+    const orderIndex = existingOrders.findIndex((item) => String(item?.id || item?.orderId || "") === orderId);
+    if (orderIndex > -1) existingOrders[orderIndex] = { ...existingOrders[orderIndex], ...order };
+    else existingOrders.unshift(order);
+    usersMap[email] = {
+      ...existing,
+      id: existing.id || existing.uid || existing.userId || email,
+      userId: existing.userId || existing.uid || existing.id || email,
+      uid: existing.uid || existing.userId || existing.id || email,
+      email,
+      emailNormalized: email,
+      phone: existing.phone || phone,
+      phoneNormalized: normalizeAccountPhone(existing.phone || phone),
+      profile: {
+        ...(existing.profile || {}),
+        email,
+        phone: existing.profile?.phone || existing.phone || phone,
+        name: existing.profile?.name || order.shipping?.name || email.split("@")[0]
+      },
+      orders: existingOrders.slice(0, 300),
+      updatedAt: new Date().toISOString()
+    };
+  });
   if (Object.keys(usersMap).length) {
     db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
     db.appState.users = { ...(db.appState.users || {}), ...usersMap };
