@@ -65,6 +65,29 @@
       align-items:center;
     }
 
+    .admin-order-filter-bar{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:10px;
+      box-shadow:0 8px 24px rgba(0,0,0,0.05);
+      padding:18px;
+      margin-bottom:18px;
+      display:grid;
+      gap:14px;
+    }
+
+    .admin-order-filter-row{
+      display:grid;
+      grid-template-columns:minmax(260px,1fr) 220px 220px auto;
+      gap:14px;
+      align-items:end;
+    }
+
+    .admin-order-filter-row .toolbar{
+      margin-bottom:0;
+      justify-content:flex-end;
+    }
+
     button, .toolbar a{
       border:none;
       outline:none;
@@ -217,6 +240,100 @@
     .orders-list{
       display:grid;
       gap:14px;
+    }
+
+    .orders-sheet-list{
+      display:block;
+    }
+
+    .orders-sheet-wrap{
+      width:100%;
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius:10px;
+      background:#fff;
+    }
+
+    .orders-sheet{
+      width:100%;
+      min-width:1080px;
+      border-collapse:collapse;
+      font-size:14px;
+    }
+
+    .orders-sheet th{
+      background:#f4ebe7;
+      color:var(--primary-dark);
+      text-align:left;
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:0.04em;
+      white-space:nowrap;
+    }
+
+    .orders-sheet td{
+      padding:15px 16px;
+      border-bottom:1px solid var(--line);
+      vertical-align:middle;
+    }
+
+    .orders-sheet tbody tr.order-main-row:nth-child(4n+3){
+      background:#fffaf7;
+    }
+
+    .orders-sheet tbody tr.order-main-row:hover{
+      background:#fbf1ed;
+    }
+
+    .order-sheet-id,
+    .order-sheet-customer,
+    .order-sheet-contact{
+      display:grid;
+      gap:5px;
+      min-width:160px;
+    }
+
+    .order-sheet-id strong,
+    .order-sheet-customer strong{
+      color:#1f1f1f;
+      font-size:15px;
+      line-height:1.25;
+    }
+
+    .order-sheet-id span,
+    .order-sheet-customer span,
+    .order-sheet-contact span{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+      word-break:break-word;
+    }
+
+    .order-sheet-amount{
+      color:var(--success);
+      font-size:16px;
+      font-weight:900;
+      white-space:nowrap;
+    }
+
+    .order-detail-row{
+      display:none;
+      background:#fff;
+    }
+
+    .order-detail-row.open{
+      display:table-row;
+    }
+
+    .order-detail-row td{
+      padding:16px;
+      background:#fff;
+    }
+
+    .order-detail-row .order-card{
+      margin:0;
     }
 
     .order-card{
@@ -430,6 +547,7 @@
     @media (max-width:1200px){
       .stats-grid{ grid-template-columns:repeat(2,1fr); }
       .grid{ grid-template-columns:1fr; }
+      .admin-order-filter-row{ grid-template-columns:1fr 1fr; }
       .order-content{ grid-template-columns:1fr; }
       .order-main{ border-right:0;border-bottom:1px solid var(--line); }
     }
@@ -438,6 +556,8 @@
       .row, .summary-box, .card-grid{
         grid-template-columns:repeat(2,1fr);
       }
+      .admin-order-filter-row{ grid-template-columns:1fr; }
+      .admin-order-filter-row .toolbar{ justify-content:flex-start; }
     }
 
     @media (max-width:600px){
@@ -461,94 +581,56 @@
 <div id="adminTopBar" style="position:fixed;top:0;left:0;right:0;z-index:100000;height:44px;background:#fff;color:#7a3d3d;font-family:Arial,sans-serif;font-weight:700;font-size:22px;line-height:44px;text-align:center;border-bottom:1px solid rgba(122,61,61,.18);">Swadra Organics Admin Pannel</div>
 <div class="admin-global-nav" id="adminGlobalNav" style="position:fixed;top:44px;left:0;right:0;z-index:99999;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#7a3d3d;box-shadow:0 10px 24px rgba(0,0,0,.12);font-family:Arial,sans-serif;"><a href="admin-index.html" style="color:#fff;text-decoration:none;font-weight:800;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.14);">Home</a><a href="admin-home.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Main</a><a href="backend/ai.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Add Product</a><a href="admin-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Products</a><a href="backend/saved-products.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Edit Products</a><a href="admin-customers.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Customers</a><a href="admin-orders.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Orders</a><a href="admin-payments.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Payment</a><a href="admin-coupons.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Coupan</a><a href="admin-callbacks.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Call Back</a><a href="backend/backend.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Backend</a><a href="admin-profit.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;">Courier</a><span id="backendLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Backend</span><span id="firestoreLiveBadge" style="display:inline-flex;align-items:center;gap:5px;color:#fff;background:#15803d;height:28px;padding:0 9px;border-radius:8px;font-size:11px;font-weight:800;"><span style="width:6px;height:6px;border-radius:50%;background:#86efac;display:inline-block;"></span>Firestore</span><details style="margin-left:auto;position:relative;"><summary style="list-style:none;cursor:pointer;color:#fff;font-size:18px;line-height:1;padding:4px 6px;">👤</summary><div style="position:absolute;right:0;top:30px;min-width:210px;background:#fff;border:1px solid #ece1de;border-radius:14px;box-shadow:0 16px 35px rgba(0,0,0,.18);padding:8px;"><a href="admin-index.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Admin Home</a><a href="admin-profit.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Profit</a><a href="admin-shiprocket.html" style="display:block;padding:10px 12px;color:#2a2a2a;text-decoration:none;font-weight:700;border-radius:10px;">Shiprocket</a><a href="index.html" style="display:block;padding:10px 12px;color:#991b1b;text-decoration:none;font-weight:800;border-radius:10px;background:#fff7f7;">Logout</a></div></details></div>
   <div class="wrap">
-    <div class="toolbar">
-      <button class="btn-primary" onclick="refreshOrders()">Refresh Orders</button>
-      <button class="btn-secondary" onclick="clearFilters()">Clear Filters</button>
-      <a class="btn-dark" href="order.html">Open Orders Page</a>
+    <div class="admin-order-filter-bar">
+      <div class="admin-order-filter-row">
+        <div class="field">
+          <label>Search Orders</label>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search by order id, customer, email, mobile or product"
+            oninput="renderOrders()"
+          >
+        </div>
+
+        <div class="field">
+          <label>Order Status</label>
+          <select id="statusFilter" onchange="renderOrders()">
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="packed">Packed</option>
+            <option value="shipped">Shipped</option>
+            <option value="out-for-delivery">Out for Delivery</option>
+            <option value="delivered">Delivered</option>
+            <option value="non-delivered">Non Delivered</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="unknown">Unknown</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Sort</label>
+          <select id="sortFilter" onchange="renderOrders()">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="amount_high">Amount High to Low</option>
+            <option value="amount_low">Amount Low to High</option>
+          </select>
+        </div>
+
+        <div class="toolbar">
+          <button class="btn-primary" onclick="refreshOrders()">Refresh Orders</button>
+          <button class="btn-secondary" onclick="clearFilters()">Clear Filters</button>
+        </div>
+      </div>
     </div>
 
     <div class="stats-grid" id="orderStats"></div>
 
-    <div class="grid">
-      <div class="panel">
-        <h2>Order Filters</h2>
-
-        <div class="product-form">
-          <div class="row one">
-            <div class="field">
-              <label>Search Orders</label>
-              <input
-                type="text"
-                id="searchInput"
-                placeholder="Search by order id, customer, email, mobile or product"
-                oninput="renderOrders()"
-              >
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label>Order Status</label>
-              <select id="statusFilter" onchange="renderOrders()">
-                <option value="all">All</option>
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="packed">Packed</option>
-                <option value="shipped">Shipped</option>
-                <option value="out-for-delivery">Out for Delivery</option>
-                <option value="delivered">Delivered</option>
-                <option value="non-delivered">Non Delivered</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="unknown">Unknown</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label>Sort</label>
-              <select id="sortFilter" onchange="renderOrders()">
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="amount_high">Amount High to Low</option>
-                <option value="amount_low">Amount Low to High</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="summary-box">
-            <div class="summary-card">
-              <div class="label">Visible Orders</div>
-              <div class="value" id="visibleOrdersView">0</div>
-            </div>
-            <div class="summary-card green">
-              <div class="label">Delivered</div>
-              <div class="value" id="deliveredOrdersView">0</div>
-            </div>
-            <div class="summary-card gold">
-              <div class="label">Pending Amount</div>
-              <div class="value" id="pendingAmountView">₹0</div>
-            </div>
-            <div class="summary-card red">
-              <div class="label">Cancelled</div>
-              <div class="value" id="cancelledOrdersView">0</div>
-            </div>
-          </div>
-
-          <div class="hint">
-            Page common order storage keys read karta hai.<br>
-            Status changes alag admin map me save hote hain, taaki original order data break na ho.<br>
-            Product names bhi search ke andar included hain.
-          </div>
-
-          <div class="small-note">
-            Keys checked: <b>adminOrders, orders, swadraOrders, customerOrders, allOrders</b>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <h2>Saved Orders</h2>
-        <div class="orders-list" id="ordersList"></div>
-      </div>
+    <div class="panel">
+      <h2>Saved Orders</h2>
+      <div class="orders-list orders-sheet-list" id="ordersList"></div>
     </div>
   </div>
 

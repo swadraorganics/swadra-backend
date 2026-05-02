@@ -122,9 +122,7 @@
         const payload = await response.json().catch(()=>({}));
         if(response.ok && payload && payload.ok && payload.users && typeof payload.users === "object"){
           backendUsersCache = payload.users;
-          if(!Object.keys(backendUsersCache).length){
-            await mergeAuthUsersFallback();
-          }
+          await mergeAuthUsersFallback();
           if(Object.keys(backendUsersCache).length) return;
         }
         if(response.status === 401){
@@ -150,7 +148,8 @@
         });
         const payload = await response.json().catch(()=>({}));
         if(response.ok && payload && payload.ok && payload.users && typeof payload.users === "object"){
-          backendUsersCache = payload.users;
+          backendUsersCache = { ...backendUsersCache, ...payload.users };
+          await mergeAuthUsersFallback();
         }
       }catch(error){
         console.error("account users fallback fetch failed", error);
@@ -467,10 +466,14 @@
         </div>
       `;
 
-      document.getElementById("totalUsersView").textContent = visibleCount;
-      document.getElementById("activeUsersView").textContent = activeCount;
-      document.getElementById("pausedUsersView").textContent = pausedCount;
-      document.getElementById("deletedUsersView").textContent = deletedCount;
+      const totalUsersView = document.getElementById("totalUsersView");
+      const activeUsersView = document.getElementById("activeUsersView");
+      const pausedUsersView = document.getElementById("pausedUsersView");
+      const deletedUsersView = document.getElementById("deletedUsersView");
+      if(totalUsersView) totalUsersView.textContent = visibleCount;
+      if(activeUsersView) activeUsersView.textContent = activeCount;
+      if(pausedUsersView) pausedUsersView.textContent = pausedCount;
+      if(deletedUsersView) deletedUsersView.textContent = deletedCount;
     }
 
     function buildSingleAddressCard(address, isDefault){

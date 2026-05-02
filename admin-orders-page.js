@@ -491,19 +491,7 @@ ${escapeHtml(senderAddress)}</div>
       document.getElementById("cancelledOrdersView").textContent = visibleOrders.filter(item => item.status === "cancelled").length;
     }
 
-    function renderOrders(){
-      const allOrders = getOrdersFromStorage();
-      const orders = getFilteredOrders();
-      const ordersList = document.getElementById("ordersList");
-
-      renderStats(allOrders, orders);
-
-      if(!orders.length){
-        ordersList.innerHTML = `<div class="empty">No orders found.</div>`;
-        return;
-      }
-
-      ordersList.innerHTML = orders.map((order) => {
+    function buildOrderCardHtml(order){
         const statusClass =
           order.status === "delivered" ? "green" :
           order.status === "cancelled" ? "red" :
@@ -634,7 +622,86 @@ ${escapeHtml(senderAddress)}</div>
             </div>
           </div>
         `;
+    }
+
+    function toggleOrderDetails(orderId){
+      const row = document.getElementById("orderDetail_" + String(orderId).replace(/[^a-zA-Z0-9_-]/g, "_"));
+      if(!row) return;
+      row.classList.toggle("open");
+    }
+
+    function renderOrders(){
+      const allOrders = getOrdersFromStorage();
+      const orders = getFilteredOrders();
+      const ordersList = document.getElementById("ordersList");
+
+      renderStats(allOrders, orders);
+
+      if(!orders.length){
+        ordersList.innerHTML = `<div class="empty">No orders found.</div>`;
+        return;
+      }
+
+      const rowsHtml = orders.map((order) => {
+        const rowId = String(order.id || "").replace(/[^a-zA-Z0-9_-]/g, "_");
+        const statusClass =
+          order.status === "delivered" ? "green" :
+          order.status === "cancelled" ? "red" :
+          order.status === "non-delivered" ? "red" :
+          order.status === "pending" ? "gold" :
+          order.status === "packed" ? "gold" :
+          order.status === "shipped" ? "gold" :
+          order.status === "out-for-delivery" ? "gold" :
+          order.status === "confirmed" ? "green" : "";
+        return `
+          <tr class="order-main-row">
+            <td>
+              <div class="order-sheet-id">
+                <strong>${escapeHtml(order.id || "-")}</strong>
+                <span>${escapeHtml(order.dateLabel || "-")}</span>
+              </div>
+            </td>
+            <td>
+              <div class="order-sheet-customer">
+                <strong>${escapeHtml(order.customerName || "Customer")}</strong>
+                <span>${escapeHtml(order.items.length + " item(s)")}</span>
+              </div>
+            </td>
+            <td>
+              <div class="order-sheet-contact">
+                <span>${escapeHtml(order.mobile || "-")}</span>
+                <span>${escapeHtml(order.email || "-")}</span>
+              </div>
+            </td>
+            <td><span class="badge ${statusClass}">${escapeHtml(orderStatusLabel(order.status))}</span></td>
+            <td class="order-sheet-amount">${rupee(order.amount)}</td>
+            <td>
+              <button class="btn-light" onclick="toggleOrderDetails('${escapeHtml(order.id)}')">View More</button>
+            </td>
+          </tr>
+          <tr class="order-detail-row" id="orderDetail_${escapeHtml(rowId)}">
+            <td colspan="6">${buildOrderCardHtml(order)}</td>
+          </tr>
+        `;
       }).join("");
+
+      ordersList.innerHTML = `
+        <div class="orders-sheet-wrap">
+          <table class="orders-sheet">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Mobile / Email</th>
+                <th>Status</th>
+                <th>Paid Amount</th>
+                <th>View More</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+      `;
     }
 
     function openPrintLabelById(orderId){
