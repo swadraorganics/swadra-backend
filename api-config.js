@@ -1869,6 +1869,34 @@
     });
   }
 
+  async function fetchCustomerSessionFromBackend(){
+    try{
+      var response = await fetch(base + "/api/account/session", {
+        cache:"no-store",
+        credentials:"include",
+        headers:{ "Accept":"application/json" }
+      });
+      var data = await response.json().catch(function(){ return {}; });
+      if(!response.ok || data.ok === false || !data.session){
+        return "";
+      }
+      var email = normalizeEmailValue(data.session.email || data.record && data.record.email || "");
+      if(!email) return "";
+      if(data.record && typeof data.record === "object"){
+        usersCache[email] = sanitizeUserRecord(data.record, email);
+      }
+      setSessionValue("currentUser", email);
+      if(data.session.phone){
+        setSessionValue("userPhone", normalizePhoneValue(data.session.phone));
+      }
+      ensureAuthUserInUrl();
+      syncInternalLinksWithAuth(document);
+      return email;
+    }catch(error){
+      return "";
+    }
+  }
+
   window.SWADRA_AUTH = {
     ready: authReady,
     refreshUsers: function(){ return loadUsersCache(true); },
@@ -2032,9 +2060,20 @@
           setSessionValue("currentUser", email);
           ensureAuthUserInUrl();
           syncInternalLinksWithAuth(document);
+          resolve(user || null);
         }else if(!getSessionValue("currentUser")){
-          clearCurrentUserSession();
-          syncInternalLinksWithAuth(document);
+          fetchCustomerSessionFromBackend().then(function(sessionEmail){
+            if(!sessionEmail){
+              clearCurrentUserSession();
+              syncInternalLinksWithAuth(document);
+            }
+            resolve(null);
+          }).catch(function(){
+            clearCurrentUserSession();
+            syncInternalLinksWithAuth(document);
+            resolve(null);
+          });
+          return;
         }
         resolve(user || null);
       }, function(){

@@ -292,6 +292,31 @@ async function readTopLevelSiteContent() {
   }
 }
 
+async function readDurableAdminCredentials() {
+  if (!USE_FIRESTORE) return null;
+  try {
+    const snap = await getFirestore().collection("adminCredentials").doc("current").get();
+    return snap.exists ? (snap.data() || null) : null;
+  } catch (error) {
+    addLog("Admin credentials mirror read skipped: " + error.message, "warn");
+    return null;
+  }
+}
+
+async function writeDurableAdminCredentials(adminConfig = {}) {
+  if (!USE_FIRESTORE) return;
+  const payload = {
+    username: String(adminConfig.username || "admin").trim() || "admin",
+    passwordHash: String(adminConfig.passwordHash || ""),
+    passwordSalt: String(adminConfig.passwordSalt || ""),
+    passwordAlgo: String(adminConfig.passwordAlgo || ""),
+    role: String(adminConfig.role || "owner").trim() || "owner",
+    passwordUpdatedAt: adminConfig.passwordUpdatedAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  await getFirestore().collection("adminCredentials").doc("current").set(payload, { merge: true });
+}
+
 async function writeTopLevelSiteContentPatch(patch = {}) {
   if (!USE_FIRESTORE) return;
   await getFirestore().collection("siteContent").doc("homepage").set(patch, { merge: true });
@@ -602,6 +627,7 @@ function setAdminPasswordHash(db = {}, password = "") {
   db.admin.passwordHash = hashed.passwordHash;
   db.admin.passwordSalt = hashed.passwordSalt;
   db.admin.passwordAlgo = hashed.passwordAlgo;
+  db.admin.passwordUpdatedAt = new Date().toISOString();
   db.admin.password = "";
   return db.admin;
 }
@@ -1013,6 +1039,10 @@ async function readDB() {
     const rootRef = firestore.collection(FIRESTORE_COLLECTION).doc(FIRESTORE_DOCUMENT);
     const rootSnap = await rootRef.get();
     const data = rootSnap.exists ? rootSnap.data() || {} : {};
+    const mirroredAdmin = await readDurableAdminCredentials();
+    if (mirroredAdmin && (mirroredAdmin.passwordHash || mirroredAdmin.passwordSalt || mirroredAdmin.username)) {
+      data.admin = { ...(data.admin || {}), ...mirroredAdmin, password: "" };
+    }
     for (const name of FIRESTORE_LISTS) {
       data[name] = await readFirestoreCollection(rootRef, name);
     }
@@ -1047,6 +1077,7 @@ async function writeDB(data) {
       userActivities: normalized.userActivities.slice(0, 2000),
       appState: normalized.appState
     }, { merge: true });
+    await writeDurableAdminCredentials(normalized.admin);
     for (const name of FIRESTORE_LISTS) {
       await replaceFirestoreCollection(rootRef, name, normalized[name]);
     }
@@ -3238,6 +3269,40 @@ app.get("/api/admin/session", requireAdminSession, async (req, res) => {
   } catch (error) {
     addLog("Admin session check failed: " + error.message, "error");
     res.status(500).json({ ok: false, error: "Failed to check admin session" });
+  }
+});
+
+app.get("/api/account/session", async (req, res) => {
+  try {
+    const db = await readDB();
+    const session = getCustomerSessionFromRequest(db, req);
+    if (!session) {
+      return res.status(401).json({ ok: false, error: "Customer session required" });
+    }
+    const email = normalizeAccountEmail(session.email || "");
+    let record = null;
+    if (email) {
+      const users = db.appState?.users && typeof db.appState.users === "object" ? { ...db.appState.users } : {};
+      const topUsers = await readTopLevelFirestoreCollection("users");
+      topUsers.forEach((user) => {
+        const userEmail = normalizeAccountEmail(user.email || user.emailNormalized || user.id || user.docId || "");
+        if (userEmail) users[userEmail] = { ...(users[userEmail] || {}), ...user };
+      });
+      record = users[email] || null;
+    }
+    res.json({
+      ok: true,
+      session: {
+        email,
+        phone: normalizeAccountPhone(session.phone || ""),
+        uid: String(session.uid || ""),
+        expiresAt: session.expiresAt || ""
+      },
+      record
+    });
+  } catch (error) {
+    addLog("Customer session fetch failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to fetch customer session" });
   }
 });
 
