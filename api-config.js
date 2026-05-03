@@ -829,14 +829,19 @@
     rawSessionSet(stampKey, String(Date.now()));
     var profile = config.profile && typeof config.profile === "object" ? config.profile : {};
     var finalPhone = phone || existingPhone;
+    var profilePayload = {
+      email: normalizedEmail,
+      phone: finalPhone
+    };
+    var existingName = String(existingUser.name || existingUser.profile && existingUser.profile.name || "").trim();
+    var profileName = String(profile.name || "").trim();
+    if(profileName || existingName){
+      profilePayload.name = profileName || existingName;
+    }
     saveUserRecordToBackend({
       email: normalizedEmail,
       phone: finalPhone,
-      profile: Object.assign({}, profile, {
-        email: normalizedEmail,
-        phone: finalPhone,
-        name: String(profile.name || normalizedEmail.split("@")[0]).trim()
-      }),
+      profile: Object.assign({}, profile, profilePayload),
       status: "active",
       lastLoginAt: new Date().toISOString()
     }).then(function(record){

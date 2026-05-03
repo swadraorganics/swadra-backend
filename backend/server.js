@@ -3776,24 +3776,52 @@ async function upsertAccountUser(input = {}) {
   }
 
   const now = new Date().toISOString();
+  const hasOwn = (key) => Object.prototype.hasOwnProperty.call(input, key);
+  const hasNonEmptyValue = (value) => {
+    if (Array.isArray(value)) return value.some(hasNonEmptyValue);
+    if (value && typeof value === "object") {
+      return Object.values(value).some(hasNonEmptyValue);
+    }
+    return String(value == null ? "" : value).trim() !== "";
+  };
+  const hasAddressPayload = input.address && typeof input.address === "object" && hasNonEmptyValue(input.address);
+  const hasAddressListPayload = Array.isArray(input.addresses) && input.addresses.some((address) => hasNonEmptyValue(address));
+  const shouldClearAddresses = input.clearAddresses === true;
+  const existingAddresses = Array.isArray(existing.addresses) ? existing.addresses : [];
+  const nextAddresses = hasAddressListPayload
+    ? input.addresses
+    : shouldClearAddresses
+      ? []
+      : existingAddresses;
+  const nextDefaultAddressId = hasAddressListPayload || hasAddressPayload || shouldClearAddresses || hasOwn("defaultAddressId")
+    ? String(input.defaultAddressId || (nextAddresses[0] && nextAddresses[0].id) || existing.defaultAddressId || "")
+    : String(existing.defaultAddressId || "");
+  const inputProfile = input.profile && typeof input.profile === "object" ? input.profile : {};
+  const hasProfileName = Object.prototype.hasOwnProperty.call(inputProfile, "name");
+  const nextProfileName = String(
+    hasProfileName && String(inputProfile.name || "").trim()
+      ? inputProfile.name
+      : existing.profile?.name || existing.name || email.split("@")[0]
+  ).trim();
   const nextRecord = {
     ...existing,
     email,
     emailNormalized: email,
+    name: String(input.name || nextProfileName || existing.name || email.split("@")[0]).trim(),
     phone: input.phone || existing.phone || finalPhone,
     phoneNormalized: finalPhone,
     password: finalPassword,
-    address: input.address && typeof input.address === "object" ? input.address : (existing.address || {}),
-    addresses: Array.isArray(input.addresses) ? input.addresses : (Array.isArray(existing.addresses) ? existing.addresses : []),
-    defaultAddressId: String(input.defaultAddressId || existing.defaultAddressId || ""),
+    address: hasAddressPayload ? input.address : (existing.address || {}),
+    addresses: nextAddresses,
+    defaultAddressId: nextDefaultAddressId,
     cart: Array.isArray(input.cart) ? input.cart : (Array.isArray(existing.cart) ? existing.cart : []),
     orders: Array.isArray(input.orders) ? input.orders : (Array.isArray(existing.orders) ? existing.orders : []),
     profile: {
       ...(existing.profile && typeof existing.profile === "object" ? existing.profile : {}),
-      ...(input.profile && typeof input.profile === "object" ? input.profile : {}),
+      ...inputProfile,
       email,
       phone: input.phone || existing.phone || finalPhone,
-      name: String(input.profile?.name || existing.profile?.name || email.split("@")[0]).trim()
+      name: nextProfileName
     },
     status: String(input.status || existing.status || "active").trim().toLowerCase() || "active",
     createdAt: existing.createdAt || now,

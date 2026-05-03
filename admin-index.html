@@ -804,6 +804,18 @@ function getApiBase(){
     function clearAdminSession(){
       currentAdminSession = false;
       delete adminRuntimeSession[ADMIN_SESSION_KEY];
+      try{
+        const raw = String(window.name || "");
+        if(raw && raw.charAt(0) === "{"){
+          const state = JSON.parse(raw);
+          if(state && state[ADMIN_SESSION_KEY]){
+            delete state[ADMIN_SESSION_KEY];
+            window.name = Object.keys(state).length ? JSON.stringify(state) : "";
+          }
+        }
+      }catch(error){
+        window.name = "";
+      }
       if(window.SWADRA_CLEAR_ADMIN_TOKEN){
         window.SWADRA_CLEAR_ADMIN_TOKEN();
       }
