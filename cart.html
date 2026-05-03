@@ -787,7 +787,7 @@ city: (window.__swadraCartDraftAddress || {}).city || "",
 state: (window.__swadraCartDraftAddress || {}).state || "",
 appliedCoupon: appliedCoupon,
 coupon: appliedCoupon,
-cartSnapshot: summary.discountedItems || await getCart(),
+cartSnapshot: await getCart(),
 summary: summary || {}
 });
 }catch(error){
@@ -1020,7 +1020,7 @@ await dataApi.saveCheckoutDraft(currentUser, {
 appliedCoupon: appliedCoupon,
 coupon: appliedCoupon,
 summary: updatedSummary,
-cartSnapshot: updatedSummary.discountedItems || cart
+cartSnapshot: cart
 });
 }catch(error){
 console.error("coupon checkout draft save failed", error);
@@ -1050,6 +1050,10 @@ authApi.setRedirectAfterLogin(checkoutTarget);
 window.location.href = "account.html";
 return;
 }
+let latestCart = await hydrateCartItems(await getCart());
+let latestSummary = await buildCartBreakdown(latestCart);
+updateSummary(latestSummary);
+await saveCheckoutSummary(latestSummary);
 window.location.href = checkoutTarget;
 }
 
