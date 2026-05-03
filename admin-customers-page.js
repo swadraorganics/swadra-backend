@@ -315,9 +315,14 @@
       const itemsRaw = raw.items || raw.products || raw.cartItems || [];
       const items = Array.isArray(itemsRaw) ? itemsRaw.map(normalizeOrderItem) : [];
       const amount = extractOrderAmount(raw);
+      const id = String(getValueByPossibleKeys(raw, ["id","orderId","orderID","invoiceId","order_id"]) || "").trim();
+      const paymentId = String(getValueByPossibleKeys(raw, ["payment_id","paymentId","razorpayPaymentId","razorpay_payment_id"]) || "").trim();
+      const razorpayOrderId = String(getValueByPossibleKeys(raw, ["razorpay_order_id","razorpayOrderId","paymentOrderId"]) || "").trim();
 
       return {
-        id: String(getValueByPossibleKeys(raw, ["id","orderId","orderID","invoiceId","order_id"])) || `${fallbackLabel}_${Math.random().toString(16).slice(2)}`,
+        id: id || `${fallbackLabel}_${Math.random().toString(16).slice(2)}`,
+        paymentId,
+        razorpayOrderId,
         status: normalizeCustomerOrderStatus(getValueByPossibleKeys(raw, ["orderStatus","status","deliveryStatus"])),
         paymentStatus: String(getValueByPossibleKeys(raw, ["paymentStatus","payment","payment_state","payment_state_text"])).trim() || "Unknown",
         refundStatus: String(getValueByPossibleKeys(raw, ["refundStatus","razorpayRefundStatus","razorpayRefundGatewayStatus"])).trim(),
@@ -331,6 +336,27 @@
       };
     }
 
+    function getOrderDedupeKey(order){
+      const id = String(order?.id || "").trim();
+      if(/^SWO\d{9}$/i.test(id)) return "order:" + id.toUpperCase();
+      const paymentId = String(order?.paymentId || "").trim();
+      if(paymentId) return "payment:" + paymentId;
+      const razorpayOrderId = String(order?.razorpayOrderId || "").trim();
+      if(razorpayOrderId) return "rzp-order:" + razorpayOrderId;
+      return `fallback:${id}|${order?.amount || 0}|${order?.date || ""}`;
+    }
+
+    function pickBetterOrderRecord(existing, incoming){
+      if(!existing) return incoming;
+      const existingItems = Array.isArray(existing.items) ? existing.items.length : 0;
+      const incomingItems = Array.isArray(incoming.items) ? incoming.items.length : 0;
+      if(incomingItems > existingItems) return { ...existing, ...incoming };
+      if(!existing.paymentId && incoming.paymentId) return { ...existing, ...incoming };
+      if(!existing.razorpayOrderId && incoming.razorpayOrderId) return { ...existing, ...incoming };
+      if(String(existing.date || "-") === "-" && String(incoming.date || "-") !== "-") return { ...existing, ...incoming };
+      return { ...incoming, ...existing };
+    }
+
     function buildUserDetails(userObj, email, mobile){
       const profile = userObj?.profile || {};
       const cart = Array.isArray(userObj?.cart) ? userObj.cart : [];
@@ -338,16 +364,14 @@
       const userOrders = Array.isArray(userObj?.orders) ? userObj.orders : [];
       const globalOrders = collectGlobalOrdersForUser(email, mobile);
 
-      const mergedOrders = [];
-      const seen = new Set();
+      const mergedOrderMap = new Map();
 
       [...userOrders, ...globalOrders].forEach((order)=>{
         const normalized = normalizeOrder(order, "UserOrder");
-        const dedupeKey = `${normalized.id}|${normalized.amount}|${normalized.date}`;
-        if(seen.has(dedupeKey)) return;
-        seen.add(dedupeKey);
-        mergedOrders.push(normalized);
+        const dedupeKey = getOrderDedupeKey(normalized);
+        mergedOrderMap.set(dedupeKey, pickBetterOrderRecord(mergedOrderMap.get(dedupeKey), normalized));
       });
+      const mergedOrders = Array.from(mergedOrderMap.values());
 
       const totalSpent = mergedOrders.reduce((sum, order)=>sum + Number(order.amount || 0), 0);
       const totalSavings = mergedOrders.reduce((sum, order)=>sum + Number(order.savings || 0), 0);
