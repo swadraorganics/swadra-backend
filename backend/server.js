@@ -3286,7 +3286,7 @@ app.get("/api/account/session", async (req, res) => {
       const topUsers = await readTopLevelFirestoreCollection("users");
       topUsers.forEach((user) => {
         const userEmail = normalizeAccountEmail(user.email || user.emailNormalized || user.id || user.docId || "");
-        if (userEmail) users[userEmail] = { ...(users[userEmail] || {}), ...user };
+        if (userEmail) users[userEmail] = mergeAccountProfileRecord(user, users[userEmail] || {});
       });
       record = users[email] || null;
     }
@@ -3589,6 +3589,7 @@ async function buildAdminUsersMap() {
   topUsers.forEach((user) => {
     const email = String(user.email || user.id || user.docId || user.uid || "").trim().toLowerCase();
     if (!email) return;
+    const existing = usersMap[email] || {};
     const cart =
       cartsById.get(String(user.uid || "")) ||
       cartsById.get(String(user.userId || "")) ||
@@ -3597,22 +3598,20 @@ async function buildAdminUsersMap() {
       cartsById.get(email) ||
       user.cart ||
       [];
-    usersMap[email] = {
-      ...(usersMap[email] || {}),
+    usersMap[email] = mergeAccountProfileRecord({
       ...user,
       email: user.email || email,
       cart
-    };
+    }, existing);
   });
   const authUsers = await listFirebaseAuthAccountUsers();
   authUsers.forEach((user) => {
     const email = normalizeAccountEmail(user.email || "");
     if (!email) return;
-    usersMap[email] = {
-      ...(usersMap[email] || {}),
+    usersMap[email] = mergeAccountProfileRecord({
       ...user,
       cart: Array.isArray(usersMap[email]?.cart) && usersMap[email].cart.length ? usersMap[email].cart : (Array.isArray(user.cart) ? user.cart : [])
-    };
+    }, usersMap[email] || {});
   });
   topCarts.forEach((cart) => {
     const email = normalizeAccountEmail(cart.email || "");
@@ -3715,6 +3714,30 @@ function normalizeAccountPhone(value = "") {
   return String(value || "").replace(/\D/g, "").slice(-10);
 }
 
+function mergeAccountProfileRecord(primary = {}, fallback = {}) {
+  const primaryRecord = primary && typeof primary === "object" ? primary : {};
+  const fallbackRecord = fallback && typeof fallback === "object" ? fallback : {};
+  const next = { ...fallbackRecord, ...primaryRecord };
+  const primaryAddresses = Array.isArray(primaryRecord.addresses) ? primaryRecord.addresses : [];
+  const fallbackAddresses = Array.isArray(fallbackRecord.addresses) ? fallbackRecord.addresses : [];
+  if (!primaryAddresses.length && fallbackAddresses.length) {
+    next.addresses = fallbackAddresses;
+    next.defaultAddressId = next.defaultAddressId || fallbackRecord.defaultAddressId || "";
+  }
+  const primaryAddress = primaryRecord.address && typeof primaryRecord.address === "object" ? primaryRecord.address : {};
+  const fallbackAddress = fallbackRecord.address && typeof fallbackRecord.address === "object" ? fallbackRecord.address : {};
+  if (!Object.keys(primaryAddress).length && Object.keys(fallbackAddress).length) {
+    next.address = fallbackAddress;
+  }
+  if (fallbackRecord.profile && typeof fallbackRecord.profile === "object") {
+    next.profile = {
+      ...fallbackRecord.profile,
+      ...(primaryRecord.profile && typeof primaryRecord.profile === "object" ? primaryRecord.profile : {})
+    };
+  }
+  return next;
+}
+
 function maskEmailAddress(value = "") {
   const email = normalizeAccountEmail(value);
   const [name, domain] = email.split("@");
@@ -3730,7 +3753,7 @@ async function findAccountUser(email = "") {
   const users = { ...(db.appState?.users || {}) };
   topUsers.forEach((user) => {
     const userEmail = normalizeAccountEmail(user.email || user.id || user.docId || "");
-    if (userEmail) users[userEmail] = { ...(users[userEmail] || {}), ...user };
+    if (userEmail) users[userEmail] = mergeAccountProfileRecord(user, users[userEmail] || {});
   });
   const record = users[normalizedEmail];
   if (!record) return null;
@@ -3824,7 +3847,7 @@ async function upsertAccountUser(input = {}) {
   const topUsers = await readTopLevelFirestoreCollection("users");
   topUsers.forEach((user) => {
     const userEmail = normalizeAccountEmail(user.email || user.id || user.docId || "");
-    if (userEmail) users[userEmail] = { ...(users[userEmail] || {}), ...user };
+    if (userEmail) users[userEmail] = mergeAccountProfileRecord(user, users[userEmail] || {});
   });
   const existing = users[email] && typeof users[email] === "object" ? users[email] : {};
   const existingPhone = normalizeAccountPhone(existing.phone || existing.phoneNormalized || existing.profile?.phone || "");
@@ -4153,7 +4176,7 @@ app.get("/api/carts/:userId", paymentRateLimit, async (req, res) => {
       const topUsers = await readTopLevelFirestoreCollection("users");
       topUsers.forEach((user) => {
         const userEmail = normalizeAccountEmail(user.email || user.emailNormalized || user.id || user.docId || "");
-        if (userEmail) users[userEmail] = { ...(users[userEmail] || {}), ...user };
+        if (userEmail) users[userEmail] = mergeAccountProfileRecord(user, users[userEmail] || {});
       });
       const userRecord = email ? users[email] : Object.values(users).find((user) => {
         return user && typeof user === "object" && [
@@ -5083,7 +5106,7 @@ app.get("/api/orders/user/:userId", async (req, res) => {
     const topUsers = await readTopLevelFirestoreCollection("users");
     topUsers.forEach((profile) => {
       const email = normalizeAccountEmail(profile.email || profile.id || profile.docId || "");
-      if (email) users[email] = { ...(users[email] || {}), ...profile };
+      if (email) users[email] = mergeAccountProfileRecord(profile, users[email] || {});
     });
     const profileOrders = [];
     Object.entries(users).forEach(([key, profile]) => {
