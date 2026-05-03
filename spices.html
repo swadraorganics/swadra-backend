@@ -231,6 +231,9 @@ return fallbackCart;
 
 async function saveCart(cart){
 let safeCart=compactCart(cart);
+if(authApi && typeof authApi.ready === "function"){
+try{ await authApi.ready(); }catch(e){}
+}
 let user=getCurrentUser();
 if(!user){
 if(dataApi && typeof dataApi.saveGuestCart === "function"){

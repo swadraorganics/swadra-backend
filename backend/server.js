@@ -3533,8 +3533,30 @@ async function buildAdminUsersMap() {
   const authUsers = await listFirebaseAuthAccountUsers();
   authUsers.forEach((user) => {
     const email = normalizeAccountEmail(user.email || "");
+    if (!email) return;
+    usersMap[email] = {
+      ...(usersMap[email] || {}),
+      ...user,
+      cart: Array.isArray(usersMap[email]?.cart) && usersMap[email].cart.length ? usersMap[email].cart : (Array.isArray(user.cart) ? user.cart : [])
+    };
+  });
+  topCarts.forEach((cart) => {
+    const email = normalizeAccountEmail(cart.email || "");
     if (!email || usersMap[email]) return;
-    usersMap[email] = user;
+    usersMap[email] = {
+      id: cart.uid || cart.userId || email,
+      userId: cart.uid || cart.userId || email,
+      uid: cart.uid || cart.userId || "",
+      email,
+      emailNormalized: email,
+      phone: "",
+      phoneNormalized: "",
+      profile: { email, phone: "", name: email.split("@")[0] },
+      cart: Array.isArray(cart.items) ? cart.items : [],
+      status: "active",
+      createdAt: cart.createdAt || cart.updatedAt || "",
+      updatedAt: cart.updatedAt || ""
+    };
   });
   const topAttempts = await readTopLevelFirestoreCollection("paymentAttempts");
   const attempts = mergeRecordsById(topAttempts, Array.isArray(db.paymentAttempts) ? db.paymentAttempts : []);
@@ -4039,12 +4061,26 @@ app.get("/api/carts/:userId", paymentRateLimit, async (req, res) => {
         const snap = await getFirestore().collection("carts").where("email", "==", normalizeAccountEmail(userId)).limit(1).get();
         if (!snap.empty) data = snap.docs[0].data() || {};
       }
+      if ((!data || !Array.isArray(data.items) || !data.items.length) && USE_FIRESTORE) {
+        const [byUserId, byUid, byLinkedUserId] = await Promise.all([
+          getFirestore().collection("carts").where("userId", "==", userId).limit(1).get(),
+          getFirestore().collection("carts").where("uid", "==", userId).limit(1).get(),
+          getFirestore().collection("carts").where("linkedUserId", "==", userId).limit(1).get()
+        ]);
+        const match = [byUserId, byUid, byLinkedUserId].find((snap) => snap && !snap.empty);
+        if (match) data = match.docs[0].data() || {};
+      }
     } catch (readError) {
       addLog("Cart Firestore read skipped: " + readError.message, "warn");
     }
     if ((!data || !Array.isArray(data.items) || !data.items.length)) {
       const email = normalizeAccountEmail(data?.email || (userId.includes("@") ? userId : ""));
-      const users = db.appState?.users && typeof db.appState.users === "object" ? db.appState.users : {};
+      const users = db.appState?.users && typeof db.appState.users === "object" ? { ...db.appState.users } : {};
+      const topUsers = await readTopLevelFirestoreCollection("users");
+      topUsers.forEach((user) => {
+        const userEmail = normalizeAccountEmail(user.email || user.emailNormalized || user.id || user.docId || "");
+        if (userEmail) users[userEmail] = { ...(users[userEmail] || {}), ...user };
+      });
       const userRecord = email ? users[email] : Object.values(users).find((user) => {
         return user && typeof user === "object" && [
           user.uid,
@@ -4086,6 +4122,14 @@ app.post("/api/carts/:userId", paymentRateLimit, async (req, res) => {
         userId: email,
         email,
         linkedUserId: docId
+      }, { merge: true });
+      await getFirestore().collection("users").doc(safeDocId(email)).set({
+        email,
+        emailNormalized: email,
+        uid: payload.uid || docId,
+        userId: payload.uid || docId,
+        cart: items,
+        updatedAt: payload.updatedAt
       }, { merge: true });
     }
     if (email) {

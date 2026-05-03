@@ -5394,6 +5394,17 @@ function getCurrentIndexUser(){
     : "";
 }
 
+async function getReadyIndexUser(){
+  if(authApi && typeof authApi.ready === "function"){
+    try{
+      await authApi.ready();
+    }catch(error){
+      console.error("index auth ready failed", error);
+    }
+  }
+  return getCurrentIndexUser();
+}
+
 function getIndexUsers(){
   return authApi && typeof authApi.getUsers === "function"
     ? authApi.getUsers()
@@ -5401,7 +5412,7 @@ function getIndexUsers(){
 }
 
 async function refreshIndexCartState(){
-  const currentUser = getCurrentIndexUser();
+  const currentUser = await getReadyIndexUser();
   let nextCart = [];
   if(currentUser && dataApi && typeof dataApi.fetchCart === "function"){
     try{
@@ -5422,7 +5433,7 @@ function getCart(){
 
 async function saveCart(cart){
   let safeCart = compactCartItems(cart);
-  let currentUser = getCurrentIndexUser();
+  let currentUser = await getReadyIndexUser();
   if(!currentUser){
     if(dataApi && typeof dataApi.saveGuestCart === "function"){
       runtimeIndexCartCache = dataApi.saveGuestCart(safeCart);
@@ -5760,6 +5771,9 @@ function updateCartUI(){
     bar.style.display = "flex"; // ðŸ‘ˆ IMPORTANT (class nahi lag raha tha)
     
     info.innerText = totalItems + " item " + formatIndexRupee(totalPrice);
+    document.querySelectorAll('#stickyCart a[href^="cart.html"], a.cta-cart-btn[href^="cart.html"]').forEach(function(link){
+      link.href = authApi && typeof authApi.buildUrlWithAuth === "function" ? authApi.buildUrlWithAuth("cart.html") : "cart.html";
+    });
 
   } else {
     bar.style.display = "none"; // ðŸ‘ˆ hide when empty
