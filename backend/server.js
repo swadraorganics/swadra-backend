@@ -194,12 +194,16 @@ function normalizeDB(data) {
 
 function normalizeCoupon(input = {}) {
   const code = String(input.code || "").trim().toUpperCase();
+  const scope = String(input.scope || input.couponScope || input.type || "").trim().toLowerCase();
   return {
     id: String(input.id || "coupon_" + Date.now() + "_" + Math.floor(Math.random() * 1000)),
     code,
     discount: Math.max(0, Math.round(toNumber(input.discount))),
     minimumAmount: Math.max(0, Math.round(toNumber(input.minimumAmount || input.minAmount))),
+    scope: scope === "special" || scope === "overall" || scope === "overall_with_delivery" ? "overall_with_delivery" : "product_base",
+    sharePercent: Math.max(0, Math.min(100, toNumber(input.sharePercent || input.commissionPercent || input.payoutPercent || 5) || 5)),
     status: String(input.status || "active").toLowerCase() === "inactive" ? "inactive" : "active",
+    createdAt: input.createdAt || input.created || "",
     updatedAt: new Date().toISOString()
   };
 }
@@ -3440,11 +3444,15 @@ function calculateCartPricing({ items = [], couponCode = "", delivery = 0 } = {}
   const minimum = Math.max(0, Math.round(toNumber(coupon?.minimumAmount || coupon?.minAmount || 0)));
   const couponValid = Boolean(coupon && (!minimum || productTotal >= minimum));
   const couponPercent = couponValid ? Math.max(0, toNumber(coupon.discount || 0)) : 0;
-  const couponDiscount = Math.min(baseAmount, Math.round(baseAmount * (couponPercent / 100)));
-  let remainingDiscount = couponDiscount;
+  const deliveryCharge = Math.max(0, Math.round(toNumber(delivery || 0)));
+  const couponScope = couponValid ? String(coupon?.scope || "product_base") : "product_base";
+  const couponBase = couponScope === "overall_with_delivery" ? Math.max(0, productTotal + deliveryCharge) : baseAmount;
+  const couponDiscount = Math.min(couponBase, Math.round(couponBase * (couponPercent / 100)));
+  const itemCouponDiscount = Math.min(baseAmount, couponDiscount);
+  let remainingDiscount = itemCouponDiscount;
   const discountedItems = rows.map((row, index) => {
     const isLast = index === rows.length - 1;
-    const lineDiscount = isLast ? remainingDiscount : Math.min(remainingDiscount, Math.round(couponDiscount * (row.baseAmount / Math.max(1, baseAmount))));
+    const lineDiscount = isLast ? remainingDiscount : Math.min(remainingDiscount, Math.round(itemCouponDiscount * (row.baseAmount / Math.max(1, baseAmount))));
     remainingDiscount -= lineDiscount;
     const discountedLineTotal = Math.max(0, row.lineTotal - lineDiscount);
     return {
@@ -3455,7 +3463,6 @@ function calculateCartPricing({ items = [], couponCode = "", delivery = 0 } = {}
       discountedUnitPrice: Math.round(discountedLineTotal / Math.max(1, row.qty))
     };
   });
-  const deliveryCharge = Math.max(0, Math.round(toNumber(delivery || 0)));
   const finalTotal = Math.max(0, productTotal - couponDiscount + deliveryCharge);
   return {
     ok: true,
@@ -3466,6 +3473,8 @@ function calculateCartPricing({ items = [], couponCode = "", delivery = 0 } = {}
     gst,
     gstTotal: gst,
     couponCode: couponValid ? code : "",
+    couponScope,
+    couponBase,
     couponDiscount,
     couponValid,
     couponMessage: code && !couponValid ? (coupon ? "Minimum amount not met" : "Invalid coupon") : "",

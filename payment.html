@@ -841,6 +841,7 @@ function buildOrderDraft(paymentResponse, verification){
   const instrumentSummary = getInstrumentSummary(verification, currentUpiValue);
   const deliverySummary = getDeliverySummary();
   const shippingCalculation = deliverySummary.details ? JSON.parse(JSON.stringify(deliverySummary.details)) : null;
+  const appliedCoupon = cartSummary.appliedCoupon || null;
   const order = {
     id: session.orderId,
     userId: normalizedCurrentUser,
@@ -866,7 +867,10 @@ function buildOrderDraft(paymentResponse, verification){
     deliveryCharge: deliverySummary.deliveryCharge,
     deliveryDetails: shippingCalculation,
     couponDiscount,
-    appliedCoupon: cartSummary.appliedCoupon || null,
+    couponCode: appliedCoupon && appliedCoupon.code ? String(appliedCoupon.code).trim().toUpperCase() : "",
+    couponScope: appliedCoupon && appliedCoupon.scope ? appliedCoupon.scope : "product_base",
+    couponSharePercent: Number(appliedCoupon && appliedCoupon.sharePercent || 5),
+    appliedCoupon,
     gst: "Included",
     status: "Confirmed",
     progress: ["Confirmed","Packed","Out for Delivery","Delivered"],

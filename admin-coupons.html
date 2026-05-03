@@ -371,6 +371,21 @@
             </div>
           </div>
 
+          <div class="section-title">Special Coupon Settings</div>
+          <div class="row">
+            <div class="field">
+              <label>Coupon Type</label>
+              <select id="couponScope" onchange="updateLivePreview()">
+                <option value="product_base">Normal Coupon</option>
+                <option value="overall_with_delivery">Special Coupon</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Payment Share %</label>
+              <input id="couponSharePercent" type="number" min="0" max="100" step="0.1" placeholder="Example: 5" value="5" oninput="updateLivePreview()">
+            </div>
+          </div>
+
           <div class="row one">
             <div class="field">
               <label>Status</label>
@@ -403,6 +418,14 @@
               <div class="label">Minimum Amount</div>
               <div class="value" id="currentMinAmountView">₹0</div>
             </div>
+            <div class="summary-card">
+              <div class="label">Coupon Type</div>
+              <div class="value" id="currentScopeView">Normal</div>
+            </div>
+            <div class="summary-card green">
+              <div class="label">Payment Share</div>
+              <div class="value" id="currentShareView">5%</div>
+            </div>
           </div>
 
           <div class="hint">
@@ -432,7 +455,30 @@
       return "https://swadra-backend-production.up.railway.app";
     })();
     const couponsApiUrl = backendBaseUrl + "/api/coupons";
+    const ordersApiUrl = backendBaseUrl + "/api/orders";
     let couponStore = [];
+    let ordersStore = [];
+
+    function getAdminSessionToken(){
+      try{
+        const raw = String(window.name || "");
+        if(!raw || raw.charAt(0) !== "{") return "";
+        const state = JSON.parse(raw);
+        const session = state && state.swadra_admin_session_v1;
+        return String(session && session.token || "").trim();
+      }catch(error){
+        return "";
+      }
+    }
+
+    function getAdminFetchHeaders(extra){
+      const headers = Object.assign({}, extra || {});
+      const token = getAdminSessionToken();
+      if(token && !headers.Authorization){
+        headers.Authorization = "Bearer " + token;
+      }
+      return headers;
+    }
 
     async function fetchCouponsFromFirestore(forceRefresh){
       try{
@@ -449,6 +495,22 @@
       return getCoupons();
     }
 
+    async function fetchOrdersForCouponAnalytics(){
+      try{
+        const response = await fetch(ordersApiUrl, {
+          cache:"no-store",
+          credentials:"include",
+          headers:getAdminFetchHeaders({ "Accept":"application/json" })
+        });
+        const data = await response.json().catch(function(){ return {}; });
+        ordersStore = Array.isArray(data) ? data : (Array.isArray(data.orders) ? data.orders : []);
+      }catch(error){
+        console.warn("coupon orders analytics unavailable", error);
+        ordersStore = [];
+      }
+      return ordersStore.slice();
+    }
+
     async function saveCouponsToFirestore(coupons){
       throw new Error("Backend coupon save unavailable");
     }
@@ -456,7 +518,8 @@
     async function saveCouponToBackend(coupon){
       const response = await fetch(couponsApiUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        credentials:"include",
+        headers: getAdminFetchHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(coupon)
       });
       const data = await response.json().catch(function(){ return {}; });
@@ -467,7 +530,11 @@
     }
 
     async function deleteCouponFromBackend(code){
-      const response = await fetch(couponsApiUrl + "/" + encodeURIComponent(code), { method: "DELETE" });
+      const response = await fetch(couponsApiUrl + "/" + encodeURIComponent(code), {
+        method: "DELETE",
+        credentials:"include",
+        headers: getAdminFetchHeaders({ "Accept":"application/json" })
+      });
       const data = await response.json().catch(function(){ return {}; });
       if(!response.ok || data.ok === false){
         throw new Error(data.error || "Failed to delete coupon from backend");
@@ -497,6 +564,7 @@
         return coupon.status === "active";
       }).length;
       const inactiveCount = coupons.length - activeCount;
+      const analytics = getAllCouponAnalytics(coupons);
 
       document.getElementById("couponStats").innerHTML = `
         <div class="stat-card">
@@ -512,8 +580,12 @@
           <div class="value">${inactiveCount}</div>
         </div>
         <div class="stat-card">
-          <div class="label">Usage Limit</div>
-          <div class="value">${coupons.length}/${MAX_COUPONS}</div>
+          <div class="label">Coupon Orders</div>
+          <div class="value">${analytics.orders}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Coupon Payment</div>
+          <div class="value">${RUPEE}${Math.round(analytics.payment).toLocaleString("en-IN")}</div>
         </div>`;
 
       document.getElementById("totalCouponsView").textContent = coupons.length;
@@ -524,16 +596,78 @@
     function updateLivePreview(){
       const discount = Number(document.getElementById("couponDiscount").value || 0);
       const minimumAmount = Number(document.getElementById("couponMinAmount").value || 0);
+      const scope = String(document.getElementById("couponScope").value || "product_base");
+      const sharePercent = Number(document.getElementById("couponSharePercent").value || 5);
       document.getElementById("currentDiscountView").textContent = discount > 0 ? (discount + "%") : "0%";
       document.getElementById("currentMinAmountView").textContent = RUPEE + Math.max(0, Math.round(minimumAmount)).toLocaleString("en-IN");
+      document.getElementById("currentScopeView").textContent = scope === "overall_with_delivery" ? "Special" : "Normal";
+      document.getElementById("currentShareView").textContent = Math.max(0, sharePercent).toLocaleString("en-IN") + "%";
     }
 
     function resetForm(){
       setValue("couponCode", "");
       setValue("couponDiscount", "");
       setValue("couponMinAmount", "");
+      setValue("couponScope", "product_base");
+      setValue("couponSharePercent", "5");
       setValue("couponStatus", "active");
       updateLivePreview();
+    }
+
+    function normalizeCouponCode(value){
+      return String(value || "").trim().toUpperCase();
+    }
+
+    function getOrderCouponCode(order){
+      return normalizeCouponCode(
+        order && (
+          order.couponCode ||
+          order.coupon ||
+          order.appliedCoupon && order.appliedCoupon.code ||
+          order.totals && order.totals.appliedCoupon && order.totals.appliedCoupon.code ||
+          order.summary && order.summary.appliedCoupon && order.summary.appliedCoupon.code
+        )
+      );
+    }
+
+    function getOrderPaidAmount(order){
+      return Number(order && (order.paidAmount || order.total || order.finalAmount || order.payableAmount || order.amount || order.paymentAmount || order.totals && order.totals.finalTotal) || 0) || 0;
+    }
+
+    function isPaidOrder(order){
+      const text = String([
+        order && order.paymentStatus,
+        order && order.payment,
+        order && order.status,
+        order && order.razorpayStatus
+      ].join(" ")).toLowerCase();
+      return text.includes("paid") || text.includes("success") || text.includes("confirm") || text.includes("captured");
+    }
+
+    function getCouponAnalytics(coupon){
+      const code = normalizeCouponCode(coupon && coupon.code);
+      const sharePercent = Math.max(0, Number(coupon && coupon.sharePercent || 5) || 0);
+      const matchingOrders = (Array.isArray(ordersStore) ? ordersStore : []).filter(function(order){
+        return code && getOrderCouponCode(order) === code && isPaidOrder(order);
+      });
+      const payment = matchingOrders.reduce(function(sum, order){
+        return sum + getOrderPaidAmount(order);
+      }, 0);
+      return {
+        orders: matchingOrders.length,
+        payment,
+        sharePercent,
+        shareAmount: payment * (sharePercent / 100)
+      };
+    }
+
+    function getAllCouponAnalytics(coupons){
+      return (Array.isArray(coupons) ? coupons : []).reduce(function(total, coupon){
+        const analytics = getCouponAnalytics(coupon);
+        total.orders += analytics.orders;
+        total.payment += analytics.payment;
+        return total;
+      }, { orders:0, payment:0 });
     }
 
     function renderCoupons(){
@@ -549,6 +683,8 @@
       couponList.innerHTML = coupons.map(function(coupon){
         let createdLabel = coupon.createdAt ? new Date(coupon.createdAt).toLocaleString("en-IN") : "Just now";
         let badgeClass = coupon.status === "inactive" ? "red" : "green";
+        let analytics = getCouponAnalytics(coupon);
+        let scopeLabel = coupon.scope === "overall_with_delivery" ? "Special: Overall + Delivery" : "Normal: Product Base";
 
         return `
           <div class="coupon-card">
@@ -559,6 +695,7 @@
                   <span class="badge ${badgeClass}">${escapeHtml(coupon.status)}</span>
                   <span class="badge gold">${Number(coupon.discount || 0)}% Off</span>
                   <span class="badge">Min ${RUPEE}${Math.round(Number(coupon.minimumAmount || 0)).toLocaleString("en-IN")}</span>
+                  <span class="badge">${escapeHtml(scopeLabel)}</span>
                 </div>
               </div>
               <div class="badge-wrap">
@@ -583,6 +720,22 @@
                 <div class="k">Code</div>
                 <div class="v">${escapeHtml(coupon.code)}</div>
               </div>
+              <div class="mini">
+                <div class="k">Orders Used</div>
+                <div class="v">${analytics.orders}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Payment Collected</div>
+                <div class="v">${RUPEE}${Math.round(analytics.payment).toLocaleString("en-IN")}</div>
+              </div>
+              <div class="mini">
+                <div class="k">${Number(analytics.sharePercent || 0).toLocaleString("en-IN")}% Share</div>
+                <div class="v">${RUPEE}${Math.round(analytics.shareAmount).toLocaleString("en-IN")}</div>
+              </div>
+              <div class="mini">
+                <div class="k">Coupon Type</div>
+                <div class="v">${escapeHtml(scopeLabel)}</div>
+              </div>
             </div>
 
             <div class="card-actions">
@@ -598,10 +751,14 @@
       const couponCodeInput = document.getElementById("couponCode");
       const couponDiscountInput = document.getElementById("couponDiscount");
       const couponMinAmountInput = document.getElementById("couponMinAmount");
+      const couponScopeSelect = document.getElementById("couponScope");
+      const couponSharePercentInput = document.getElementById("couponSharePercent");
       const couponStatusSelect = document.getElementById("couponStatus");
       let code = String(couponCodeInput.value || "").trim().toUpperCase();
       let discount = Number(couponDiscountInput.value);
       let minimumAmount = Math.max(0, Math.round(Number(couponMinAmountInput.value || 0)));
+      let scope = couponScopeSelect.value;
+      let sharePercent = Math.max(0, Math.min(100, Number(couponSharePercentInput.value || 5)));
       let status = couponStatusSelect.value;
 
       if(!code){
@@ -634,6 +791,8 @@
         code: code,
         discount: discount,
         minimumAmount: minimumAmount,
+        scope: scope,
+        sharePercent: sharePercent,
         status: status,
         createdAt: existingCoupon ? existingCoupon.createdAt : now,
         updatedAt: now
@@ -669,6 +828,8 @@
       setValue("couponCode", coupon.code || "");
       setValue("couponDiscount", coupon.discount || "");
       setValue("couponMinAmount", coupon.minimumAmount || "");
+      setValue("couponScope", coupon.scope || "product_base");
+      setValue("couponSharePercent", coupon.sharePercent || 5);
       setValue("couponStatus", coupon.status || "active");
       updateLivePreview();
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -703,7 +864,10 @@
 
     async function initCoupons(){
       try{
-        await fetchCouponsFromFirestore(true);
+        await Promise.all([
+          fetchCouponsFromFirestore(true),
+          fetchOrdersForCouponAnalytics()
+        ]);
       }catch(error){
         couponStore = [];
         console.error(error);

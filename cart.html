@@ -941,7 +941,9 @@ return coupon && coupon.status !== "inactive" && coupon.code && code === String(
 if(matchedCoupon){
 let minimumError = checkMinimumAmount(matchedCoupon);
 if(minimumError) return minimumError;
-discount = sellingTotal * (Number(matchedCoupon.discount || 0) / 100);
+let scope = String(matchedCoupon.scope || "").trim().toLowerCase();
+let baseForDiscount = scope === "overall_with_delivery" ? Math.max(0, Number(latestCartSummary.finalTotal || sellingTotal || 0)) : sellingTotal;
+discount = baseForDiscount * (Number(matchedCoupon.discount || 0) / 100);
 return { valid:true, discount, coupon: matchedCoupon };
 }
 }
@@ -1005,7 +1007,9 @@ appliedCoupon = {
 code,
 discount: result.discount,
 percent: Number(result.coupon && result.coupon.discount || 0),
-minimumAmount: Number(result.coupon && (result.coupon.minimumAmount || result.coupon.minAmount) || 0)
+minimumAmount: Number(result.coupon && (result.coupon.minimumAmount || result.coupon.minAmount) || 0),
+scope: String(result.coupon && result.coupon.scope || "product_base"),
+sharePercent: Number(result.coupon && result.coupon.sharePercent || 5)
 };
 let updatedSummary = await buildCartBreakdown(cart);
 updateSummary(updatedSummary);
