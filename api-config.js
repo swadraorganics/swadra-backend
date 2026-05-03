@@ -923,6 +923,7 @@
     }
     var users = getAuthUsers();
     var user = users[normalizedEmail] || null;
+    rawSessionRemove("customerLoggedOutAt");
     setSessionValue("currentUser", normalizedEmail);
     setSessionValue("userPhone", user && user.phone ? user.phone : "");
     ensureAuthUserInUrl();
@@ -1844,8 +1845,17 @@
   }
 
   function signOutUser(options){
+    rawSessionSet("customerLoggedOutAt", String(Date.now()));
     clearCurrentUserSession();
     rawSessionRemove("redirectAfterLogin");
+    fetch(base + "/api/account/logout", {
+      method:"POST",
+      credentials:"include",
+      keepalive:true,
+      headers:{ "Accept":"application/json" }
+    }).catch(function(error){
+      console.error("customer logout sync failed", error);
+    });
     var auth = initFirebaseAuthIfNeeded();
     if(auth && typeof auth.signOut === "function"){
       auth.signOut().catch(function(error){
@@ -1871,6 +1881,10 @@
 
   async function fetchCustomerSessionFromBackend(){
     try{
+      var loggedOutAt = Number(rawSessionGet("customerLoggedOutAt") || 0);
+      if(loggedOutAt && Date.now() - loggedOutAt < 5 * 60 * 1000){
+        return "";
+      }
       var response = await fetch(base + "/api/account/session", {
         cache:"no-store",
         credentials:"include",

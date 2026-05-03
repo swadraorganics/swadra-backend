@@ -692,6 +692,10 @@ function setCustomerSessionCookie(res, token = "", expiresAt = "") {
   ].join("; "));
 }
 
+function clearCustomerSessionCookie(res) {
+  res.append("Set-Cookie", "swadra_customer_token=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=None");
+}
+
 function getCustomerSessionFromRequest(db = {}, req) {
   const auth = String(req.get("authorization") || "").trim();
   const bearer = /^Bearer\s+/i.test(auth) ? auth.replace(/^Bearer\s+/i, "").trim() : "";
@@ -3303,6 +3307,28 @@ app.get("/api/account/session", async (req, res) => {
   } catch (error) {
     addLog("Customer session fetch failed: " + error.message, "error");
     res.status(500).json({ ok: false, error: "Failed to fetch customer session" });
+  }
+});
+
+app.post("/api/account/logout", async (req, res) => {
+  try {
+    const db = await readDB();
+    const session = getCustomerSessionFromRequest(db, req);
+    if (session?.email || session?.phone) {
+      recordUserActivity(db, {
+        type: "logout",
+        email: session.email || "",
+        phone: session.phone || "",
+        status: "success",
+        req
+      });
+      await writeDB(db).catch((error) => addLog("Customer logout activity save skipped: " + error.message, "warn"));
+    }
+    clearCustomerSessionCookie(res);
+    res.json({ ok: true, loggedOut: true });
+  } catch (error) {
+    clearCustomerSessionCookie(res);
+    res.json({ ok: true, loggedOut: true });
   }
 });
 

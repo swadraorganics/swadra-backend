@@ -482,8 +482,8 @@ pincode: address.pincode,
 city: address.city,
 state: address.state,
 deliveryDetails: summary && summary.deliveryDetails ? summary.deliveryDetails : null,
-appliedCoupon: checkoutDraftCache && checkoutDraftCache.appliedCoupon ? checkoutDraftCache.appliedCoupon : null,
-coupon: checkoutDraftCache && checkoutDraftCache.coupon ? checkoutDraftCache.coupon : null,
+appliedCoupon: summary && summary.appliedCoupon ? summary.appliedCoupon : (checkoutDraftCache && checkoutDraftCache.appliedCoupon ? checkoutDraftCache.appliedCoupon : null),
+coupon: summary && summary.coupon ? summary.coupon : (checkoutDraftCache && checkoutDraftCache.coupon ? checkoutDraftCache.coupon : null),
 cartSnapshot: Array.isArray(summary && summary.discountedItems) ? summary.discountedItems : getCheckoutCartItems(),
 summary: summary || getCartSummary()
 };
@@ -542,6 +542,12 @@ return { pincode:"", postoffice:"" };
 
 async function calculateCheckoutSummary(baseSummary, cartItems){
 let summary = baseSummary && typeof baseSummary === "object" ? { ...baseSummary } : {};
+if(!summary.appliedCoupon && checkoutDraftCache && checkoutDraftCache.appliedCoupon){
+summary.appliedCoupon = checkoutDraftCache.appliedCoupon;
+}
+if(!summary.coupon && checkoutDraftCache && checkoutDraftCache.coupon){
+summary.coupon = checkoutDraftCache.coupon;
+}
 let shippingApi = window.SWADRA_SHIPPING || null;
 let discountedItemsTotal = getDiscountedItemsTotal(cartItems);
 let gstInclusiveSellingTotal = Math.max(0, Math.round(Number(summary.sellingTotal || 0) || getCheckoutSellingTotal(cartItems)));
@@ -815,7 +821,8 @@ if(!val) return alert("Please fill all required fields");
 }
 
 const addressText = [houseField.value, areaField.value, postofficeField.value, cityField.value, stateField.value, pincodeField.value].filter(Boolean).join(", ");
-const summary = getCartSummary();
+let summary = await calculateCheckoutSummary(getCartSummary(), getCheckoutCartItems());
+window.__swadraCheckoutSummary = summary;
 const deliveryDetails = summary && summary.deliveryDetails ? summary.deliveryDetails : null;
 const checkoutPayload = {
 name:nameField.value,
@@ -851,15 +858,14 @@ checkoutAddress,
 );
 users[currentUser] = user;
 selectedCheckoutAddressId = user.defaultAddressId || checkoutAddress.id;
-window.__swadraCheckoutSummary = summary;
-saveCheckoutDraftToFirestore({
+await saveCheckoutDraftToFirestore({
 ...summary,
 deliveryDetails: deliveryDetails,
 discountedItems: summary.discountedItems || getCheckoutCartItems()
 }).catch(function(error){
 console.error("checkout draft pre-payment save failed", error);
 });
-persistCheckoutUserRecord().then(async function(){
+await persistCheckoutUserRecord().then(async function(){
 await saveCheckoutDraftToFirestore({
 ...summary,
 deliveryDetails: deliveryDetails,
