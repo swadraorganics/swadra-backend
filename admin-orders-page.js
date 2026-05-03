@@ -81,6 +81,35 @@
       return null;
     }
 
+    function getOrderTime(order){
+      return order && order.date ? order.date.getTime() : 0;
+    }
+
+    function getOrderDateKey(order){
+      const date = order && order.date ? order.date : null;
+      if(!date) return "unknown";
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function getOrderDateHeading(order){
+      const date = order && order.date ? order.date : null;
+      if(!date) return "Date not available";
+      return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        weekday: "short"
+      });
+    }
+
+    function setTextIfExists(id, value){
+      const element = document.getElementById(id);
+      if(element) element.textContent = value;
+    }
+
     function buildShippingAddress(raw){
       const shipping = raw && typeof raw.shipping === "object" ? raw.shipping : {};
       const directAddress = String(getValueByPossibleKeys(shipping, ["address","fullAddress"])).trim();
@@ -141,6 +170,43 @@
       const activeIndex = Math.max(0, steps.findIndex(function(step){ return step[0] === value; }));
       return steps.map(function(step, index){
         return `<div class="status-step ${index <= activeIndex ? "active" : ""}">${escapeHtml(step[1])}</div>`;
+      }).join("");
+    }
+
+    function buildDateStatusSummary(orders){
+      const counts = {
+        confirmed: 0,
+        packed: 0,
+        shipped: 0,
+        "out-for-delivery": 0,
+        delivered: 0,
+        cancelled: 0,
+        "non-delivered": 0,
+        pending: 0
+      };
+      (Array.isArray(orders) ? orders : []).forEach(function(order){
+        const status = normalizeOrderStatus(order && order.status);
+        if(counts[status] !== undefined){
+          counts[status] += 1;
+        }
+      });
+      const chips = [
+        ["confirmed", "Confirmed"],
+        ["packed", "Packed"],
+        ["shipped", "Shipped"],
+        ["out-for-delivery", "Out for Delivery"],
+        ["delivered", "Delivered"],
+        ["cancelled", "Cancelled"],
+        ["non-delivered", "Non Delivered"],
+        ["pending", "Pending"]
+      ].filter(function(item){ return counts[item[0]] > 0; });
+      if(!chips.length){
+        return `<span class="badge">No status</span>`;
+      }
+      return chips.map(function(item){
+        const key = item[0];
+        const badgeClass = key === "delivered" ? "green" : (key === "cancelled" || key === "non-delivered" ? "red" : "gold");
+        return `<span class="badge ${badgeClass}">${escapeHtml(item[1])}: ${counts[key]}</span>`;
       }).join("");
     }
 
@@ -479,7 +545,7 @@ ${escapeHtml(senderAddress)}</div>
     function renderStats(allOrders, visibleOrders){
       const deliveredCount = allOrders.filter(item => item.status === "delivered").length;
       const cancelledCount = allOrders.filter(item => item.status === "cancelled").length;
-      const pendingAmount = allOrders
+      const activeOrderAmount = allOrders
         .filter(item => ["pending","confirmed","packed","shipped","out-for-delivery"].includes(item.status))
         .reduce((sum, item) => sum + Number(item.amount || 0), 0);
       const totalAmount = allOrders.reduce((sum, item) => sum + Number(item.amount || 0), 0);
@@ -494,8 +560,8 @@ ${escapeHtml(senderAddress)}</div>
           <div class="value">${deliveredCount}</div>
         </div>
         <div class="stat-card">
-          <div class="label">Pending Value</div>
-          <div class="value">${rupee(pendingAmount)}</div>
+          <div class="label">Active Order Value</div>
+          <div class="value">${rupee(activeOrderAmount)}</div>
         </div>
         <div class="stat-card">
           <div class="label">Total Value</div>
@@ -503,14 +569,14 @@ ${escapeHtml(senderAddress)}</div>
         </div>
       `;
 
-      document.getElementById("visibleOrdersView").textContent = visibleOrders.length;
-      document.getElementById("deliveredOrdersView").textContent = visibleOrders.filter(item => item.status === "delivered").length;
-      document.getElementById("pendingAmountView").textContent = rupee(
+      setTextIfExists("visibleOrdersView", visibleOrders.length);
+      setTextIfExists("deliveredOrdersView", visibleOrders.filter(item => item.status === "delivered").length);
+      setTextIfExists("pendingAmountView", rupee(
         visibleOrders
           .filter(item => ["pending","confirmed","packed","shipped","out-for-delivery"].includes(item.status))
           .reduce((sum, item) => sum + Number(item.amount || 0), 0)
-      );
-      document.getElementById("cancelledOrdersView").textContent = visibleOrders.filter(item => item.status === "cancelled").length;
+      ));
+      setTextIfExists("cancelledOrdersView", visibleOrders.filter(item => item.status === "cancelled").length);
     }
 
     function buildOrderCardHtml(order){
@@ -696,7 +762,37 @@ ${escapeHtml(senderAddress)}</div>
         return;
       }
 
-        const rowsHtml = orders.map((order) => {
+      const groupedOrders = [];
+      let activeDateKey = "";
+      orders.forEach(function(order){
+        const dateKey = getOrderDateKey(order);
+        if(!activeDateKey || activeDateKey !== dateKey){
+          const dateOrders = orders.filter(function(item){ return getOrderDateKey(item) === dateKey; });
+          groupedOrders.push({
+            type: "date",
+            key: dateKey,
+            order,
+            orders: dateOrders
+          });
+          activeDateKey = dateKey;
+        }
+        groupedOrders.push({ type: "order", order });
+      });
+
+      const rowsHtml = groupedOrders.map((entry) => {
+        if(entry.type === "date"){
+          return `
+            <tr class="date-group-row">
+              <td colspan="7">
+                <div class="date-group-head">
+                  <div class="date-group-title">${escapeHtml(getOrderDateHeading(entry.order))}</div>
+                  <div class="date-group-status">${buildDateStatusSummary(entry.orders)}</div>
+                </div>
+              </td>
+            </tr>
+          `;
+        }
+        const order = entry.order;
         const rowId = String(order.id || "").replace(/[^a-zA-Z0-9_-]/g, "_");
         const statusClass =
           order.status === "delivered" ? "green" :
