@@ -4147,19 +4147,62 @@ app.post("/api/account/reset-password", paymentRateLimit, async (req, res) => {
     if (!savedPhone || savedPhone !== phone) {
       return res.status(400).json({ ok: false, error: `Mobile number does not match. Saved mobile ends with ${savedPhone ? savedPhone.slice(-4) : "****"}` });
     }
+    try {
+      getFirestore();
+    } catch (initError) {
+      addLog("Firebase init before password reset failed: " + initError.message, "warn");
+    }
     const auth = admin && typeof admin.auth === "function" ? admin.auth() : null;
     if (!auth) return res.status(500).json({ ok: false, error: "Firebase Auth unavailable" });
-    const authUser = await auth.getUserByEmail(email);
-    await auth.updateUser(authUser.uid, { password });
+    let authUser = null;
+    try {
+      authUser = await auth.getUserByEmail(email);
+      await auth.updateUser(authUser.uid, { password });
+    } catch (authError) {
+      const code = String(authError && authError.code || "").toLowerCase();
+      if (!code.includes("user-not-found")) throw authError;
+      authUser = await auth.createUser({ email, password });
+    }
+    const db = await readDB();
+    const now = new Date().toISOString();
+    db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+    db.appState.users = db.appState.users && typeof db.appState.users === "object" ? db.appState.users : {};
+    const previousRecord = db.appState.users[email] || user || {};
+    const nextRecord = mergeAccountProfileRecord({
+      ...previousRecord,
+      uid: previousRecord.uid || authUser.uid || email,
+      id: previousRecord.id || email,
+      userId: previousRecord.userId || email,
+      email,
+      phone: previousRecord.phone || phone,
+      phoneNormalized: phone,
+      password,
+      updatedAt: now,
+      profile: {
+        ...(previousRecord.profile && typeof previousRecord.profile === "object" ? previousRecord.profile : {}),
+        email,
+        phone: previousRecord.profile?.phone || previousRecord.phone || phone
+      }
+    }, previousRecord);
+    db.appState.users[email] = nextRecord;
+    recordUserActivity(db, {
+      type: "password_reset",
+      email,
+      phone,
+      status: "success",
+      req
+    });
+    await writeDB(db);
+    await writeTopLevelUsers({ [email]: nextRecord });
     if (USE_FIRESTORE) {
       const docId = String(user.docId || user.uid || authUser.uid || "").trim();
       if (docId) {
         await getFirestore().collection("users").doc(docId).set({
           email,
-          phone: user.phone || phone,
+          phone: nextRecord.phone || phone,
           phoneNormalized: phone,
           password,
-          updatedAt: new Date().toISOString()
+          updatedAt: now
         }, { merge: true });
       }
     }

@@ -777,6 +777,8 @@ margin:4px 0 0 !important;
             </button>
           </div>
           <p id="profileEmail" class="profile-email"></p>
+          <p id="profilePhone" class="profile-email"></p>
+          <button class="profile-secondary-action" onclick="openMobileModal()">Change Mobile No</button>
           <button class="profile-secondary-action" onclick="openPasswordModal()">Change Password</button>
         </div>
       </div>
@@ -847,6 +849,17 @@ margin:4px 0 0 !important;
     <input id="profileNameInput" class="field-full" placeholder="Full Name" autocomplete="name">
     <button class="save-btn" onclick="saveProfileName()">Save Name</button>
     <button class="cancel-btn" onclick="closeNameModal()">Cancel</button>
+  </div>
+</div>
+
+<div class="modal" id="mobileModal">
+  <div class="modal-box">
+    <button type="button" class="modal-close-btn" aria-label="Close popup" onclick="closeMobileModal()">&times;</button>
+    <h3>Change Mobile No</h3>
+    <p class="modal-note">Enter your 10 digit mobile number for your Swadra account.</p>
+    <input id="profileMobileInput" class="field-full" placeholder="Mobile Number" inputmode="numeric" maxlength="10" autocomplete="tel">
+    <button class="save-btn" onclick="saveProfileMobile()">Save Mobile No</button>
+    <button class="cancel-btn" onclick="closeMobileModal()">Cancel</button>
   </div>
 </div>
 
@@ -1257,6 +1270,11 @@ function loadProfile(){
   document.getElementById("welcomeText").innerText = `Welcome Back, ${displayName}`;
   document.getElementById("profileName").innerText = displayName;
   document.getElementById("profileEmail").innerText = user.email || "";
+  const profilePhone = document.getElementById("profilePhone");
+  if(profilePhone){
+    const displayPhone = String(user.phone || user.phoneNormalized || user.profile?.phone || "").trim();
+    profilePhone.innerText = displayPhone ? `Mobile: ${displayPhone}` : "Mobile: Not saved";
+  }
   document.getElementById("avatarText").innerText = displayName.charAt(0).toUpperCase();
 }
 
@@ -1322,6 +1340,60 @@ async function saveProfileName(){
   if(!saved) return;
   await refreshUsersSafe();
   closeNameModal();
+  loadProfile();
+}
+
+function openMobileModal(){
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+  if(!currentUser){
+    alert("Please login again.");
+    window.location.href = "account.html";
+    return;
+  }
+  let resolved = getOrCreateDashboardUser(users, currentUser);
+  let user = resolved.user;
+  const savedPhone = String(user.phone || user.phoneNormalized || user.profile?.phone || "").trim();
+  const mobileModal = document.getElementById("mobileModal");
+  const mobileInput = document.getElementById("profileMobileInput");
+  if(mobileInput) mobileInput.value = savedPhone;
+  if(mobileModal) mobileModal.style.display = "flex";
+  setTimeout(function(){
+    if(mobileInput) mobileInput.focus();
+  }, 30);
+}
+
+function closeMobileModal(){
+  const mobileModal = document.getElementById("mobileModal");
+  if(mobileModal) mobileModal.style.display = "none";
+}
+
+async function saveProfileMobile(){
+  let currentUser = getCurrentUser();
+  let users = getUsers();
+  if(!currentUser){
+    alert("Please login again.");
+    window.location.href = "account.html";
+    return;
+  }
+  const mobileInput = document.getElementById("profileMobileInput");
+  const newMobile = String(mobileInput ? mobileInput.value : "").replace(/\D/g, "");
+  if(!/^\d{10}$/.test(newMobile)){
+    alert("Please enter a valid 10 digit mobile number.");
+    return;
+  }
+  let resolved = getOrCreateDashboardUser(users, currentUser);
+  let user = resolved.user;
+  user.phone = newMobile;
+  user.phoneNormalized = newMobile;
+  user.profile = user.profile || {};
+  user.profile.phone = newMobile;
+  user.profile.email = user.profile.email || user.email || currentUser;
+  user.updatedAt = new Date().toISOString();
+  const saved = await persistCurrentUser(user, "Mobile number updated successfully.", "Mobile number update failed.", { preserveAddressBook: true });
+  if(!saved) return;
+  await refreshUsersSafe();
+  closeMobileModal();
   loadProfile();
 }
 
@@ -1662,10 +1734,19 @@ document.getElementById("nameModal").addEventListener("click", function(e){
   }
 });
 
+document.getElementById("mobileModal").addEventListener("click", function(e){
+  if(e.target.id === "mobileModal"){
+    closeMobileModal();
+  }
+});
+
 window.editProfileName = editProfileName;
 window.openNameModal = openNameModal;
 window.closeNameModal = closeNameModal;
 window.saveProfileName = saveProfileName;
+window.openMobileModal = openMobileModal;
+window.closeMobileModal = closeMobileModal;
+window.saveProfileMobile = saveProfileMobile;
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.saveAddress = saveAddress;

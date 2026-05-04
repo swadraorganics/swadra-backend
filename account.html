@@ -963,6 +963,25 @@ let accountEntryStage = "email";
       if(confirmPhoneGroup) confirmPhoneGroup.classList.toggle("hidden", !visible);
     }
 
+    function setSignupPhoneStage(stage){
+      const phoneGroup = document.getElementById("phoneGroup");
+      const confirmPhoneGroup = document.getElementById("confirmPhoneGroup");
+      const button = document.querySelector("#step1 .primary-btn");
+      const phoneInput = document.getElementById("phone");
+      const confirmInput = document.getElementById("confirmPhone");
+      accountEntryStage = stage;
+      const isConfirm = stage === "confirmPhone";
+      if(phoneGroup) phoneGroup.classList.toggle("hidden", isConfirm);
+      if(confirmPhoneGroup) confirmPhoneGroup.classList.toggle("hidden", false);
+      if(button) button.innerText = isConfirm ? "Confirm Mobile" : "Continue";
+      if(isConfirm){
+        if(confirmInput) confirmInput.value = "";
+        setTimeout(function(){ if(confirmInput) confirmInput.focus(); }, 30);
+      }else{
+        setTimeout(function(){ if(phoneInput) phoneInput.focus(); }, 30);
+      }
+    }
+
     function maskEmail(email){
       const value = String(email || "").trim().toLowerCase();
       const parts = value.split("@");
@@ -981,10 +1000,21 @@ let accountEntryStage = "email";
       const confirmPhone = document.getElementById("confirmPhone");
       if(title) title.innerText = active ? "Reset password" : "Enter account details";
       if(copy) copy.innerText = active ? "Enter your registered email and mobile number to receive a reset OTP." : "Enter email first. Existing users continue with password; new users verify mobile and email OTP.";
-      if(button) button.innerText = active ? "Send Reset OTP" : (accountEntryStage === "phone" ? "Send OTP" : "Continue");
-      setPhoneFieldsVisible(active || accountEntryStage === "phone");
+      if(button) button.innerText = active ? "Send Reset OTP" : (accountEntryStage === "confirmPhone" ? "Confirm Mobile" : "Continue");
+      if(active){
+        const phoneGroup = document.getElementById("phoneGroup");
+        const confirmPhoneGroup = document.getElementById("confirmPhoneGroup");
+        if(phoneGroup) phoneGroup.classList.toggle("hidden", false);
+        if(confirmPhoneGroup) confirmPhoneGroup.classList.toggle("hidden", true);
+      }else if(accountEntryStage === "phone" || accountEntryStage === "confirmPhone"){
+        setSignupPhoneStage(accountEntryStage);
+      }else{
+        setPhoneFieldsVisible(false);
+      }
       if(phone) phone.value = currentPhone || phone.value || "";
-      if(confirmPhone) confirmPhone.value = currentPhone || confirmPhone.value || "";
+      if(confirmPhone && (active || accountEntryStage !== "confirmPhone")){
+        confirmPhone.value = currentPhone || confirmPhone.value || "";
+      }
     }
 
     function updateProgress(stepNumber){
@@ -1228,7 +1258,7 @@ let accountEntryStage = "email";
         }
         accountEntryStage = "phone";
         setStep1ResetMode(false);
-        showMsg("New account. Please enter and confirm your mobile number.", "success");
+        showMsg("New account. Please enter your mobile number.", "success");
         return;
       }
 
@@ -1236,11 +1266,27 @@ let accountEntryStage = "email";
         return showMsg("Please enter a valid 10-digit mobile number.", "error");
       }
 
+      if(isPasswordResetFlow){
+        confirmPhone = phone;
+      }
+
+      if(!isPasswordResetFlow && accountEntryStage === "phone"){
+        currentEmail = email;
+        currentPhone = phone;
+        setSignupPhoneStage("confirmPhone");
+        showMsg("Now confirm the same mobile number.", "success");
+        return;
+      }
+
       if(!/^\d{10}$/.test(confirmPhone)){
         return showMsg("Please confirm your 10-digit mobile number.", "error");
       }
 
       if(phone !== confirmPhone){
+        if(!isPasswordResetFlow){
+          currentPhone = "";
+          setSignupPhoneStage("phone");
+        }
         return showMsg("Mobile number and confirm mobile number do not match.", "error");
       }
 
