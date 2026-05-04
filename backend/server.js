@@ -345,7 +345,9 @@ function normalizeCartItems(items = []) {
     const qty = Math.max(1, Math.round(toNumber(item?.qty || item?.quantity || 1)) || 1);
     const price = Math.max(0, toNumber(item?.price || item?.sellingPrice || item?.discountedUnitPrice || item?.displayPrice || 0));
     const mrp = Math.max(0, toNumber(item?.mrp || item?.originalPrice || item?.mrpPrice || item?.price || 0));
-    const size = String(item?.size || item?.productSize || item?.selectedSize || item?.variant || item?.weight || item?.packSize || item?.unit || item?.weightLabel || item?.quantityLabel || "").trim();
+    const directSize = String(item?.size || item?.productSize || item?.selectedSize || item?.variant || item?.packSize || item?.weightLabel || item?.quantityLabel || item?.netWeight || item?.netWt || item?.volume || item?.unitSize || item?.packaging || item?.weight || item?.unit || "").trim();
+    const nameSizeMatch = String(item?.name || item?.productName || item?.title || "").match(/\(([^()]*\d[^()]*)\)/);
+    const size = directSize || (nameSizeMatch ? String(nameSizeMatch[1] || "").trim() : "");
     const image = String(item?.image || item?.productImage || item?.thumbnail || "").trim();
     return {
       ...item,

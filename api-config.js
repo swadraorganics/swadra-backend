@@ -462,20 +462,34 @@
     return String(value || "").replace(/\D/g, "").trim();
   }
 
-  function compactCartItem(item){
-    var source = item && typeof item === "object" ? item : {};
-    var size = String(
-      source.size ||
-      source.productSize ||
-      source.selectedSize ||
-      source.variant ||
-      source.weight ||
-      source.packSize ||
-      source.unit ||
-      source.weightLabel ||
-      source.quantityLabel ||
+  function inferCartItemSize(source){
+    var item = source && typeof source === "object" ? source : {};
+    var direct = String(
+      item.size ||
+      item.productSize ||
+      item.selectedSize ||
+      item.variant ||
+      item.packSize ||
+      item.weightLabel ||
+      item.quantityLabel ||
+      item.netWeight ||
+      item.netWt ||
+      item.volume ||
+      item.unitSize ||
+      item.packaging ||
+      item.weight ||
+      item.unit ||
       ""
     ).trim();
+    if(direct) return direct;
+    var name = String(item.name || item.productName || item.title || "").trim();
+    var match = name.match(/\(([^()]*\d[^()]*)\)/);
+    return match ? String(match[1] || "").trim() : "";
+  }
+
+  function compactCartItem(item){
+    var source = item && typeof item === "object" ? item : {};
+    var size = inferCartItemSize(source);
     var image = String(source.image || source.productImage || source.thumbnail || "").trim();
     var qty = Math.max(1, Number(source.qty || source.quantity || 1) || 1);
     var price = Number(source.price || source.sellingPrice || source.discountedUnitPrice || source.displayPrice || 0) || 0;

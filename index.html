@@ -5368,14 +5368,24 @@ function getSafeCartImage(image){
 }
 
 function compactCartItems(cart){
-  return (Array.isArray(cart) ? cart : []).map(item=>({
-    id: item.id != null ? String(item.id) : String(item.name || Date.now()),
-    name: item.name || "Swadra Product",
-    price: Number(item.price || 0),
-    mrp: Number(item.mrp || item.price || 0),
-    image: getSafeCartImage(item.image),
-    qty: Number(item.qty || 1)
-  }));
+  return (Array.isArray(cart) ? cart : []).map(item=>{
+    const size = String(item.size || item.productSize || item.selectedSize || item.variant || item.packSize || item.weightLabel || item.quantityLabel || "").trim();
+    return {
+      id: item.id != null ? String(item.id) : String(item.name || Date.now()),
+      name: item.name || "Swadra Product",
+      price: Number(item.price || 0),
+      mrp: Number(item.mrp || item.price || 0),
+      image: getSafeCartImage(item.image),
+      qty: Number(item.qty || 1),
+      size,
+      productSize: size,
+      selectedSize: size,
+      variant: size,
+      packSize: item.packSize || size,
+      weightLabel: item.weightLabel || item.quantityLabel || size,
+      quantityLabel: item.quantityLabel || item.weightLabel || size
+    };
+  });
 }
 
 function formatIndexRupee(amount){
@@ -5486,6 +5496,7 @@ async function handleAddToCart(btn){
   }
 
   let image = card.querySelector("img").src;
+  let size = (card.dataset.productSize || (card.querySelector(".product-title-row .size, .spices-info-wrap .size, .size") || {}).innerText || "").trim();
 
   let cart = getCart();
 
@@ -5494,7 +5505,7 @@ async function handleAddToCart(btn){
   if(existing){
     existing.qty++;
   } else {
-    cart.push({name, price, mrp: mrp || price, image, qty:1});
+    cart.push({name, price, mrp: mrp || price, image, qty:1, size, productSize:size, selectedSize:size, variant:size});
   }
 
   const saved = await saveCart(cart);
@@ -5540,6 +5551,7 @@ document.addEventListener("click", function(e){
     }
 
     let image = card.querySelector("img").src;
+    let size = (card.dataset.productSize || (card.querySelector(".product-title-row .size, .spices-info-wrap .size, .size") || {}).innerText || "").trim();
 
     let cart = getCart();
 
@@ -5548,7 +5560,7 @@ document.addEventListener("click", function(e){
     if(existing){
       existing.qty++;
     } else {
-      cart.push({name, price, mrp: mrp || price, image, qty:1});
+      cart.push({name, price, mrp: mrp || price, image, qty:1, size, productSize:size, selectedSize:size, variant:size});
     }
 
     saveCart(cart).then(function(saved){

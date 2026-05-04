@@ -229,15 +229,42 @@
         value: Number(currentProduct.price || currentProduct.sellingPrice || 0) || 0
       }, extra || {}));
     }
+    function productSizeOf(product){
+      const source = product || {};
+      const direct = [
+        source.size,
+        source.productSize,
+        source.selectedSize,
+        source.variant,
+        source.packSize,
+        source.weightLabel,
+        source.quantityLabel,
+        source.netWeight,
+        source.netWt,
+        source.volume,
+        source.unitSize,
+        source.packaging
+      ].map(value => String(value || "").trim()).find(Boolean);
+      if(direct) return direct;
+      const match = String(source.name || source.productName || source.title || "").match(/\(([^()]*\d[^()]*)\)/);
+      return match ? String(match[1] || "").trim() : "";
+    }
     function productAsCartItem(){
       if(!currentProduct) return null;
+      const size = productSizeOf(currentProduct);
       return {
         id: currentProduct.id || currentProduct.docId,
         name: currentProduct.name,
         category: currentProduct.category || "",
         qty: 1,
         price: currentProduct.price || currentProduct.sellingPrice || 0,
-        size: currentProduct.size || currentProduct.productSize || "",
+        size: size,
+        productSize: size,
+        selectedSize: size,
+        variant: size,
+        packSize: currentProduct.packSize || size,
+        weightLabel: currentProduct.weightLabel || currentProduct.quantityLabel || size,
+        quantityLabel: currentProduct.quantityLabel || currentProduct.weightLabel || size,
         weight: currentProduct.weight || currentProduct.shippingWeight || currentProduct.shippingWeightKg || ""
       };
     }
@@ -284,7 +311,7 @@
         const id = String(currentProduct.id || currentProduct.docId);
         const existing = cart.find(item=>String(item.id) === id);
         if(existing) existing.qty = Number(existing.qty || 1) + 1;
-        else cart.push({ id, name: currentProduct.name, price: currentProduct.price || currentProduct.sellingPrice || 0, mrp: currentProduct.mrp || 0, qty:1, size: currentProduct.size || currentProduct.productSize || "", image: imagesOf(currentProduct)[0], stockQty: currentProduct.stockQty });
+        else cart.push(Object.assign(productAsCartItem(), { id, mrp: currentProduct.mrp || 0, image: imagesOf(currentProduct)[0], stockQty: currentProduct.stockQty }));
         if(dataApi && typeof dataApi.saveGuestCart === "function"){
           dataApi.saveGuestCart(cart);
         }
@@ -303,7 +330,7 @@
       const id = String(currentProduct.id || currentProduct.docId);
       const existing = cart.find(item=>String(item.id) === id);
       if(existing) existing.qty = Number(existing.qty || 1) + 1;
-      else cart.push({ id, name: currentProduct.name, price: currentProduct.price || currentProduct.sellingPrice || 0, mrp: currentProduct.mrp || 0, qty:1, size: currentProduct.size || currentProduct.productSize || "", image: imagesOf(currentProduct)[0], stockQty: currentProduct.stockQty });
+      else cart.push(Object.assign(productAsCartItem(), { id, mrp: currentProduct.mrp || 0, image: imagesOf(currentProduct)[0], stockQty: currentProduct.stockQty }));
       if(dataApi && typeof dataApi.saveCart === "function"){
         try{
           await dataApi.saveCart(currentUser, cart);
