@@ -1158,9 +1158,8 @@
       renderUsers();
     }
 
-    async function cleanOtherUsers(){
-      const keepEmails = ["tamannasingh51295@gmail.com", "swadraorganics@gmail.com"];
-      const confirmed = confirm("Permanent cleanup chalega. Sirf Tamanna Singh aur Swadra Organics users rahenge. Baaki user accounts/data delete ho jayega. Continue?");
+    async function cleanAllUsers(){
+      const confirmed = confirm("Permanent cleanup chalega. Saare saved users aur unka customer data delete ho jayega. Continue?");
       if(!confirmed) return;
       const base = getBackendBaseUrl();
       if(!base){
@@ -1176,7 +1175,7 @@
             "Accept": "application/json",
             "Content-Type": "application/json"
           }),
-          body: JSON.stringify({ keepEmails })
+          body: JSON.stringify({ deleteAll: true, keepEmails: [] })
         });
         const payload = await response.json().catch(()=>({}));
         if(!response.ok || !payload.ok){
@@ -1184,7 +1183,7 @@
         }
         await refreshUsers();
         const result = payload.result || {};
-        alert(`Cleanup done. App users deleted: ${result.appStateUsersDeleted || 0}, auth users deleted: ${result.authUsersDeleted || 0}.`);
+        alert(`All users cleanup done. App users deleted: ${result.appStateUsersDeleted || 0}, auth users deleted: ${result.authUsersDeleted || 0}.`);
       }catch(error){
         console.error(error);
         alert(error.message || "Cleanup failed.");
@@ -1272,7 +1271,7 @@
       renderDeletedUsers();
     }
 
-    window.cleanOtherUsers = cleanOtherUsers;
+    window.cleanAllUsers = cleanAllUsers;
 
     (async function initializeUsersPage(){
       await refreshUsers();

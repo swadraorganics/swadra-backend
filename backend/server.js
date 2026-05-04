@@ -3842,11 +3842,14 @@ app.get("/api/admin/users", requireAdminSession, async (req, res) => {
 app.post("/api/admin/users/prune", requireAdminSession, async (req, res) => {
   try {
     if (!requireDurablePersistence(res)) return;
-    const keepEmails = Array.isArray(req.body?.keepEmails) && req.body.keepEmails.length
+    const deleteAll = req.body?.deleteAll === true || String(req.body?.mode || "").toLowerCase() === "all";
+    const keepEmails = deleteAll
+      ? []
+      : Array.isArray(req.body?.keepEmails) && req.body.keepEmails.length
       ? req.body.keepEmails
       : ["tamannasingh51295@gmail.com", "swadraorganics@gmail.com"];
     const result = await pruneNonKeptCustomerData(keepEmails, req);
-    addLog("Admin pruned non-kept customer data", "success");
+    addLog(deleteAll ? "Admin pruned all customer data" : "Admin pruned non-kept customer data", "success");
     res.json({ ok: true, result });
   } catch (error) {
     addLog("Admin user prune failed: " + error.message, "error");
