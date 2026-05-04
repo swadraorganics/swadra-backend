@@ -35,6 +35,23 @@
       return normalize(item.getAttribute("href")) === file;
     });
   }
+  function getBackendBase(){
+    return String(window.SWADRA_API_BASE || "https://swadra-backend-production.up.railway.app").replace(/\/+$/, "");
+  }
+  async function logoutAdmin(){
+    try{
+      await fetch(getBackendBase() + "/api/admin/logout", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: "{}"
+      });
+    }catch(error){}
+    if(window.SWADRA_CLEAR_ADMIN_TOKEN){
+      window.SWADRA_CLEAR_ADMIN_TOKEN();
+    }
+    window.location.href = fixAdminHref("admin-index.html");
+  }
   function setLiveBadgeState(badge, label, online, checking){
     if(!badge) return;
     var isOnline = !!online && !checking;
@@ -132,6 +149,13 @@
   var links = nav.querySelectorAll("a[href]");
   links.forEach(function(link){
     link.setAttribute("href", fixAdminHref(link.getAttribute("href")));
+    if(normalize(link.getAttribute("href")) === "index.html" && String(link.textContent || "").trim().toLowerCase() === "logout"){
+      link.setAttribute("href", "#");
+      link.addEventListener("click", function(event){
+        event.preventDefault();
+        logoutAdmin();
+      });
+    }
     var hrefFile = normalize(link.getAttribute("href"));
     if(hrefFile && hrefFile === current){
       link.style.background = "rgba(255,255,255,.20)";
@@ -173,5 +197,20 @@
       profileMenu.appendChild(link);
     }
   }
+  document.addEventListener("click", function(event){
+    var clickedDetails = event.target && event.target.closest ? event.target.closest("#adminGlobalNav details") : null;
+    nav.querySelectorAll("details[open]").forEach(function(details){
+      if(details !== clickedDetails) details.removeAttribute("open");
+    });
+  });
+  document.addEventListener("keydown", function(event){
+    if(event.key === "Escape"){
+      nav.querySelectorAll("details[open]").forEach(function(details){
+        details.removeAttribute("open");
+      });
+      var adminProfileMenu = document.getElementById("adminProfileMenu");
+      if(adminProfileMenu) adminProfileMenu.style.display = "none";
+    }
+  });
   setupLiveBadges();
 })();

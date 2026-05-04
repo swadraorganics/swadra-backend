@@ -898,7 +898,6 @@ async function restoreAdminSession(){
     showAdminPanel();
     return true;
   }
-  showAdminLogin();
   const saved = adminRuntimeSession[ADMIN_SESSION_KEY] || getAdminSessionFromWindowName();
   if(saved && !adminRuntimeSession[ADMIN_SESSION_KEY]){
     adminRuntimeSession[ADMIN_SESSION_KEY] = saved;
@@ -911,9 +910,11 @@ async function restoreAdminSession(){
     currentAdminSession = true;
     if(saved){
       adminRuntimeSession[ADMIN_SESSION_KEY] = Object.assign({}, saved, validSession, { ok: true });
-      if(window.SWADRA_SET_ADMIN_TOKEN){
-        window.SWADRA_SET_ADMIN_TOKEN(adminRuntimeSession[ADMIN_SESSION_KEY]);
-      }
+    }else{
+      adminRuntimeSession[ADMIN_SESSION_KEY] = Object.assign({}, validSession, { ok: true });
+    }
+    if(window.SWADRA_SET_ADMIN_TOKEN && adminRuntimeSession[ADMIN_SESSION_KEY].token){
+      window.SWADRA_SET_ADMIN_TOKEN(adminRuntimeSession[ADMIN_SESSION_KEY]);
     }
     showAdminPanel();
     loadAdminDashboardData();
@@ -1277,7 +1278,7 @@ window.addEventListener("pageshow", restoreAdminSession);
     }
 
     let generatedOTP = "";
-    const ADMIN_PASSWORD_OTP_EMAIL = "ajaysingroha1@gmail.com";
+    const ADMIN_PASSWORD_OTP_EMAIL = "admin@swadraorganics.com";
 
     function sendOTP(){
       const els = getAdminElements();

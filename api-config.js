@@ -301,14 +301,31 @@
     return session && typeof session === "object" ? session : null;
   }
   function readAdminToken(){
-    return "";
+    try{
+      var session = runtimeSessionStore[ADMIN_SESSION_KEY] || getWindowNameAdminSession();
+      return session && session.token ? String(session.token).trim() : "";
+    }catch(error){
+      return "";
+    }
   }
   window.SWADRA_SET_ADMIN_TOKEN = function(session){
-    return;
+    try{
+      var nextSession = session && typeof session === "object" ? session : {};
+      if(!nextSession.token) return;
+      runtimeSessionStore[ADMIN_SESSION_KEY] = nextSession;
+      var state = readWindowNameState();
+      state[ADMIN_SESSION_KEY] = nextSession;
+      writeWindowNameState(state);
+    }catch(error){}
   };
   window.SWADRA_CLEAR_ADMIN_TOKEN = function(){
     try{
       delete runtimeSessionStore[ADMIN_SESSION_KEY];
+      var state = readWindowNameState();
+      if(state && state[ADMIN_SESSION_KEY]){
+        delete state[ADMIN_SESSION_KEY];
+        writeWindowNameState(state);
+      }
     }catch(error){}
   };
   if(!window.__swadraAdminFetchPatched && window.fetch){
