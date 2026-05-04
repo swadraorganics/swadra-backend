@@ -1368,6 +1368,14 @@ function closeMobileModal(){
   if(mobileModal) mobileModal.style.display = "none";
 }
 
+function isValidIndianMobile(phone){
+  const value = String(phone || "").replace(/\D/g, "");
+  if(!/^[6-9]\d{9}$/.test(value)) return false;
+  if(/^(\d)\1{9}$/.test(value)) return false;
+  const blocked = ["1234567890", "0123456789", "9876543210"];
+  return !blocked.includes(value);
+}
+
 async function saveProfileMobile(){
   let currentUser = getCurrentUser();
   let users = getUsers();
@@ -1378,8 +1386,8 @@ async function saveProfileMobile(){
   }
   const mobileInput = document.getElementById("profileMobileInput");
   const newMobile = String(mobileInput ? mobileInput.value : "").replace(/\D/g, "");
-  if(!/^\d{10}$/.test(newMobile)){
-    alert("Please enter a valid 10 digit mobile number.");
+  if(!isValidIndianMobile(newMobile)){
+    alert("Please enter a valid Indian mobile number.");
     return;
   }
   let resolved = getOrCreateDashboardUser(users, currentUser);

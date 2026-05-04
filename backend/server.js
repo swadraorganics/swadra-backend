@@ -3740,6 +3740,13 @@ function normalizeAccountPhone(value = "") {
   return String(value || "").replace(/\D/g, "").slice(-10);
 }
 
+function isValidIndianMobileNumber(value = "") {
+  const phone = normalizeAccountPhone(value);
+  if (!/^[6-9]\d{9}$/.test(phone)) return false;
+  if (/^(\d)\1{9}$/.test(phone)) return false;
+  return !["1234567890", "0123456789", "9876543210"].includes(phone);
+}
+
 function mergeAccountProfileRecord(primary = {}, fallback = {}) {
   const primaryRecord = primary && typeof primary === "object" ? primary : {};
   const fallbackRecord = fallback && typeof fallback === "object" ? fallback : {};
@@ -3904,6 +3911,12 @@ async function upsertAccountUser(input = {}) {
       error.statusCode = 400;
       throw error;
     }
+  }
+
+  if (finalPhone && !isValidIndianMobileNumber(finalPhone)) {
+    const error = new Error("Please enter a valid Indian mobile number.");
+    error.statusCode = 400;
+    throw error;
   }
 
   if (isNewUser && !isProfileOnlyUpdate && (!finalPhone || finalPassword.length < 6)) {
@@ -4140,6 +4153,9 @@ app.post("/api/account/reset-password", paymentRateLimit, async (req, res) => {
     const password = String(req.body?.password || "");
     if (!email || !phone || password.length < 6) {
       return res.status(400).json({ ok: false, error: "Email, mobile number and valid password are required" });
+    }
+    if (!isValidIndianMobileNumber(phone)) {
+      return res.status(400).json({ ok: false, error: "Please enter a valid Indian mobile number." });
     }
     const user = await findAccountUser(email);
     if (!user) return res.status(404).json({ ok: false, error: "No account found for this email" });

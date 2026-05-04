@@ -983,6 +983,14 @@ let accountEntryStage = "email";
       }
     }
 
+    function isValidIndianMobile(phone){
+      const value = String(phone || "").replace(/\D/g, "");
+      if(!/^[6-9]\d{9}$/.test(value)) return false;
+      if(/^(\d)\1{9}$/.test(value)) return false;
+      const blocked = ["1234567890", "0123456789", "9876543210"];
+      return !blocked.includes(value);
+    }
+
     function maskEmail(email){
       const value = String(email || "").trim().toLowerCase();
       const parts = value.split("@");
@@ -1263,8 +1271,8 @@ let accountEntryStage = "email";
         return;
       }
 
-      if(!/^\d{10}$/.test(phone)){
-        return showMsg("Please enter a valid 10-digit mobile number.", "error");
+      if(!isValidIndianMobile(phone)){
+        return showMsg("Please enter a valid Indian mobile number.", "error");
       }
 
       if(isPasswordResetFlow){
@@ -1279,8 +1287,8 @@ let accountEntryStage = "email";
         return;
       }
 
-      if(!/^\d{10}$/.test(confirmPhone)){
-        return showMsg("Please confirm your 10-digit mobile number.", "error");
+      if(!isValidIndianMobile(confirmPhone)){
+        return showMsg("Please confirm a valid Indian mobile number.", "error");
       }
 
       if(phone !== confirmPhone){
