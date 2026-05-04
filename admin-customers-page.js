@@ -1158,6 +1158,39 @@
       renderUsers();
     }
 
+    async function cleanOtherUsers(){
+      const keepEmails = ["tamannasingh51295@gmail.com", "swadraorganics@gmail.com"];
+      const confirmed = confirm("Permanent cleanup chalega. Sirf Tamanna Singh aur Swadra Organics users rahenge. Baaki user accounts/data delete ho jayega. Continue?");
+      if(!confirmed) return;
+      const base = getBackendBaseUrl();
+      if(!base){
+        alert("Backend URL missing.");
+        return;
+      }
+      try{
+        const response = await fetch(`${base}/api/admin/users/prune`, {
+          method: "POST",
+          cache: "no-store",
+          credentials: "include",
+          headers: getAdminFetchHeaders({
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+          }),
+          body: JSON.stringify({ keepEmails })
+        });
+        const payload = await response.json().catch(()=>({}));
+        if(!response.ok || !payload.ok){
+          throw new Error(payload.error || "Cleanup failed");
+        }
+        await refreshUsers();
+        const result = payload.result || {};
+        alert(`Cleanup done. App users deleted: ${result.appStateUsersDeleted || 0}, auth users deleted: ${result.authUsersDeleted || 0}.`);
+      }catch(error){
+        console.error(error);
+        alert(error.message || "Cleanup failed.");
+      }
+    }
+
     function getAdminCartLookupIds(emailKey, user){
       return [
         user?.uid,
@@ -1238,6 +1271,8 @@
       renderUsers();
       renderDeletedUsers();
     }
+
+    window.cleanOtherUsers = cleanOtherUsers;
 
     (async function initializeUsersPage(){
       await refreshUsers();

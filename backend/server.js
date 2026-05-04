@@ -3697,6 +3697,134 @@ async function buildAdminUsersMap() {
   return usersMap;
 }
 
+function getUserRecordEmail(record = {}, fallback = "") {
+  return normalizeAccountEmail(
+    record.email ||
+    record.emailNormalized ||
+    record.customerEmail ||
+    record.userEmail ||
+    record.userId ||
+    record.user ||
+    record.profile?.email ||
+    record.shipping?.email ||
+    record.checkoutData?.email ||
+    fallback ||
+    ""
+  );
+}
+
+async function deleteFirestoreDocsByEmail(collectionName, keepEmails, extraDeleteIds = new Set()) {
+  if (!USE_FIRESTORE) return { scanned: 0, deleted: 0 };
+  const snap = await getFirestore().collection(collectionName).get();
+  let batch = getFirestore().batch();
+  let pending = 0;
+  let deleted = 0;
+  for (const doc of snap.docs) {
+    const data = doc.data() || {};
+    const email = getUserRecordEmail(data, doc.id);
+    const idMatchesDeleted = extraDeleteIds.has(String(doc.id || "").trim());
+    if ((email && !keepEmails.has(email)) || idMatchesDeleted) {
+      batch.delete(doc.ref);
+      pending += 1;
+      deleted += 1;
+      if (pending >= 400) {
+        await batch.commit();
+        batch = getFirestore().batch();
+        pending = 0;
+      }
+    }
+  }
+  if (pending) await batch.commit();
+  return { scanned: snap.size, deleted };
+}
+
+async function pruneNonKeptCustomerData(keepEmails = [], req = null) {
+  const keep = new Set((keepEmails || []).map((item) => normalizeAccountEmail(item)).filter(Boolean));
+  keep.add("admin@swadraorganics.com");
+  const db = await readDB();
+  const deletedIds = new Set();
+  const result = {
+    keep: Array.from(keep),
+    appStateUsersDeleted: 0,
+    ordersDeleted: 0,
+    paymentAttemptsDeleted: 0,
+    userActivitiesDeleted: 0,
+    firestore: {},
+    authUsersDeleted: 0
+  };
+
+  db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+  const users = db.appState.users && typeof db.appState.users === "object" ? db.appState.users : {};
+  const nextUsers = {};
+  Object.entries(users).forEach(([key, record]) => {
+    const email = getUserRecordEmail(record, key);
+    if (email && keep.has(email)) {
+      nextUsers[email] = { ...(record || {}), email };
+      return;
+    }
+    if (record?.uid) deletedIds.add(String(record.uid).trim());
+    if (record?.userId) deletedIds.add(String(record.userId).trim());
+    if (record?.id) deletedIds.add(String(record.id).trim());
+    result.appStateUsersDeleted += 1;
+  });
+  db.appState.users = nextUsers;
+
+  const keepRecord = (record) => {
+    const email = getUserRecordEmail(record);
+    return !email || keep.has(email);
+  };
+  const beforeOrders = Array.isArray(db.orders) ? db.orders.length : 0;
+  db.orders = (Array.isArray(db.orders) ? db.orders : []).filter(keepRecord);
+  result.ordersDeleted = beforeOrders - db.orders.length;
+
+  const beforeAttempts = Array.isArray(db.paymentAttempts) ? db.paymentAttempts.length : 0;
+  db.paymentAttempts = (Array.isArray(db.paymentAttempts) ? db.paymentAttempts : []).filter(keepRecord);
+  result.paymentAttemptsDeleted = beforeAttempts - db.paymentAttempts.length;
+
+  const beforeActivities = Array.isArray(db.userActivities) ? db.userActivities.length : 0;
+  db.userActivities = (Array.isArray(db.userActivities) ? db.userActivities : []).filter(keepRecord);
+  db.appState.userActivities = db.userActivities;
+  result.userActivitiesDeleted = beforeActivities - db.userActivities.length;
+
+  if (USE_FIRESTORE) {
+    result.firestore.users = await deleteFirestoreDocsByEmail("users", keep, deletedIds);
+    result.firestore.carts = await deleteFirestoreDocsByEmail("carts", keep, deletedIds);
+    result.firestore.orders = await deleteFirestoreDocsByEmail("orders", keep, deletedIds);
+    result.firestore.paymentAttempts = await deleteFirestoreDocsByEmail("paymentAttempts", keep, deletedIds);
+    result.firestore.userActivities = await deleteFirestoreDocsByEmail("userActivities", keep, deletedIds);
+  }
+
+  try {
+    if (admin === undefined) admin = require("firebase-admin");
+    if (admin && !admin.apps.length) admin.initializeApp();
+    const auth = admin && typeof admin.auth === "function" ? admin.auth() : null;
+    if (auth && typeof auth.listUsers === "function") {
+      let pageToken = "";
+      do {
+        const page = await auth.listUsers(1000, pageToken || undefined);
+        for (const authUser of page.users || []) {
+          const email = normalizeAccountEmail(authUser.email || "");
+          if (email && !keep.has(email)) {
+            await auth.deleteUser(authUser.uid);
+            result.authUsersDeleted += 1;
+          }
+        }
+        pageToken = page.pageToken || "";
+      } while (pageToken);
+    }
+  } catch (error) {
+    result.authWarning = error.message;
+    addLog("Auth user prune skipped: " + error.message, "warn");
+  }
+
+  auditAdminAction(db, req, "admin.users.prune", "success", {
+    keep: Array.from(keep),
+    result
+  });
+  await writeDB(db);
+  return result;
+}
+
 app.get("/api/admin/users", requireAdminSession, async (req, res) => {
   try {
     const usersMap = await buildAdminUsersMap();
@@ -3708,6 +3836,21 @@ app.get("/api/admin/users", requireAdminSession, async (req, res) => {
   } catch (error) {
     addLog("Admin users fetch failed: " + error.message, "error");
     res.status(500).json({ ok: false, error: "Failed to fetch admin users" });
+  }
+});
+
+app.post("/api/admin/users/prune", requireAdminSession, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const keepEmails = Array.isArray(req.body?.keepEmails) && req.body.keepEmails.length
+      ? req.body.keepEmails
+      : ["tamannasingh51295@gmail.com", "swadraorganics@gmail.com"];
+    const result = await pruneNonKeptCustomerData(keepEmails, req);
+    addLog("Admin pruned non-kept customer data", "success");
+    res.json({ ok: true, result });
+  } catch (error) {
+    addLog("Admin user prune failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to prune user data" });
   }
 });
 
