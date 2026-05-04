@@ -136,6 +136,7 @@
     async function fetchBackendUsersForAdmin(){
       const base = getBackendBaseUrl();
       if(!base) return;
+      backendUsersCache = {};
       try{
         const response = await fetch(`${base}/api/admin/users`, {
           method: "GET",
@@ -146,43 +147,16 @@
         const payload = await response.json().catch(()=>({}));
         if(response.ok && payload && payload.ok && payload.users && typeof payload.users === "object"){
           backendUsersCache = payload.users;
-          await mergeAuthUsersFallback();
           await mergeDirectFirestoreUsersFallback();
-          if(Object.keys(backendUsersCache).length) return;
+          return;
         }
         if(response.status === 401){
-          console.warn("admin users session unavailable, trying account users fallback");
+          console.warn("admin users session unavailable");
         }else{
           console.warn("admin users fetch returned no users", payload);
         }
       }catch(error){
         console.error("admin users fetch failed", error);
-      }
-
-      try{
-        const recoveryParams = new URLSearchParams({
-          recoverRazorpay: "recent",
-          days: "7",
-          email: "swadraorganics@gmail.com"
-        });
-        const response = await fetch(`${base}/api/account/users?${recoveryParams.toString()}`, {
-          method: "GET",
-          cache: "no-store",
-          credentials: "include",
-          headers: { "Accept": "application/json" }
-        });
-        const payload = await response.json().catch(()=>({}));
-        if(response.ok && payload && payload.ok && payload.users && typeof payload.users === "object"){
-          backendUsersCache = { ...backendUsersCache, ...payload.users };
-          await mergeAuthUsersFallback();
-          await mergeDirectFirestoreUsersFallback();
-        }
-      }catch(error){
-        console.error("account users fallback fetch failed", error);
-      }
-      if(!Object.keys(backendUsersCache).length){
-        await mergeAuthUsersFallback();
-        await mergeDirectFirestoreUsersFallback();
       }
     }
 
@@ -1181,6 +1155,10 @@
         if(!response.ok || !payload.ok){
           throw new Error(payload.error || "Cleanup failed");
         }
+        backendUsersCache = {};
+        backendOrdersCache = [];
+        renderUsers();
+        renderDeletedUsers();
         await refreshUsers();
         const result = payload.result || {};
         alert(`All users cleanup done. App users deleted: ${result.appStateUsersDeleted || 0}, auth users deleted: ${result.authUsersDeleted || 0}.`);
