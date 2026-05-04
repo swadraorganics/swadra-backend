@@ -50,11 +50,29 @@
   }
 
   function syncRuntimeStoresFromWindowName(){
-    return;
+    var state = readWindowNameState();
+    var runtimeState = state && state[WINDOW_NAME_STATE_KEY] && typeof state[WINDOW_NAME_STATE_KEY] === "object"
+      ? state[WINDOW_NAME_STATE_KEY]
+      : {};
+    if(runtimeState.session && typeof runtimeState.session === "object"){
+      Object.assign(runtimeSessionStore, runtimeState.session);
+    }
+    if(runtimeState.local && typeof runtimeState.local === "object"){
+      Object.assign(runtimeLocalStore, runtimeState.local);
+    }
+    if(runtimeState.review && typeof runtimeState.review === "object"){
+      Object.assign(runtimeReviewStore, runtimeState.review);
+    }
   }
 
   function persistRuntimeStoresToWindowName(){
-    return;
+    var state = readWindowNameState();
+    state[WINDOW_NAME_STATE_KEY] = {
+      session: runtimeSessionStore,
+      local: runtimeLocalStore,
+      review: runtimeReviewStore
+    };
+    writeWindowNameState(state);
   }
 
   syncRuntimeStoresFromWindowName();

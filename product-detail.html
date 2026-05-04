@@ -275,6 +275,9 @@
       if(!currentProduct) return;
       const authApi = window.SWADRA_AUTH || null;
       const dataApi = window.SWADRA_DATA || null;
+      if(authApi && typeof authApi.ready === "function"){
+        try{ await authApi.ready(); }catch(error){}
+      }
       const currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
       if(!currentUser){
         const cart = dataApi && typeof dataApi.getGuestCart === "function" ? dataApi.getGuestCart() : [];
