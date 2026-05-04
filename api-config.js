@@ -626,9 +626,17 @@
     var email = getAuthEmailFromUrl(window.location.href);
     if(email){
       rawSessionSet("currentUser", email);
-      mirrorSessionUserToBackend(email, { reason: "url-auth" });
     }
     return email;
+  }
+
+  function removeAuthUserFromUrl(){
+    var parsed = parseUrl(window.location.href);
+    if(!parsed || !parsed.searchParams.has(AUTH_QUERY_KEY)) return;
+    parsed.searchParams.delete(AUTH_QUERY_KEY);
+    try{
+      window.history.replaceState({}, "", parsed.pathname + parsed.search + parsed.hash);
+    }catch(error){}
   }
 
   function ensureAuthUserInUrl(){
@@ -975,6 +983,63 @@
     ["currentUser", "userPhone", "tempUser", "otp"].forEach(function(key){
       rawSessionRemove(key);
     });
+  }
+
+  function isProtectedCustomerPage(){
+    var page = String((window.location.pathname || "").split("/").pop() || "").toLowerCase();
+    return [
+      "dashboard.html",
+      "checkout.html",
+      "order.html",
+      "payment.html",
+      "invoice.html",
+      "trackorder.html"
+    ].indexOf(page) > -1;
+  }
+
+  async function validateCurrentUserSession(options){
+    var config = options && typeof options === "object" ? options : {};
+    var email = normalizeEmailValue(config.email || getSessionValue("currentUser") || getAuthEmailFromUrl(window.location.href) || "");
+    if(!email) return "";
+    try{
+      var response = await fetch(base + "/api/account/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, mode: "session" })
+      });
+      var data = await response.json().catch(function(){ return {}; });
+      if(response.ok && data && data.exists){
+        rawSessionSet("currentUser", email);
+        return email;
+      }
+    }catch(error){}
+    clearCurrentUserSession();
+    removeAuthUserFromUrl();
+    try{
+      var auth = initFirebaseAuthIfNeeded();
+      if(auth && typeof auth.signOut === "function") await auth.signOut();
+    }catch(error){}
+    return "";
+  }
+
+  function installProtectedCustomerSessionGuard(){
+    if(!isProtectedCustomerPage() || !document || document.__swadraProtectedSessionGuardInstalled) return;
+    document.__swadraProtectedSessionGuardInstalled = true;
+    var runGuard = function(){
+      validateCurrentUserSession().then(function(validEmail){
+        if(validEmail) return;
+        try{
+          window.location.replace("account.html");
+        }catch(error){
+          window.location.href = "account.html";
+        }
+      });
+    };
+    if(document.readyState === "loading"){
+      document.addEventListener("DOMContentLoaded", runGuard, { once: true });
+    }else{
+      setTimeout(runGuard, 0);
+    }
   }
 
   function getRedirectAfterLogin(){
@@ -1960,6 +2025,8 @@
     getCurrentUserRecord: getCurrentUserRecord,
     setCurrentUserSession: setCurrentUserSession,
     clearCurrentUserSession: clearCurrentUserSession,
+    validateCurrentUserSession: validateCurrentUserSession,
+    removeAuthUserFromUrl: removeAuthUserFromUrl,
     getRedirectAfterLogin: getRedirectAfterLogin,
     setRedirectAfterLogin: setRedirectAfterLogin,
     consumeRedirectAfterLogin: consumeRedirectAfterLogin,
@@ -1983,6 +2050,8 @@
     updateUserPassword: updateUserPassword,
     signOutUser: signOutUser
   };
+
+  installProtectedCustomerSessionGuard();
 
   var firebaseConfig = {
     apiKey: "AIzaSyCJBp-RNZTeVOu0k1UzDL2DCXvkVq4Az5I",

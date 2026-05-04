@@ -4224,21 +4224,16 @@ app.post("/api/account/lookup", paymentRateLimit, async (req, res) => {
   try {
     const email = normalizeAccountEmail(req.body?.email);
     const phone = normalizeAccountPhone(req.body?.phone);
+    const mode = String(req.body?.mode || "").trim().toLowerCase();
     if (!email) return res.status(400).json({ ok: false, error: "Email is required" });
     const user = await findAccountUser(email);
     if (!user) {
-      const authUser = await findFirebaseAuthUserByEmail(email);
-      if (!authUser) {
-        return res.json({ ok: true, exists: false, maskedEmail: maskEmailAddress(email) });
-      }
-      const savedPhone = normalizeAccountPhone(authUser.phone || "");
       return res.json({
         ok: true,
-        exists: true,
-        profileMissing: true,
-        phoneMatches: phone && savedPhone ? savedPhone === phone : false,
-        maskedEmail: maskEmailAddress(authUser.email || email),
-        maskedPhoneLast4: savedPhone ? savedPhone.slice(-4) : ""
+        exists: false,
+        sessionValid: false,
+        maskedEmail: maskEmailAddress(email),
+        mode
       });
     }
     const savedPhone = normalizeAccountPhone(user.phone || user.phoneNormalized || user.profile?.phone || "");
