@@ -557,6 +557,7 @@ function createSignedCustomerToken(db = {}, session = {}) {
     email,
     phone,
     uid: String(session.uid || session.userId || "").trim(),
+    sessionVersion: String(db.appState?.customerSessionVersion || "v1"),
     expiresAt: String(session.expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()),
     nonce: crypto.randomBytes(8).toString("hex")
   }));
@@ -581,6 +582,10 @@ function verifySignedCustomerToken(db = {}, token = "") {
   const email = normalizeAccountEmail(parsed.email || "");
   const phone = normalizeAccountPhone(parsed.phone || "");
   if (!email && !phone) return null;
+  const expectedSessionVersion = String(db.appState?.customerSessionVersion || "v1");
+  const tokenSessionVersion = String(parsed.sessionVersion || "");
+  if (tokenSessionVersion && tokenSessionVersion !== expectedSessionVersion) return null;
+  if (!tokenSessionVersion && expectedSessionVersion !== "v1") return null;
   return { email, phone, uid: String(parsed.uid || "").trim(), expiresAt: parsed.expiresAt };
 }
 
@@ -3738,7 +3743,28 @@ async function deleteFirestoreDocsByEmail(collectionName, keepEmails, extraDelet
   return { scanned: snap.size, deleted };
 }
 
-async function pruneNonKeptCustomerData(keepEmails = [], req = null) {
+async function deleteFirestoreCollectionDocs(collectionName) {
+  if (!USE_FIRESTORE) return { scanned: 0, deleted: 0 };
+  const snap = await getFirestore().collection(collectionName).get();
+  let batch = getFirestore().batch();
+  let pending = 0;
+  let deleted = 0;
+  for (const doc of snap.docs) {
+    batch.delete(doc.ref);
+    pending += 1;
+    deleted += 1;
+    if (pending >= 400) {
+      await batch.commit();
+      batch = getFirestore().batch();
+      pending = 0;
+    }
+  }
+  if (pending > 0) await batch.commit();
+  return { scanned: snap.size, deleted };
+}
+
+async function pruneNonKeptCustomerData(keepEmails = [], req = null, options = {}) {
+  const deleteAll = options && options.deleteAll === true;
   const keep = new Set((keepEmails || []).map((item) => normalizeAccountEmail(item)).filter(Boolean));
   keep.add("admin@swadraorganics.com");
   const db = await readDB();
@@ -3749,6 +3775,9 @@ async function pruneNonKeptCustomerData(keepEmails = [], req = null) {
     ordersDeleted: 0,
     paymentAttemptsDeleted: 0,
     userActivitiesDeleted: 0,
+    abandonedCartsDeleted: 0,
+    returnRequestsDeleted: 0,
+    sessionsInvalidated: false,
     firestore: {},
     authUsersDeleted: 0
   };
@@ -3774,24 +3803,37 @@ async function pruneNonKeptCustomerData(keepEmails = [], req = null) {
     return !email || keep.has(email);
   };
   const beforeOrders = Array.isArray(db.orders) ? db.orders.length : 0;
-  db.orders = (Array.isArray(db.orders) ? db.orders : []).filter(keepRecord);
+  db.orders = deleteAll ? [] : (Array.isArray(db.orders) ? db.orders : []).filter(keepRecord);
   result.ordersDeleted = beforeOrders - db.orders.length;
 
   const beforeAttempts = Array.isArray(db.paymentAttempts) ? db.paymentAttempts.length : 0;
-  db.paymentAttempts = (Array.isArray(db.paymentAttempts) ? db.paymentAttempts : []).filter(keepRecord);
+  db.paymentAttempts = deleteAll ? [] : (Array.isArray(db.paymentAttempts) ? db.paymentAttempts : []).filter(keepRecord);
   result.paymentAttemptsDeleted = beforeAttempts - db.paymentAttempts.length;
 
   const beforeActivities = Array.isArray(db.userActivities) ? db.userActivities.length : 0;
-  db.userActivities = (Array.isArray(db.userActivities) ? db.userActivities : []).filter(keepRecord);
+  db.userActivities = deleteAll ? [] : (Array.isArray(db.userActivities) ? db.userActivities : []).filter(keepRecord);
   db.appState.userActivities = db.userActivities;
   result.userActivitiesDeleted = beforeActivities - db.userActivities.length;
 
+  const beforeAbandoned = Array.isArray(db.appState.abandonedCarts) ? db.appState.abandonedCarts.length : 0;
+  db.appState.abandonedCarts = deleteAll ? [] : (Array.isArray(db.appState.abandonedCarts) ? db.appState.abandonedCarts : []).filter(keepRecord);
+  result.abandonedCartsDeleted = beforeAbandoned - db.appState.abandonedCarts.length;
+
+  const beforeReturns = Array.isArray(db.appState.returnRequests) ? db.appState.returnRequests.length : 0;
+  db.appState.returnRequests = deleteAll ? [] : (Array.isArray(db.appState.returnRequests) ? db.appState.returnRequests : []).filter(keepRecord);
+  result.returnRequestsDeleted = beforeReturns - db.appState.returnRequests.length;
+
+  db.appState.customerSessionVersion = "clean_" + Date.now();
+  result.sessionsInvalidated = true;
+
   if (USE_FIRESTORE) {
-    result.firestore.users = await deleteFirestoreDocsByEmail("users", keep, deletedIds);
-    result.firestore.carts = await deleteFirestoreDocsByEmail("carts", keep, deletedIds);
-    result.firestore.orders = await deleteFirestoreDocsByEmail("orders", keep, deletedIds);
-    result.firestore.paymentAttempts = await deleteFirestoreDocsByEmail("paymentAttempts", keep, deletedIds);
-    result.firestore.userActivities = await deleteFirestoreDocsByEmail("userActivities", keep, deletedIds);
+    const deleteCollection = deleteAll ? deleteFirestoreCollectionDocs : (collectionName) => deleteFirestoreDocsByEmail(collectionName, keep, deletedIds);
+    result.firestore.users = await deleteCollection("users");
+    result.firestore.carts = await deleteCollection("carts");
+    result.firestore.checkoutDrafts = await deleteCollection("checkoutDrafts");
+    result.firestore.orders = await deleteCollection("orders");
+    result.firestore.paymentAttempts = await deleteCollection("paymentAttempts");
+    result.firestore.userActivities = await deleteCollection("userActivities");
   }
 
   try {
@@ -3804,7 +3846,7 @@ async function pruneNonKeptCustomerData(keepEmails = [], req = null) {
         const page = await auth.listUsers(1000, pageToken || undefined);
         for (const authUser of page.users || []) {
           const email = normalizeAccountEmail(authUser.email || "");
-          if (email && !keep.has(email)) {
+          if (email && (deleteAll || !keep.has(email)) && email !== "admin@swadraorganics.com") {
             await auth.deleteUser(authUser.uid);
             result.authUsersDeleted += 1;
           }
@@ -3818,7 +3860,7 @@ async function pruneNonKeptCustomerData(keepEmails = [], req = null) {
   }
 
   auditAdminAction(db, req, "admin.users.prune", "success", {
-    keep: Array.from(keep),
+    keep: deleteAll ? ["admin@swadraorganics.com"] : Array.from(keep),
     result
   });
   await writeDB(db);
@@ -3848,7 +3890,7 @@ app.post("/api/admin/users/prune", requireAdminSession, async (req, res) => {
       : Array.isArray(req.body?.keepEmails) && req.body.keepEmails.length
       ? req.body.keepEmails
       : ["tamannasingh51295@gmail.com", "swadraorganics@gmail.com"];
-    const result = await pruneNonKeptCustomerData(keepEmails, req);
+    const result = await pruneNonKeptCustomerData(keepEmails, req, { deleteAll });
     addLog(deleteAll ? "Admin pruned all customer data" : "Admin pruned non-kept customer data", "success");
     res.json({ ok: true, result });
   } catch (error) {
