@@ -4484,6 +4484,14 @@ app.post("/api/app-state", async (req, res) => {
 
     Object.keys(state).forEach((key) => {
       if (!key) return;
+      if (key === "users" && state.users && typeof state.users === "object" && !Array.isArray(state.users)) {
+        const existingUsers = db.appState.users && typeof db.appState.users === "object" && !Array.isArray(db.appState.users)
+          ? db.appState.users
+          : {};
+        const incomingUsers = normalizeAppStateValue(state.users);
+        db.appState.users = { ...existingUsers, ...(incomingUsers && typeof incomingUsers === "object" ? incomingUsers : {}) };
+        return;
+      }
       db.appState[key] = normalizeAppStateValue(state[key]);
     });
     if (Array.isArray(state.coupons)) {
