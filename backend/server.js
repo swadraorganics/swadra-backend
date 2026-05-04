@@ -35,6 +35,36 @@ let memoryDb = null;
 let dbCache = null;
 let dbCacheLoaded = false;
 
+function ensureFirebaseAdminApp() {
+  if (admin === undefined) {
+    try {
+      admin = require("firebase-admin");
+    } catch (error) {
+      admin = null;
+    }
+  }
+  if (!admin) {
+    throw new Error("firebase-admin package is required when USE_FIRESTORE=true");
+  }
+  if (!admin.apps.length) {
+    const projectId = String(process.env.FIREBASE_PROJECT_ID || "").trim();
+    const clientEmail = String(process.env.FIREBASE_CLIENT_EMAIL || "").trim();
+    const privateKey = String(process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n");
+    if (projectId && clientEmail && privateKey) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey
+        })
+      });
+    } else {
+      admin.initializeApp();
+    }
+  }
+  return admin;
+}
+
 function normalizeOrigin(value) {
   return String(value || "").trim().replace(/\/+$/, "");
 }
@@ -210,32 +240,7 @@ function normalizeCoupon(input = {}) {
 
 function getFirestore() {
   if (!USE_FIRESTORE) return null;
-  if (admin === undefined) {
-    try {
-      admin = require("firebase-admin");
-    } catch (error) {
-      admin = null;
-    }
-  }
-  if (!admin) {
-    throw new Error("firebase-admin package is required when USE_FIRESTORE=true");
-  }
-  if (!admin.apps.length) {
-    const projectId = String(process.env.FIREBASE_PROJECT_ID || "").trim();
-    const clientEmail = String(process.env.FIREBASE_CLIENT_EMAIL || "").trim();
-    const privateKey = String(process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n");
-    if (projectId && clientEmail && privateKey) {
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId,
-          clientEmail,
-          privateKey
-        })
-      });
-    } else {
-      admin.initializeApp();
-    }
-  }
+  ensureFirebaseAdminApp();
   if (!firestoreDb) {
     firestoreDb = admin.firestore();
   }
@@ -3839,8 +3844,7 @@ async function pruneNonKeptCustomerData(keepEmails = [], req = null, options = {
   }
 
   try {
-    if (admin === undefined) admin = require("firebase-admin");
-    if (admin && !admin.apps.length) admin.initializeApp();
+    ensureFirebaseAdminApp();
     const auth = admin && typeof admin.auth === "function" ? admin.auth() : null;
     if (auth && typeof auth.listUsers === "function") {
       let pageToken = "";
@@ -3987,12 +3991,7 @@ async function findFirebaseAuthUserByEmail(email = "") {
   const normalizedEmail = normalizeAccountEmail(email);
   if (!normalizedEmail) return null;
   try {
-    if (admin === undefined) {
-      admin = require("firebase-admin");
-    }
-    if (admin && !admin.apps.length) {
-      admin.initializeApp();
-    }
+    ensureFirebaseAdminApp();
     const auth = admin && typeof admin.auth === "function" ? admin.auth() : null;
     if (!auth) return null;
     const authUser = await auth.getUserByEmail(normalizedEmail);
@@ -4013,12 +4012,7 @@ async function findFirebaseAuthUserByEmail(email = "") {
 async function listFirebaseAuthAccountUsers() {
   const users = [];
   try {
-    if (admin === undefined) {
-      admin = require("firebase-admin");
-    }
-    if (admin && !admin.apps.length) {
-      admin.initializeApp();
-    }
+    ensureFirebaseAdminApp();
     const auth = admin && typeof admin.auth === "function" ? admin.auth() : null;
     if (!auth || typeof auth.listUsers !== "function") return users;
     let pageToken = "";
@@ -4178,12 +4172,7 @@ async function upsertAccountUser(input = {}) {
 
   let authUser = null;
   try {
-    if (admin === undefined) {
-      admin = require("firebase-admin");
-    }
-    if (admin && !admin.apps.length) {
-      admin.initializeApp();
-    }
+    ensureFirebaseAdminApp();
     const auth = admin && typeof admin.auth === "function" ? admin.auth() : null;
     if (auth) {
       try {
