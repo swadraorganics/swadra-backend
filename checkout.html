@@ -450,6 +450,30 @@ qty:Number(item.qty || 1)
 }));
 }
 
+function getOriginalCheckoutCartItems(){
+return getCheckoutCartItems().map(item=>{
+let qty = Number(item.qty || 1);
+let originalLineTotal = Math.round(Number(item.originalLineTotal || 0));
+let couponLineDiscount = Math.round(Number(item.couponLineDiscount || item.lineCouponDiscount || 0));
+let discountedLineTotal = Math.round(Number(item.discountedLineTotal || item.displayLineTotal || 0));
+let restoredLineTotal = originalLineTotal || (discountedLineTotal && couponLineDiscount ? discountedLineTotal + couponLineDiscount : 0);
+let restoredUnitPrice = qty > 0 && restoredLineTotal > 0 ? Math.round(restoredLineTotal / qty) : Number(item.price || 0);
+return {
+...item,
+price: restoredUnitPrice,
+displayPrice: restoredUnitPrice,
+finalUnitPrice: restoredUnitPrice,
+discountedUnitPrice: 0,
+couponUnitPrice: 0,
+couponLineDiscount: 0,
+lineCouponDiscount: 0,
+discountedLineTotal: 0,
+displayLineTotal: 0,
+originalLineTotal: restoredLineTotal || Math.round(restoredUnitPrice * qty)
+};
+});
+}
+
 function getDiscountedItemsTotal(items){
 return Math.round((Array.isArray(items) ? items : []).reduce((sum,item)=>sum + Math.round(Number(item && (item.discountedLineTotal || item.displayLineTotal || ((Number(item.price || 0) * Number(item.qty || 1))))) || 0),0));
 }
@@ -484,7 +508,7 @@ state: address.state,
 deliveryDetails: summary && summary.deliveryDetails ? summary.deliveryDetails : null,
 appliedCoupon: summary && summary.appliedCoupon ? summary.appliedCoupon : (checkoutDraftCache && checkoutDraftCache.appliedCoupon ? checkoutDraftCache.appliedCoupon : null),
 coupon: summary && summary.coupon ? summary.coupon : (checkoutDraftCache && checkoutDraftCache.coupon ? checkoutDraftCache.coupon : null),
-cartSnapshot: Array.isArray(summary && summary.discountedItems) ? summary.discountedItems : getCheckoutCartItems(),
+cartSnapshot: getOriginalCheckoutCartItems(),
 summary: summary || getCartSummary()
 };
 checkoutDraftCache = payload;
@@ -717,9 +741,10 @@ sellingTotal += (Number(item.price || 0) * Number(item.qty || 0));
         discountedItems
       };
 }
-summary = await calculateCheckoutSummary(summary, discountedItems);
+summary = await calculateCheckoutSummary(summary, getOriginalCheckoutCartItems());
 window.__swadraCheckoutSummary = summary;
 saveCheckoutDraftToFirestore(summary);
+discountedItems = Array.isArray(summary.discountedItems) && summary.discountedItems.length ? summary.discountedItems : cart;
 
 itemsDiv.innerHTML = "";
 discountedItems.forEach(i=>{
@@ -821,7 +846,7 @@ if(!val) return alert("Please fill all required fields");
 }
 
 const addressText = [houseField.value, areaField.value, postofficeField.value, cityField.value, stateField.value, pincodeField.value].filter(Boolean).join(", ");
-let summary = await calculateCheckoutSummary(getCartSummary(), getCheckoutCartItems());
+let summary = await calculateCheckoutSummary(getCartSummary(), getOriginalCheckoutCartItems());
 window.__swadraCheckoutSummary = summary;
 const deliveryDetails = summary && summary.deliveryDetails ? summary.deliveryDetails : null;
 const checkoutPayload = {
