@@ -1988,6 +1988,13 @@
 
   async function authReady(){
     await ensureFirebaseAuthSync();
+    var record = await fetchCurrentAuthUserRecord().catch(function(){
+      return getCurrentUserRecord();
+    });
+    if(record || getCurrentUserEmail()){
+      return record;
+    }
+    await fetchCustomerSessionFromBackend().catch(function(){ return ""; });
     return fetchCurrentAuthUserRecord().catch(function(){
       return getCurrentUserRecord();
     });

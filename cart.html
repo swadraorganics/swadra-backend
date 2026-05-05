@@ -1038,7 +1038,7 @@ alert("Coupon Applied Successfully");
 
 async function goToCheckout(){
 if((await getCart()).length === 0) return alert("Cart empty");
-await waitForCartUser();
+const resolvedCartUser = await waitForCartUser();
 syncCartDraftPincode();
 if(!hasCartDeliveryPincode()){
 setCheckoutButtonState();
@@ -1048,7 +1048,7 @@ if(!hasCartPostOffice()){
 setCheckoutButtonState();
 return alert("Please select post office");
 }
-const authUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
+const authUser = resolvedCartUser || (authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "");
 const checkoutTarget = "checkout.html?cartPincode=" + encodeURIComponent(getCartDeliveryPincode()) + "&cartPostOffice=" + encodeURIComponent(getCartPostOffice());
 if(!authUser){
 if(authApi && typeof authApi.setRedirectAfterLogin === "function"){
