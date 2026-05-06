@@ -938,6 +938,8 @@ let runtimeOtpMode = "";
 let runtimeEmailOtpCode = "";
 let runtimeOtpRequiresPhone = false;
 let accountEntryStage = "email";
+let accountBootstrapComplete = false;
+let accountBootstrapError = "";
 
     function apiBase(){
       return String(window.SWADRA_API_BASE || "https://swadra-backend-production.up.railway.app").replace(/\/$/, "");
@@ -946,14 +948,21 @@ let accountEntryStage = "email";
     async function accountApi(path, payload){
       const response = await fetch(apiBase() + path, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload && typeof payload === "object" ? payload : {})
       });
       const data = await response.json().catch(()=>({}));
       if(!response.ok || data.ok === false){
-        throw new Error(data.error || "Account request failed");
+        throw new Error(data.error || data.message || data.code || "Account request failed");
       }
       return data;
+    }
+
+    function setCreateAccountReady(ready){
+      const button = document.getElementById("createAccountBtn");
+      if(!button) return;
+      button.disabled = !ready;
     }
 
     function setPhoneFieldsVisible(visible){
@@ -1411,6 +1420,13 @@ let accountEntryStage = "email";
     async function createAccount(){
       const createButton = document.getElementById("createAccountBtn");
       if(createButton && createButton.disabled) return;
+      if(!accountBootstrapComplete){
+        return showMsg("Account system is still loading. Please try again in a moment.", "error");
+      }
+      if(accountBootstrapError){
+        console.warn("account bootstrap warning before create", accountBootstrapError);
+        showMsg(accountBootstrapError, "error");
+      }
       if(createButton){
         createButton.disabled = true;
         createButton.innerText = isPasswordResetFlow ? "Resetting..." : "Creating...";
@@ -1527,6 +1543,11 @@ let accountEntryStage = "email";
         }
         const finalEmail = (result && result.record && result.record.email) || accountEmail;
         try{
+          if(authApi && typeof authApi.signInUserWithPassword === "function" && !isPasswordResetFlow){
+            await authApi.signInUserWithPassword(finalEmail, pass).catch(function(signInError){
+              console.warn("post-create Firebase sign-in skipped", signInError);
+            });
+          }
           if(authApi && typeof authApi.signInUser === "function"){
             authApi.signInUser(finalEmail);
           }
@@ -1726,13 +1747,17 @@ let accountEntryStage = "email";
     });
 
     async function initializeAccountPage(){
+      setCreateAccountReady(false);
       if(authApi && typeof authApi.ready === "function"){
         try{
           await authApi.ready();
         }catch(error){
           console.error("account auth bootstrap failed", error);
+          accountBootstrapError = error && error.message ? error.message : "Firebase account bootstrap failed. Backend signup will still be attempted.";
         }
       }
+      accountBootstrapComplete = true;
+      setCreateAccountReady(true);
       updateProgress(1);
       if(!handleExistingAuthenticatedUser()){
         if(authApi && typeof authApi.getRedirectAfterLogin === "function" && authApi.getRedirectAfterLogin()){

@@ -85,7 +85,7 @@ function buildCorsHeaders(req, extraHeaders = {}) {
     "Access-Control-Allow-Origin": allowOrigin || "*",
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, x-admin-session-token, x-firebase-id-token, x-customer-firebase-token",
     "Access-Control-Max-Age": "86400",
     ...extraHeaders
   };
@@ -133,7 +133,11 @@ const server = http.createServer((req, res) => {
   } catch (error) {
     console.error("[bootstrap handler error]", error);
     res.writeHead(500, buildCorsHeaders(req, { "Content-Type": "application/json; charset=utf-8" }));
-    res.end(JSON.stringify({ ok: false, error: "Bootstrap handler failed" }));
+    res.end(JSON.stringify({
+      ok: false,
+      error: error && error.message ? error.message : "Backend handler failed",
+      code: "BACKEND_BOOTSTRAP_FAILED"
+    }));
   }
 });
 

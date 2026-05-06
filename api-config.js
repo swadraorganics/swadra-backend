@@ -276,11 +276,17 @@
       return target.indexOf(base + "/api/carts/") === 0 ||
         target.indexOf(base + "/api/checkout-drafts/") === 0 ||
         target.indexOf(base + "/api/orders/") === 0 ||
+        target.indexOf(base + "/api/account/users") === 0 ||
+        target.indexOf(base + "/api/account/create") === 0 ||
+        target.indexOf(base + "/api/account/activity") === 0 ||
         target.indexOf(base + "/api/payments/create-order") === 0 ||
         target.indexOf(base + "/api/payments/verify") === 0 ||
         normalizedTarget.indexOf("/api/carts/") === 0 ||
         normalizedTarget.indexOf("/api/checkout-drafts/") === 0 ||
         normalizedTarget.indexOf("/api/orders/") === 0 ||
+        normalizedTarget.indexOf("/api/account/users") === 0 ||
+        normalizedTarget.indexOf("/api/account/create") === 0 ||
+        normalizedTarget.indexOf("/api/account/activity") === 0 ||
         normalizedTarget.indexOf("/api/payments/create-order") === 0 ||
         normalizedTarget.indexOf("/api/payments/verify") === 0;
     }

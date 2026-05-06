@@ -43,10 +43,6 @@ let dbCacheLoaded = false;
 function validateProductionEnvironment() {
   if (!IS_PRODUCTION_RUNTIME) return;
   const missing = [];
-  if (!FRONTEND_ORIGIN) missing.push("FRONTEND_ORIGIN");
-  if (!process.env.RAZORPAY_KEY_ID && !process.env.RAZORPAY_KEY && !process.env.RAZORPAY_ID) missing.push("RAZORPAY_KEY_ID");
-  if (!process.env.RAZORPAY_KEY_SECRET && !process.env.RAZORPAY_SECRET) missing.push("RAZORPAY_KEY_SECRET");
-  if (!process.env.RAZORPAY_WEBHOOK_SECRET) missing.push("RAZORPAY_WEBHOOK_SECRET");
   const hasFirebaseCredential =
     (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) ||
     process.env.GOOGLE_APPLICATION_CREDENTIALS ||
@@ -55,6 +51,14 @@ function validateProductionEnvironment() {
   if (!hasFirebaseCredential) missing.push("Firebase Admin credentials");
   if (missing.length) {
     throw new Error("Missing required production environment values: " + missing.join(", "));
+  }
+  const paymentWarnings = [];
+  if (!FRONTEND_ORIGIN) paymentWarnings.push("FRONTEND_ORIGIN");
+  if (!process.env.RAZORPAY_KEY_ID && !process.env.RAZORPAY_KEY && !process.env.RAZORPAY_ID) paymentWarnings.push("RAZORPAY_KEY_ID");
+  if (!process.env.RAZORPAY_KEY_SECRET && !process.env.RAZORPAY_SECRET) paymentWarnings.push("RAZORPAY_KEY_SECRET");
+  if (!process.env.RAZORPAY_WEBHOOK_SECRET) paymentWarnings.push("RAZORPAY_WEBHOOK_SECRET");
+  if (paymentWarnings.length) {
+    console.warn("[startup warning] Payment endpoints unavailable until configured: " + paymentWarnings.join(", "));
   }
 }
 
@@ -300,7 +304,7 @@ async function readFirestoreCollection(rootRef, name) {
 async function readTopLevelFirestoreCollection(name) {
   if (!USE_FIRESTORE) return [];
   try {
-    const snap = await getFirestore().collection(name).get();
+    const snap = await withFirestoreRetry(() => getFirestore().collection(name).get());
     return snap.docs.map((doc) => {
       const data = doc.data() || {};
       return { ...data, id: data.id || data.email || doc.id, docId: doc.id };
@@ -309,6 +313,22 @@ async function readTopLevelFirestoreCollection(name) {
     addLog(`Top-level Firestore ${name} read failed: ${error.message}`, "warn");
     return [];
   }
+}
+
+async function withFirestoreRetry(operation, attempts = 3) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      const code = String(error && (error.code || error.message) || "").toLowerCase();
+      const retryable = code.includes("deadline") || code.includes("unavailable") || code.includes("aborted") || code.includes("resource-exhausted") || code.includes("econnreset");
+      if (!retryable || attempt === attempts) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 125 * attempt * attempt));
+    }
+  }
+  throw lastError;
 }
 
 async function readTopLevelSiteContent() {
@@ -362,12 +382,12 @@ async function writeTopLevelUsers(users = {}) {
     batch.set(firestore.collection("users").doc(id), { ...record, email: record.email || email }, { merge: true });
     count += 1;
     if (count >= 400) {
-      await batch.commit();
+      await withFirestoreRetry(() => batch.commit());
       batch = firestore.batch();
       count = 0;
     }
   }
-  if (count > 0) await batch.commit();
+  if (count > 0) await withFirestoreRetry(() => batch.commit());
 }
 
 function normalizeCartItems(items = []) {
@@ -416,20 +436,20 @@ function normalizeCartItems(items = []) {
 async function writeTopLevelOrder(order = {}) {
   if (!USE_FIRESTORE || !order || typeof order !== "object") return;
   const id = safeDocId(order.id || order.orderId || "");
-  await getFirestore().collection("orders").doc(id).set(order, { merge: true });
+  await withFirestoreRetry(() => getFirestore().collection("orders").doc(id).set(order, { merge: true }));
 }
 
 async function writeTopLevelPaymentAttempt(attempt = {}) {
   if (!USE_FIRESTORE || !attempt || typeof attempt !== "object") return;
   const id = safeDocId(attempt.id || attempt.orderId || attempt.localOrderId || attempt.razorpayOrderId || "");
   if (!id) return;
-  await getFirestore().collection("paymentAttempts").doc(id).set(attempt, { merge: true });
+  await withFirestoreRetry(() => getFirestore().collection("paymentAttempts").doc(id).set(attempt, { merge: true }));
 }
 
 async function writeTopLevelUserActivity(activity = {}) {
   if (!USE_FIRESTORE || !activity || typeof activity !== "object") return;
   const id = safeDocId(activity.id || ("activity_" + Date.now() + "_" + Math.floor(Math.random() * 1000)));
-  await getFirestore().collection("userActivities").doc(id).set({ ...activity, id: activity.id || id }, { merge: true });
+  await withFirestoreRetry(() => getFirestore().collection("userActivities").doc(id).set({ ...activity, id: activity.id || id }, { merge: true }));
 }
 
 async function deleteTopLevelUserDocs(collectionName, ids = []) {
@@ -443,12 +463,12 @@ async function deleteTopLevelUserDocs(collectionName, ids = []) {
     batch.delete(firestore.collection(collectionName).doc(safeDocId(id)));
     count += 1;
     if (count >= 400) {
-      await batch.commit();
+      await withFirestoreRetry(() => batch.commit());
       batch = firestore.batch();
       count = 0;
     }
   }
-  if (count > 0) await batch.commit();
+  if (count > 0) await withFirestoreRetry(() => batch.commit());
 }
 
 function mergeRecordsById(primary = [], secondary = []) {
@@ -459,6 +479,21 @@ function mergeRecordsById(primary = [], secondary = []) {
     map.set(key, { ...(map.get(key) || {}), ...item });
   });
   return Array.from(map.values());
+}
+
+function paginateList(items = [], req, defaultLimit = 250, maxLimit = 1000) {
+  const list = Array.isArray(items) ? items : [];
+  const limit = Math.max(1, Math.min(maxLimit, Math.round(toNumber(req.query?.limit || defaultLimit) || defaultLimit)));
+  const page = Math.max(1, Math.round(toNumber(req.query?.page || 1) || 1));
+  const offset = Math.max(0, Math.round(toNumber(req.query?.offset || ((page - 1) * limit)) || 0));
+  return {
+    items: list.slice(offset, offset + limit),
+    page,
+    limit,
+    offset,
+    total: list.length,
+    hasMore: offset + limit < list.length
+  };
 }
 
 async function replaceFirestoreCollection(rootRef, name, items) {
@@ -473,7 +508,7 @@ async function replaceFirestoreCollection(rootRef, name, items) {
   let count = 0;
   const commitIfNeeded = async (force = false) => {
     if (count >= 400 || (force && count > 0)) {
-      await batch.commit();
+      await withFirestoreRetry(() => batch.commit());
       batch = getFirestore().batch();
       count = 0;
     }
@@ -789,6 +824,16 @@ async function requireCustomerFirebaseAuth(req, res, next) {
     addLog("Customer Firebase token rejected: " + error.message, "warn");
     res.status(401).json({ ok: false, error: "Invalid customer token" });
   }
+}
+
+async function attachOptionalFirebaseCustomer(req) {
+  if (req.customerAuth !== undefined) return req.customerAuth;
+  try {
+    req.customerAuth = await getVerifiedFirebaseCustomer(req);
+  } catch (error) {
+    req.customerAuth = null;
+  }
+  return req.customerAuth;
 }
 
 function customerOwnsRequestedIdentity(req, value) {
@@ -3827,13 +3872,13 @@ async function deleteFirestoreDocsByEmail(collectionName, keepEmails, extraDelet
       pending += 1;
       deleted += 1;
       if (pending >= 400) {
-        await batch.commit();
+        await withFirestoreRetry(() => batch.commit());
         batch = getFirestore().batch();
         pending = 0;
       }
     }
   }
-  if (pending) await batch.commit();
+  if (pending) await withFirestoreRetry(() => batch.commit());
   return { scanned: snap.size, deleted };
 }
 
@@ -3848,12 +3893,12 @@ async function deleteFirestoreCollectionDocs(collectionName) {
     pending += 1;
     deleted += 1;
     if (pending >= 400) {
-      await batch.commit();
+      await withFirestoreRetry(() => batch.commit());
       batch = getFirestore().batch();
       pending = 0;
     }
   }
-  if (pending > 0) await batch.commit();
+  if (pending > 0) await withFirestoreRetry(() => batch.commit());
   return { scanned: snap.size, deleted };
 }
 
@@ -3963,10 +4008,20 @@ async function pruneNonKeptCustomerData(keepEmails = [], req = null, options = {
 app.get("/api/admin/users", requireAdminSession, async (req, res) => {
   try {
     const usersMap = await buildAdminUsersMap();
+    const entries = Object.entries(usersMap).sort((a, b) => {
+      return Date.parse(b[1]?.updatedAt || b[1]?.createdAt || 0) - Date.parse(a[1]?.updatedAt || a[1]?.createdAt || 0);
+    });
+    const page = paginateList(entries, req, 250, 1000);
+    const pagedUsers = Object.fromEntries(page.items);
     res.json({
       ok: true,
       count: Object.keys(usersMap).length,
-      users: usersMap
+      users: pagedUsers,
+      page: page.page,
+      limit: page.limit,
+      offset: page.offset,
+      total: page.total,
+      hasMore: page.hasMore
     });
   } catch (error) {
     addLog("Admin users fetch failed: " + error.message, "error");
@@ -3994,14 +4049,31 @@ app.post("/api/admin/users/prune", requireAdminSession, async (req, res) => {
 
 app.get("/api/account/users", async (req, res) => {
   try {
+    const db = await readDB();
+    const isAdmin = Boolean(findValidAdminSession(db, req));
+    const customer = isAdmin ? null : await attachOptionalFirebaseCustomer(req);
+    if (!isAdmin && !customer) {
+      return res.status(401).json({ ok: false, error: "Firebase customer token required" });
+    }
     if (String(req.query?.recoverRazorpay || "").toLowerCase() === "recent") {
-      const db = await readDB();
+      if (!isAdmin) {
+        return res.status(403).json({ ok: false, error: "Admin session required for recovery" });
+      }
       await recoverRecentRazorpayOrders(db, {
         days: Math.max(1, Math.min(30, Math.round(toNumber(req.query?.days || 7) || 7))),
         fallbackEmail: normalizeAccountEmail(req.query?.email || "")
       });
     }
     const usersMap = await buildAdminUsersMap();
+    if (!isAdmin) {
+      const ownEmail = normalizeAccountEmail(customer.email || "");
+      const ownRecord = ownEmail && usersMap[ownEmail] ? { [ownEmail]: usersMap[ownEmail] } : {};
+      return res.json({
+        ok: true,
+        count: Object.keys(ownRecord).length,
+        users: ownRecord
+      });
+    }
     res.json({
       ok: true,
       count: Object.keys(usersMap).length,
@@ -4358,6 +4430,10 @@ app.post("/api/account/lookup", paymentRateLimit, async (req, res) => {
 
 app.post("/api/account/create", paymentRateLimit, async (req, res) => {
   try {
+    const customer = await attachOptionalFirebaseCustomer(req);
+    if (customer && customer.email && req.body?.email && normalizeAccountEmail(req.body.email) !== customer.email) {
+      return res.status(403).json({ ok: false, error: "Cross-user profile write denied" });
+    }
     const record = await upsertAccountUser(req.body || {});
     const db = await readDB();
     recordUserActivity(db, { type: "account_saved", email: record.email, phone: record.phone, status: "success", req });
@@ -4374,8 +4450,12 @@ app.post("/api/account/create", paymentRateLimit, async (req, res) => {
 
 app.post("/api/account/activity", paymentRateLimit, async (req, res) => {
   try {
+    const customer = await attachOptionalFirebaseCustomer(req);
     const email = normalizeAccountEmail(req.body?.email || req.body?.userId || "");
     const phone = normalizeAccountPhone(req.body?.phone || req.body?.mobile || "");
+    if (customer && email && customer.email && email !== customer.email) {
+      return res.status(403).json({ ok: false, error: "Cross-user activity write denied" });
+    }
     const allowedTypes = new Set([
       "login",
       "logout",
@@ -5475,10 +5555,16 @@ app.get("/api/orders", requireAdminSession, async (req, res) => {
       mergeRecordsById(topLevelOrders, Array.isArray(db.orders) ? db.orders : []),
       attempts
     );
+    const page = paginateList(orders, req, 250, 1000);
     res.json({
       ok: true,
       count: orders.length,
-      orders
+      orders: page.items,
+      page: page.page,
+      limit: page.limit,
+      offset: page.offset,
+      total: page.total,
+      hasMore: page.hasMore
     });
   } catch (error) {
     addLog("Orders list fetch failed: " + error.message, "error");
@@ -6114,12 +6200,79 @@ app.get("/api/payments/attempts", requireAdminSession, async (req, res) => {
     const db = await readDB();
     const topLevelAttempts = await readTopLevelFirestoreCollection("paymentAttempts");
     const attempts = mergeRecordsById(topLevelAttempts, db.paymentAttempts || []);
+    const page = paginateList(attempts, req, 250, 1000);
     res.json({
       ok: true,
-      attempts
+      attempts: page.items,
+      count: attempts.length,
+      page: page.page,
+      limit: page.limit,
+      offset: page.offset,
+      total: page.total,
+      hasMore: page.hasMore
     });
   } catch (error) {
     res.status(500).json({ ok: false, error: "Failed to load payment attempts" });
+  }
+});
+
+app.post("/api/admin/maintenance/cleanup", requireAdminSession, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const now = Date.now();
+    const maxAttemptAgeMs = Math.max(1, Math.min(30, Math.round(toNumber(req.body?.paymentAttemptDays || 7) || 7))) * 24 * 60 * 60 * 1000;
+    const db = await readDB();
+    const beforeAttempts = Array.isArray(db.paymentAttempts) ? db.paymentAttempts.length : 0;
+    db.paymentAttempts = (Array.isArray(db.paymentAttempts) ? db.paymentAttempts : []).filter((attempt) => {
+      const status = String(attempt.status || "").toLowerCase();
+      const isTerminal = status.includes("paid") || status.includes("failed") || status.includes("mismatch") || status.includes("cancelled") || status.includes("refunded");
+      const updatedAt = Date.parse(attempt.updatedAt || attempt.createdAt || 0);
+      return isTerminal || !updatedAt || now - updatedAt < maxAttemptAgeMs;
+    });
+    let expiredDraftsDeleted = 0;
+    if (USE_FIRESTORE) {
+      const snap = await getFirestore().collection("checkoutDrafts").where("expiresAt", "<", new Date(now).toISOString()).limit(500).get();
+      let batch = getFirestore().batch();
+      let count = 0;
+      snap.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+        count += 1;
+      });
+      if (count) {
+        await withFirestoreRetry(() => batch.commit());
+        expiredDraftsDeleted = count;
+      }
+    }
+    auditAdminAction(db, req, "maintenance.cleanup", "success", {
+      paymentAttemptsDeleted: beforeAttempts - db.paymentAttempts.length,
+      expiredDraftsDeleted
+    });
+    await writeDB(db);
+    res.json({
+      ok: true,
+      paymentAttemptsDeleted: beforeAttempts - db.paymentAttempts.length,
+      expiredDraftsDeleted
+    });
+  } catch (error) {
+    addLog("Maintenance cleanup failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to run cleanup" });
+  }
+});
+
+app.post("/api/admin/reconcile/payments", requireAdminSession, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const db = await readDB();
+    const result = await recoverRecentRazorpayOrders(db, {
+      days: Math.max(1, Math.min(30, Math.round(toNumber(req.body?.days || 3) || 3))),
+      fallbackEmail: normalizeAccountEmail(req.body?.fallbackEmail || "")
+    });
+    auditAdminAction(db, req, "payments.reconcile", "success", result);
+    await writeDB(db);
+    res.json({ ok: true, result });
+  } catch (error) {
+    addLog("Payment reconciliation failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to reconcile payments" });
   }
 });
 

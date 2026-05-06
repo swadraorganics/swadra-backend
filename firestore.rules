@@ -48,8 +48,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isAdmin() || ownsDoc(userId);
-      allow create, update: if isAdmin() || (ownsDoc(userId) && ownsUserPayload());
-      allow delete: if isAdmin() || ownsDoc(userId);
+      allow create, update, delete: if isAdmin();
     }
 
     match /carts/{userId} {
