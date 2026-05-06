@@ -98,6 +98,25 @@ function getHeavyHandler() {
   return heavyHandler;
 }
 
+function getBootstrapReadiness() {
+  try {
+    getHeavyHandler();
+    return {
+      ok: true,
+      backendReady: true,
+      firestoreReady: true
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      backendReady: false,
+      firestoreReady: false,
+      code: "BACKEND_BOOTSTRAP_FAILED",
+      error: error && error.message ? error.message : "Backend handler failed"
+    };
+  }
+}
+
 const server = http.createServer((req, res) => {
   if (req.method === "OPTIONS") {
     res.writeHead(204, buildCorsHeaders(req));
@@ -112,11 +131,41 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === "GET" && req.url === "/health") {
-    res.writeHead(200, buildCorsHeaders(req, { "Content-Type": "application/json; charset=utf-8" }));
+    const readiness = getBootstrapReadiness();
+    const statusCode = readiness.ok ? 200 : 503;
+    res.writeHead(statusCode, buildCorsHeaders(req, { "Content-Type": "application/json; charset=utf-8" }));
     res.end(JSON.stringify({
-      ok: true,
-      status: "online",
+      ok: readiness.ok,
+      status: readiness.ok ? "online" : "degraded",
       mode: "bootstrap",
+      backendReady: readiness.backendReady,
+      firestoreReady: readiness.firestoreReady,
+      code: readiness.code || null,
+      error: readiness.error || null,
+      time: new Date().toISOString()
+    }));
+    return;
+  }
+
+  if (req.method === "GET" && req.url === "/health/config") {
+    const readiness = getBootstrapReadiness();
+    const statusCode = readiness.ok ? 200 : 503;
+    res.writeHead(statusCode, buildCorsHeaders(req, { "Content-Type": "application/json; charset=utf-8" }));
+    res.end(JSON.stringify({
+      ok: readiness.ok,
+      backendReady: readiness.backendReady,
+      firestoreReady: readiness.firestoreReady,
+      code: readiness.code || null,
+      error: readiness.error || null,
+      requiredEnv: [
+        "USE_FIRESTORE=true",
+        "FIREBASE_PROJECT_ID",
+        "FIREBASE_CLIENT_EMAIL",
+        "FIREBASE_PRIVATE_KEY",
+        "RAZORPAY_KEY_ID",
+        "RAZORPAY_KEY_SECRET",
+        "ALLOWED_ORIGINS or FRONTEND_ORIGIN"
+      ],
       time: new Date().toISOString()
     }));
     return;
