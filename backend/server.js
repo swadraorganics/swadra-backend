@@ -25,15 +25,40 @@ const IS_HOSTED_RUNTIME = Boolean(
   process.env.RAILWAY_SERVICE_ID ||
   process.env.RAILWAY_ENVIRONMENT
 );
+const IS_PRODUCTION_RUNTIME = String(process.env.NODE_ENV || "").toLowerCase() === "production" || IS_HOSTED_RUNTIME;
+if (IS_PRODUCTION_RUNTIME && !USE_FIRESTORE) {
+  throw new Error("USE_FIRESTORE=true is required in production. Refusing to start with memory persistence for business data.");
+}
 const FIRESTORE_COLLECTION = process.env.FIRESTORE_COLLECTION || "appData";
 const FIRESTORE_DOCUMENT = process.env.FIRESTORE_DOCUMENT || "swadra";
 const FIRESTORE_LISTS = ["orders", "paymentAttempts", "logs"];
 const ENABLE_STARTUP_DB_LOG = String(process.env.ENABLE_STARTUP_DB_LOG || "").toLowerCase() === "true";
 const ENABLE_PERSISTENT_LOGS = String(process.env.ENABLE_PERSISTENT_LOGS || "").toLowerCase() === "true";
+const CHECKOUT_DRAFT_TTL_MS = 2 * 60 * 60 * 1000;
 let firestoreDb = null;
 let memoryDb = null;
 let dbCache = null;
 let dbCacheLoaded = false;
+
+function validateProductionEnvironment() {
+  if (!IS_PRODUCTION_RUNTIME) return;
+  const missing = [];
+  if (!FRONTEND_ORIGIN) missing.push("FRONTEND_ORIGIN");
+  if (!process.env.RAZORPAY_KEY_ID && !process.env.RAZORPAY_KEY && !process.env.RAZORPAY_ID) missing.push("RAZORPAY_KEY_ID");
+  if (!process.env.RAZORPAY_KEY_SECRET && !process.env.RAZORPAY_SECRET) missing.push("RAZORPAY_KEY_SECRET");
+  if (!process.env.RAZORPAY_WEBHOOK_SECRET) missing.push("RAZORPAY_WEBHOOK_SECRET");
+  const hasFirebaseCredential =
+    (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) ||
+    process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+    process.env.GOOGLE_CLOUD_PROJECT ||
+    process.env.GCLOUD_PROJECT;
+  if (!hasFirebaseCredential) missing.push("Firebase Admin credentials");
+  if (missing.length) {
+    throw new Error("Missing required production environment values: " + missing.join(", "));
+  }
+}
+
+validateProductionEnvironment();
 
 function ensureFirebaseAdminApp() {
   if (admin === undefined) {
@@ -106,7 +131,7 @@ process.on("uncaughtException", (error) => {
 });
 
 app.use(cors({
-  allowedHeaders: ["Content-Type", "Authorization", "x-admin-session-token"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-admin-session-token", "x-firebase-id-token", "x-customer-firebase-token"],
   credentials: true,
   origin(origin, callback) {
     const normalized = normalizeOrigin(origin);
@@ -722,6 +747,61 @@ function getCustomerSessionFromRequest(db = {}, req) {
   return null;
 }
 
+function getBearerToken(req) {
+  const auth = String(req.get("authorization") || "").trim();
+  return /^Bearer\s+/i.test(auth) ? auth.replace(/^Bearer\s+/i, "").trim() : "";
+}
+
+async function getVerifiedFirebaseCustomer(req) {
+  const token = String(
+    req.get("x-firebase-id-token") ||
+    req.get("x-customer-firebase-token") ||
+    getBearerToken(req) ||
+    ""
+  ).trim();
+  if (!token) return null;
+  const firebaseAdmin = ensureFirebaseAdminApp();
+  const decoded = await firebaseAdmin.auth().verifyIdToken(token, true);
+  const email = normalizeAccountEmail(decoded.email || "");
+  return {
+    uid: String(decoded.uid || "").trim(),
+    email,
+    phone: normalizeAccountPhone(decoded.phone_number || decoded.phone || ""),
+    claims: decoded
+  };
+}
+
+async function requireCustomerFirebaseAuth(req, res, next) {
+  try {
+    const customer = await getVerifiedFirebaseCustomer(req);
+    if (!customer || !customer.uid) {
+      return res.status(401).json({ ok: false, error: "Firebase customer token required" });
+    }
+    req.customerAuth = customer;
+    req.__customerSession = {
+      email: customer.email,
+      phone: customer.phone,
+      uid: customer.uid,
+      expiresAt: ""
+    };
+    next();
+  } catch (error) {
+    addLog("Customer Firebase token rejected: " + error.message, "warn");
+    res.status(401).json({ ok: false, error: "Invalid customer token" });
+  }
+}
+
+function customerOwnsRequestedIdentity(req, value) {
+  const customer = req.customerAuth || {};
+  const requested = normalizeAccountEmail(value || "");
+  const raw = String(value || "").trim();
+  return Boolean(
+    (requested && customer.email && requested === customer.email) ||
+    (raw && customer.uid && raw === customer.uid) ||
+    (normalizeAccountPhone(raw) && customer.phone && normalizeAccountPhone(raw) === customer.phone)
+  );
+}
+
 function findValidAdminSession(db = {}, req) {
   const tokens = getAdminTokensFromRequest(req);
   if (!tokens.length) return null;
@@ -901,7 +981,14 @@ async function requireAdminSession(req, res, next) {
 }
 
 function requireDurablePersistence(res) {
-  return true;
+  if (USE_FIRESTORE) return true;
+  if (res && typeof res.status === "function") {
+    res.status(503).json({
+      ok: false,
+      error: "Durable Firestore persistence is required for this business operation."
+    });
+  }
+  return false;
 }
 
 const PUBLIC_APP_STATE_KEYS = new Set([
@@ -1068,8 +1155,6 @@ async function readDB() {
     return dbCache;
   }
   if (!memoryDb) {
-    // Railway should not recreate db.json or any file-backed business store.
-    // Outside Firestore, backend state is runtime-memory only.
     memoryDb = getDefaultDB();
   }
   dbCache = normalizeDB(memoryDb);
@@ -1786,6 +1871,8 @@ async function mirrorOrderToCustomerProfile(db, order = {}) {
     defaultAddressId: existing.defaultAddressId || (address && (address.house || address.address) ? (address.id || "addr_order_" + orderId) : ""),
     orders: nextOrders.slice(0, 300),
     payments: nextPayments.slice(0, 300),
+    cart: [],
+    checkoutDraft: null,
     updatedAt: new Date().toISOString()
   };
   users[email] = nextUser;
@@ -3983,8 +4070,35 @@ async function findAccountUser(email = "") {
     if (userEmail) users[userEmail] = mergeAccountProfileRecord(user, users[userEmail] || {});
   });
   const record = users[normalizedEmail];
-  if (!record) return null;
-  return { ...record, email: record.email || normalizedEmail };
+  if (record) return { ...record, email: record.email || normalizedEmail };
+  const authUser = await findFirebaseAuthUserByEmail(normalizedEmail);
+  if (!authUser) return null;
+  const restoredRecord = mergeAccountProfileRecord({
+    id: authUser.uid || normalizedEmail,
+    userId: authUser.uid || normalizedEmail,
+    uid: authUser.uid || "",
+    email: normalizedEmail,
+    emailNormalized: normalizedEmail,
+    phone: authUser.phone || "",
+    phoneNormalized: normalizeAccountPhone(authUser.phone || ""),
+    profile: {
+      email: normalizedEmail,
+      phone: authUser.phone || "",
+      name: normalizedEmail.split("@")[0]
+    },
+    status: "active",
+    source: "firebaseAuth",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }, {});
+  db.appState = db.appState && typeof db.appState === "object" ? db.appState : {};
+  db.appState.users = db.appState.users && typeof db.appState.users === "object" ? db.appState.users : {};
+  db.appState.users[normalizedEmail] = restoredRecord;
+  await writeDB(db).catch((error) => addLog("Auth-restored user app-state mirror skipped: " + error.message, "warn"));
+  await writeTopLevelUsers({ [normalizedEmail]: restoredRecord }).catch((error) => {
+    addLog("Auth-restored user Firestore mirror skipped: " + error.message, "warn");
+  });
+  return restoredRecord;
 }
 
 async function findFirebaseAuthUserByEmail(email = "") {
@@ -4403,11 +4517,14 @@ app.post("/api/account/reset-password", paymentRateLimit, async (req, res) => {
   }
 });
 
-app.get("/api/carts/:userId", paymentRateLimit, async (req, res) => {
+app.get("/api/carts/:userId", paymentRateLimit, requireCustomerFirebaseAuth, async (req, res) => {
   try {
     if (!requireDurablePersistence(res)) return;
     const userId = String(req.params.userId || "").trim();
     if (!userId) return res.status(400).json({ ok: false, error: "User id required" });
+    if (!customerOwnsRequestedIdentity(req, userId)) {
+      return res.status(403).json({ ok: false, error: "Cross-user cart access denied" });
+    }
     const db = await readDB();
     let data = {};
     try {
@@ -4456,11 +4573,14 @@ app.get("/api/carts/:userId", paymentRateLimit, async (req, res) => {
   }
 });
 
-app.post("/api/carts/:userId", paymentRateLimit, async (req, res) => {
+app.post("/api/carts/:userId", paymentRateLimit, requireCustomerFirebaseAuth, async (req, res) => {
   try {
     if (!requireDurablePersistence(res)) return;
     const userId = String(req.params.userId || "").trim();
     if (!userId) return res.status(400).json({ ok: false, error: "User id required" });
+    if (!customerOwnsRequestedIdentity(req, userId) || (req.body?.email && !customerOwnsRequestedIdentity(req, req.body.email))) {
+      return res.status(403).json({ ok: false, error: "Cross-user cart write denied" });
+    }
     const items = normalizeCartItems(req.body?.items || req.body?.cart || []);
     const email = normalizeAccountEmail(req.body?.email || (userId.includes("@") ? userId : ""));
     const docId = safeDocId(req.body?.uid || req.body?.userId || userId);
@@ -4503,11 +4623,14 @@ app.post("/api/carts/:userId", paymentRateLimit, async (req, res) => {
   }
 });
 
-app.get("/api/checkout-drafts/:userId", paymentRateLimit, async (req, res) => {
+app.get("/api/checkout-drafts/:userId", paymentRateLimit, requireCustomerFirebaseAuth, async (req, res) => {
   try {
     if (!requireDurablePersistence(res)) return;
     const userId = String(req.params.userId || "").trim();
     if (!userId) return res.status(400).json({ ok: false, error: "User id required" });
+    if (!customerOwnsRequestedIdentity(req, userId)) {
+      return res.status(403).json({ ok: false, error: "Cross-user checkout draft access denied" });
+    }
     let data = null;
     try {
       let doc = USE_FIRESTORE ? await getFirestore().collection("checkoutDrafts").doc(safeDocId(userId)).get() : null;
@@ -4519,6 +4642,10 @@ app.get("/api/checkout-drafts/:userId", paymentRateLimit, async (req, res) => {
     } catch (readError) {
       addLog("Checkout draft Firestore read skipped: " + readError.message, "warn");
     }
+    if (data && Date.parse(data.expiresAt || "") && Date.parse(data.expiresAt) < Date.now()) {
+      await getFirestore().collection("checkoutDrafts").doc(safeDocId(userId)).delete().catch(() => {});
+      data = null;
+    }
     res.json({ ok: true, draft: data || null });
   } catch (error) {
     addLog("Checkout draft fetch failed: " + error.message, "error");
@@ -4526,17 +4653,22 @@ app.get("/api/checkout-drafts/:userId", paymentRateLimit, async (req, res) => {
   }
 });
 
-app.post("/api/checkout-drafts/:userId", paymentRateLimit, async (req, res) => {
+app.post("/api/checkout-drafts/:userId", paymentRateLimit, requireCustomerFirebaseAuth, async (req, res) => {
   try {
     if (!requireDurablePersistence(res)) return;
     const userId = String(req.params.userId || "").trim();
     if (!userId) return res.status(400).json({ ok: false, error: "User id required" });
-    const docId = safeDocId(req.body?.uid || req.body?.userId || userId);
+    if (!customerOwnsRequestedIdentity(req, userId) || (req.body?.email && !customerOwnsRequestedIdentity(req, req.body.email))) {
+      return res.status(403).json({ ok: false, error: "Cross-user checkout draft write denied" });
+    }
+    const docId = safeDocId(req.customerAuth.uid || req.body?.uid || req.body?.userId || userId);
     const payload = {
       ...(req.body && typeof req.body === "object" ? req.body : {}),
       userId: docId,
-      email: normalizeAccountEmail(req.body?.email || (userId.includes("@") ? userId : "")),
+      uid: req.customerAuth.uid,
+      email: req.customerAuth.email || normalizeAccountEmail(req.body?.email || (userId.includes("@") ? userId : "")),
       cartSnapshot: normalizeCartItems(req.body?.cartSnapshot || req.body?.items || []),
+      expiresAt: new Date(Date.now() + CHECKOUT_DRAFT_TTL_MS).toISOString(),
       updatedAt: new Date().toISOString()
     };
     await getFirestore().collection("checkoutDrafts").doc(docId).set(payload, { merge: true });
@@ -4761,10 +4893,8 @@ app.post("/api/orders", async (req, res) => {
     const incoming = normalizeOrderForDb(req.body || {});
     const db = await readDB();
     const isAdmin = Boolean(findValidAdminSession(db, req));
-    const isVerifiedPaidOrder = String(incoming.paymentStatus || incoming.payment || "").toLowerCase().includes("paid")
-      && Boolean(incoming.razorpayPaymentId || incoming.paymentId || incoming.payment_id || incoming.razorpay_order_id || incoming.razorpayOrderId);
-    if (!isAdmin && !isVerifiedPaidOrder) {
-      return res.status(403).json({ ok: false, error: "Verified payment is required before order creation" });
+    if (!isAdmin) {
+      return res.status(403).json({ ok: false, error: "Orders are created only by Razorpay verification or an admin session" });
     }
     const existingIndex = findOrderIndex(db, (order) => String(order.id) === String(incoming.id));
     const existing = existingIndex > -1 ? db.orders[existingIndex] : {};
@@ -4821,10 +4951,9 @@ app.post("/api/orders", async (req, res) => {
   }
 });
 
-app.get("/api/orders/:id", async (req, res) => {
+app.get("/api/orders/:id", requireCustomerFirebaseAuth, async (req, res) => {
   try {
     const db = await readDB();
-    req.__customerSession = getCustomerSessionFromRequest(db, req);
     const orderId = String(req.params.id);
     const nestedOrder = db.orders.find((item) => String(item.id) === orderId);
     const topLevelOrders = await readTopLevelFirestoreCollection("orders");
@@ -5357,12 +5486,14 @@ app.get("/api/orders", requireAdminSession, async (req, res) => {
   }
 });
 
-app.get("/api/orders/user/:userId", async (req, res) => {
+app.get("/api/orders/user/:userId", requireCustomerFirebaseAuth, async (req, res) => {
   try {
     const db = await readDB();
-    req.__customerSession = getCustomerSessionFromRequest(db, req);
     const userId = decodeURIComponent(req.params.userId || "");
     const normalizedUserId = String(userId || "").trim().toLowerCase();
+    if (!customerOwnsRequestedIdentity(req, userId)) {
+      return res.status(403).json({ ok: false, error: "Cross-user order access denied" });
+    }
     const requester = getCustomerAccessFields(req);
     const lookupIdentities = getUniqueCustomerIdentities([userId, normalizedUserId, ...requester]);
     if (!findValidAdminSession(db, req) && !lookupIdentities.some((value) => requester.includes(value))) {
@@ -5425,7 +5556,7 @@ app.get("/api/orders/user/:userId", async (req, res) => {
   }
 });
 
-app.post("/api/payments/create-order", paymentRateLimit, inventorySerial, async (req, res) => {
+app.post("/api/payments/create-order", paymentRateLimit, requireCustomerFirebaseAuth, inventorySerial, async (req, res) => {
   try {
     if (!requireDurablePersistence(res)) return;
     const payload = req.body || {};
@@ -5439,6 +5570,10 @@ app.post("/api/payments/create-order", paymentRateLimit, inventorySerial, async 
     }
 
     const db = await readDB();
+    const snapshotUser = normalizeAccountEmail(payload.snapshot && typeof payload.snapshot === "object" ? payload.snapshot.user || payload.snapshot.email : "");
+    if (snapshotUser && req.customerAuth.email && snapshotUser !== req.customerAuth.email) {
+      return res.status(403).json({ ok: false, error: "Cross-user payment order denied" });
+    }
     cleanupInventoryLocks(db);
     const requestedOrderId = String(payload.orderId || "").trim();
     const orderIdTaken = requestedOrderId && []
@@ -5498,7 +5633,6 @@ app.post("/api/payments/create-order", paymentRateLimit, inventorySerial, async 
     };
 
     db.paymentAttempts.unshift(order);
-    const snapshotUser = payload.snapshot && typeof payload.snapshot === "object" ? payload.snapshot.user || payload.snapshot.email : "";
     recordUserActivity(db, {
       type: "payment_started",
       email: snapshotUser,
@@ -5553,8 +5687,9 @@ app.post("/api/payments/create-order", paymentRateLimit, inventorySerial, async 
   }
 });
 
-app.post("/api/payments/verify", paymentRateLimit, async (req, res) => {
+app.post("/api/payments/verify", paymentRateLimit, requireCustomerFirebaseAuth, async (req, res) => {
   try {
+    if (!requireDurablePersistence(res)) return;
     const payload = req.body || {};
     const verification = verifyRazorpaySignature(payload);
     let paymentDetails = null;
@@ -5568,6 +5703,23 @@ app.post("/api/payments/verify", paymentRateLimit, async (req, res) => {
       orderId: payload.razorpay_order_id || payload.localOrderId || "",
       paymentId: payload.razorpay_payment_id || ""
     });
+
+    if (index < 0) {
+      recordUserActivity(db, {
+        type: "payment_failed",
+        orderId: attemptId,
+        paymentId: payload.razorpay_payment_id || "",
+        status: "unknown_payment_attempt",
+        details: { message: "Payment verification attempted without a matching backend payment order" },
+        req
+      });
+      await writeDB(db);
+      return res.status(409).json({
+        ok: false,
+        verified: false,
+        error: "Matching backend payment order was not found"
+      });
+    }
 
     if (index > -1) {
       db.paymentAttempts[index] = {
@@ -5584,30 +5736,64 @@ app.post("/api/payments/verify", paymentRateLimit, async (req, res) => {
       await writeTopLevelPaymentAttempt(db.paymentAttempts[index]).catch((error) => {
         addLog("Payment attempt Firestore mirror skipped: " + error.message, "warn");
       });
-    } else {
-      const nextAttempt = {
-        id: attemptId || makePaymentOrderId(),
-        status: verification.verified ? "paid" : "verification_failed",
-        razorpayPaymentId: payload.razorpay_payment_id || "",
-        verificationConfigured: verification.configured,
-        verificationMessage: verification.message,
-        razorpayPaymentDetails: paymentDetails && paymentDetails.ok ? paymentDetails.payment : null,
-        paymentInstrument: paymentDetails && paymentDetails.instrument ? paymentDetails.instrument : null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      db.paymentAttempts.unshift(nextAttempt);
-      await writeTopLevelPaymentAttempt(nextAttempt).catch((error) => {
-        addLog("Payment attempt Firestore mirror skipped: " + error.message, "warn");
-      });
     }
 
     const paymentAttempt = index > -1 ? db.paymentAttempts[index] : {};
+    const expectedSnapshotHash = String(paymentAttempt.snapshot?.hash || paymentAttempt.snapshotHash || "").trim();
+    const submittedSnapshotHash = String(payload.snapshotHash || "").trim();
+    if (expectedSnapshotHash && submittedSnapshotHash && expectedSnapshotHash !== submittedSnapshotHash) {
+      db.paymentAttempts[index] = {
+        ...db.paymentAttempts[index],
+        status: "snapshot_mismatch",
+        verificationMessage: "Checkout snapshot did not match payment order",
+        updatedAt: new Date().toISOString()
+      };
+      await writeDB(db);
+      await writeTopLevelPaymentAttempt(db.paymentAttempts[index]).catch((error) => {
+        addLog("Payment snapshot mismatch mirror skipped: " + error.message, "warn");
+      });
+      return res.status(409).json({
+        ok: false,
+        verified: false,
+        error: "Checkout snapshot did not match payment order"
+      });
+    }
     const lockOrderId = pickInventoryLockOrderId(paymentAttempt, payload.localOrderId || attemptId);
     if (verification.verified) releaseInventoryLock(db, lockOrderId, "committed");
     else releaseInventoryLock(db, lockOrderId, "released");
     let order = null;
     if (verification.verified) {
+      const existingPaidOrderIndex = findOrderIndexByRazorpay(db, {
+        orderId: payload.razorpay_order_id || paymentAttempt.razorpayOrderId || "",
+        paymentId: payload.razorpay_payment_id || paymentAttempt.razorpayPaymentId || ""
+      });
+      const alreadyCreatedOrderId = String(paymentAttempt.createdOrderId || "").trim();
+      const alreadyCreatedOrder = alreadyCreatedOrderId
+        ? db.orders.find((item) => String(item.id || item.orderId || "") === alreadyCreatedOrderId)
+        : null;
+      if (existingPaidOrderIndex > -1 || alreadyCreatedOrder) {
+        order = existingPaidOrderIndex > -1 ? db.orders[existingPaidOrderIndex] : alreadyCreatedOrder;
+        db.paymentAttempts[index] = {
+          ...db.paymentAttempts[index],
+          status: "paid",
+          createdOrderId: order.id || order.orderId || alreadyCreatedOrderId,
+          idempotentReplayAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        await writeDB(db);
+        await writeTopLevelPaymentAttempt(db.paymentAttempts[index]).catch((error) => {
+          addLog("Payment replay attempt mirror skipped: " + error.message, "warn");
+        });
+        return res.json({
+          ok: true,
+          verified: true,
+          message: "Payment already verified",
+          order,
+          idempotent: true,
+          paymentDetails: paymentDetails && paymentDetails.ok ? paymentDetails.payment : null,
+          instrument: paymentDetails && paymentDetails.instrument ? paymentDetails.instrument : null
+        });
+      }
       const draft = payload.orderDraft && typeof payload.orderDraft === "object" ? payload.orderDraft : null;
       if (!draft) {
         releaseInventoryLock(db, lockOrderId, "released");
@@ -5618,9 +5804,23 @@ app.post("/api/payments/verify", paymentRateLimit, async (req, res) => {
           error: "Verified payment cannot create order without order draft"
         });
       }
+      const draftEmail = normalizeAccountEmail(draft.email || draft.customerEmail || draft.userId || "");
+      if (draftEmail && req.customerAuth.email && draftEmail !== req.customerAuth.email) {
+        releaseInventoryLock(db, lockOrderId, "released");
+        await writeDB(db);
+        return res.status(403).json({
+          ok: false,
+          verified: false,
+          error: "Cross-user payment verification denied"
+        });
+      }
       const expectedAmount = Math.round(toNumber(paymentAttempt.amount || 0));
       const draftAmount = Math.round(toNumber(draft.finalAmount || draft.total || draft.amount || draft.paidAmount) * 100);
-      if (expectedAmount > 0 && draftAmount > 0 && expectedAmount !== draftAmount) {
+      const razorpayPaidAmount = Math.round(toNumber(paymentDetails && paymentDetails.payment && paymentDetails.payment.amount || 0));
+      if (
+        (expectedAmount > 0 && draftAmount > 0 && expectedAmount !== draftAmount) ||
+        (expectedAmount > 0 && razorpayPaidAmount > 0 && expectedAmount !== razorpayPaidAmount)
+      ) {
         if (index > -1) {
           db.paymentAttempts[index] = {
             ...db.paymentAttempts[index],
@@ -5628,6 +5828,9 @@ app.post("/api/payments/verify", paymentRateLimit, async (req, res) => {
             verificationMessage: "Payment amount did not match checkout total",
             updatedAt: new Date().toISOString()
           };
+          await writeTopLevelPaymentAttempt(db.paymentAttempts[index]).catch((error) => {
+            addLog("Payment amount mismatch attempt mirror skipped: " + error.message, "warn");
+          });
         }
         releaseInventoryLock(db, lockOrderId, "released");
         await writeDB(db);
@@ -6234,8 +6437,16 @@ app.post("/api/shiprocket/webhook", webhookRateLimit, async (req, res) => {
 });
 
 app.use((error, req, res, next) => {
-  console.error("[express error]", req.method, req.originalUrl, error);
-  res.status(500).json({ ok: false, error: "Internal server error" });
+  const requestId = "req_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+  console.error(JSON.stringify({
+    level: "error",
+    requestId,
+    method: req.method,
+    path: req.originalUrl || req.url,
+    message: error && error.message ? error.message : String(error || "Unknown error")
+  }));
+  if (res.headersSent) return next(error);
+  res.status(500).json({ ok: false, error: "Internal server error", requestId });
 });
 
 const ROOT_HTML = `<!doctype html>

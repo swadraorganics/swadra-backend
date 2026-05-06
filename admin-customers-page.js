@@ -114,10 +114,8 @@
 
     function getAdminSessionToken(){
       try{
-        const raw = String(window.name || "");
-        if(!raw || raw.charAt(0) !== "{") return "";
-        const state = JSON.parse(raw);
-        const session = state && state.swadra_admin_session_v1;
+        const store = window.__swadraRuntimeSessionStore || {};
+        const session = store.swadra_admin_session_v1;
         return String(session && session.token || "").trim();
       }catch(error){
         return "";

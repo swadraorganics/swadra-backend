@@ -903,11 +903,6 @@ async function mirrorPaidOrderToUser(order, normalizedCurrentUser){
     phone: order.phone || phone,
     customerPhone: order.customerPhone || phone
   };
-  if(dataApi && typeof dataApi.saveOrder === "function"){
-    await dataApi.saveOrder(profileOrder.id, profileOrder).catch(function(error){
-      console.error("paid order firestore save failed", error);
-    });
-  }
   if(dataApi && typeof dataApi.syncOrderIntoUserProfile === "function"){
     await dataApi.syncOrderIntoUserProfile(profileOrder).catch(function(error){
       console.error("paid order user profile sync failed", error);
@@ -957,6 +952,16 @@ async function saveOrder(paymentResponse, verification){
     }).catch(function(error){ console.error("abandoned cart recovered sync failed", error); });
   }
   await mirrorPaidOrderToUser(order, normalizedCurrentUser);
+  if(dataApi && typeof dataApi.clearCart === "function"){
+    await dataApi.clearCart(normalizedCurrentUser || currentUser).catch(function(error){
+      console.error("paid cart clear failed", error);
+    });
+  }
+  if(dataApi && typeof dataApi.clearCheckoutDraft === "function"){
+    await dataApi.clearCheckoutDraft(normalizedCurrentUser || currentUser).catch(function(error){
+      console.error("paid checkout draft clear failed", error);
+    });
+  }
   lastSuccessOrder = order;
   trackPaymentEvent("backend_order_created", { orderId: order.id, userId: normalizedCurrentUser });
   alert("Order Placed Successfully");

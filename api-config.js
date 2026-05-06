@@ -28,54 +28,6 @@
   var runtimeReviewStore = window.__swadraRuntimeReviewStore = window.__swadraRuntimeReviewStore || {};
   var runtimeBackendPanelSettings = window.__swadraBackendPanelSettings = window.__swadraBackendPanelSettings || {};
   var pendingCartMemory = {};
-  var WINDOW_NAME_STATE_KEY = "__swadraRuntimeState__";
-
-  function readWindowNameState(){
-    try{
-      var rawName = String(window.name || "").trim();
-      if(!rawName) return {};
-      var parsed = JSON.parse(rawName);
-      return parsed && typeof parsed === "object" ? parsed : {};
-    }catch(error){
-      return {};
-    }
-  }
-
-  function writeWindowNameState(nextState){
-    try{
-      window.name = JSON.stringify(nextState && typeof nextState === "object" ? nextState : {});
-    }catch(error){
-      // Ignore serialization failures so browsing flow keeps working.
-    }
-  }
-
-  function syncRuntimeStoresFromWindowName(){
-    var state = readWindowNameState();
-    var runtimeState = state && state[WINDOW_NAME_STATE_KEY] && typeof state[WINDOW_NAME_STATE_KEY] === "object"
-      ? state[WINDOW_NAME_STATE_KEY]
-      : {};
-    if(runtimeState.session && typeof runtimeState.session === "object"){
-      Object.assign(runtimeSessionStore, runtimeState.session);
-    }
-    if(runtimeState.local && typeof runtimeState.local === "object"){
-      Object.assign(runtimeLocalStore, runtimeState.local);
-    }
-    if(runtimeState.review && typeof runtimeState.review === "object"){
-      Object.assign(runtimeReviewStore, runtimeState.review);
-    }
-  }
-
-  function persistRuntimeStoresToWindowName(){
-    var state = readWindowNameState();
-    state[WINDOW_NAME_STATE_KEY] = {
-      session: runtimeSessionStore,
-      local: runtimeLocalStore,
-      review: runtimeReviewStore
-    };
-    writeWindowNameState(state);
-  }
-
-  syncRuntimeStoresFromWindowName();
 
   function readConfiguredBackendBase(){
     var configured = normalizeUrl(runtimeBackendPanelSettings.backendUrl || "");
@@ -297,30 +249,9 @@
   installAccessibilityEnhancements();
 
   var ADMIN_SESSION_KEY = "swadra_admin_session_v1";
-  function readWindowNameState(){
-    try{
-      var raw = String(window.name || "");
-      if(!raw || raw.charAt(0) !== "{") return {};
-      var parsed = JSON.parse(raw);
-      return parsed && typeof parsed === "object" ? parsed : {};
-    }catch(error){
-      return {};
-    }
-  }
-  function writeWindowNameState(nextState){
-    try{
-      var state = nextState && typeof nextState === "object" ? nextState : {};
-      window.name = Object.keys(state).length ? JSON.stringify(state) : "";
-    }catch(error){}
-  }
-  function getWindowNameAdminSession(){
-    var state = readWindowNameState();
-    var session = state[ADMIN_SESSION_KEY];
-    return session && typeof session === "object" ? session : null;
-  }
   function readAdminToken(){
     try{
-      var session = runtimeSessionStore[ADMIN_SESSION_KEY] || getWindowNameAdminSession();
+      var session = runtimeSessionStore[ADMIN_SESSION_KEY];
       return session && session.token ? String(session.token).trim() : "";
     }catch(error){
       return "";
@@ -331,24 +262,38 @@
       var nextSession = session && typeof session === "object" ? session : {};
       if(!nextSession.token) return;
       runtimeSessionStore[ADMIN_SESSION_KEY] = nextSession;
-      var state = readWindowNameState();
-      state[ADMIN_SESSION_KEY] = nextSession;
-      writeWindowNameState(state);
     }catch(error){}
   };
   window.SWADRA_CLEAR_ADMIN_TOKEN = function(){
     try{
       delete runtimeSessionStore[ADMIN_SESSION_KEY];
-      var state = readWindowNameState();
-      if(state && state[ADMIN_SESSION_KEY]){
-        delete state[ADMIN_SESSION_KEY];
-        writeWindowNameState(state);
-      }
     }catch(error){}
   };
   if(!window.__swadraAdminFetchPatched && window.fetch){
     window.__swadraAdminFetchPatched = true;
     var nativeFetch = window.fetch.bind(window);
+    function isCustomerApiPath(target, normalizedTarget){
+      return target.indexOf(base + "/api/carts/") === 0 ||
+        target.indexOf(base + "/api/checkout-drafts/") === 0 ||
+        target.indexOf(base + "/api/orders/") === 0 ||
+        target.indexOf(base + "/api/payments/create-order") === 0 ||
+        target.indexOf(base + "/api/payments/verify") === 0 ||
+        normalizedTarget.indexOf("/api/carts/") === 0 ||
+        normalizedTarget.indexOf("/api/checkout-drafts/") === 0 ||
+        normalizedTarget.indexOf("/api/orders/") === 0 ||
+        normalizedTarget.indexOf("/api/payments/create-order") === 0 ||
+        normalizedTarget.indexOf("/api/payments/verify") === 0;
+    }
+    async function readFirebaseIdToken(){
+      try{
+        var auth = window.firebase && firebase.auth ? firebase.auth() : null;
+        var user = auth && auth.currentUser ? auth.currentUser : null;
+        if(!user || typeof user.getIdToken !== "function") return "";
+        return await user.getIdToken(false);
+      }catch(error){
+        return "";
+      }
+    }
     function isCurrentAdminArea(){
       var path = String(window.location.pathname || "").replace(/^\/+/, "");
       var file = path.split("/").pop() || "";
@@ -385,7 +330,23 @@
           init.headers = headers;
         }
       }
-      return nativeFetch(input, init).then(function(response){
+      var useCustomerToken = !useAdminSession && isCustomerApiPath(target, normalizedTarget);
+      var requestPromise = Promise.resolve();
+      if(useCustomerToken){
+        requestPromise = readFirebaseIdToken().then(function(token){
+          if(token){
+            init = init || {};
+            init.credentials = "include";
+            var headers = new Headers(init.headers || (input && input.headers) || {});
+            if(!headers.has("Authorization")) headers.set("Authorization", "Bearer " + token);
+            headers.set("x-firebase-id-token", token);
+            init.headers = headers;
+          }
+        });
+      }
+      return requestPromise.then(function(){
+        return nativeFetch(input, init);
+      }).then(function(response){
         if(useAdminSession && response && response.status === 401 && !/admin-index\.html$/i.test(window.location.pathname || "")){
           window.location.href = "admin-index.html";
         }
@@ -399,22 +360,18 @@
   };
   var rawSessionSet = function(key, value){
     runtimeSessionStore[key] = String(value);
-    persistRuntimeStoresToWindowName();
   };
   var rawSessionRemove = function(key){
     delete runtimeSessionStore[key];
-    persistRuntimeStoresToWindowName();
   };
   var rawLocalGet = function(key){
     return Object.prototype.hasOwnProperty.call(runtimeLocalStore, key) ? String(runtimeLocalStore[key]) : null;
   };
   var rawLocalSet = function(key, value){
     runtimeLocalStore[key] = String(value);
-    persistRuntimeStoresToWindowName();
   };
   var rawLocalRemove = function(key){
     delete runtimeLocalStore[key];
-    persistRuntimeStoresToWindowName();
   };
   var usersCache = {};
   var usersCacheRequest = null;
@@ -1133,27 +1090,15 @@
   }
 
   function getCheckoutDraftLocalKey(userId){
-    var normalizedUserId = resolveUserBusinessDocId(userId) || getBusinessDocId(userId);
-    return normalizedUserId ? "swadraCheckoutDraft:" + normalizedUserId : "";
+    return "";
   }
 
   function saveCheckoutDraftLocal(userId, draft){
-    var key = getCheckoutDraftLocalKey(userId);
-    if(!key) return null;
-    var payload = sanitizeCheckoutDraftRecord(draft, userId);
-    try{
-      rawSessionSet(key, JSON.stringify(payload));
-    }catch(error){}
-    return payload;
+    return sanitizeCheckoutDraftRecord(draft, userId);
   }
 
   function fetchCheckoutDraftLocal(userId){
-    var key = getCheckoutDraftLocalKey(userId);
-    if(!key) return null;
-    var raw = rawSessionGet(key);
-    if(!raw) return null;
-    var parsed = tryParseJson(raw);
-    return parsed ? sanitizeCheckoutDraftRecord(parsed, userId) : null;
+    return null;
   }
 
   async function fetchFirestoreCart(userId){
@@ -1232,7 +1177,7 @@
   function getPendingUserCart(userId){
     var key = getPendingCartKey(userId);
     if(key === "pendingCart:") return [];
-    return compactAuthCartItems(pendingCartMemory[key] || tryParseJson(rawSessionGet(key), []));
+    return compactAuthCartItems(pendingCartMemory[key] || []);
   }
 
   function setPendingUserCart(userId, items){
@@ -1240,7 +1185,6 @@
     if(key === "pendingCart:") return [];
     var compactItems = compactAuthCartItems(items);
     pendingCartMemory[key] = compactItems;
-    rawSessionSet(key, JSON.stringify(compactItems));
     return compactItems;
   }
 

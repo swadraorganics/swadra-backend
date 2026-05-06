@@ -53,11 +53,13 @@ service cloud.firestore {
     }
 
     match /carts/{userId} {
-      allow read, write: if isAdmin() || ownsDoc(userId);
+      allow read: if isAdmin() || ownsDoc(userId);
+      allow write: if isAdmin();
     }
 
     match /checkoutDrafts/{userId} {
-      allow read, write: if isAdmin() || ownsDoc(userId);
+      allow read: if isAdmin() || ownsDoc(userId);
+      allow write: if isAdmin();
     }
 
     match /orders/{orderId} {
@@ -71,8 +73,20 @@ service cloud.firestore {
           ("customerEmail" in resource.data && resource.data.customerEmail == userEmail())
         )
       );
-      allow create: if isAdmin() || ownsOrderPayload();
+      allow create: if isAdmin();
       allow update, delete: if isAdmin();
+    }
+
+    match /paymentAttempts/{paymentId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /coupons/{couponId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /adminCredentials/{document=**} {
+      allow read, write: if isAdmin();
     }
 
     match /productReviews/{reviewId} {
