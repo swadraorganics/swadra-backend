@@ -711,6 +711,15 @@ async function loadOrderSummary(){
 let cart = getCheckoutCartItems();
 let itemsDiv = document.getElementById("items");
 let summary = getCartSummary();
+if(checkoutDraftCache && checkoutDraftCache.summary && Object.keys(checkoutDraftCache.summary).length){
+let draftSummary = checkoutDraftCache.summary;
+let draftHasCoupon = Number(draftSummary.couponDiscount || 0) > 0 || draftSummary.appliedCoupon || draftSummary.coupon;
+let currentHasCoupon = summary && (Number(summary.couponDiscount || 0) > 0 || summary.appliedCoupon || summary.coupon);
+if(!summary || !Object.keys(summary).length || (draftHasCoupon && !currentHasCoupon)){
+summary = draftSummary;
+window.__swadraCheckoutSummary = summary;
+}
+}
 if((!summary || !Object.keys(summary).length) && checkoutDraftCache && checkoutDraftCache.summary){
 summary = checkoutDraftCache.summary;
 window.__swadraCheckoutSummary = summary;

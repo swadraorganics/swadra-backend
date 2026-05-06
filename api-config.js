@@ -1013,7 +1013,12 @@
 
   async function validateCurrentUserSession(options){
     var config = options && typeof options === "object" ? options : {};
-    var email = normalizeEmailValue(config.email || getSessionValue("currentUser") || getAuthEmailFromUrl(window.location.href) || "");
+    await ensureFirebaseAuthSync().catch(function(){ return null; });
+    var firebaseUser = getCurrentFirebaseUser();
+    var email = normalizeEmailValue(config.email || getSessionValue("currentUser") || getAuthEmailFromUrl(window.location.href) || firebaseUser && firebaseUser.email || "");
+    if(!email){
+      email = await fetchCustomerSessionFromBackend().catch(function(){ return ""; });
+    }
     if(!email) return "";
     try{
       var response = await fetch(base + "/api/account/lookup", {
