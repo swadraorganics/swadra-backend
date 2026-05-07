@@ -445,7 +445,8 @@ const draftCart = checkoutDraftCache && Array.isArray(checkoutDraftCache.cartSna
 : null;
 return ((draftCart || (user.cart && user.cart.length ? user.cart : []) || []) || []).map(item=>({
 ...item,
-price:Number(item.price || 0),
+price:Number(item.sellingPrice || item.price || 0),
+sellingPrice:Number(item.sellingPrice || item.price || 0),
 mrp:Number(item.mrp || item.price || 0),
 qty:Number(item.qty || 1)
 }));
@@ -575,7 +576,7 @@ summary.coupon = checkoutDraftCache.coupon;
 }
 let shippingApi = window.SWADRA_SHIPPING || null;
 let discountedItemsTotal = getDiscountedItemsTotal(cartItems);
-let gstInclusiveSellingTotal = Math.max(0, Math.round(Number(summary.sellingTotal || 0) || getCheckoutSellingTotal(cartItems)));
+let gstInclusiveSellingTotal = Math.max(0, Math.round(getCheckoutSellingTotal(cartItems)));
 if(!shippingApi || typeof shippingApi.estimateSurfaceDelivery !== "function"){
 let couponDiscount = Math.min(Number(summary.couponDiscount || 0), gstInclusiveSellingTotal);
 summary.sellingTotal = gstInclusiveSellingTotal;
@@ -613,13 +614,16 @@ delivery: delivery
 let data = await response.json().catch(()=>({}));
 if(response.ok && data && data.ok){
 backendSummary = data;
+console.info("checkout backend totals", backendSummary);
 }
 }catch(calcError){
 console.error("checkout backend calculation failed", calcError);
 }
 let couponDiscount = backendSummary ? Number(backendSummary.couponDiscount || 0) : Math.min(Number(summary.couponDiscount || 0), gstInclusiveSellingTotal);
 couponDiscount = Math.min(Math.max(0, couponDiscount), Math.max(0, gstInclusiveSellingTotal + delivery));
-let couponAdjustedSellingTotal = Math.max(0, Math.round(gstInclusiveSellingTotal - couponDiscount));
+let couponAdjustedSellingTotal = backendSummary
+  ? Math.max(0, Math.round(Number(backendSummary.sellingTotal || gstInclusiveSellingTotal) - couponDiscount))
+  : Math.max(0, Math.round(gstInclusiveSellingTotal - couponDiscount));
 return {
 ...summary,
 sellingTotal: gstInclusiveSellingTotal,
@@ -627,7 +631,7 @@ delivery: delivery,
 couponDiscount: Math.round(couponDiscount),
 couponAdjustedSellingTotal: couponAdjustedSellingTotal || discountedItemsTotal,
 gstTotal: Math.round(Number(summary.gstTotal || 0)),
-finalTotal: Math.max(0, Math.round(couponAdjustedSellingTotal + delivery)),
+finalTotal: backendSummary ? Math.round(Number(backendSummary.finalTotal || Math.max(0, couponAdjustedSellingTotal + delivery))) : Math.max(0, Math.round(couponAdjustedSellingTotal + delivery)),
 deliveryDetails: deliveryDetails,
 freeDeliveryApplied: !!(deliveryDetails && deliveryDetails.freeDeliveryApplied),
 freeDeliveryThreshold: deliveryDetails && deliveryDetails.freeDeliveryThreshold,
