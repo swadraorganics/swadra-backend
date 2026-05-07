@@ -1488,6 +1488,74 @@
   }
 }
 
+/* Mobile interaction stabilization (no desktop impact) */
+@media (max-width: 768px) {
+  html, body {
+    overflow-x: hidden !important;
+    touch-action: manipulation;
+  }
+
+  .mobile-nav-menu,
+  .mobile-nav-menu summary,
+  .mobile-nav-menu .mobile-nav-panel,
+  .mobile-nav-menu .mobile-nav-panel a {
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+
+  .mobile-nav-menu[open] .mobile-nav-panel {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    z-index: 9010 !important;
+  }
+
+  /* keep mobile menu usable on touch; focus-within is not reliable on some devices */
+  .mobile-nav-menu[open]:not(:focus-within) .mobile-nav-panel {
+    display: block !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .nav-search-results,
+  .account-hover-menu,
+  .modal,
+  .auth-overlay {
+    z-index: 12000 !important;
+    pointer-events: auto !important;
+  }
+
+  .modal[style*="display: none"],
+  .auth-overlay[style*="display: none"] {
+    pointer-events: none !important;
+  }
+
+  .product-card button,
+  .spices-card-final button,
+  .add-btn,
+  .cart-btn,
+  .primary-btn,
+  .secondary-btn,
+  .payment-btn,
+  .qty-btn,
+  .remove-btn,
+  .checkout-btn,
+  a,
+  input,
+  select,
+  textarea,
+  summary {
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+
+  #stickyCart {
+    z-index: 13000 !important;
+    pointer-events: auto !important;
+  }
+}
+
 @media (max-width: 480px) {
   .top-bar {
     padding: 8px 10px !important;
