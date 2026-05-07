@@ -759,13 +759,15 @@ backendSummary = data;
 console.error("backend checkout calculation failed", calcError);
 }
 let couponDiscount = backendSummary ? Number(backendSummary.couponDiscount || 0) : Math.min(Number(summary.couponDiscount || 0), summary.sellingTotal);
+couponDiscount = Math.min(Math.max(0, couponDiscount), Math.max(0, summary.sellingTotal + shippingCharge));
 let finalTotal = backendSummary ? Number(backendSummary.finalTotal || 0) : Math.max(0, summary.sellingTotal + shippingCharge - couponDiscount);
 return {
 ...summary,
-...(backendSummary || {}),
 delivery: shippingCharge,
 couponDiscount: Math.round(couponDiscount),
 finalTotal: Math.round(finalTotal),
+couponAdjustedSellingTotal: Math.max(0, Math.round(summary.sellingTotal - couponDiscount)),
+gstTotal: Math.round(Number(summary.gstTotal || 0)),
 totalSave: Math.round(Number(summary.productDiscount || 0) + couponDiscount),
 deliveryDetails: deliveryDetails,
 deliveryEstimateLabel: deliveryDetails ? [deliveryDetails.etaLabel, deliveryDetails.estimated ? "Estimated delivery charge" : ""].filter(Boolean).join(". ") : "",

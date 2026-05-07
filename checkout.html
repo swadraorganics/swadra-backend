@@ -618,15 +618,16 @@ backendSummary = data;
 console.error("checkout backend calculation failed", calcError);
 }
 let couponDiscount = backendSummary ? Number(backendSummary.couponDiscount || 0) : Math.min(Number(summary.couponDiscount || 0), gstInclusiveSellingTotal);
-let couponAdjustedSellingTotal = backendSummary ? Math.max(0, Math.round(Number(backendSummary.sellingTotal || gstInclusiveSellingTotal) - couponDiscount)) : Math.max(0, Math.round(gstInclusiveSellingTotal - couponDiscount));
+couponDiscount = Math.min(Math.max(0, couponDiscount), Math.max(0, gstInclusiveSellingTotal + delivery));
+let couponAdjustedSellingTotal = Math.max(0, Math.round(gstInclusiveSellingTotal - couponDiscount));
 return {
 ...summary,
-...(backendSummary || {}),
 sellingTotal: gstInclusiveSellingTotal,
 delivery: delivery,
 couponDiscount: Math.round(couponDiscount),
 couponAdjustedSellingTotal: couponAdjustedSellingTotal || discountedItemsTotal,
-finalTotal: backendSummary ? Math.round(Number(backendSummary.finalTotal || 0)) : Math.max(0, Math.round(couponAdjustedSellingTotal + delivery)),
+gstTotal: Math.round(Number(summary.gstTotal || 0)),
+finalTotal: Math.max(0, Math.round(couponAdjustedSellingTotal + delivery)),
 deliveryDetails: deliveryDetails,
 freeDeliveryApplied: !!(deliveryDetails && deliveryDetails.freeDeliveryApplied),
 freeDeliveryThreshold: deliveryDetails && deliveryDetails.freeDeliveryThreshold,
