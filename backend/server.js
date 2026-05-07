@@ -3760,7 +3760,7 @@ function calculateCartPricing({ items = [], couponCode = "", delivery = 0 } = {}
   const couponPercent = couponValid ? Math.max(0, toNumber(coupon.discount || 0)) : 0;
   const deliveryCharge = Math.max(0, Math.round(toNumber(delivery || 0)));
   const couponScope = couponValid ? String(coupon?.scope || "product_base") : "product_base";
-  const couponBase = couponScope === "overall_with_delivery" ? Math.max(0, productTotal + deliveryCharge) : baseAmount;
+  const couponBase = couponScope === "overall_with_delivery" ? Math.max(0, productTotal + deliveryCharge) : productTotal;
   const couponDiscount = Math.min(couponBase, Math.round(couponBase * (couponPercent / 100)));
   const itemCouponDiscount = Math.min(baseAmount, couponDiscount);
   let remainingDiscount = itemCouponDiscount;
