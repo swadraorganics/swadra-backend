@@ -169,7 +169,9 @@ function buildAddress(order){
 function getItemLineTotal(item){
   const qty = Number(item?.qty) || 1;
   const originalLineTotal = Math.round((Number(item?.price) || 0) * qty);
-  return Math.round(Number(item?.discountedLineTotal || item?.displayLineTotal || originalLineTotal));
+  const lineTotal = Math.round(Number(item?.paidLineTotal || item?.payableLineTotal || item?.discountedLineTotal || item?.displayAmount || item?.displayLineTotal || originalLineTotal));
+  console.log("[INVOICE ITEM RENDER]", { name: item?.name || item?.productName || "", packSize: getInvoiceItemSize(item), lineTotal });
+  return lineTotal;
 }
 
 function getInvoiceItemSize(item){

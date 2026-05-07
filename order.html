@@ -520,6 +520,8 @@ function getOrderItemSizeLabel(item){
 
 function getOrderItemFinalLineTotal(item){
   const qty = Number(item?.qty || item?.quantity || 1) || 1;
+  const paidLineTotal = Number(item?.paidLineTotal || item?.payableLineTotal || item?.lineTotal || 0);
+  if(paidLineTotal > 0) return paidLineTotal;
   const couponAdjusted = Number(item?.discountedLineTotal || 0);
   if(couponAdjusted > 0) return couponAdjusted;
   const displayLineTotal = Number(item?.displayLineTotal || 0);

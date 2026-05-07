@@ -208,7 +208,7 @@ function money(value){ return "\u20B9" + Math.round(Number(value || 0)).toLocale
 function getItemDisplayLineTotal(item){
   const qty = Number(item.qty) || 1;
   const originalLineTotal = Math.round((Number(item.price) || 0) * qty);
-  return Math.round(Number(item.discountedLineTotal || item.displayLineTotal || originalLineTotal));
+  return Math.round(Number(item.paidLineTotal || item.payableLineTotal || item.discountedLineTotal || item.displayAmount || item.displayLineTotal || originalLineTotal));
 }
 function getDisplayCartTotal(items){
   return Math.round((Array.isArray(items) ? items : []).reduce((sum,item)=>sum + getItemDisplayLineTotal(item),0));
@@ -243,10 +243,15 @@ function getItemSizeLabel(item){
 }
 function normalizeOrderItem(item){
   const normalizedSize = getItemSizeLabel(item);
+  const paidLineTotal = Math.round(Number(item?.paidLineTotal || item?.payableLineTotal || item?.discountedLineTotal || 0));
+  console.log("[CHECKOUT DRAFT ITEM]", { name: item?.name || item?.productName || "", size: normalizedSize, paidLineTotal });
   return {
     ...(item || {}),
     size: normalizedSize,
-    productSize: normalizedSize
+    productSize: normalizedSize,
+    packSize: String(item?.packSize || normalizedSize).trim(),
+    paidLineTotal: paidLineTotal > 0 ? paidLineTotal : Math.round(Number(item?.displayLineTotal || item?.lineTotal || 0)),
+    payableLineTotal: paidLineTotal > 0 ? paidLineTotal : Math.round(Number(item?.displayLineTotal || item?.lineTotal || 0))
   };
 }
 

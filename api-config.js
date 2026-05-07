@@ -475,16 +475,17 @@
       selectedSize: size,
       variant: size,
       weight: String(source.weight || size).trim(),
-      packSize: String(source.packSize || "").trim(),
+      packSize: String(source.packSize || size).trim(),
       unit: String(source.unit || "").trim(),
       image: image,
       productImage: image,
       images: Array.isArray(source.images) ? source.images.map(function(entry){ return String(entry || "").trim(); }).filter(Boolean).slice(0, 4) : (image ? [image] : []),
-      displayLineTotal: Number(source.displayLineTotal || source.discountedLineTotal || (price * qty)) || 0,
-      discountedLineTotal: Number(source.discountedLineTotal || source.displayLineTotal || (price * qty)) || 0,
+      displayLineTotal: Number(source.displayLineTotal || source.originalLineTotal || source.mrpLineTotal || ((mrp || price) * qty)) || 0,
+      discountedLineTotal: Number(source.discountedLineTotal || source.paidLineTotal || source.payableLineTotal || (price * qty)) || 0,
       originalLineTotal: Number(source.originalLineTotal || source.mrpLineTotal || (mrp || price) * qty) || 0,
       mrpLineTotal: Number(source.mrpLineTotal || source.originalLineTotal || (mrp || price) * qty) || 0,
       couponLineDiscount: Number(source.couponLineDiscount || source.lineCouponDiscount || 0) || 0,
+      paidLineTotal: Number(source.paidLineTotal || source.discountedLineTotal || source.payableLineTotal || (price * qty)) || 0,
       productDiscount: Number(source.productDiscount || Math.max(0, ((mrp || price) - price) * qty)) || 0
     };
   }
