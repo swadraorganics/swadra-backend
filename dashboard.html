@@ -1041,7 +1041,11 @@ async function persistCurrentUser(user, successMessage, errorMessage, options){
       users[finalUser.email] = finalUser;
     }
     if(authApi && typeof authApi.saveUserRecord === "function"){
-      await authApi.saveUserRecord(finalUser);
+      try{
+        await authApi.saveUserRecord(finalUser);
+      }catch(error){
+        console.warn("dashboard cache sync skipped", error);
+      }
     }else{
       let users = getUsers();
       users[user.email] = finalUser;
@@ -1052,7 +1056,10 @@ async function persistCurrentUser(user, successMessage, errorMessage, options){
       }
     }
     await refreshUsersSafe();
-    const reloaded = await fetchLatestDashboardUser(finalUser.email || user.email);
+    const reloaded = await fetchLatestDashboardUser(finalUser.email || user.email).catch(function(error){
+      console.warn("dashboard profile re-fetch skipped", error);
+      return null;
+    });
     console.info("dashboard reload fields", {
       email: reloaded && reloaded.email ? reloaded.email : "",
       name: reloaded && reloaded.profile ? reloaded.profile.name : "",
