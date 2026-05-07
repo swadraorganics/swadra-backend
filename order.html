@@ -580,6 +580,11 @@ async function requestReturn(id){
 }
 
 async function fetchBackendOrdersForUser(userId){
+  const firebaseUid = authApi && typeof authApi.getCurrentUserId === "function" ? String(authApi.getCurrentUserId() || "").trim() : "";
+  const routeIdentity = firebaseUid || String(userId || "").trim();
+  if(!routeIdentity){
+    return [];
+  }
   const userIdentities = getCurrentOrderIdentities(userId);
   function orderBelongsToUser(order){
     if(!order || typeof order !== "object") return false;
@@ -621,7 +626,16 @@ async function fetchBackendOrdersForUser(userId){
     }
   }
   try{
-    const response = await fetch(`${API_BASE}/api/orders/user/${encodeURIComponent(userId)}${buildOrderAccessQuery(userId)}`, { cache:"no-store" });
+    const headers = {};
+    if(authApi && typeof authApi.getIdToken === "function"){
+      try{
+        const token = await authApi.getIdToken();
+        if(token) headers.Authorization = "Bearer " + token;
+      }catch(error){
+        console.warn("order token attach skipped", error);
+      }
+    }
+    const response = await fetch(`${API_BASE}/api/orders/user/${encodeURIComponent(routeIdentity)}`, { cache:"no-store", credentials:"include", headers });
     const data = await response.json();
     if(!response.ok || !data.ok) throw new Error(data.error || "Backend orders unavailable");
     const backendOrders = Array.isArray(data.orders) ? data.orders : [];

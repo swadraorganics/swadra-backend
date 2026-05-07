@@ -132,7 +132,20 @@ function getCurrentOrderId(){
 }
 
 async function fetchOrder(orderId){
-  const response = await fetch(`${API_BASE}/api/orders/${encodeURIComponent(orderId)}${buildOrderAccessQuery()}`, { cache:"no-store" });
+  const headers = {};
+  if(authApi && typeof authApi.getIdToken === "function"){
+    try{
+      const token = await authApi.getIdToken();
+      if(token) headers.Authorization = "Bearer " + token;
+    }catch(error){
+      console.warn("invoice auth token attach failed", error);
+    }
+  }
+  const response = await fetch(`${API_BASE}/api/orders/${encodeURIComponent(orderId)}`, {
+    cache:"no-store",
+    credentials:"include",
+    headers
+  });
   const data = await response.json().catch(()=>({}));
   if(!response.ok || !data?.order){
     throw new Error(data?.error || "Order not found");

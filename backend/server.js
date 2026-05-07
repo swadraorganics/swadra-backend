@@ -461,6 +461,8 @@ function normalizeCartItems(items = []) {
     const nameSizeMatch = String(item?.name || item?.productName || item?.title || "").match(/\(([^()]*\d[^()]*)\)/);
     const size = directSize || (nameSizeMatch ? String(nameSizeMatch[1] || "").trim() : "");
     const image = String(item?.image || item?.productImage || item?.thumbnail || "").trim();
+    const paidLineTotal = Math.round(toNumber(item?.paidLineTotal || item?.payableLineTotal || item?.discountedLineTotal || item?.lineTotal || price * qty));
+    const couponLineDiscount = Math.round(toNumber(item?.couponLineDiscount || item?.lineCouponDiscount || item?.couponDiscount || 0));
     return {
       ...item,
       id: String(item?.id ?? item?.productId ?? item?.sku ?? item?.name ?? Date.now()).trim(),
@@ -485,11 +487,14 @@ function normalizeCartItems(items = []) {
       image,
       productImage: image,
       images: Array.isArray(item?.images) ? item.images.map((entry) => String(entry || "").trim()).filter(Boolean).slice(0, 4) : (image ? [image] : []),
-      displayLineTotal: Math.round(toNumber(item?.displayLineTotal || item?.discountedLineTotal || price * qty)),
-      discountedLineTotal: Math.round(toNumber(item?.discountedLineTotal || item?.displayLineTotal || price * qty)),
+      displayLineTotal: Math.round(toNumber(item?.displayLineTotal || item?.mrpLineTotal || item?.originalLineTotal || (mrp || price) * qty)),
+      discountedLineTotal: paidLineTotal,
+      lineTotal: paidLineTotal,
+      paidLineTotal,
       originalLineTotal: Math.round(toNumber(item?.originalLineTotal || item?.mrpLineTotal || (mrp || price) * qty)),
       mrpLineTotal: Math.round(toNumber(item?.mrpLineTotal || item?.originalLineTotal || (mrp || price) * qty)),
-      couponLineDiscount: Math.round(toNumber(item?.couponLineDiscount || item?.lineCouponDiscount || 0)),
+      couponLineDiscount,
+      couponDiscount: couponLineDiscount,
       productDiscount: Math.round(toNumber(item?.productDiscount || Math.max(0, ((mrp || price) - price) * qty)))
     };
   }).filter((item) => item.id || item.name);

@@ -214,13 +214,17 @@
 
     function normalizeOrderItem(rawItem){
       const name = String(getValueByPossibleKeys(rawItem, ["name","productName","title"])).trim() || "Product";
-      const size = String(getValueByPossibleKeys(rawItem, ["size","variant","productSize","selectedSize","weight","packSize","unit","weightLabel","quantityLabel"])).trim();
+      const derivedSizeFromName = (function(){
+        const match = String(name || "").match(/\(([^()]*\d[^()]*)\)/);
+        return match ? String(match[1] || "").trim() : "";
+      })();
+      const size = String(getValueByPossibleKeys(rawItem, ["size","variant","productSize","selectedSize","weight","packSize","unit","weightLabel","quantityLabel","netWeight","volume","unitSize"]) || derivedSizeFromName).trim();
       const quantity = Number(getValueByPossibleKeys(rawItem, ["quantity","qty","count"])) || 1;
-      const price = Number(getValueByPossibleKeys(rawItem, ["price","sellingPrice","discountedUnitPrice","displayPrice","amount"])) || 0;
+      const price = Number(getValueByPossibleKeys(rawItem, ["paidUnitPrice","discountedUnitPrice","displayPrice","sellingPrice","price","amount"])) || 0;
       const mrp = Number(getValueByPossibleKeys(rawItem, ["mrp","originalPrice","mrpPrice"])) || price;
-      const discountedLineTotal = Number(getValueByPossibleKeys(rawItem, ["discountedLineTotal","lineTotal","finalLineTotal","total"])) || (price * quantity);
+      const discountedLineTotal = Number(getValueByPossibleKeys(rawItem, ["paidLineTotal","discountedLineTotal","lineTotal","finalLineTotal","payableLineTotal","total"])) || (price * quantity);
       const displayLineTotal = Number(getValueByPossibleKeys(rawItem, ["displayLineTotal","mrpLineTotal","originalLineTotal"])) || (mrp * quantity);
-      const couponLineDiscount = Number(getValueByPossibleKeys(rawItem, ["couponLineDiscount","couponDiscount","lineCouponDiscount"])) || 0;
+      const couponLineDiscount = Number(getValueByPossibleKeys(rawItem, ["couponLineDiscount","couponDiscount","lineCouponDiscount","itemCouponDiscount"])) || 0;
 
       return { name, size, quantity, price, mrp, discountedLineTotal, displayLineTotal, couponLineDiscount };
     }

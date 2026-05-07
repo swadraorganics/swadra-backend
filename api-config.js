@@ -339,10 +339,10 @@
       var useCustomerToken = !useAdminSession && isCustomerApiPath(target, normalizedTarget);
       var requestPromise = Promise.resolve();
       if(useCustomerToken){
+        init = init || {};
+        init.credentials = "include";
         requestPromise = readFirebaseIdToken().then(function(token){
           if(token){
-            init = init || {};
-            init.credentials = "include";
             var headers = new Headers(init.headers || (input && input.headers) || {});
             if(!headers.has("Authorization")) headers.set("Authorization", "Bearer " + token);
             headers.set("x-firebase-id-token", token);
@@ -1497,9 +1497,20 @@
   }
 
   async function fetchCurrentUserFirestoreOrders(){
+    var auth = window.SWADRA_AUTH || null;
     var email = getCurrentUserEmail();
-    if(!email) return [];
-    var response = await fetch(base + "/api/orders/user/" + encodeURIComponent(email) + "?userId=" + encodeURIComponent(email) + "&email=" + encodeURIComponent(email), { cache:"no-store" });
+    var uid = auth && typeof auth.getCurrentUserId === "function" ? String(auth.getCurrentUserId() || "").trim() : "";
+    var userKey = uid || email;
+    if(!userKey){
+      var sessionResponse = await fetch(base + "/api/account/session", { cache:"no-store", credentials:"include", headers:{ "Accept":"application/json" } }).catch(function(){ return null; });
+      var sessionData = sessionResponse ? await sessionResponse.json().catch(function(){ return {}; }) : {};
+      var session = sessionData && sessionData.session ? sessionData.session : {};
+      uid = String(session.uid || "").trim();
+      email = normalizeEmailValue(session.email || email);
+      userKey = uid || email;
+    }
+    if(!userKey) return [];
+    var response = await fetch(base + "/api/orders/user/" + encodeURIComponent(userKey), { cache:"no-store", credentials:"include" });
     var data = await response.json().catch(function(){ return {}; });
     return response.ok && Array.isArray(data.orders) ? cloneValue(data.orders) : [];
   }
