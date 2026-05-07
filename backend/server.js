@@ -4732,6 +4732,25 @@ app.get("/api/carts/:userId", paymentRateLimit, requireCustomerFirebaseAuth, asy
   }
 });
 
+app.get("/api/cart/current", paymentRateLimit, requireCustomerFirebaseAuth, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const ownerId = String(req.customerAuth?.uid || "").trim();
+    if (!ownerId) return res.status(401).json({ ok: false, error: "Customer token or session required" });
+    let data = {};
+    try {
+      const doc = USE_FIRESTORE ? await getFirestore().collection("carts").doc(safeDocId(ownerId)).get() : null;
+      data = doc && doc.exists ? (doc.data() || {}) : {};
+    } catch (readError) {
+      addLog("Current cart Firestore read skipped: " + readError.message, "warn");
+    }
+    res.json({ ok: true, cart: normalizeCartItems(data.items || []) });
+  } catch (error) {
+    addLog("Current cart fetch failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to fetch current cart" });
+  }
+});
+
 app.post("/api/carts/:userId", paymentRateLimit, requireCustomerFirebaseAuth, async (req, res) => {
   try {
     if (!requireDurablePersistence(res)) return;
@@ -4779,6 +4798,27 @@ app.post("/api/carts/:userId", paymentRateLimit, requireCustomerFirebaseAuth, as
   } catch (error) {
     addLog("Cart save failed: " + error.message, "error");
     res.status(500).json({ ok: false, error: "Failed to save cart" });
+  }
+});
+
+app.post("/api/cart/current", paymentRateLimit, requireCustomerFirebaseAuth, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const ownerId = safeDocId(req.customerAuth?.uid || "");
+    if (!ownerId) return res.status(401).json({ ok: false, error: "Customer token or session required" });
+    const items = normalizeCartItems(req.body?.items || req.body?.cart || []);
+    const payload = {
+      userId: ownerId,
+      uid: ownerId,
+      email: normalizeAccountEmail(req.customerAuth?.email || ""),
+      items,
+      updatedAt: new Date().toISOString()
+    };
+    await getFirestore().collection("carts").doc(ownerId).set(payload, { merge: true });
+    res.json({ ok: true, cart: items });
+  } catch (error) {
+    addLog("Current cart save failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to save current cart" });
   }
 });
 

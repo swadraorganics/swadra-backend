@@ -1201,9 +1201,9 @@
   }
 
   async function fetchCartFromBackend(userId){
-    var docId = resolveUserBusinessDocId(userId) || userId;
+    var docId = String(userId || "").trim();
     console.info("cart fetch request user uid", { userId: String(userId || ""), docId: String(docId || "") });
-    var response = await fetch(base + "/api/carts/" + encodeURIComponent(docId), { cache:"no-store", credentials:"include" });
+    var response = await fetch(base + "/api/cart/current", { cache:"no-store", credentials:"include" });
     var data = await response.json().catch(function(){ return {}; });
     if(!response.ok || data.ok === false){
       console.error("cart fetch failed", { status: response.status, body: data, docId: docId });
@@ -1220,14 +1220,11 @@
     var responseData = {};
     try{
       console.info("add cart request user uid", { userId: String(userId || ""), docId: String(docId || userId || "") });
-      response = await fetch(base + "/api/carts/" + encodeURIComponent(docId || userId), {
+      response = await fetch(base + "/api/cart/current", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: docId || userId,
-          uid: docId || "",
-          email: normalizeEmailValue(userId),
           items: safeItems
         })
       });
@@ -1257,29 +1254,16 @@
   }
 
   async function fetchCheckoutDraft(userId){
-    var normalizedUserId = resolveUserBusinessDocId(userId);
+    var identity = await getVerifiedCartIdentity();
+    var normalizedUserId = identity.uid;
     if(!normalizedUserId) return null;
     var localDraft = null;
-    var backendDraft = await fetchCheckoutDraftFromBackend(userId).catch(function(error){
+    var backendDraft = await fetchCheckoutDraftFromBackend(normalizedUserId).catch(function(error){
       console.error("checkout draft backend fetch failed", error);
       return null;
     });
     if(backendDraft) return backendDraft;
-    var db = initFirestore();
-    if(!db) return fetchCheckoutDraftFromBackend(userId).catch(function(){ return localDraft; });
-    try{
-      var snapshot = await db.collection(CHECKOUT_DRAFTS_COLLECTION).doc(normalizedUserId).get();
-      if(!snapshot.exists) return fetchCheckoutDraftFromBackend(userId).catch(function(){ return localDraft; });
-      var remoteDraft = sanitizeCheckoutDraftRecord(snapshot.data() || {}, normalizedUserId);
-      saveCheckoutDraftLocal(userId, remoteDraft);
-      return remoteDraft;
-    }catch(error){
-      var code = String(error && error.code || "").toLowerCase();
-      if(code === "permission-denied" || code === "unauthenticated"){
-        return fetchCheckoutDraftFromBackend(userId).catch(function(){ return localDraft; });
-      }
-      return fetchCheckoutDraftFromBackend(userId).catch(function(){ return localDraft; });
-    }
+    return localDraft;
   }
 
   async function saveCheckoutDraft(userId, draft){
@@ -1287,19 +1271,15 @@
     if(!normalizedUserId) throw new Error("User id required for checkout draft save");
     var payload = sanitizeCheckoutDraftRecord(draft, normalizedUserId);
     payload.updatedAt = new Date().toISOString();
-    return saveCheckoutDraftToBackend(userId, normalizedUserId, payload).catch(async function(error){
+    return saveCheckoutDraftToBackend(userId, normalizedUserId, payload).catch(function(error){
       console.error("checkout draft backend save failed", error);
-      var db = initFirestore();
-      if(db){
-        await db.collection(CHECKOUT_DRAFTS_COLLECTION).doc(normalizedUserId).set(payload, { merge: true });
-      }
-      return payload;
+      throw error;
     });
   }
 
   async function fetchCheckoutDraftFromBackend(userId){
-    var docId = resolveUserBusinessDocId(userId) || userId;
-    var response = await fetch(base + "/api/checkout-drafts/" + encodeURIComponent(docId), { cache:"no-store" });
+    var docId = String(userId || "").trim();
+    var response = await fetch(base + "/api/checkout-drafts/" + encodeURIComponent(docId), { cache:"no-store", credentials:"include" });
     var data = await response.json().catch(function(){ return {}; });
     if(!response.ok || data.ok === false){
       throw new Error(data && data.error ? data.error : "Failed to fetch checkout draft");
@@ -1310,12 +1290,11 @@
 
   async function saveCheckoutDraftToBackend(userId, docId, payload){
     var body = Object.assign({}, payload || {}, {
-      userId: docId || userId,
-      uid: docId || "",
-      email: normalizeEmailValue(userId)
+      userId: docId || userId
     });
     var response = await fetch(base + "/api/checkout-drafts/" + encodeURIComponent(docId || userId), {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
@@ -1330,9 +1309,6 @@
     var normalizedUserId = resolveUserBusinessDocId(userId);
     if(!normalizedUserId) return;
     await saveCheckoutDraftToBackend(userId, normalizedUserId, { cartSnapshot: [], summary: {}, address: {}, clearedAt: new Date().toISOString() }).catch(function(){});
-    var db = initFirestore();
-    if(!db) throw firebaseInitError || new Error("Firestore unavailable");
-    await db.collection(CHECKOUT_DRAFTS_COLLECTION).doc(normalizedUserId).delete().catch(function(){});
   }
 
   function findOrderCustomerEmail(order){
