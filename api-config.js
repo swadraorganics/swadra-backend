@@ -1064,17 +1064,29 @@
 
   function resolveUserBusinessDocId(userId){
     var source = String(userId || "").trim();
-    if(!source) return "";
     var currentFirebaseUser = getCurrentFirebaseUser();
-    var normalizedEmail = normalizeEmailValue(source);
-    if(currentFirebaseUser && currentFirebaseUser.uid && normalizeEmailValue(currentFirebaseUser.email || "") === normalizedEmail){
+    if(currentFirebaseUser && currentFirebaseUser.uid){
       return String(currentFirebaseUser.uid);
     }
+    if(!source) return "";
+    var normalizedEmail = normalizeEmailValue(source);
     var users = getAuthUsers();
     if(normalizedEmail && users[normalizedEmail] && users[normalizedEmail].uid){
       return String(users[normalizedEmail].uid);
     }
     return getBusinessDocId(source);
+  }
+
+  async function getVerifiedCartIdentity(){
+    await ensureFirebaseAuthSync().catch(function(){ return null; });
+    var firebaseUser = getCurrentFirebaseUser();
+    var uid = String(firebaseUser && firebaseUser.uid || "").trim();
+    var email = normalizeEmailValue(firebaseUser && firebaseUser.email || "");
+    console.info("cart auth identity", { uid: uid, email: email, hasToken: !!(firebaseUser && typeof firebaseUser.getIdToken === "function") });
+    if(!uid || !firebaseUser || typeof firebaseUser.getIdToken !== "function"){
+      throw new Error("Please login to add items to cart.");
+    }
+    return { uid: uid, email: email };
   }
 
   function sanitizeCheckoutDraftRecord(draft, userId){
@@ -1108,10 +1120,10 @@
   }
 
   async function fetchFirestoreCart(userId){
-    var normalizedUserId = resolveUserBusinessDocId(userId);
-    if(!normalizedUserId) return [];
+    var identity = await getVerifiedCartIdentity();
+    var normalizedUserId = identity.uid;
     var pendingCart = getPendingUserCart(userId);
-    var backendCart = await fetchCartFromBackend(userId).catch(function(error){
+    var backendCart = await fetchCartFromBackend(normalizedUserId).catch(function(error){
       console.error("cart backend fetch failed", error);
       return null;
     });
@@ -1119,20 +1131,7 @@
       if(!backendCart.length && pendingCart.length) return pendingCart;
       return backendCart;
     }
-    var db = initFirestore();
-    if(!db) return pendingCart.length ? pendingCart : fetchCartFromBackend(userId).catch(function(){ return pendingCart; });
-    try{
-      var snapshot = await db.collection(CARTS_COLLECTION).doc(normalizedUserId).get();
-      if(!snapshot.exists) return pendingCart.length ? pendingCart : fetchCartFromBackend(userId).catch(function(){ return pendingCart; });
-      var data = snapshot.data() || {};
-      var remoteCart = compactAuthCartItems(data.items || []);
-      if(pendingCart.length) return pendingCart;
-      if(remoteCart.length) return remoteCart;
-      return fetchCartFromBackend(userId).catch(function(){ return remoteCart; });
-    }catch(error){
-      console.error("cart firestore fetch failed", error);
-      return pendingCart.length ? pendingCart : fetchCartFromBackend(userId).catch(function(){ return pendingCart; });
-    }
+    return pendingCart.length ? pendingCart : [];
   }
 
   function watchFirestoreCart(userId, callback){
@@ -1148,21 +1147,11 @@
   }
 
   async function saveFirestoreCart(userId, items){
-    var normalizedUserId = resolveUserBusinessDocId(userId);
-    if(!normalizedUserId) throw new Error("User id required for cart save");
+    var identity = await getVerifiedCartIdentity();
+    var normalizedUserId = identity.uid;
     var compactItems = compactAuthCartItems(items);
     setPendingUserCart(userId, compactItems);
-    compactItems = await saveCartToBackend(userId, normalizedUserId, compactItems).catch(function(error){
-      console.error("cart backend save failed", error);
-      var db = initFirestore();
-      if(!db) return compactItems;
-      return db.collection(CARTS_COLLECTION).doc(normalizedUserId).set({
-        userId: normalizedUserId,
-        email: normalizeEmailValue(userId),
-        items: compactItems,
-        updatedAt: new Date().toISOString()
-      }, { merge: true }).then(function(){ return compactItems; });
-    });
+    compactItems = await saveCartToBackend(identity.email || userId, normalizedUserId, compactItems);
     setPendingUserCart(userId, compactItems);
     var currentEmail = normalizeEmailValue(userId);
     var currentRecord = currentEmail ? (getAuthUsers()[currentEmail] || null) : getCurrentUserRecord();
@@ -1196,29 +1185,27 @@
 
   async function fetchCartFromBackend(userId){
     var docId = resolveUserBusinessDocId(userId) || userId;
-    var response = await fetch(base + "/api/carts/" + encodeURIComponent(docId), { cache:"no-store" });
+    console.info("cart fetch request user uid", { userId: String(userId || ""), docId: String(docId || "") });
+    var response = await fetch(base + "/api/carts/" + encodeURIComponent(docId), { cache:"no-store", credentials:"include" });
     var data = await response.json().catch(function(){ return {}; });
     if(!response.ok || data.ok === false){
+      console.error("cart fetch failed", { status: response.status, body: data, docId: docId });
       throw new Error(data && data.error ? data.error : "Failed to fetch cart");
     }
     var cart = compactAuthCartItems(data.cart || []);
-    var email = normalizeEmailValue(userId);
-    if(!cart.length && email && String(docId) !== email){
-      var emailResponse = await fetch(base + "/api/carts/" + encodeURIComponent(email), { cache:"no-store" });
-      var emailData = await emailResponse.json().catch(function(){ return {}; });
-      if(emailResponse.ok && emailData.ok !== false){
-        cart = compactAuthCartItems(emailData.cart || []);
-      }
-    }
+    console.info("cart fetch response item count", { count: cart.length, status: response.status, docId: String(docId || "") });
     return cart;
   }
 
   async function saveCartToBackend(userId, docId, items){
     var safeItems = compactAuthCartItems(items);
     var response = null;
+    var responseData = {};
     try{
+      console.info("add cart request user uid", { userId: String(userId || ""), docId: String(docId || userId || "") });
       response = await fetch(base + "/api/carts/" + encodeURIComponent(docId || userId), {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: docId || userId,
@@ -1228,41 +1215,25 @@
         })
       });
     }catch(error){
-      return saveCartViaAccountProfile(userId, safeItems).catch(function(){ return safeItems; });
+      throw error;
     }
     var data = await response.json().catch(function(){ return {}; });
+    responseData = data;
     if(!response.ok || data.ok === false){
-      return saveCartViaAccountProfile(userId, safeItems);
+      console.error("cart backend save rejected", {
+        status: response.status,
+        body: responseData
+      });
+      if(response.status === 401 || response.status === 403){
+        throw new Error((data && (data.error || data.message)) || "Please login to add items to cart.");
+      }
+      throw new Error((data && (data.error || data.message)) || "Failed to save cart");
     }
-    return compactAuthCartItems(data.cart || safeItems);
+    var savedCart = compactAuthCartItems(data.cart || safeItems);
+    console.info("cart save response item count", { count: savedCart.length, status: response.status, docId: String(docId || userId || "") });
+    return savedCart;
   }
 
-  async function saveCartViaAccountProfile(userId, items){
-    var email = normalizeEmailValue(userId);
-    if(!email){
-      throw new Error("User email required for cart save");
-    }
-    var users = getAuthUsers();
-    var existing = users[email] || { email: email, profile: { email: email } };
-    var payload = Object.assign({}, existing, {
-      email: email,
-      cart: compactAuthCartItems(items),
-      profile: Object.assign({}, existing.profile || {}, { email: email }),
-      updatedAt: new Date().toISOString()
-    });
-    var response = await fetch(base + "/api/account/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    var data = await response.json().catch(function(){ return {}; });
-    if(!response.ok || data.ok === false){
-      throw new Error(data && data.error ? data.error : "Failed to save cart");
-    }
-    var record = sanitizeUserRecord(data.record || payload, email);
-    usersCache[email] = record;
-    return compactAuthCartItems(record.cart || items);
-  }
 
   async function clearFirestoreCart(userId){
     return saveFirestoreCart(userId, []);

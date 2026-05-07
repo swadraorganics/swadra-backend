@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Swadra Organics | Premium Spices, Dry Fruits, Ghee & More Online India</title>
+<link rel="icon" type="image/png" href="images/logo.PNG">
 <meta name="description" content="Shop Swadra Organics online for premium spices, dry fruits, ghee and quality-focused Indian kitchen essentials with transparent pricing and fast delivery across India.">
 <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
 <link rel="canonical" href="https://swadraorganics.com/index.html">
@@ -4685,7 +4686,7 @@ margin-left:6px;
 <div class="family-track" id="familyTrack">
 
 <div class="family-card">
-<img src="https://res.cloudinary.com/djimihrjf/image/upload/f_auto,q_auto,w_220,c_fill/v1776930030/yemseio9mrxemwqafwwv.png">
+                  <img src="images/logo.PNG">
 <p>Organic Turmeric</p>
 </div>
 
@@ -4755,7 +4756,7 @@ margin-left:6px;
 </div>
 
 <div class="family-card">
-<img src="https://res.cloudinary.com/djimihrjf/image/upload/f_auto,q_auto,w_220,c_fill/v1776930030/yemseio9mrxemwqafwwv.png">
+                  <img src="images/logo.PNG">
 <p>Organic Haldi</p>
 </div>
 
@@ -5161,7 +5162,7 @@ const allProducts = [
   {
     name:"Swadra Lakadong Turmeric Powder",
     price:399,
-    image:"https://res.cloudinary.com/djimihrjf/image/upload/f_auto,q_auto,w_220,c_fill/v1776930030/yemseio9mrxemwqafwwv.png"
+    image:"images/logo.PNG"
   },
   {
     name:"Swadra Premium Makhana",
@@ -5461,7 +5462,7 @@ async function saveCart(cart){
       await dataApi.saveCart(currentUser, safeCart);
     }catch(error){
       console.error("index firestore cart save failed", error);
-      alert("Cart save failed. Please try again.");
+      alert(error && error.message ? error.message : "Please login to add items to cart.");
       return false;
     }
   }

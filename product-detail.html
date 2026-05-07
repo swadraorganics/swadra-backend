@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#7a3d3d">
   <title>Product Details | Swadra Organics</title>
   <meta name="description" content="View Swadra Organics product ingredients, nutrition, shelf life, batch details, FAQs, reviews and ratings.">
-  <link rel="icon" href="favicon.ico">
+<link rel="icon" type="image/png" href="images/logo.PNG">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="mobile.css">
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -336,7 +336,7 @@
           await dataApi.saveCart(currentUser, cart);
         }catch(error){
           console.error("product cart save failed", error);
-          alert("Cart save failed. Please try again.");
+          alert(error && error.message ? error.message : "Please login to add items to cart.");
           return;
         }
       }
