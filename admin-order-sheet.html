@@ -35,6 +35,8 @@
     .money{font-weight:800;color:#1f1f1f}
     .profit-pos{color:var(--success);font-weight:900}
     .profit-neg{color:var(--danger);font-weight:900}
+    .profit-positive{color:#0f9d58 !important;font-weight:700}
+    .profit-negative{color:#d93025 !important;font-weight:700}
     .status{font-weight:800;color:var(--primary)}
     .empty{padding:26px;text-align:center;color:var(--muted);border:1px dashed #d8cdc2;background:#fffdfa}
     .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
@@ -117,7 +119,16 @@ const dataApi = window.SWADRA_DATA || null;
 const productApi = window.SWADRA_PRODUCT_DATA || null;
 const API_BASE = window.SWADRA_API_BASE || "";
 
-function money(value){ return "â‚¹" + Math.round(Number(value || 0)).toLocaleString("en-IN"); }
+function formatINR(value){
+  const num = Math.round(Number(value || 0));
+  return "₹" + Math.abs(num).toLocaleString("en-IN");
+}
+function formatProfitAmount(value){
+  const amount = Math.round(Number(value || 0));
+  if(amount < 0) return "-₹" + Math.abs(amount).toLocaleString("en-IN");
+  return "₹" + amount.toLocaleString("en-IN");
+}
+function money(value){ return formatINR(value); }
 function safe(value){ return String(value == null ? "" : value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
 function formatDate(value){ const d = new Date(value); return Number.isNaN(d.getTime()) ? safe(value || "-") : d.toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"}); }
 function norm(value){ return String(value || "").trim().toLowerCase(); }
@@ -243,12 +254,13 @@ function render(rows){
   const totalPaid = rows.reduce((sum,row)=>sum + row.paidAmount, 0);
   const totalCourier = rows.reduce((sum,row)=>sum + row.shiprocketCharge, 0);
   const totalProfit = rows.reduce((sum,row)=>sum + row.profit, 0);
+  const profitClass = totalProfit > 0 ? "profit-positive" : (totalProfit < 0 ? "profit-negative" : "");
   document.getElementById("stats").innerHTML = [
     ["Orders", rows.length],
-    ["Paid Amount", money(totalPaid)],
-    ["Shiprocket Charge", money(totalCourier)],
-    ["Profit", money(totalProfit)]
-  ].map(function(item){ return '<div class="stat"><span>' + item[0] + '</span><b>' + item[1] + '</b></div>'; }).join("");
+    ["Paid Amount", money(totalPaid), ""],
+    ["Shiprocket Charge", money(totalCourier), ""],
+    ["Profit", formatProfitAmount(totalProfit), profitClass]
+  ].map(function(item){ return '<div class="stat"><span>' + item[0] + '</span><b class="' + (item[2] || "") + '">' + item[1] + '</b></div>'; }).join("");
 
   if(!rows.length){
     document.getElementById("sheetTable").innerHTML = '<div class="empty">No order sheet data found.</div>';
@@ -270,7 +282,8 @@ function render(rows){
       </thead>
       <tbody>
         ${rows.map(function(row){
-          const profitClass = row.profit >= 0 ? "profit-pos" : "profit-neg";
+          const profitValue = Number(row.profit || 0);
+          const profitClass = profitValue > 0 ? "profit-positive" : (profitValue < 0 ? "profit-negative" : "");
           return `
             <tr>
               <td>${safe(row.email || "-")}</td>
@@ -280,7 +293,7 @@ function render(rows){
               <td class="money">${money(row.paidAmount)}</td>
               <td class="status">${safe(row.refundStatus || "-")}</td>
               <td class="money">${money(row.shiprocketCharge)}</td>
-              <td class="${profitClass}">${money(row.profit)}</td>
+              <td class="${profitClass}">${formatProfitAmount(profitValue)}</td>
             </tr>
           `;
         }).join("")}

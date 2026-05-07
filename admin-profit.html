@@ -205,6 +205,21 @@
     .summary-card.green .value{ color:var(--success); }
     .summary-card.gold .value{ color:var(--warn); }
     .summary-card.red .value{ color:var(--danger); }
+    .profit-loss-positive {
+      color: #0f9d58 !important;
+      font-weight: 800 !important;
+      text-transform: uppercase;
+    }
+    .profit-loss-negative {
+      color: #d93025 !important;
+      font-weight: 800 !important;
+      text-transform: uppercase;
+    }
+    .profit-loss-neutral {
+      color: #555 !important;
+      font-weight: 800 !important;
+      text-transform: uppercase;
+    }
 
     .hint{
       font-size:12px;
@@ -440,8 +455,25 @@
       }
     }
 
+    function formatINR(value) {
+      const amount = Number(value || 0);
+      if (amount < 0) return `-₹${Math.abs(amount).toLocaleString('en-IN')}`;
+      return `₹${amount.toLocaleString('en-IN')}`;
+    }
+    function getProfitLossLabel(value) {
+      const amount = Number(value || 0);
+      if (amount < 0) return `LOSS: ${formatINR(amount)}`;
+      if (amount > 0) return `PROFIT: ${formatINR(amount)}`;
+      return `NO PROFIT/LOSS: ₹0`;
+    }
+    function getProfitLossClass(value) {
+      const amount = Number(value || 0);
+      if (amount < 0) return "profit-loss-negative";
+      if (amount > 0) return "profit-loss-positive";
+      return "profit-loss-neutral";
+    }
     function rupee(value){
-      return "₹" + Number(value || 0).toFixed(0);
+      return formatINR(value);
     }
 
     function escapeHtml(str){
@@ -797,6 +829,7 @@
     function renderStats(days){
       const totalProfit = days.reduce((sum, day)=>sum + Number(day.totalProfit || 0), 0);
 
+      const totalProfitClass = getProfitLossClass(totalProfit);
       document.getElementById("profitStats").innerHTML = `
         <div class="stat-card">
           <div class="label">Tracked Days</div>
@@ -804,7 +837,7 @@
         </div>
         <div class="stat-card">
           <div class="label">Total Profit</div>
-          <div class="value">${rupee(totalProfit)}</div>
+          <div class="value ${totalProfitClass}">${getProfitLossLabel(totalProfit)}</div>
         </div>
         <div class="stat-card">
           <div class="label">AI Products</div>
@@ -817,7 +850,8 @@
       `;
 
       document.getElementById("trackedDaysView").textContent = days.length;
-      document.getElementById("totalProfitView").textContent = rupee(totalProfit);
+      document.getElementById("totalProfitView").textContent = getProfitLossLabel(totalProfit);
+      document.getElementById("totalProfitView").className = "value " + totalProfitClass;
       document.getElementById("productCountView").textContent = PROFIT_CACHE.products.length;
       document.getElementById("orderCountView").textContent = PROFIT_CACHE.orders.length;
     }
@@ -836,6 +870,9 @@
       profitList.innerHTML = days.map(day=>{
         const modeLabel = day.mode === "realized" ? "Realized Profit" : "Snapshot Profit";
         const modeClass = day.mode === "realized" ? "green" : "gold";
+        const dayProfit = Number(day.totalProfit || 0);
+        const dayProfitClass = getProfitLossClass(dayProfit);
+        const dayProfitLabel = getProfitLossLabel(dayProfit);
 
         const topLines = day.lines
           .slice()
@@ -853,14 +890,14 @@
                 </div>
               </div>
               <div class="badge-wrap">
-                <span class="badge green">Profit: ${rupee(day.totalProfit)}</span>
+                <span class="badge ${dayProfit > 0 ? "green" : (dayProfit < 0 ? "red" : "gold")} ${dayProfitClass}">${dayProfitLabel}</span>
               </div>
             </div>
 
             <div class="card-grid">
               <div class="mini">
                 <div class="k">Total Profit</div>
-                <div class="v">${rupee(day.totalProfit)}</div>
+                <div class="v ${dayProfitClass}">${dayProfitLabel}</div>
               </div>
               <div class="mini">
                 <div class="k">Orders</div>
@@ -882,9 +919,9 @@
                   <div>
                     <b>${escapeHtml(line.name || "Product")}</b>
                     ${line.size ? `(${escapeHtml(line.size)})` : ""}
-                    Ã— ${Number(line.quantity || 1)}
+                    × ${Number(line.quantity || 1)}
                   </div>
-                  <div>${rupee(line.lineProfit)}</div>
+                  <div class="${getProfitLossClass(line.lineProfit)}">${getProfitLossLabel(line.lineProfit)}</div>
                 </div>
               `).join("") : `<div class="empty">No line items</div>`}
             </div>
