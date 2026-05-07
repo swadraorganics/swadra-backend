@@ -948,25 +948,24 @@ async function fetchDashboardSessionRecord(){
 }
 
 async function refreshUsersSafe(){
-  if(authApi && typeof authApi.refreshUsers === "function"){
-    try{
-      await authApi.refreshUsers();
-    }catch(error){
-      console.error("dashboard users refresh failed", error);
-    }
-  }
+  await fetchDashboardSessionRecord().catch(function(error){
+    console.warn("dashboard users refresh skipped", error);
+  });
 }
 
 async function fetchLatestDashboardUser(email){
   const normalizedEmail = String(email || "").trim().toLowerCase();
-  if(!normalizedEmail || !authApi || typeof authApi.refreshUsers !== "function") return null;
+  if(!normalizedEmail) return null;
   try{
-    await authApi.refreshUsers();
+    const sessionRecord = await fetchDashboardSessionRecord();
+    if(sessionRecord && typeof sessionRecord === "object"){
+      return sessionRecord;
+    }
     const users = getUsers();
     const key = resolveUserKey(users, normalizedEmail);
     return users[key] || null;
   }catch(error){
-    console.error("dashboard latest user fetch failed", error);
+    console.warn("dashboard latest user fetch failed", error);
     return null;
   }
 }
@@ -1043,9 +1042,6 @@ async function persistCurrentUser(user, successMessage, errorMessage, options){
     }
     if(authApi && typeof authApi.saveUserRecord === "function"){
       await authApi.saveUserRecord(finalUser);
-      if(typeof authApi.refreshUsers === "function"){
-        await authApi.refreshUsers();
-      }
     }else{
       let users = getUsers();
       users[user.email] = finalUser;
@@ -1952,13 +1948,9 @@ async function refreshDashboardHeaderState(){
       console.error("dashboard header auth ready failed", error);
     }
   }
-  if(authApi && typeof authApi.refreshUsers === "function"){
-    try{
-      await authApi.refreshUsers();
-    }catch(error){
-      console.error("dashboard header refresh users failed", error);
-    }
-  }
+  await fetchDashboardSessionRecord().catch(function(error){
+    console.warn("dashboard header refresh skipped", error);
+  });
   swadraHeaderUpdateStickyCart();
   swadraHeaderUpdateAccountNav();
 }
