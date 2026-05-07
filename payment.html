@@ -379,12 +379,17 @@ async function bootstrapPaymentData(){
     displayCart = Array.isArray(cartSummary.discountedItems) && cartSummary.discountedItems.length ? cartSummary.discountedItems : cart;
   }
   rawSubtotal = cart.reduce((sum,item)=>sum + ((Number(item.price)||0) * (Number(item.qty)||1)),0);
-  sellingTotal = Math.round(Number(cartSummary.sellingTotal || rawSubtotal) || rawSubtotal);
-  couponAdjustedSellingTotal = Math.round(Number(cartSummary.couponAdjustedSellingTotal || getDisplayCartTotal(displayCart)) || sellingTotal);
-  mrpTotal = Math.round(Number(cartSummary.mrpTotal) || cart.reduce((sum,item)=>sum + ((Number(item.mrp || item.originalPrice || item.price)||0) * (Number(item.qty)||1)),0) || sellingTotal);
-  delivery = Math.round(Number(cartSummary.delivery || 0) || 0);
-  couponDiscount = Math.round(Number(cartSummary.couponDiscount || 0) || 0);
-  finalTotal = Math.round(Number(cartSummary.finalTotal || 0) || Math.max(0, couponAdjustedSellingTotal + delivery));
+  const backendSellingTotal = Number(cartSummary.sellingPriceTotal ?? cartSummary.sellingTotal ?? 0);
+  const backendMrpTotal = Number(cartSummary.totalMrp ?? cartSummary.mrpTotal ?? 0);
+  const backendDelivery = Number(cartSummary.deliveryCharge ?? cartSummary.delivery ?? 0);
+  const backendFinalTotal = Number(cartSummary.totalPayable ?? cartSummary.finalTotal ?? 0);
+  const backendCouponDiscount = Number(cartSummary.couponDiscount ?? 0);
+  sellingTotal = Math.round(backendSellingTotal || rawSubtotal);
+  mrpTotal = Math.round(backendMrpTotal || cart.reduce((sum,item)=>sum + ((Number(item.mrp || item.originalPrice || item.price)||0) * (Number(item.qty)||1)),0) || sellingTotal);
+  delivery = Math.round(backendDelivery || 0);
+  couponDiscount = Math.round(backendCouponDiscount || 0);
+  couponAdjustedSellingTotal = Math.max(0, Math.round(sellingTotal - couponDiscount));
+  finalTotal = Math.round(backendFinalTotal || Math.max(0, couponAdjustedSellingTotal + delivery));
   productSavings = Math.max(0, mrpTotal - sellingTotal);
   deliveryDetails = cartSummary.deliveryDetails || checkoutData.deliveryDetails || deliveryDetails || null;
 }
@@ -450,9 +455,19 @@ function trackPaymentEvent(type, payload = {}){
 }
 
 async function apiPost(path, body){
+  const headers = { "Content-Type":"application/json" };
+  if(authApi && typeof authApi.getIdToken === "function"){
+    try{
+      const token = await authApi.getIdToken();
+      if(token) headers.Authorization = "Bearer " + token;
+    }catch(error){
+      console.warn("payment auth token attach failed", error);
+    }
+  }
   const response = await fetch(API_BASE + path, {
     method:"POST",
-    headers:{ "Content-Type":"application/json" },
+    credentials:"include",
+    headers,
     body:JSON.stringify(body || {})
   });
   const data = await response.json().catch(()=>({ ok:false }));
@@ -552,7 +567,7 @@ function updatePaymentSession(patch){
 async function checkBackend(){
   const pill = document.getElementById("serverPill");
   try{
-    const response = await fetch(API_BASE + "/health", { cache:"no-store" });
+    const response = await fetch(API_BASE + "/health", { cache:"no-store", credentials:"include" });
     if(!response.ok) throw new Error("offline");
     if(pill) pill.textContent = "Backend live";
   }catch(error){
