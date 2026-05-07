@@ -871,15 +871,32 @@ async function getVerifiedFirebaseCustomer(req) {
 async function requireCustomerFirebaseAuth(req, res, next) {
   try {
     const customer = await getVerifiedFirebaseCustomer(req);
-    if (!customer || !customer.uid) {
-      return res.status(401).json({ ok: false, error: "Firebase customer token required" });
+    if (customer && customer.uid) {
+      req.customerAuth = customer;
+      req.__customerSession = {
+        email: customer.email,
+        phone: customer.phone,
+        uid: customer.uid,
+        expiresAt: ""
+      };
+      return next();
     }
-    req.customerAuth = customer;
+    const db = await readDB();
+    const session = getCustomerSessionFromRequest(db, req);
+    if (!session || !session.uid) {
+      return res.status(401).json({ ok: false, error: "Customer token or session required" });
+    }
+    req.customerAuth = {
+      uid: String(session.uid || "").trim(),
+      email: normalizeAccountEmail(session.email || ""),
+      phone: normalizeAccountPhone(session.phone || ""),
+      claims: null
+    };
     req.__customerSession = {
-      email: customer.email,
-      phone: customer.phone,
-      uid: customer.uid,
-      expiresAt: ""
+      email: req.customerAuth.email,
+      phone: req.customerAuth.phone,
+      uid: req.customerAuth.uid,
+      expiresAt: session.expiresAt || ""
     };
     next();
   } catch (error) {

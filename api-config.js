@@ -1082,11 +1082,28 @@
     var firebaseUser = getCurrentFirebaseUser();
     var uid = String(firebaseUser && firebaseUser.uid || "").trim();
     var email = normalizeEmailValue(firebaseUser && firebaseUser.email || "");
-    console.info("cart auth identity", { uid: uid, email: email, hasToken: !!(firebaseUser && typeof firebaseUser.getIdToken === "function") });
-    if(!uid || !firebaseUser || typeof firebaseUser.getIdToken !== "function"){
-      throw new Error("Please login to add items to cart.");
+    var hasToken = !!(firebaseUser && typeof firebaseUser.getIdToken === "function");
+    if(uid && hasToken){
+      console.info("cart identity source", { source: "firebase", uid: uid, email: email, hasToken: hasToken });
+      return { uid: uid, email: email, source: "firebase" };
     }
-    return { uid: uid, email: email };
+    try{
+      var response = await fetch(base + "/api/account/session", {
+        cache: "no-store",
+        credentials: "include",
+        headers: { "Accept": "application/json" }
+      });
+      var data = await response.json().catch(function(){ return {}; });
+      var session = data && data.session ? data.session : {};
+      var sessionUid = String(session.uid || "").trim();
+      var sessionEmail = normalizeEmailValue(session.email || "");
+      if(response.ok && sessionUid){
+        console.info("cart identity source", { source: "session", uid: sessionUid, email: sessionEmail, hasToken: false });
+        return { uid: sessionUid, email: sessionEmail, source: "session" };
+      }
+    }catch(error){}
+    console.info("cart identity source", { source: "none", uid: "", email: "", hasToken: false });
+    throw new Error("Please login to add items to cart.");
   }
 
   function sanitizeCheckoutDraftRecord(draft, userId){
