@@ -910,16 +910,41 @@ function dashboardApiBase(){
 }
 
 async function saveDashboardUserToBackend(user){
+  const headers = { "Content-Type": "application/json" };
+  if(authApi && typeof authApi.getIdToken === "function"){
+    try{
+      const token = await authApi.getIdToken();
+      if(token) headers.Authorization = "Bearer " + token;
+    }catch(error){
+      console.warn("dashboard profile token attach skipped", error);
+    }
+  }
+  console.info("profile save request started");
   const response = await fetch(dashboardApiBase() + "/api/account/create", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    headers,
     body: JSON.stringify(user && typeof user === "object" ? user : {})
   });
   const data = await response.json().catch(()=>({}));
+  console.info("profile save response status", response.status);
   if(!response.ok || data.ok === false){
     throw new Error(data.error || "Profile save failed");
   }
   return data.record || user;
+}
+
+async function fetchDashboardSessionRecord(){
+  const response = await fetch(dashboardApiBase() + "/api/account/session", {
+    cache:"no-store",
+    credentials:"include",
+    headers:{ "Accept":"application/json" }
+  });
+  const data = await response.json().catch(()=>({}));
+  if(!response.ok || data.ok === false){
+    throw new Error(data.error || "Failed to reload account session");
+  }
+  return data.record || null;
 }
 
 async function refreshUsersSafe(){
@@ -1001,24 +1026,43 @@ async function persistCurrentUser(user, successMessage, errorMessage, options){
       }
     }
     const savedUser = await saveDashboardUserToBackend(userForSave);
-    if(savedUser && savedUser.email){
+    const sessionRecord = await fetchDashboardSessionRecord().catch(function(error){
+      console.warn("dashboard session reload failed", error);
+      return null;
+    });
+    const finalUser = sessionRecord && typeof sessionRecord === "object" ? sessionRecord : (savedUser || userForSave);
+    console.info("saved profile fields", {
+      email: finalUser && finalUser.email ? finalUser.email : "",
+      name: finalUser && finalUser.profile ? finalUser.profile.name : "",
+      phone: finalUser && (finalUser.phone || finalUser.phoneNormalized || finalUser.profile && finalUser.profile.phone) ? true : false,
+      addressCount: Array.isArray(finalUser && finalUser.addresses ? finalUser.addresses : []) ? finalUser.addresses.length : 0
+    });
+    if(finalUser && finalUser.email){
       const users = getUsers();
-      users[savedUser.email] = savedUser;
+      users[finalUser.email] = finalUser;
     }
     if(authApi && typeof authApi.saveUserRecord === "function"){
-      await authApi.saveUserRecord(savedUser || userForSave);
+      await authApi.saveUserRecord(finalUser);
       if(typeof authApi.refreshUsers === "function"){
         await authApi.refreshUsers();
       }
     }else{
       let users = getUsers();
-      users[user.email] = savedUser || userForSave;
+      users[user.email] = finalUser;
       try{
         await Promise.resolve(saveUsers(users));
       }catch(saveError){
         console.warn("dashboard local user cache save skipped", saveError);
       }
     }
+    await refreshUsersSafe();
+    const reloaded = await fetchLatestDashboardUser(finalUser.email || user.email);
+    console.info("dashboard reload fields", {
+      email: reloaded && reloaded.email ? reloaded.email : "",
+      name: reloaded && reloaded.profile ? reloaded.profile.name : "",
+      hasAddress: !!(reloaded && reloaded.address && Object.keys(reloaded.address).length),
+      addressCount: Array.isArray(reloaded && reloaded.addresses ? reloaded.addresses : []) ? reloaded.addresses.length : 0
+    });
     if(successMessage){
       alert(successMessage);
     }
@@ -1070,7 +1114,8 @@ function normalizeAddressEntry(address, fallbackId){
     pincode: safe(item.pincode).trim(),
     postoffice: safe(item.postoffice).trim(),
     district: safe(item.district).trim(),
-    state: safe(item.state).trim()
+    state: safe(item.state).trim(),
+    mobileNumber: safe(item.mobileNumber || item.phone || item.mobile || item.phoneNumber).trim()
   };
 }
 
@@ -1272,7 +1317,8 @@ function loadProfile(){
   document.getElementById("profileEmail").innerText = user.email || "";
   const profilePhone = document.getElementById("profilePhone");
   if(profilePhone){
-    const displayPhone = String(user.phone || user.phoneNormalized || user.profile?.phone || "").trim();
+    const displayPhone = String(user.mobileNumber || user.phone || user.phoneNormalized || user.profile?.mobileNumber || user.profile?.phone || "").trim();
+    console.info("dashboard mobile fetched", { hasMobile: !!displayPhone, email: user.email || "" });
     profilePhone.innerText = displayPhone ? `Mobile: ${displayPhone}` : "Mobile: Not saved";
   }
   document.getElementById("avatarText").innerText = displayName.charAt(0).toUpperCase();
@@ -1392,9 +1438,11 @@ async function saveProfileMobile(){
   }
   let resolved = getOrCreateDashboardUser(users, currentUser);
   let user = resolved.user;
+  user.mobileNumber = newMobile;
   user.phone = newMobile;
   user.phoneNormalized = newMobile;
   user.profile = user.profile || {};
+  user.profile.mobileNumber = newMobile;
   user.profile.phone = newMobile;
   user.profile.email = user.profile.email || user.email || currentUser;
   user.updatedAt = new Date().toISOString();
@@ -1611,6 +1659,9 @@ async function saveAddress(){
     district: district.value.trim(),
     state: state.value.trim()
   });
+  if(!nextAddress.mobileNumber){
+    nextAddress.mobileNumber = String(user.mobileNumber || user.phone || user.profile?.mobileNumber || user.profile?.phone || "").trim();
+  }
 
   if(!nextAddress.house || !nextAddress.area || !nextAddress.city || !nextAddress.pincode || !nextAddress.postoffice || !nextAddress.district || !nextAddress.state){
     alert("Please fill all address fields");

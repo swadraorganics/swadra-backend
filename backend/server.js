@@ -1934,6 +1934,7 @@ function getOrderCustomerKeys(order = {}) {
     ""
   );
   const phone = normalizeAccountPhone(
+    order.mobileNumber ||
     order.customerPhone ||
     order.phone ||
     order.mobile ||
@@ -4320,7 +4321,7 @@ async function listFirebaseAuthAccountUsers() {
 
 async function upsertAccountUser(input = {}) {
   const email = normalizeAccountEmail(input.email);
-  const phone = normalizeAccountPhone(input.phone);
+  const phone = normalizeAccountPhone(input.mobileNumber || input.phone || input.mobile || input.phoneNumber);
   const password = String(input.password || "").trim();
   if (!email) {
     const error = new Error("Email is required");
@@ -4337,7 +4338,7 @@ async function upsertAccountUser(input = {}) {
     if (userEmail) users[userEmail] = mergeAccountProfileRecord(user, users[userEmail] || {});
   });
   const existing = users[email] && typeof users[email] === "object" ? users[email] : {};
-  const existingPhone = normalizeAccountPhone(existing.phone || existing.phoneNormalized || existing.profile?.phone || "");
+  const existingPhone = normalizeAccountPhone(existing.mobileNumber || existing.phone || existing.phoneNormalized || existing.profile?.phone || existing.profile?.mobileNumber || "");
   const finalPhone = phone || existingPhone;
   const finalPassword = password || String(existing.password || "").trim();
   const isNewUser = !existing.email && !users[email];
@@ -4420,7 +4421,8 @@ async function upsertAccountUser(input = {}) {
     email,
     emailNormalized: email,
     name: String(input.name || nextProfileName || existing.name || email.split("@")[0]).trim(),
-    phone: input.phone || existing.phone || finalPhone,
+    mobileNumber: input.mobileNumber || input.phone || input.mobile || existing.mobileNumber || existing.phone || finalPhone,
+    phone: input.mobileNumber || input.phone || input.mobile || existing.mobileNumber || existing.phone || finalPhone,
     phoneNormalized: finalPhone,
     password: finalPassword,
     address: hasAddressPayload ? input.address : (existing.address || {}),
@@ -4432,9 +4434,12 @@ async function upsertAccountUser(input = {}) {
       ...(existing.profile && typeof existing.profile === "object" ? existing.profile : {}),
       ...inputProfile,
       email,
-      phone: input.phone || existing.phone || finalPhone,
+      mobileNumber: inputProfile.mobileNumber || input.mobileNumber || input.phone || input.mobile || existing.profile?.mobileNumber || existing.mobileNumber || existing.phone || finalPhone,
+      phone: input.mobileNumber || input.phone || input.mobile || existing.mobileNumber || existing.phone || finalPhone,
       name: nextProfileName
     },
+    username: String(input.username || input.userName || existing.username || email.split("@")[0]).trim(),
+    fullName: String(input.fullName || nextProfileName || existing.fullName || existing.name || "").trim(),
     status: String(input.status || existing.status || "active").trim().toLowerCase() || "active",
     createdAt: existing.createdAt || now,
     updatedAt: now
@@ -4466,6 +4471,7 @@ async function upsertAccountUser(input = {}) {
   }
 
   users[email] = nextRecord;
+  addLog("signup mobile saved: " + String(nextRecord.mobileNumber || "").slice(-4), "info");
   db.appState.users = users;
   recordUserActivity(db, {
     type: existing && existing.email ? "profile_updated" : "account_created",
@@ -6058,6 +6064,7 @@ app.post("/api/payments/verify", paymentRateLimit, requireCustomerFirebaseAuth, 
         ...draft,
         id: orderId,
         userId: String(draft.userId || draft.email || draft.customerEmail || ""),
+        mobileNumber: normalizeAccountPhone(draft.mobileNumber || draft.phone || draft.customerPhone || draft.shipping?.phone || req.customerAuth?.phone || ""),
         authUserId: String(draft.authUserId || draft.firebaseUid || ""),
         firebaseUid: String(draft.firebaseUid || draft.authUserId || ""),
         payment: "Paid Successfully",
@@ -6071,7 +6078,11 @@ app.post("/api/payments/verify", paymentRateLimit, requireCustomerFirebaseAuth, 
         paymentInstrumentLabel: draft.paymentInstrumentLabel || "",
         razorpayPaymentDetails: paymentDetails && paymentDetails.ok ? paymentDetails.payment : null,
         status: "Confirmed",
-        paymentCompletedAt: new Date().toISOString()
+        paymentCompletedAt: new Date().toISOString(),
+        shipping: {
+          ...(draft.shipping && typeof draft.shipping === "object" ? draft.shipping : {}),
+          phone: draft.shipping?.phone || draft.mobileNumber || draft.phone || draft.customerPhone || req.customerAuth?.phone || ""
+        }
       });
       order.shiprocket = {
         ...(existing.shiprocket || {}),
