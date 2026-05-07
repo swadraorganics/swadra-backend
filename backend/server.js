@@ -39,18 +39,76 @@ let firestoreDb = null;
 let memoryDb = null;
 let dbCache = null;
 let dbCacheLoaded = false;
+let firebaseAdminInitState = {
+  initialized: false,
+  error: null
+};
+
+function getFirestoreEnvDiagnostics() {
+  const missingEnv = [];
+  const malformedEnv = [];
+  const useFirestoreRaw = String(process.env.USE_FIRESTORE || "").trim();
+  const useFirestoreEnabled = useFirestoreRaw.toLowerCase() === "true";
+  const projectId = String(process.env.FIREBASE_PROJECT_ID || "").trim();
+  const clientEmail = String(process.env.FIREBASE_CLIENT_EMAIL || "").trim();
+  const privateKeyRaw = String(process.env.FIREBASE_PRIVATE_KEY || "");
+  const privateKeyNormalized = privateKeyRaw.replace(/\\n/g, "\n").trim();
+  if (!useFirestoreEnabled) missingEnv.push("USE_FIRESTORE=true");
+  if (!projectId) missingEnv.push("FIREBASE_PROJECT_ID");
+  if (!clientEmail) missingEnv.push("FIREBASE_CLIENT_EMAIL");
+  if (!privateKeyRaw) missingEnv.push("FIREBASE_PRIVATE_KEY");
+  if (privateKeyRaw && privateKeyNormalized.indexOf("BEGIN PRIVATE KEY") === -1) {
+    malformedEnv.push("FIREBASE_PRIVATE_KEY");
+  }
+  if (clientEmail && clientEmail.indexOf("@") === -1) {
+    malformedEnv.push("FIREBASE_CLIENT_EMAIL");
+  }
+  return {
+    useFirestoreEnabled,
+    firebaseProjectIdPresent: Boolean(projectId),
+    firebaseClientEmailPresent: Boolean(clientEmail),
+    firebasePrivateKeyPresent: Boolean(privateKeyRaw),
+    missingEnv,
+    malformedEnv
+  };
+}
 
 function validateProductionEnvironment() {
   if (!IS_PRODUCTION_RUNTIME) return;
-  const missing = [];
-  const hasFirebaseCredential =
-    (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) ||
+  const diagnostics = getFirestoreEnvDiagnostics();
+  const missing = [...diagnostics.missingEnv];
+  const malformed = [...diagnostics.malformedEnv];
+  const hasFirebaseCredential = (
+    process.env.FIREBASE_PROJECT_ID &&
+    process.env.FIREBASE_CLIENT_EMAIL &&
+    process.env.FIREBASE_PRIVATE_KEY
+  ) ||
     process.env.GOOGLE_APPLICATION_CREDENTIALS ||
     process.env.GOOGLE_CLOUD_PROJECT ||
     process.env.GCLOUD_PROJECT;
-  if (!hasFirebaseCredential) missing.push("Firebase Admin credentials");
-  if (missing.length) {
-    throw new Error("Missing required production environment values: " + missing.join(", "));
+  if (!hasFirebaseCredential && missing.indexOf("Firebase Admin credentials") === -1) {
+    missing.push("Firebase Admin credentials");
+  }
+  console.log("[startup] persistence config", {
+    nodeEnv: String(process.env.NODE_ENV || "unset"),
+    hostedRuntime: IS_HOSTED_RUNTIME,
+    productionRuntime: IS_PRODUCTION_RUNTIME,
+    useFirestore: USE_FIRESTORE,
+    firebaseProjectIdPresent: diagnostics.firebaseProjectIdPresent,
+    firebaseClientEmailPresent: diagnostics.firebaseClientEmailPresent,
+    firebasePrivateKeyPresent: diagnostics.firebasePrivateKeyPresent
+  });
+  if (missing.length || malformed.length) {
+    console.error("[startup] firestore env validation failed", {
+      missingEnv: missing,
+      malformedEnv: malformed
+    });
+    throw new Error(
+      "Missing/malformed production environment values. missing: " +
+      (missing.length ? missing.join(", ") : "none") +
+      "; malformed: " +
+      (malformed.length ? malformed.join(", ") : "none")
+    );
   }
   const paymentWarnings = [];
   if (!FRONTEND_ORIGIN) paymentWarnings.push("FRONTEND_ORIGIN");
@@ -87,8 +145,12 @@ function ensureFirebaseAdminApp() {
           privateKey
         })
       });
+      firebaseAdminInitState = { initialized: true, error: null };
+      console.log("[startup] Firebase Admin initialized with explicit credentials");
     } else {
       admin.initializeApp();
+      firebaseAdminInitState = { initialized: true, error: null };
+      console.log("[startup] Firebase Admin initialized with ambient credentials");
     }
   }
   return admin;
@@ -6709,7 +6771,49 @@ function handleRequest(req, res) {
       ok: true,
       status: USE_FIRESTORE || !IS_HOSTED_RUNTIME ? "online" : "degraded",
       persistence: USE_FIRESTORE ? "firestore" : "memory",
+      backendReady: true,
+      firestoreReady: USE_FIRESTORE,
       hosted: IS_HOSTED_RUNTIME,
+      time: new Date().toISOString()
+    }));
+    return true;
+  }
+
+  if (req.method === "GET" && req.url === "/health/config") {
+    const diagnostics = getFirestoreEnvDiagnostics();
+    let firestoreReady = false;
+    let firebaseError = null;
+    if (USE_FIRESTORE) {
+      try {
+        ensureFirebaseAdminApp();
+        firestoreReady = true;
+      } catch (error) {
+        firebaseError = error && error.message ? error.message : "Firebase Admin init failed";
+        firebaseAdminInitState = { initialized: false, error: firebaseError };
+      }
+    }
+    const backendReady = firestoreReady || !IS_PRODUCTION_RUNTIME;
+    const statusCode = backendReady ? 200 : 503;
+    res.writeHead(statusCode, buildCorsHeaders(req, {
+      "Content-Type": "application/json; charset=utf-8"
+    }));
+    res.end(JSON.stringify({
+      ok: backendReady,
+      backendReady,
+      firestoreReady,
+      firebaseAdminInitialized: firebaseAdminInitState.initialized,
+      missingEnv: diagnostics.missingEnv,
+      malformedEnv: diagnostics.malformedEnv,
+      error: firebaseError || firebaseAdminInitState.error || null,
+      requiredEnv: [
+        "USE_FIRESTORE=true",
+        "FIREBASE_PROJECT_ID",
+        "FIREBASE_CLIENT_EMAIL",
+        "FIREBASE_PRIVATE_KEY",
+        "RAZORPAY_KEY_ID",
+        "RAZORPAY_KEY_SECRET",
+        "ALLOWED_ORIGINS or FRONTEND_ORIGIN"
+      ],
       time: new Date().toISOString()
     }));
     return true;

@@ -941,6 +941,7 @@ let accountEntryStage = "email";
 let accountBootstrapComplete = false;
 let accountBootstrapError = "";
 let backendFirestoreReady = false;
+let accountCreateInFlight = false;
 
     function apiBase(){
       return String(window.SWADRA_API_BASE || "https://swadra-backend-production.up.railway.app").replace(/\/$/, "");
@@ -1439,14 +1440,30 @@ let backendFirestoreReady = false;
 
     async function createAccount(){
       const createButton = document.getElementById("createAccountBtn");
-      if(createButton && createButton.disabled) return;
+      console.info("[account-create] button clicked", {
+        step: accountEntryStage,
+        bootstrapComplete: accountBootstrapComplete,
+        backendFirestoreReady: backendFirestoreReady,
+        inFlight: accountCreateInFlight,
+        isPasswordResetFlow: isPasswordResetFlow
+      });
+      if(accountCreateInFlight){
+        console.info("[account-create] blocked duplicate submission");
+        return;
+      }
       if(!accountBootstrapComplete){
+        console.warn("[account-create] blocked because bootstrap not complete");
         return showMsg("Account system is still loading. Please try again in a moment.", "error");
+      }
+      if(!backendFirestoreReady){
+        console.warn("[account-create] blocked because backend firestore not ready");
+        return showMsg("Backend Firestore is not configured. Set USE_FIRESTORE=true and Firebase Admin credentials in Railway.", "error");
       }
       if(accountBootstrapError){
         console.warn("account bootstrap warning before create", accountBootstrapError);
         showMsg(accountBootstrapError, "error");
       }
+      accountCreateInFlight = true;
       if(createButton){
         createButton.disabled = true;
         createButton.innerText = isPasswordResetFlow ? "Resetting..." : "Creating...";
@@ -1475,7 +1492,12 @@ let backendFirestoreReady = false;
       let users = getUsers();
 
       if(!temp){
-        if(isPasswordResetFlow && currentEmail && users[currentEmail]){
+        if(currentEmail && currentPhone){
+          temp = {
+            email: currentEmail,
+            phone: currentPhone
+          };
+        }else if(isPasswordResetFlow && currentEmail && users[currentEmail]){
           temp = {
             email: currentEmail,
             phone: users[currentEmail].phone
@@ -1491,14 +1513,22 @@ let backendFirestoreReady = false;
 
       const existingUser = users[temp.email] || {};
       const accountEmail = (temp.email || currentEmail || "").toLowerCase();
+      console.info("[account-create] payload ready", {
+        email: accountEmail,
+        hasPhone: Boolean(temp.phone),
+        hasPassword: Boolean(pass),
+        isPasswordResetFlow: isPasswordResetFlow
+      });
 
       if(authApi && typeof authApi.createOrUpdateUserAccount === "function"){
         if(isPasswordResetFlow){
+          console.info("[account-create] API request started", { path: "/api/account/reset-password" });
           await accountApi("/api/account/reset-password", {
             email: accountEmail,
             phone: temp.phone,
             password: pass
           });
+          console.info("[account-create] API response received", { path: "/api/account/reset-password", ok: true });
           if(authApi && typeof authApi.signInUserWithPassword === "function"){
             await authApi.signInUserWithPassword(accountEmail, pass);
           }
@@ -1522,7 +1552,10 @@ let backendFirestoreReady = false;
         };
         const result = isPasswordResetFlow
           ? { record: { email: accountEmail, phone: temp.phone }, existed: true }
-          : await accountApi("/api/account/create", accountPayload);
+          : (console.info("[account-create] API request started", { path: "/api/account/create" }), await accountApi("/api/account/create", accountPayload));
+        if(!isPasswordResetFlow){
+          console.info("[account-create] API response received", { path: "/api/account/create", ok: true, existed: Boolean(result && result.existed) });
+        }
         if(!isPasswordResetFlow && authApi && typeof authApi.registerUserWithPassword === "function"){
           try{
             await authApi.registerUserWithPassword({ email: accountEmail, password: pass });
@@ -1571,11 +1604,13 @@ let backendFirestoreReady = false;
           if(authApi && typeof authApi.signInUser === "function"){
             authApi.signInUser(finalEmail);
           }
+          console.info("[account-create] account created/session restored", { email: finalEmail });
         }catch(authError){
           console.error("firebase password account step failed", authError);
           if(authApi && typeof authApi.signInUser === "function"){
             authApi.signInUser(finalEmail);
           }
+          console.info("[account-create] account created/session restored with fallback", { email: finalEmail });
         }
       }else{
         users[accountEmail] = {
@@ -1624,6 +1659,8 @@ let backendFirestoreReady = false;
           createButton.disabled = false;
           createButton.innerText = isPasswordResetFlow ? "Reset Password" : "Create Account";
         }
+      }finally{
+        accountCreateInFlight = false;
       }
     }
 
