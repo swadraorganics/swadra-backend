@@ -472,6 +472,13 @@ return "";
 async function syncUserCart(){
 let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
 if(!currentUser){
+if(dataApi && typeof dataApi.fetchGuestCart === "function"){
+try{
+return compactCart(await dataApi.fetchGuestCart());
+}catch(error){
+console.error("guest cart backend fetch failed", error);
+}
+}
 return dataApi && typeof dataApi.getGuestCart === "function" ? compactCart(dataApi.getGuestCart()) : [];
 }
 if(authApi && typeof authApi.mergeGuestCartIntoUser === "function"){
@@ -500,7 +507,7 @@ let safeCart = compactCart(cart);
 let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
 if(!currentUser){
 if(dataApi && typeof dataApi.saveGuestCart === "function"){
-dataApi.saveGuestCart(safeCart);
+safeCart = dataApi.saveGuestCart(safeCart);
 }
 return safeCart;
 }
@@ -517,6 +524,13 @@ return safeCart;
 async function getCart(){
 let currentUser = authApi && typeof authApi.getCurrentUserEmail === "function" ? authApi.getCurrentUserEmail() : "";
 if(!currentUser){
+if(dataApi && typeof dataApi.fetchGuestCart === "function"){
+try{
+return compactCart(await dataApi.fetchGuestCart());
+}catch(error){
+console.error("guest cart backend read failed", error);
+}
+}
 return dataApi && typeof dataApi.getGuestCart === "function" ? compactCart(dataApi.getGuestCart()) : [];
 }
 if(authApi && typeof authApi.mergeGuestCartIntoUser === "function"){

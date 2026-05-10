@@ -1586,6 +1586,29 @@
       });
       clearGuestCart();
     }
+    fetchGuestCart().then(function(serverGuestCart){
+      if(!serverGuestCart.length) return;
+      var latestUsers = getAuthUsers();
+      var latestUser = latestUsers[normalizedEmail] || sanitizeUserRecord({ email: normalizedEmail }, normalizedEmail);
+      var latestCart = compactAuthCartItems(latestUser.cart || users[normalizedEmail].cart || []);
+      serverGuestCart.forEach(function(item){
+        var existing = latestCart.find(function(userItem){ return String(userItem.id) === String(item.id); });
+        if(existing){
+          existing.qty = Math.max(1, Number(existing.qty || 1) + Number(item.qty || 1));
+          existing.quantity = existing.qty;
+        }else{
+          latestCart.push(item);
+        }
+      });
+      latestUser.cart = compactAuthCartItems(latestCart);
+      latestUsers[normalizedEmail] = latestUser;
+      usersCache[normalizedEmail] = latestUser;
+      return saveFirestoreCart(normalizedEmail, latestUser.cart).then(function(){
+        clearGuestCart();
+      });
+    }).catch(function(error){
+      console.error("server guest cart merge failed", error);
+    });
     setCartMergeNotice(null);
     return users[normalizedEmail].cart.slice();
   }
@@ -1594,9 +1617,54 @@
     return compactAuthCartItems(tryParseJson(rawSessionGet("guestCart"), []));
   }
 
+  async function fetchGuestCart(){
+    try{
+      var response = await fetch(base + "/api/guest-cart/current", {
+        cache: "no-store",
+        credentials: "include",
+        headers: { "Accept": "application/json" }
+      });
+      var data = await response.json().catch(function(){ return {}; });
+      if(response.ok && data && data.ok !== false){
+        var cart = compactAuthCartItems(data.cart || []);
+        rawSessionSet("guestCart", JSON.stringify(cart));
+        return cart;
+      }
+    }catch(error){
+      console.error("guest cart backend fetch failed", error);
+    }
+    return getGuestCart();
+  }
+
+  async function saveGuestCartToBackend(items){
+    var compactItems = compactAuthCartItems(items);
+    try{
+      var response = await fetch(base + "/api/guest-cart/current", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ items: compactItems })
+      });
+      var data = await response.json().catch(function(){ return {}; });
+      if(response.ok && data && data.ok !== false){
+        var saved = compactAuthCartItems(data.cart || compactItems);
+        rawSessionSet("guestCart", JSON.stringify(saved));
+        return saved;
+      }
+    }catch(error){
+      console.error("guest cart backend save failed", error);
+    }
+    return compactItems;
+  }
+
   function saveGuestCart(items){
     var compactItems = compactAuthCartItems(items);
     rawSessionSet("guestCart", JSON.stringify(compactItems));
+    saveGuestCartToBackend(compactItems).then(function(saved){
+      try{
+        window.dispatchEvent(new CustomEvent("cartUpdated", { detail: { cart: saved.slice() } }));
+      }catch(error){}
+    });
     try{
       window.dispatchEvent(new CustomEvent("cartUpdated", { detail: { cart: compactItems.slice() } }));
     }catch(error){}
@@ -1606,6 +1674,13 @@
   function clearGuestCart(){
     rawLocalRemove("guestCart");
     rawSessionRemove("guestCart");
+    fetch(base + "/api/guest-cart/clear", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Accept": "application/json" }
+    }).catch(function(error){
+      console.error("guest cart backend clear failed", error);
+    });
     return [];
   }
 
@@ -2012,6 +2087,7 @@
     syncInternalLinksWithAuth: syncInternalLinksWithAuth,
     mergeGuestCartIntoUser: mergeGuestCartIntoUser,
     getGuestCart: getGuestCart,
+    fetchGuestCart: fetchGuestCart,
     saveGuestCart: saveGuestCart,
     clearGuestCart: clearGuestCart,
     consumeCartMergeNotice: consumeCartMergeNotice,
@@ -3902,6 +3978,7 @@
     watchCart: watchFirestoreCart,
     clearCart: clearFirestoreCart,
     getGuestCart: getGuestCart,
+    fetchGuestCart: fetchGuestCart,
     saveGuestCart: saveGuestCart,
     clearGuestCart: clearGuestCart,
     fetchCheckoutDraft: fetchCheckoutDraft,

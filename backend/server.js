@@ -838,6 +838,41 @@ function clearCustomerSessionCookie(res) {
   res.append("Set-Cookie", "swadra_customer_token=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=None");
 }
 
+function createGuestCartId() {
+  return "gc_" + crypto.randomBytes(24).toString("hex");
+}
+
+function getGuestCartIdFromRequest(req) {
+  const cookie = String(req.get("cookie") || "");
+  const match = cookie.match(/(?:^|;\s*)swadra_guest_cart=([^;]+)/);
+  const value = match ? decodeURIComponent(match[1]) : "";
+  return /^gc_[a-f0-9]{48}$/i.test(value) ? value : "";
+}
+
+function setGuestCartCookie(res, guestCartId = "") {
+  if (!guestCartId) return;
+  res.append("Set-Cookie", [
+    "swadra_guest_cart=" + encodeURIComponent(String(guestCartId)),
+    "Max-Age=" + (30 * 24 * 60 * 60),
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=None"
+  ].join("; "));
+}
+
+function clearGuestCartCookie(res) {
+  res.append("Set-Cookie", "swadra_guest_cart=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=None");
+}
+
+function getOrCreateGuestCartId(req, res) {
+  const existing = getGuestCartIdFromRequest(req);
+  if (existing) return existing;
+  const next = createGuestCartId();
+  setGuestCartCookie(res, next);
+  return next;
+}
+
 function getCustomerSessionFromRequest(db = {}, req) {
   const auth = String(req.get("authorization") || "").trim();
   const bearer = /^Bearer\s+/i.test(auth) ? auth.replace(/^Bearer\s+/i, "").trim() : "";
@@ -4782,6 +4817,56 @@ app.get("/api/cart/current", paymentRateLimit, requireCustomerFirebaseAuth, asyn
   } catch (error) {
     addLog("Current cart fetch failed: " + error.message, "error");
     res.status(500).json({ ok: false, error: "Failed to fetch current cart" });
+  }
+});
+
+app.get("/api/guest-cart/current", paymentRateLimit, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const guestCartId = getGuestCartIdFromRequest(req);
+    if (!guestCartId) return res.json({ ok: true, cart: [] });
+    const doc = await getFirestore().collection("guestCarts").doc(safeDocId(guestCartId)).get();
+    const data = doc.exists ? (doc.data() || {}) : {};
+    res.json({ ok: true, cart: normalizeCartItems(data.items || []) });
+  } catch (error) {
+    addLog("Guest cart fetch failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to fetch guest cart" });
+  }
+});
+
+app.post("/api/guest-cart/current", paymentRateLimit, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const guestCartId = getOrCreateGuestCartId(req, res);
+    const items = normalizeCartItems(req.body?.items || req.body?.cart || []);
+    const payload = {
+      guestCartId,
+      items,
+      updatedAt: new Date().toISOString(),
+      createdAt: req.body?.createdAt || new Date().toISOString()
+    };
+    await getFirestore().collection("guestCarts").doc(safeDocId(guestCartId)).set(payload, { merge: true });
+    res.json({ ok: true, cart: items });
+  } catch (error) {
+    addLog("Guest cart save failed: " + error.message, "error");
+    res.status(500).json({ ok: false, error: "Failed to save guest cart" });
+  }
+});
+
+app.post("/api/guest-cart/clear", paymentRateLimit, async (req, res) => {
+  try {
+    if (!requireDurablePersistence(res)) return;
+    const guestCartId = getGuestCartIdFromRequest(req);
+    if (guestCartId) {
+      await getFirestore().collection("guestCarts").doc(safeDocId(guestCartId)).delete().catch((error) => {
+        addLog("Guest cart clear skipped: " + error.message, "warn");
+      });
+    }
+    clearGuestCartCookie(res);
+    res.json({ ok: true, cart: [] });
+  } catch (error) {
+    clearGuestCartCookie(res);
+    res.json({ ok: true, cart: [] });
   }
 });
 
