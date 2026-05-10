@@ -1151,11 +1151,11 @@ return cartPageInitPromise;
 }
 </script>
 <script>
-function swadraLogout(event){
+async function swadraLogout(event){
   if(event) event.preventDefault();
   const authApi = window.SWADRA_AUTH || null;
   if(authApi && typeof authApi.signOutUser === "function"){
-    authApi.signOutUser({ keepCart:false });
+    await authApi.signOutUser({ keepCart:false });
   }
   swadraHeaderUpdateAccountNav();
   if(typeof updateCartUI === "function"){

@@ -1276,7 +1276,15 @@ async function renderOfferBar(forceRefresh){
 }
 
 window.onload = async function(){
-  if(authApi && typeof authApi.ready === "function"){
+  let verifiedDashboardUser = "";
+  if(authApi && typeof authApi.validateCurrentUserSession === "function"){
+    try{
+      verifiedDashboardUser = await authApi.validateCurrentUserSession();
+    }catch(error){
+      verifiedDashboardUser = "";
+    }
+  }
+  if(!verifiedDashboardUser && authApi && typeof authApi.ready === "function"){
     try{
       await authApi.ready();
     }catch(error){
@@ -1284,7 +1292,7 @@ window.onload = async function(){
     }
   }
   renderOfferBar(true);
-  let currentUser = getCurrentUser();
+  let currentUser = verifiedDashboardUser || getCurrentUser();
 
   if(!currentUser){
     window.location.href = "account.html";
@@ -1771,9 +1779,9 @@ function openSupportPage(){
   window.location.href = "aboutus.html#contact";
 }
 
-function logout(){
+async function logout(){
   if(authApi && typeof authApi.signOutUser === "function"){
-    authApi.signOutUser({ keepCart:false });
+    await authApi.signOutUser({ keepCart:false });
   }
   window.location.href = "index.html";
 }

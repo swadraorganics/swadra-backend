@@ -6816,10 +6816,10 @@ function updateAccountNavigation(){
   }
 }
 
-function swadraLogout(event){
+async function swadraLogout(event){
   if(event) event.preventDefault();
   if(authApi && typeof authApi.signOutUser === "function"){
-    authApi.signOutUser({ keepCart:false });
+    await authApi.signOutUser({ keepCart:false });
   }
   runtimeIndexCartCache = [];
   if(typeof updateAccountNavigation === "function") updateAccountNavigation();

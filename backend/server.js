@@ -4751,13 +4751,33 @@ app.get("/api/cart/current", paymentRateLimit, requireCustomerFirebaseAuth, asyn
     if (!requireDurablePersistence(res)) return;
     const ownerId = String(req.customerAuth?.uid || "").trim();
     if (!ownerId) return res.status(401).json({ ok: false, error: "Customer token or session required" });
+    const email = normalizeAccountEmail(req.customerAuth?.email || req.__customerSession?.email || "");
     let data = {};
     try {
       const doc = USE_FIRESTORE ? await getFirestore().collection("carts").doc(safeDocId(ownerId)).get() : null;
       data = doc && doc.exists ? (doc.data() || {}) : {};
+      if ((!data || !Array.isArray(data.items) || !data.items.length) && email && USE_FIRESTORE) {
+        const emailDoc = await getFirestore().collection("carts").doc(safeDocId(email)).get();
+        if (emailDoc.exists) data = emailDoc.data() || {};
+      }
+      if ((!data || !Array.isArray(data.items) || !data.items.length) && USE_FIRESTORE) {
+        const [byUserId, byUid, byEmail] = await Promise.all([
+          getFirestore().collection("carts").where("userId", "==", ownerId).limit(1).get(),
+          getFirestore().collection("carts").where("uid", "==", ownerId).limit(1).get(),
+          email ? getFirestore().collection("carts").where("email", "==", email).limit(1).get() : Promise.resolve(null)
+        ]);
+        const match = [byUserId, byUid, byEmail].find((snap) => snap && !snap.empty);
+        if (match) data = match.docs[0].data() || {};
+      }
     } catch (readError) {
       addLog("Current cart Firestore read skipped: " + readError.message, "warn");
     }
+    console.log("[cart fetch identity source]", {
+      source: req.customerAuth?.claims ? "firebase" : "session",
+      uid: ownerId,
+      email,
+      items: Array.isArray(data.items) ? data.items.length : 0
+    });
     res.json({ ok: true, cart: normalizeCartItems(data.items || []) });
   } catch (error) {
     addLog("Current cart fetch failed: " + error.message, "error");
@@ -4821,14 +4841,36 @@ app.post("/api/cart/current", paymentRateLimit, requireCustomerFirebaseAuth, asy
     const ownerId = safeDocId(req.customerAuth?.uid || "");
     if (!ownerId) return res.status(401).json({ ok: false, error: "Customer token or session required" });
     const items = normalizeCartItems(req.body?.items || req.body?.cart || []);
+    const email = normalizeAccountEmail(req.customerAuth?.email || req.__customerSession?.email || "");
     const payload = {
       userId: ownerId,
       uid: ownerId,
-      email: normalizeAccountEmail(req.customerAuth?.email || ""),
+      email,
       items,
       updatedAt: new Date().toISOString()
     };
     await getFirestore().collection("carts").doc(ownerId).set(payload, { merge: true });
+    if (email && safeDocId(email) !== ownerId) {
+      await getFirestore().collection("carts").doc(safeDocId(email)).set({
+        ...payload,
+        userId: email,
+        linkedUserId: ownerId
+      }, { merge: true });
+      await getFirestore().collection("users").doc(safeDocId(email)).set({
+        email,
+        emailNormalized: email,
+        uid: ownerId,
+        userId: ownerId,
+        cart: items,
+        updatedAt: payload.updatedAt
+      }, { merge: true });
+    }
+    console.log("[cart save identity source]", {
+      source: req.customerAuth?.claims ? "firebase" : "session",
+      uid: ownerId,
+      email,
+      items: items.length
+    });
     res.json({ ok: true, cart: items });
   } catch (error) {
     addLog("Current cart save failed: " + error.message, "error");

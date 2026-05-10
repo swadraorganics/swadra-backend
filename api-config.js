@@ -273,7 +273,8 @@
     window.__swadraAdminFetchPatched = true;
     var nativeFetch = window.fetch.bind(window);
     function isCustomerApiPath(target, normalizedTarget){
-      return target.indexOf(base + "/api/carts/") === 0 ||
+      return target.indexOf(base + "/api/cart/current") === 0 ||
+        target.indexOf(base + "/api/carts/") === 0 ||
         target.indexOf(base + "/api/checkout-drafts/") === 0 ||
         target.indexOf(base + "/api/orders/") === 0 ||
         target.indexOf(base + "/api/account/users") === 0 ||
@@ -281,6 +282,7 @@
         target.indexOf(base + "/api/account/activity") === 0 ||
         target.indexOf(base + "/api/payments/create-order") === 0 ||
         target.indexOf(base + "/api/payments/verify") === 0 ||
+        normalizedTarget.indexOf("/api/cart/current") === 0 ||
         normalizedTarget.indexOf("/api/carts/") === 0 ||
         normalizedTarget.indexOf("/api/checkout-drafts/") === 0 ||
         normalizedTarget.indexOf("/api/orders/") === 0 ||
@@ -601,6 +603,11 @@
   }
 
   function syncAuthUserFromUrl(){
+    var loggedOutAt = Number(rawSessionGet("customerLoggedOutAt") || 0);
+    if(loggedOutAt && Date.now() - loggedOutAt < 5 * 60 * 1000){
+      removeAuthUserFromUrl();
+      return "";
+    }
     var email = getAuthEmailFromUrl(window.location.href);
     if(email){
       rawSessionSet("currentUser", email);
@@ -670,7 +677,9 @@
     if(firebaseUser){
       setSessionValue("currentUser", firebaseUser);
     }
-    syncAuthUserFromUrl();
+    if(!firebaseUser){
+      syncAuthUserFromUrl();
+    }
     return String(getSessionValue("currentUser") || "").trim().toLowerCase();
   }
 
@@ -967,6 +976,7 @@
     var page = String((window.location.pathname || "").split("/").pop() || "").toLowerCase();
     return [
       "dashboard.html",
+      "cart.html",
       "checkout.html",
       "order.html",
       "payment.html",
@@ -979,23 +989,13 @@
     var config = options && typeof options === "object" ? options : {};
     await ensureFirebaseAuthSync().catch(function(){ return null; });
     var firebaseUser = getCurrentFirebaseUser();
-    var email = normalizeEmailValue(config.email || getSessionValue("currentUser") || getAuthEmailFromUrl(window.location.href) || firebaseUser && firebaseUser.email || "");
-    if(!email){
-      email = await fetchCustomerSessionFromBackend().catch(function(){ return ""; });
+    var firebaseEmail = normalizeEmailValue(firebaseUser && firebaseUser.email || "");
+    if(firebaseEmail){
+      setSessionValue("currentUser", firebaseEmail);
+      return firebaseEmail;
     }
-    if(!email) return "";
-    try{
-      var response = await fetch(base + "/api/account/lookup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email, mode: "session" })
-      });
-      var data = await response.json().catch(function(){ return {}; });
-      if(response.ok && data && data.exists){
-        rawSessionSet("currentUser", email);
-        return email;
-      }
-    }catch(error){}
+    var email = await fetchCustomerSessionFromBackend().catch(function(){ return ""; });
+    if(email) return email;
     clearCurrentUserSession();
     removeAuthUserFromUrl();
     try{
@@ -1889,11 +1889,12 @@
     }
   }
 
-  function signOutUser(options){
+  async function signOutUser(options){
+    console.info("logout start");
     rawSessionSet("customerLoggedOutAt", String(Date.now()));
     clearCurrentUserSession();
     rawSessionRemove("redirectAfterLogin");
-    fetch(base + "/api/account/logout", {
+    var logoutRequest = fetch(base + "/api/account/logout", {
       method:"POST",
       credentials:"include",
       keepalive:true,
@@ -1902,8 +1903,9 @@
       console.error("customer logout sync failed", error);
     });
     var auth = initFirebaseAuthIfNeeded();
+    var firebaseRequest = Promise.resolve();
     if(auth && typeof auth.signOut === "function"){
-      auth.signOut().catch(function(error){
+      firebaseRequest = auth.signOut().catch(function(error){
         console.error("firebase signout failed", error);
       });
     }
@@ -1915,6 +1917,11 @@
       }
     }catch(error){}
     syncInternalLinksWithAuth(document);
+    await Promise.all([logoutRequest, firebaseRequest]);
+    clearCurrentUserSession();
+    removeAuthUserFromUrl();
+    syncInternalLinksWithAuth(document);
+    console.info("logout end");
   }
 
   async function authReady(){
