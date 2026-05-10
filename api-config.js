@@ -976,7 +976,6 @@
     var page = String((window.location.pathname || "").split("/").pop() || "").toLowerCase();
     return [
       "dashboard.html",
-      "cart.html",
       "checkout.html",
       "order.html",
       "payment.html",
@@ -1003,6 +1002,25 @@
       if(auth && typeof auth.signOut === "function") await auth.signOut();
     }catch(error){}
     return "";
+  }
+
+  async function resolveVerifiedProfile(){
+    console.info("[NAV AUTH CHECK START]");
+    var email = await validateCurrentUserSession().catch(function(){ return ""; });
+    if(!email){
+      console.info("[NAV AUTH CHECK NONE]");
+      return null;
+    }
+    var record = await fetchCurrentAuthUserRecord().catch(function(){
+      return getCurrentUserRecord();
+    });
+    var profile = record && typeof record === "object" ? record : { email: email };
+    profile.email = normalizeEmailValue(profile.email || email);
+    if(profile.email){
+      usersCache[profile.email] = sanitizeUserRecord(profile, profile.email);
+    }
+    console.info("[NAV AUTH CHECK SUCCESS]", profile.email || email);
+    return profile;
   }
 
   function installProtectedCustomerSessionGuard(){
@@ -1985,6 +2003,7 @@
     setCurrentUserSession: setCurrentUserSession,
     clearCurrentUserSession: clearCurrentUserSession,
     validateCurrentUserSession: validateCurrentUserSession,
+    resolveVerifiedProfile: resolveVerifiedProfile,
     removeAuthUserFromUrl: removeAuthUserFromUrl,
     getRedirectAfterLogin: getRedirectAfterLogin,
     setRedirectAfterLogin: setRedirectAfterLogin,
