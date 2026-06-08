@@ -506,7 +506,7 @@ textarea{
 
       <div class="panel">
         <div class="title">About Founder Image</div>
-        <div class="sub">Control the founder photo shown on the About Us page. Existing About layout will stay the same.</div>
+        <div class="sub">Control the founder and co-founder photos shown on the About Us page. Existing About layout will stay the same.</div>
         <div class="story-admin-preview">
           <img id="founderPreviewImage" alt="About founder preview">
           <div>
@@ -518,6 +518,17 @@ textarea{
         <input type="file" id="founderImageInput" accept="image/*" hidden>
         <input id="founderImageAltInput" placeholder="Founder of Swadra Organics">
         <button class="main" onclick="saveFounderImageSettings()">Save Founder Image</button>
+        <div class="story-admin-preview">
+          <img id="coFounderPreviewImage" alt="About co-founder preview">
+          <div>
+            <strong>About Us Co-Founder Photo</strong>
+            <span id="coFounderPreviewMeta">Upload an image and save to update About Us.</span>
+          </div>
+        </div>
+        <div class="upload" onclick="coFounderImageInput.click()">Upload Co-Founder Image</div>
+        <input type="file" id="coFounderImageInput" accept="image/*" hidden>
+        <input id="coFounderImageAltInput" placeholder="Co-Founder of Swadra Organics">
+        <button class="main" onclick="saveCoFounderImageSettings()">Save Co-Founder Image</button>
       </div>
 
       <div class="panel">
@@ -672,6 +683,8 @@ const videoInput = document.getElementById("videoInput");
 const storyImageInput = document.getElementById("storyImageInput");
 const founderImageInput = document.getElementById("founderImageInput");
 const founderImageAltInput = document.getElementById("founderImageAltInput");
+const coFounderImageInput = document.getElementById("coFounderImageInput");
+const coFounderImageAltInput = document.getElementById("coFounderImageAltInput");
 const storyTitleInput = document.getElementById("storyTitleInput");
 const storySubtitleInput = document.getElementById("storySubtitleInput");
 const storyBaseCountInput = document.getElementById("storyBaseCountInput");
@@ -717,6 +730,8 @@ const storyPreviewTitle = document.getElementById("storyPreviewTitle");
 const storyPreviewMeta = document.getElementById("storyPreviewMeta");
 const founderPreviewImage = document.getElementById("founderPreviewImage");
 const founderPreviewMeta = document.getElementById("founderPreviewMeta");
+const coFounderPreviewImage = document.getElementById("coFounderPreviewImage");
+const coFounderPreviewMeta = document.getElementById("coFounderPreviewMeta");
 const heroAssets = document.getElementById("heroAssets");
 const videoAssets = document.getElementById("videoAssets");
 const offerPreview = document.getElementById("offerPreview");
@@ -1139,6 +1154,7 @@ storyPreviewTitle.style.color = normalizeHexColor(data.titleColor, "#17100c");
 function renderFounderImageAdmin(){
 let content = remoteState.homeContent || {};
 let image = String(content.aboutFounderImage || content.founderImage || "").trim();
+let coFounderImage = String(content.aboutCoFounderImage || content.coFounderImage || content.cofounderImage || "").trim();
 if(founderPreviewImage){
 founderPreviewImage.src = image || "aboutus-images/founder.jpg";
 }
@@ -1147,6 +1163,15 @@ founderImageAltInput.value = cleanUiText(content.aboutFounderImageAlt, "Founder 
 }
 if(founderPreviewMeta){
 founderPreviewMeta.textContent = image ? "Live image is controlled from Admin Home." : "Default About Us founder image is active.";
+}
+if(coFounderPreviewImage){
+coFounderPreviewImage.src = coFounderImage || "aboutus-images/cofounder.jpg";
+}
+if(coFounderImageAltInput){
+coFounderImageAltInput.value = cleanUiText(content.aboutCoFounderImageAlt || content.coFounderImageAlt, "Co-Founder of Swadra Organics");
+}
+if(coFounderPreviewMeta){
+coFounderPreviewMeta.textContent = coFounderImage ? "Live image is controlled from Admin Home." : "Default About Us co-founder image is active.";
 }
 }
 
@@ -1255,6 +1280,20 @@ founderPreviewMeta.textContent = "Preview ready. Click Save Founder Image.";
 }
 };
 
+coFounderImageInput.onchange = async function(){
+let file = coFounderImageInput.files[0];
+if(!file) return renderFounderImageAdmin();
+if(!file.type.startsWith("image/")){
+alert("Please upload valid image file");
+coFounderImageInput.value = "";
+return;
+}
+coFounderPreviewImage.src = URL.createObjectURL(file);
+if(coFounderPreviewMeta){
+coFounderPreviewMeta.textContent = "Preview ready. Click Save Co-Founder Image.";
+}
+};
+
 async function saveStoryCounterSettings(){
 let existing = safeObjectParse(STORY_COUNTER_KEY);
 let image = existing.image || "";
@@ -1311,6 +1350,35 @@ renderFounderImageAdmin();
 setStatus("About founder image saved successfully", false);
 }catch(error){
 setStatus(`Founder image save failed: ${error.message}`, true);
+}
+}
+
+async function saveCoFounderImageSettings(){
+try{
+let content = remoteState.homeContent || {};
+let image = String(content.aboutCoFounderImage || content.coFounderImage || content.cofounderImage || "").trim();
+let file = coFounderImageInput.files[0];
+if(file){
+if(!file.type.startsWith("image/")){
+alert("Please upload valid image file");
+return;
+}
+image = await uploadMediaFile(file, { preserveQuality: true });
+}
+if(!image){
+setStatus("Please upload co-founder image first", true);
+return;
+}
+await saveHomeContent({
+aboutCoFounderImage: image,
+aboutCoFounderImageAlt: cleanUiText(coFounderImageAltInput.value, "Co-Founder of Swadra Organics"),
+aboutCoFounderImageUpdatedAt: Date.now()
+});
+coFounderImageInput.value = "";
+renderFounderImageAdmin();
+setStatus("About co-founder image saved successfully", false);
+}catch(error){
+setStatus(`Co-founder image save failed: ${error.message}`, true);
 }
 }
 

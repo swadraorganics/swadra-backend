@@ -5032,7 +5032,14 @@ app.get("/api/app-state", async (req, res) => {
     const siteContent = await readTopLevelSiteContent();
     const topUsers = isAdmin ? await readTopLevelFirestoreCollection("users") : [];
     if (Object.keys(siteContent).length) {
-      db.appState = { ...db.appState, ...siteContent };
+      db.appState = {
+        ...db.appState,
+        ...siteContent,
+        homeContent: {
+          ...(db.appState.homeContent || {}),
+          ...(siteContent.homeContent || {})
+        }
+      };
     }
     if (isAdmin && topUsers.length) {
       const usersMap = {};
@@ -5072,7 +5079,14 @@ app.get("/api/app-state/bootstrap", async (req, res) => {
     const isAdmin = Boolean(findValidAdminSession(db, req));
     const siteContent = await readTopLevelSiteContent();
     if (Object.keys(siteContent).length) {
-      db.appState = { ...db.appState, ...siteContent };
+      db.appState = {
+        ...db.appState,
+        ...siteContent,
+        homeContent: {
+          ...(db.appState.homeContent || {}),
+          ...(siteContent.homeContent || {})
+        }
+      };
     }
     if (Array.isArray(db.coupons) || Array.isArray(siteContent.coupons)) {
       db.appState.coupons = mergeRecordsById(siteContent.coupons || [], db.coupons || []).map((coupon) => normalizeCoupon(coupon)).slice(0, 50);
@@ -5144,6 +5158,28 @@ app.post("/api/app-state", async (req, res) => {
       db.coupons = state.coupons.map((coupon) => normalizeCoupon(coupon)).filter((coupon) => coupon.code).slice(0, 50);
       db.appState.coupons = db.coupons;
       await writeTopLevelSiteContentPatch({ coupons: db.coupons, homeContent: { coupons: db.coupons } });
+    }
+    const siteContentPatch = {};
+    [
+      "homeContent",
+      "offers",
+      "heroImages",
+      "customers",
+      "familyCards",
+      "swadra_home_family_story_v1",
+      "shippingSettings",
+      "compliance",
+      "policyPages",
+      "supportRequests",
+      "callbackRequests",
+      "contactRequests"
+    ].forEach((key) => {
+      if (state[key] !== undefined) {
+        siteContentPatch[key] = db.appState[key];
+      }
+    });
+    if (Object.keys(siteContentPatch).length) {
+      await writeTopLevelSiteContentPatch(siteContentPatch);
     }
     if (state.users && typeof state.users === "object") {
       await writeTopLevelUsers(state.users);

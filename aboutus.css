@@ -160,6 +160,10 @@ margin-top:30px;
   display:block;
 }
 
+.swadra-aboutus-cofounder .swadra-aboutus-container{
+  flex-direction:row-reverse;
+}
+
 .highlight {
   font-size: 18px;
 }
@@ -298,4 +302,17 @@ font-weight:500;
 }
 @media(max-width:900px){
   .about-legal-grid,.about-legal-policies,.about-documents{grid-template-columns:1fr}
+  .swadra-aboutus-container,
+  .swadra-aboutus-cofounder .swadra-aboutus-container{
+    flex-direction:column;
+    padding:10px 24px;
+    gap:24px;
+  }
+  .swadra-aboutus-founder-img{
+    width:100%;
+    flex:0 0 auto;
+  }
+  .swadra-aboutus-founder-img img{
+    max-width:100%;
+  }
 }

@@ -180,8 +180,32 @@
         <p class="story-sign">Ajay Singh</p>
       </div>
     </div>
+    
+  </section>
+
+<section>
+    <h1 class="main-heading">Cofounder Column</h1>
+  </section>
+
+  <section class="swadra-aboutus-founder swadra-aboutus-cofounder">
+    <div class="swadra-aboutus-container">
+      <div class="swadra-aboutus-founder-img">
+        <img id="aboutCoFounderImage" src="aboutus-images/cofounder.jpg" alt="Co-Founder of Swadra Organics">
+      </div>
+      <div class="swadra-aboutus-founder-text">
+        <p class="story-highlight">
+          My name is Vijay Singh, and as the Co-Founder of Swadra Organics, I share the same vision and commitment that inspired the creation of this brand. We believe that good health begins with pure food, and every product we offer reflects that belief. My role is to ensure that our values of quality, transparency, and authenticity remain at the heart of everything we do.
+        </p>
+        <p class="story-highlight">
+          At Swadra Organics, we are not simply building a business; we are building a movement towards healthier living. Every step, from sourcing to delivery, is guided by our promise to provide products that families can trust with confidence. Our mission is to reconnect people with the purity of nature and make wholesome, responsibly sourced food a part of everyday life. Together, we are dedicated to creating a healthier future—one product, one family, and one community at a time.
+        </p>
+ 
+        <p class="story-sign">Vijay Singh</p>
+      </div>
+    </div>
     <div class="bottom-tagline">Purity is not Luxury. It's a Responsibility</div>
   </section>
+
 
   <section class="swadra-aboutus-quality">
     <h2>NO MILAWAT. NO CHEMICALS.</h2>
@@ -505,16 +529,28 @@
       setText("refundPolicySummary", returns.refundSummary || returns.summary);
     }
     function renderFounderImage(state){
-      const img = document.getElementById("aboutFounderImage");
-      if(!img) return;
+      const founderImg = document.getElementById("aboutFounderImage");
+      const coFounderImg = document.getElementById("aboutCoFounderImage");
       const content = state && state.homeContent && typeof state.homeContent === "object" ? state.homeContent : {};
-      const src = String(content.aboutFounderImage || content.founderImage || "").trim();
-      if(src){
-        img.src = src;
+      if(founderImg){
+        const src = String(content.aboutFounderImage || content.founderImage || "").trim();
+        if(src){
+          founderImg.src = src;
+        }
+        const alt = String(content.aboutFounderImageAlt || "").trim();
+        if(alt){
+          founderImg.alt = alt;
+        }
       }
-      const alt = String(content.aboutFounderImageAlt || "").trim();
-      if(alt){
-        img.alt = alt;
+      if(coFounderImg){
+        const src = String(content.aboutCoFounderImage || content.coFounderImage || content.cofounderImage || "").trim();
+        if(src){
+          coFounderImg.src = src;
+        }
+        const alt = String(content.aboutCoFounderImageAlt || content.coFounderImageAlt || "").trim();
+        if(alt){
+          coFounderImg.alt = alt;
+        }
       }
     }
     const APP_STATE_URL = window.SWADRA_APP_STATE_URL || "";

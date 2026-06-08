@@ -3152,6 +3152,12 @@
     if(homeContent.heroVideoSrc){
       homeContent.heroVideoSrc = sanitizeContentImage(homeContent.heroVideoSrc);
     }
+    if(homeContent.aboutFounderImage || homeContent.founderImage){
+      homeContent.aboutFounderImage = sanitizeContentImage(homeContent.aboutFounderImage || homeContent.founderImage);
+    }
+    if(homeContent.aboutCoFounderImage || homeContent.coFounderImage || homeContent.cofounderImage){
+      homeContent.aboutCoFounderImage = sanitizeContentImage(homeContent.aboutCoFounderImage || homeContent.coFounderImage || homeContent.cofounderImage);
+    }
     if(storyCounter.image){
       storyCounter.image = sanitizeContentImage(storyCounter.image);
     }
