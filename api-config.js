@@ -3895,12 +3895,11 @@
     var runEnhancement = function(){
       enhanceImages(document);
     };
-    if(typeof window.requestIdleCallback === "function"){
-      window.requestIdleCallback(runEnhancement, { timeout: 800 });
-    }else{
-      setTimeout(runEnhancement, 0);
-    }
-    if(typeof MutationObserver === "function" && document.body){
+    var observeImages = function(){
+      if(!document.body || document.__swadraImageMutationObserverActive) return;
+      document.__swadraImageMutationObserverActive = true;
+      runEnhancement();
+      if(typeof MutationObserver !== "function") return;
       var observer = new MutationObserver(function(mutations){
         mutations.forEach(function(mutation){
           mutation.addedNodes.forEach(function(node){
@@ -3915,6 +3914,11 @@
         });
       });
       observer.observe(document.body, { childList: true, subtree: true });
+    };
+    if(document.readyState === "loading"){
+      document.addEventListener("DOMContentLoaded", observeImages, { once: true });
+    }else{
+      observeImages();
     }
   }
 

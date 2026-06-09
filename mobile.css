@@ -1554,6 +1554,58 @@
     z-index: 13000 !important;
     pointer-events: auto !important;
   }
+
+  /* prevent hidden popup layers from blocking taps */
+  .modal,
+  .auth-overlay,
+  .overlay,
+  .popup-overlay,
+  .drawer-overlay,
+  .backdrop {
+    pointer-events: none !important;
+  }
+
+  .modal.show,
+  .modal.active,
+  .auth-overlay.show,
+  .auth-overlay.active,
+  .overlay.show,
+  .overlay.active,
+  .popup-overlay.show,
+  .popup-overlay.active,
+  .drawer-overlay.show,
+  .drawer-overlay.active,
+  .backdrop.show,
+  .backdrop.active {
+    pointer-events: auto !important;
+  }
+
+  .modal[style*="display: block"],
+  .modal[style*="display:block"],
+  .modal[style*="display: flex"],
+  .modal[style*="display:flex"],
+  .auth-overlay[style*="display: block"],
+  .auth-overlay[style*="display:block"],
+  .auth-overlay[style*="display: flex"],
+  .auth-overlay[style*="display:flex"],
+  .overlay[style*="display: block"],
+  .overlay[style*="display:block"],
+  .overlay[style*="display: flex"],
+  .overlay[style*="display:flex"],
+  .popup-overlay[style*="display: block"],
+  .popup-overlay[style*="display:block"],
+  .popup-overlay[style*="display: flex"],
+  .popup-overlay[style*="display:flex"],
+  .drawer-overlay[style*="display: block"],
+  .drawer-overlay[style*="display:block"],
+  .drawer-overlay[style*="display: flex"],
+  .drawer-overlay[style*="display:flex"],
+  .backdrop[style*="display: block"],
+  .backdrop[style*="display:block"],
+  .backdrop[style*="display: flex"],
+  .backdrop[style*="display:flex"] {
+    pointer-events: auto !important;
+  }
 }
 
 @media (max-width: 480px) {

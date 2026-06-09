@@ -1007,7 +1007,10 @@ function downloadReceipt(order){
     "Final Paid: " + money(order.total),
     "",
     "Items:",
-    ...order.items.map(item => "- " + (item.name || "Swadra Product") + " x " + (Number(item.qty)||1) + " = " + money(getItemDisplayLineTotal(item)))
+    ...order.items.map(item => {
+      const itemSize = getItemSizeLabel(item);
+      return "- " + (item.name || "Swadra Product") + (itemSize ? " (" + itemSize + ")" : "") + " x " + (Number(item.qty)||1) + " = " + money(getItemDisplayLineTotal(item));
+    })
   ];
   const blob = new Blob([lines.join("\n")], { type:"text/plain" });
   const link = document.createElement("a");

@@ -161,7 +161,15 @@ margin-top:30px;
 }
 
 .swadra-aboutus-cofounder .swadra-aboutus-container{
-  flex-direction:row-reverse;
+  flex-direction:row;
+}
+
+.swadra-aboutus-cofounder .swadra-aboutus-founder-img{
+  order:1;
+}
+
+.swadra-aboutus-cofounder .swadra-aboutus-founder-text{
+  order:0;
 }
 
 .highlight {
@@ -314,5 +322,9 @@ font-weight:500;
   }
   .swadra-aboutus-founder-img img{
     max-width:100%;
+  }
+  .swadra-aboutus-cofounder .swadra-aboutus-founder-img,
+  .swadra-aboutus-cofounder .swadra-aboutus-founder-text{
+    order:initial;
   }
 }
